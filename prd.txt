@@ -1,0 +1,12 @@
+fitdemo为一个权限的模块；
+期望在fitdemo中；
+
+利用佳明官方解析跑步的fit文件，fit文件从手机里进行选择，解析完fit文件后，并把跑步的摘要信息展示出来，要求设计符合compose最佳实践
+
+https://developer.garmin.com/fit/example-projects/java/
+
+fit sdk：https://github.com/garmin/fit-java-sdk
+
+
+请设计实现方案；
+

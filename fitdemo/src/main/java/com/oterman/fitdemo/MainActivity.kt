@@ -2,46 +2,45 @@ package com.oterman.fitdemo
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.oterman.fitdemo.ui.screen.FitFileScreen
 import com.oterman.fitdemo.ui.theme.ComopseDemoHubTheme
+import com.oterman.fitdemo.viewmodel.FitViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
         setContent {
             ComopseDemoHubTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                // 创建ViewModel
+                val viewModel = FitViewModel(applicationContext)
+                val uiState by viewModel.uiState.collectAsState()
+                
+                // 文件选择器
+                val filePickerLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.GetContent()
+                ) { uri ->
+                    uri?.let { viewModel.parseFitFile(it) }
                 }
+                
+                FitFileScreen(
+                    uiState = uiState,
+                    onSelectFile = {
+                        viewModel.resetState()
+                        filePickerLauncher.launch("*/*")
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ComopseDemoHubTheme {
-        Greeting("Android")
     }
 }
