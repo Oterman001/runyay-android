@@ -28,6 +28,7 @@ import com.oterman.fitdemo.data.model.FitSummaryData
 import com.oterman.fitdemo.data.model.UiState
 import com.oterman.fitdemo.ui.components.InfoCard
 import com.oterman.fitdemo.ui.components.InfoRow
+import com.oterman.fitdemo.ui.components.LapDataTable
 import com.oterman.fitdemo.ui.components.SectionHeader
 import com.oterman.fitdemo.ui.theme.ComopseDemoHubTheme
 
@@ -190,36 +191,11 @@ private fun SuccessContent(data: FitSummaryData, onSelectFile: () -> Unit) {
             }
         }
         
-        // 区间数据
+        // 区间数据 - 使用表格展示
         if (data.laps.isNotEmpty()) {
             item {
                 InfoCard {
-                    SectionHeader("区间数据")
-                    Text(
-                        text = "共 ${data.laps.size} 个区间",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-            }
-            
-            items(data.laps) { lap ->
-                InfoCard {
-                    SectionHeader("区间 ${lap.lapNumber}")
-                    InfoRow("开始时间", lap.startTime)
-                    InfoRow("总用时", lap.totalElapsedTime)
-                    InfoRow("计时时间", lap.totalTimerTime)
-                    InfoRow("距离", lap.totalDistance)
-                    InfoRow("卡路里", lap.totalCalories)
-                    InfoRow("平均速度", lap.avgSpeed)
-                    InfoRow("最大速度", lap.maxSpeed)
-                    InfoRow("平均配速", lap.avgPace)
-                    InfoRow("平均心率", lap.avgHeartRate)
-                    InfoRow("最大心率", lap.maxHeartRate)
-                    InfoRow("平均步频", lap.avgCadence)
-                    InfoRow("上升", lap.totalAscent)
-                    InfoRow("下降", lap.totalDescent)
+                    LapDataTable(laps = data.laps)
                 }
             }
         }
