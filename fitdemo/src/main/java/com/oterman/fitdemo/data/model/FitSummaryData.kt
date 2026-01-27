@@ -17,7 +17,10 @@ data class FitSummaryData(
     val laps: List<LapData> = emptyList(),
     
     // 设备信息
-    val deviceInfo: DeviceInfo? = null
+    val deviceInfo: DeviceInfo? = null,
+    
+    // GPS轨迹点列表
+    val trackPoints: List<TrackPoint> = emptyList()
 )
 
 /**

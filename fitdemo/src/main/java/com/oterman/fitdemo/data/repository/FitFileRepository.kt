@@ -25,6 +25,7 @@ import com.oterman.fitdemo.data.model.FitSummaryData
 import com.oterman.fitdemo.data.model.LapData
 import com.oterman.fitdemo.data.model.SessionSummary
 import com.oterman.fitdemo.data.model.TrackInfo
+import com.oterman.fitdemo.data.model.TrackPoint
 import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -74,6 +75,7 @@ class FitFileRepository(private val context: Context) {
         var sessionSummary: SessionSummary? = null
         var deviceInfo: DeviceInfo? = null
         val laps = mutableListOf<LapData>()
+        val trackPoints = mutableListOf<TrackPoint>()  // GPS轨迹点列表
         var recordCount = 0
         var hasGps = false
         var hasHeartRate = false
@@ -144,9 +146,27 @@ class FitFileRepository(private val context: Context) {
         // 监听记录消息（轨迹点）
         mesgBroadcaster.addListener(RecordMesgListener { mesg ->
             recordCount++
+            
+            // 收集GPS坐标
             if (mesg.positionLat != null && mesg.positionLong != null) {
                 hasGps = true
+                
+                // 转换坐标并添加到轨迹点列表
+                val latitude = semicirclesToDegrees(mesg.positionLat)
+                val longitude = semicirclesToDegrees(mesg.positionLong)
+                
+                trackPoints.add(
+                    TrackPoint(
+                        latitude = latitude,
+                        longitude = longitude,
+                        timestamp = mesg.timestamp?.timestamp,
+                        altitude = mesg.altitude?.toDouble(),
+                        heartRate = mesg.heartRate.toInt(),
+                        speed = mesg.speed
+                    )
+                )
             }
+            
             if (mesg.heartRate != null) {
                 hasHeartRate = true
             }
@@ -176,7 +196,7 @@ class FitFileRepository(private val context: Context) {
             throw Exception("FIT文件解析失败")
         }
         
-        Log.d(TAG, "FIT文件读取完成, 记录数: $recordCount, 区间数: ${laps.size}")
+        Log.d(TAG, "FIT文件读取完成, 记录数: $recordCount, 区间数: ${laps.size}, 轨迹点: ${trackPoints.size}")
         
         val trackInfo = TrackInfo(
             totalRecords = recordCount,
@@ -191,7 +211,8 @@ class FitFileRepository(private val context: Context) {
             sessionSummary = sessionSummary,
             trackInfo = trackInfo,
             laps = laps,
-            deviceInfo = deviceInfo
+            deviceInfo = deviceInfo,
+            trackPoints = trackPoints  // 包含GPS轨迹点
         )
     }
     
@@ -261,6 +282,13 @@ class FitFileRepository(private val context: Context) {
     // 辅助方法：获取运动子类型名称
     private fun getSubSportName(subSport: SubSport?): String? {
         return subSport?.name
+    }
+    
+    // 辅助方法：将semicircles转换为度数
+    // FIT SDK使用semicircles单位存储坐标
+    // 转换公式：degrees = semicircles * (180 / 2^31)
+    private fun semicirclesToDegrees(semicircles: Int): Double {
+        return semicircles * (180.0 / Math.pow(2.0, 31.0))
     }
 }
 

@@ -40,6 +40,7 @@ import com.oterman.fitdemo.ui.theme.ComopseDemoHubTheme
 fun FitFileScreen(
     uiState: UiState,
     onSelectFile: () -> Unit,
+    onShowMap: (FitSummaryData) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -62,7 +63,7 @@ fun FitFileScreen(
             when (uiState) {
                 is UiState.Idle -> IdleContent(onSelectFile)
                 is UiState.Loading -> LoadingContent()
-                is UiState.Success -> SuccessContent(uiState.data, onSelectFile)
+                is UiState.Success -> SuccessContent(uiState.data, onSelectFile, onShowMap)
                 is UiState.Error -> ErrorContent(uiState.message, onSelectFile)
             }
         }
@@ -121,7 +122,11 @@ private fun LoadingContent() {
  * 成功状态内容
  */
 @Composable
-private fun SuccessContent(data: FitSummaryData, onSelectFile: () -> Unit) {
+private fun SuccessContent(
+    data: FitSummaryData,
+    onSelectFile: () -> Unit,
+    onShowMap: (FitSummaryData) -> Unit
+) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -135,6 +140,18 @@ private fun SuccessContent(data: FitSummaryData, onSelectFile: () -> Unit) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("选择其他文件")
+            }
+        }
+        
+        // 查看地图按钮（仅当有GPS数据时显示）
+        if (data.trackPoints.isNotEmpty()) {
+            item {
+                Button(
+                    onClick = { onShowMap(data) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("查看地图轨迹 (${data.trackPoints.size} 个轨迹点)")
+                }
             }
         }
         

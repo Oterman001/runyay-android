@@ -70,6 +70,20 @@ dependencyResolutionManagement {
                 password = "swdp"
             }
         }
+        
+        // Mapbox Maven repository
+        maven {
+            url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
+            credentials {
+                username = "mapbox"
+                password = providers.environmentVariable("MAPBOX_DOWNLOADS_TOKEN").orNull 
+                    ?: "YOUR_MAPBOX_SECRET_TOKEN"
+            }
+            authentication {
+                create<BasicAuthentication>("basic")
+            }
+        }
+        
         google()
         mavenCentral()
     }
