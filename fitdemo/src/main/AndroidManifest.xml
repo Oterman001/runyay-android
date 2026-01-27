@@ -13,11 +13,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ComopseDemoHub">
         
-        <!-- Mapbox Access Token -->
-        <meta-data
-            android:name="MAPBOX_ACCESS_TOKEN"
-            android:value="YOUR_MAPBOX_PUBLIC_TOKEN" />
-        
         <activity
             android:name=".MainActivity"
             android:exported="true"

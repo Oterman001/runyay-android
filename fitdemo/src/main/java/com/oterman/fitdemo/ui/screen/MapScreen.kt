@@ -97,6 +97,7 @@ private fun MapViewComposable(
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     
+    // 创建MapView（Access Token从资源文件中自动读取）
     val mapView = remember {
         Log.d(TAG, "创建MapView, 轨迹点数: ${trackPoints.size}")
         MapView(context).apply {
