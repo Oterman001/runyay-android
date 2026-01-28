@@ -92,3 +92,4 @@ dependencyResolutionManagement {
 rootProject.name = "ComopseDemoHub"
 include(":app")
 include(":fitdemo")
+include(":rundemo")
