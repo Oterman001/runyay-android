@@ -5,9 +5,11 @@ import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.network.RetrofitClient
 import com.oterman.rundemo.data.network.api.UserApi
 import com.oterman.rundemo.data.network.dto.request.BaseRequest
+import com.oterman.rundemo.data.network.dto.request.RequestHead
 import com.oterman.rundemo.data.network.dto.request.UserLoginRequest
 import com.oterman.rundemo.data.network.dto.response.UserLoginResponse
 import com.oterman.rundemo.domain.model.UserInfo
+import com.oterman.rundemo.util.Constants
 import com.oterman.rundemo.util.SecurityUtils
 import com.oterman.rundemo.util.SecurityUtils.md5
 
@@ -36,16 +38,36 @@ class UserRepository(
             // MD5加密密码
             val encryptedPassword = password.md5()
             
-            // 构建请求
+            // 生成时间戳
+            val timestamp = SecurityUtils.getTimestamp()
+            
+            // 生成签名
+            val sign = SecurityUtils.generateSign(
+                params = emptyMap(),
+                timestamp = timestamp,
+                appKey = Constants.Network.APP_KEY
+            )
+            
+            // 构建请求头
+            val requestHead = RequestHead(
+                appKey = Constants.Network.APP_KEY,
+                timestamp = timestamp,
+                sign = sign,
+                token = preferencesManager.getUserToken() ?: "",
+                userId = preferencesManager.getUserId() ?: ""
+            )
+            
+            // 构建请求体
             val requestDto = UserLoginRequest(
                 phoneNumber = phoneNumber,
                 password = encryptedPassword,
                 deviceId = deviceId
             )
             
+            // 构建完整请求（对应iOS的BaseRequest结构）
             val request = BaseRequest(
-                dtoName = "UserLoginRequestDto",
-                data = listOf(requestDto)
+                head = requestHead,
+                body = mapOf("UserLoginRequestDto" to listOf(requestDto))
             )
             
             // 发送网络请求

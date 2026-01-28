@@ -14,8 +14,9 @@ import retrofit2.http.POST
 interface UserApi {
     /**
      * 密码登录
+     * 对应iOS的NetApiConstants.passwordLogin: "/api/user/login/passwordLogin"
      */
-    @POST("api/user/login")
+    @POST("api/user/login/passwordLogin")
     suspend fun login(
         @Body request: BaseRequest<UserLoginRequest>
     ): BaseResponse<ResponseData<UserLoginResponse>>

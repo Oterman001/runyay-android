@@ -21,6 +21,15 @@ object SecurityUtils {
     }
     
     /**
+     * SHA256加密
+     * 将字符串进行SHA256加密，返回64位小写字符串
+     */
+    fun String.sha256(): String {
+        val bytes = MessageDigest.getInstance("SHA-256").digest(this.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+    
+    /**
      * 获取设备ID
      * 使用Android ID作为设备唯一标识
      */
@@ -30,6 +39,39 @@ object SecurityUtils {
             context.contentResolver,
             Settings.Secure.ANDROID_ID
         ) ?: "unknown_device"
+    }
+    
+    /**
+     * 获取当前时间戳（毫秒）
+     */
+    fun getTimestamp(): String {
+        return System.currentTimeMillis().toString()
+    }
+    
+    /**
+     * 生成签名
+     * 对应iOS的NetworkUtils.generateSign方法
+     */
+    fun generateSign(
+        params: Map<String, String> = emptyMap(),
+        timestamp: String,
+        appKey: String
+    ): String {
+        // 将参数按key排序
+        val sortedParams = params.toSortedMap()
+        
+        // 构建签名字符串：appKey + timestamp + 排序后的参数
+        val signString = buildString {
+            append(appKey)
+            append(timestamp)
+            sortedParams.forEach { (key, value) ->
+                append(key)
+                append(value)
+            }
+        }
+        
+        // 使用SHA256加密
+        return signString.sha256()
     }
 }
 

@@ -9,11 +9,14 @@ object Constants {
      * 网络相关常量
      */
     object Network {
-        // TODO: 替换为实际的API基础URL
-        const val BASE_URL = "https://your-api-base-url.com/"
+        // API基础URL
+        const val BASE_URL = "https://yayarun.cn/sys/"
         const val CONNECT_TIMEOUT = 30L
         const val READ_TIMEOUT = 30L
         const val WRITE_TIMEOUT = 30L
+        
+        // AppKey - 对应iOS的NetworkConfig
+        const val APP_KEY = "1jns01o9lksa12"
     }
     
     /**
