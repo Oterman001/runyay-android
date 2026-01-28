@@ -56,6 +56,9 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     
+    // Material Icons Extended
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
+    
     // Mapbox Maps SDK
     implementation("com.mapbox.maps:android:11.18.0")
     

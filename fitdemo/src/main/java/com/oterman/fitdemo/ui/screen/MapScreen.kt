@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -17,7 +19,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -39,6 +44,8 @@ import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.plugin.gestures.gestures
 import com.oterman.fitdemo.data.model.TrackPoint
+import com.oterman.fitdemo.ui.components.MapStyleBottomSheet
+import com.oterman.fitdemo.util.MapPreferences
 
 private const val TAG = "MapScreen"
 
@@ -53,6 +60,10 @@ fun MapScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    
+    // 地图风格状态管理
+    var currentStyle by remember { mutableStateOf(MapPreferences.getMapStyle(context)) }
+    var showStyleSelector by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
@@ -72,6 +83,16 @@ fun MapScreen(
                 )
             )
         },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showStyleSelector = true }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Layers,
+                    contentDescription = "切换地图风格"
+                )
+            }
+        },
         modifier = modifier
     ) { paddingValues ->
         Box(
@@ -81,8 +102,23 @@ fun MapScreen(
         ) {
             MapViewComposable(
                 trackPoints = trackPoints,
-                context = context
+                context = context,
+                currentStyle = currentStyle
             )
+            
+            // 风格选择器底部弹窗
+            if (showStyleSelector) {
+                MapStyleBottomSheet(
+                    currentStyleUri = currentStyle,
+                    onStyleSelected = { newStyle ->
+                        currentStyle = newStyle
+                        MapPreferences.saveMapStyle(context, newStyle)
+                        showStyleSelector = false
+                        Log.d(TAG, "切换地图风格: $newStyle")
+                    },
+                    onDismiss = { showStyleSelector = false }
+                )
+            }
         }
     }
 }
@@ -93,7 +129,8 @@ fun MapScreen(
 @Composable
 private fun MapViewComposable(
     trackPoints: List<TrackPoint>,
-    context: Context
+    context: Context,
+    currentStyle: String
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     
@@ -141,8 +178,8 @@ private fun MapViewComposable(
     AndroidView(
         factory = {
             mapView.apply {
-                Log.d(TAG, "初始化地图样式")
-                mapboxMap.loadStyle(Style.STANDARD) { style ->
+                Log.d(TAG, "初始化地图样式: $currentStyle")
+                mapboxMap.loadStyle(currentStyle) { style ->
                     if (trackPoints.isNotEmpty()) {
                         Log.d(TAG, "添加轨迹到地图")
                         addTrackToMap(style, trackPoints)
@@ -150,6 +187,17 @@ private fun MapViewComposable(
                     } else {
                         Log.w(TAG, "轨迹点为空")
                     }
+                }
+            }
+        },
+        update = { view ->
+            // 当风格改变时，重新加载地图样式
+            Log.d(TAG, "更新地图样式: $currentStyle")
+            view.mapboxMap.loadStyle(currentStyle) { style ->
+                if (trackPoints.isNotEmpty()) {
+                    Log.d(TAG, "重新添加轨迹到地图")
+                    addTrackToMap(style, trackPoints)
+                    centerMapOnTrack(view, trackPoints)
                 }
             }
         },
