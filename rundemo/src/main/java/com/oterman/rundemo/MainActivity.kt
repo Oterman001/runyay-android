@@ -5,43 +5,59 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.network.RetrofitClient
+import com.oterman.rundemo.presentation.navigation.AppNavGraph
+import com.oterman.rundemo.presentation.navigation.Screen
 import com.oterman.rundemo.ui.theme.ComopseDemoHubTheme
 
+/**
+ * 主Activity
+ * 应用的入口，负责设置导航和主题
+ */
 class MainActivity : ComponentActivity() {
+    
+    private lateinit var preferencesManager: PreferencesManager
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // 初始化PreferencesManager
+        preferencesManager = PreferencesManager(this)
+        
+        // 设置Retrofit的token提供者
+        RetrofitClient.setTokenProvider {
+            preferencesManager.getUserToken()
+        }
+        
         enableEdgeToEdge()
+        
         setContent {
             ComopseDemoHubTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    val navController = rememberNavController()
+                    
+                    // 根据登录状态决定起始页面
+                    val startDestination = if (preferencesManager.isUserLoggedIn()) {
+                        Screen.Home.route
+                    } else {
+                        Screen.Login.route
+                    }
+                    
+                    // 设置应用导航图
+                    AppNavGraph(
+                        navController = navController,
+                        startDestination = startDestination
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ComopseDemoHubTheme {
-        Greeting("Android")
     }
 }

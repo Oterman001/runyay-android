@@ -1,0 +1,194 @@
+package com.oterman.rundemo.data.local
+
+import android.content.Context
+import android.content.SharedPreferences
+import com.oterman.rundemo.util.Constants
+import java.util.Calendar
+
+/**
+ * SharedPreferences管理器
+ * 负责用户信息的本地持久化存储
+ * 对应iOS的AccountManager部分功能
+ */
+class PreferencesManager(context: Context) {
+    
+    private val prefs: SharedPreferences = context.getSharedPreferences(
+        Constants.PreferenceKeys.USER_PREFS,
+        Context.MODE_PRIVATE
+    )
+    
+    /**
+     * 保存用户Token
+     */
+    fun saveUserToken(token: String) {
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_USER_TOKEN, token).apply()
+    }
+    
+    /**
+     * 获取用户Token
+     */
+    fun getUserToken(): String? {
+        return prefs.getString(Constants.PreferenceKeys.KEY_USER_TOKEN, null)
+    }
+    
+    /**
+     * 保存用户ID
+     */
+    fun saveUserId(userId: String) {
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_USER_ID, userId).apply()
+    }
+    
+    /**
+     * 获取用户ID
+     */
+    fun getUserId(): String? {
+        return prefs.getString(Constants.PreferenceKeys.KEY_USER_ID, null)
+    }
+    
+    /**
+     * 保存用户名
+     */
+    fun saveUserName(userName: String) {
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_USER_NAME, userName).apply()
+    }
+    
+    /**
+     * 获取用户名
+     */
+    fun getUserName(): String? {
+        return prefs.getString(Constants.PreferenceKeys.KEY_USER_NAME, null)
+    }
+    
+    /**
+     * 保存手机号
+     */
+    fun savePhoneNumber(phoneNumber: String) {
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_PHONE_NUMBER, phoneNumber).apply()
+    }
+    
+    /**
+     * 获取手机号
+     */
+    fun getPhoneNumber(): String? {
+        return prefs.getString(Constants.PreferenceKeys.KEY_PHONE_NUMBER, null)
+    }
+    
+    /**
+     * 保存邮箱
+     */
+    fun saveEmail(email: String) {
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_EMAIL, email).apply()
+    }
+    
+    /**
+     * 获取邮箱
+     */
+    fun getEmail(): String? {
+        return prefs.getString(Constants.PreferenceKeys.KEY_EMAIL, null)
+    }
+    
+    /**
+     * 保存头像URL
+     */
+    fun saveImageUrl(imageUrl: String) {
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_IMAGE_URL, imageUrl).apply()
+    }
+    
+    /**
+     * 获取头像URL
+     */
+    fun getImageUrl(): String? {
+        return prefs.getString(Constants.PreferenceKeys.KEY_IMAGE_URL, null)
+    }
+    
+    /**
+     * 保存Token过期时间
+     * @param expireDay Token有效天数
+     */
+    fun saveTokenExpireDate(expireDay: Int) {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, expireDay)
+        val expireTime = calendar.timeInMillis
+        prefs.edit().putLong(Constants.PreferenceKeys.KEY_TOKEN_EXPIRE_DATE, expireTime).apply()
+    }
+    
+    /**
+     * 获取Token过期时间
+     */
+    fun getTokenExpireDate(): Long {
+        return prefs.getLong(Constants.PreferenceKeys.KEY_TOKEN_EXPIRE_DATE, 0L)
+    }
+    
+    /**
+     * 检查Token是否过期
+     */
+    fun isTokenExpired(): Boolean {
+        val expireTime = getTokenExpireDate()
+        if (expireTime == 0L) return true
+        return System.currentTimeMillis() > expireTime
+    }
+    
+    /**
+     * 设置登录状态
+     */
+    fun setLoggedIn(isLoggedIn: Boolean) {
+        prefs.edit().putBoolean(Constants.PreferenceKeys.KEY_IS_LOGGED_IN, isLoggedIn).apply()
+    }
+    
+    /**
+     * 检查用户是否已登录
+     */
+    fun isUserLoggedIn(): Boolean {
+        val isLoggedIn = prefs.getBoolean(Constants.PreferenceKeys.KEY_IS_LOGGED_IN, false)
+        val hasToken = getUserToken() != null
+        val hasUserId = getUserId() != null
+        val tokenNotExpired = !isTokenExpired()
+        
+        return isLoggedIn && hasToken && hasUserId && tokenNotExpired
+    }
+    
+    /**
+     * 保存完整的用户信息
+     */
+    fun saveUserInfo(
+        userId: String,
+        userName: String?,
+        phoneNumber: String?,
+        email: String?,
+        token: String,
+        imageUrl: String?,
+        expireDay: Int?
+    ) {
+        prefs.edit().apply {
+            putString(Constants.PreferenceKeys.KEY_USER_ID, userId)
+            putString(Constants.PreferenceKeys.KEY_USER_TOKEN, token)
+            userName?.let { putString(Constants.PreferenceKeys.KEY_USER_NAME, it) }
+            phoneNumber?.let { putString(Constants.PreferenceKeys.KEY_PHONE_NUMBER, it) }
+            email?.let { putString(Constants.PreferenceKeys.KEY_EMAIL, it) }
+            imageUrl?.let { putString(Constants.PreferenceKeys.KEY_IMAGE_URL, it) }
+            putBoolean(Constants.PreferenceKeys.KEY_IS_LOGGED_IN, true)
+            apply()
+        }
+        
+        // 保存Token过期时间
+        expireDay?.let { saveTokenExpireDate(it) }
+    }
+    
+    /**
+     * 清除所有用户数据
+     */
+    fun clearUserData() {
+        prefs.edit().apply {
+            remove(Constants.PreferenceKeys.KEY_USER_ID)
+            remove(Constants.PreferenceKeys.KEY_USER_TOKEN)
+            remove(Constants.PreferenceKeys.KEY_USER_NAME)
+            remove(Constants.PreferenceKeys.KEY_PHONE_NUMBER)
+            remove(Constants.PreferenceKeys.KEY_EMAIL)
+            remove(Constants.PreferenceKeys.KEY_IMAGE_URL)
+            remove(Constants.PreferenceKeys.KEY_TOKEN_EXPIRE_DATE)
+            putBoolean(Constants.PreferenceKeys.KEY_IS_LOGGED_IN, false)
+            apply()
+        }
+    }
+}
+

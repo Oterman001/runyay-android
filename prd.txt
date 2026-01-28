@@ -1,12 +1,8 @@
-fitdemo为一个权限的模块；
-期望在fitdemo中；
+zrun目录为ios版本的跑步应用代码；
 
-利用佳明官方解析跑步的fit文件，fit文件从手机里进行选择，解析完fit文件后，并把跑步的摘要信息展示出来，要求设计符合compose最佳实践
+当前期望逐步实现安卓版本的功能，rundemo模块已经建好，要求使用compose技术栈，符合compose最佳实践；
+首先实现登录注册功能，界面与ios界面布局及元素保持一致，不过采用Material3 Design;
 
-https://developer.garmin.com/fit/example-projects/java/
+ios登录注册的界面见：PhoneLoginView & PhoneRegisterView；
 
-fit sdk：https://github.com/garmin/fit-java-sdk
-
-
-请设计实现方案；
-
+请设计安卓版本的登录注册的实现方案，要求采用合理的目录结构，符合compose 最佳实践；
