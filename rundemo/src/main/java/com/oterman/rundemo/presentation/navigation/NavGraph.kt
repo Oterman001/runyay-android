@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.oterman.rundemo.presentation.feature.auth.login.LoginScreen
+import com.oterman.rundemo.presentation.feature.auth.register.RegisterScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 
 /**
@@ -67,9 +68,32 @@ fun AppNavGraph(
             HomeScreen()
         }
         
-        // 注册页面（占位符）
+        // 注册页面
         composable(Screen.Register.route) {
-            PlaceholderScreen(title = "注册页面")
+            RegisterScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onRegisterSuccess = {
+                    // 注册成功后导航到主页面
+                    navController.navigate(Screen.Home.route) {
+                        // 清除欢迎页面和注册页面，防止返回
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = { phoneNumber ->
+                    // 导航到登录页面，可以携带手机号
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                },
+                onNavigateToUserTerms = {
+                    navController.navigate(Screen.UserTerms.route)
+                },
+                onNavigateToPrivacyPolicy = {
+                    navController.navigate(Screen.PrivacyPolicy.route)
+                }
+            )
         }
         
         // 忘记密码页面（占位符）

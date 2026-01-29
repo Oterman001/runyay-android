@@ -190,5 +190,12 @@ class PreferencesManager(context: Context) {
             apply()
         }
     }
+    
+    /**
+     * 更新用户名（用于注册时设置昵称）
+     */
+    fun updateUserName(userName: String) {
+        saveUserName(userName)
+    }
 }
 

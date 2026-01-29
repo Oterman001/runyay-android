@@ -23,9 +23,19 @@ data class BaseResponse<T>(
 
 /**
  * 响应数据包装类
+ * 支持多种DTO类型的响应解析
  */
 data class ResponseData<T>(
     @SerializedName("UserLoginResponseDto")
-    val userLoginResponseDto: List<T>? = null
+    val userLoginResponseDto: List<T>? = null,
+    
+    @SerializedName("SendVerificationCodeResponseDto")
+    val sendVerificationCodeResponseDto: List<T>? = null,
+    
+    @SerializedName("UserRegisterResponseDto")
+    val userRegisterResponseDto: List<T>? = null,
+    
+    @SerializedName("SetPasswordResponseDto")
+    val setPasswordResponseDto: List<T>? = null
 )
 

@@ -84,6 +84,7 @@ fun GradientButton(
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
     enabled: Boolean = true,
+    loadingText: String? = null,
     gradientColors: List<Color> = listOf(
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
@@ -127,7 +128,7 @@ fun GradientButton(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "登录中...",
+                        text = loadingText ?: "加载中...",
                         style = MaterialTheme.typography.titleMedium
                     )
                 } else {

@@ -93,19 +93,19 @@ fun TermsCheckbox(
 }
 
 /**
- * 简化版协议勾选框（无链接跳转）
+ * 简化版协议勾选框
+ * 支持协议链接点击
  */
 @Composable
 fun SimpleTermsCheckbox(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    text: String = "我已阅读并同意demorun的《用户协议》和《隐私政策》"
+    onUserTermsClick: () -> Unit = {},
+    onPrivacyPolicyClick: () -> Unit = {}
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) },
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
@@ -119,10 +119,49 @@ fun SimpleTermsCheckbox(
         
         Spacer(modifier = Modifier.width(4.dp))
         
-        Text(
-            text = text,
+        // 使用AnnotatedString来实现部分文本可点击
+        val annotatedText = buildAnnotatedString {
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
+                append("我已阅读并同意demorun的")
+            }
+            
+            pushStringAnnotation(tag = "user_terms", annotation = "user_terms")
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                append("《用户协议》")
+            }
+            pop()
+            
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
+                append("和")
+            }
+            
+            pushStringAnnotation(tag = "privacy_policy", annotation = "privacy_policy")
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                append("《隐私政策》")
+            }
+            pop()
+        }
+        
+        androidx.compose.foundation.text.ClickableText(
+            text = annotatedText,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
+            onClick = { offset ->
+                annotatedText.getStringAnnotations(
+                    tag = "user_terms",
+                    start = offset,
+                    end = offset
+                ).firstOrNull()?.let {
+                    onUserTermsClick()
+                }
+                
+                annotatedText.getStringAnnotations(
+                    tag = "privacy_policy",
+                    start = offset,
+                    end = offset
+                ).firstOrNull()?.let {
+                    onPrivacyPolicyClick()
+                }
+            }
         )
     }
 }

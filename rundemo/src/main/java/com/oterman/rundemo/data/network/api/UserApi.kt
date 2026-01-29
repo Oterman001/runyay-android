@@ -1,10 +1,16 @@
 package com.oterman.rundemo.data.network.api
 
 import com.oterman.rundemo.data.network.dto.request.BaseRequest
+import com.oterman.rundemo.data.network.dto.request.SendVerificationCodeRequest
+import com.oterman.rundemo.data.network.dto.request.SetPasswordAndNameRequest
 import com.oterman.rundemo.data.network.dto.request.UserLoginRequest
+import com.oterman.rundemo.data.network.dto.request.UserRegisterRequest
 import com.oterman.rundemo.data.network.dto.response.BaseResponse
 import com.oterman.rundemo.data.network.dto.response.ResponseData
+import com.oterman.rundemo.data.network.dto.response.SendVerificationCodeResponse
+import com.oterman.rundemo.data.network.dto.response.SetPasswordResponse
 import com.oterman.rundemo.data.network.dto.response.UserLoginResponse
+import com.oterman.rundemo.data.network.dto.response.UserRegisterResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
 
@@ -20,5 +26,32 @@ interface UserApi {
     suspend fun login(
         @Body request: BaseRequest<UserLoginRequest>
     ): BaseResponse<ResponseData<UserLoginResponse>>
+    
+    /**
+     * 发送验证码
+     * 对应iOS的NetApiConstants.sendVerificationCode: "/api/user/register/sendVerificationCode"
+     */
+    @POST("api/user/register/sendVerificationCode")
+    suspend fun sendVerificationCode(
+        @Body request: BaseRequest<SendVerificationCodeRequest>
+    ): BaseResponse<ResponseData<SendVerificationCodeResponse>>
+    
+    /**
+     * 用户注册
+     * 对应iOS的NetApiConstants.userRegister: "/api/user/register/register"
+     */
+    @POST("api/user/register/register")
+    suspend fun register(
+        @Body request: BaseRequest<UserRegisterRequest>
+    ): BaseResponse<ResponseData<UserRegisterResponse>>
+    
+    /**
+     * 设置密码和昵称
+     * 对应iOS的NetApiConstants.userSetPasswordAndName: "/api/user/psw/setPasswordAndName"
+     */
+    @POST("api/user/psw/setPasswordAndName")
+    suspend fun setPasswordAndName(
+        @Body request: BaseRequest<SetPasswordAndNameRequest>
+    ): BaseResponse<ResponseData<SetPasswordResponse>>
 }
 
