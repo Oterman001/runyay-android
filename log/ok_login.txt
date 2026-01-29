@@ -1,0 +1,74 @@
+[2026-01-28 20:34:31.454] I cooperative [[NetworkManager]] 🚀 [Request-AB8DF757] 开始网络请求
+[2026-01-28 20:34:31.455] I cooperative [[NetworkManager]] 📍 [Request-AB8DF757] URL: https://yayarun.cn/sys//api/user/login/passwordLogin
+[2026-01-28 20:34:31.455] I cooperative [[NetworkManager]] 📋 [Request-AB8DF757] 方法: POST
+[2026-01-28 20:34:31.456] I cooperative [[NetworkManager]] 📦 [Request-AB8DF757] 请求头:
+[2026-01-28 20:34:31.456] I cooperative [[NetworkManager]]    Content-Type: application/json
+[2026-01-28 20:34:31.457] I cooperative [[NetworkManager]]    appkey=***
+[2026-01-28 20:34:31.457] I cooperative [[NetworkManager]]    sign: 02b3***9f9c
+[2026-01-28 20:34:31.458] I cooperative [[NetworkManager]]    timestamp: 1769603671452
+[2026-01-28 20:34:31.459] I cooperative [[NetworkManager]] 📤 [Request-AB8DF757] 请求体大小: 363 bytes
+[2026-01-28 20:34:31.460] I cooperative [[NetworkManager]] 📤 [Request-AB8DF757] 请求体内容:
+[2026-01-28 20:34:31.460] I cooperative [[NetworkManager]] {
+  "head" : {
+    "appKey" : "1jns01o9lksa12",
+    "sign" : "55186da9b85e27e87c849b8a7c9cd64ba2d1965fffeab203fb15fd6e05a40114",
+    "timestamp" : "1769603671448",
+    "userId" : "",
+    "token" : ""
+  },
+  "body" : {
+    "UserLoginRequestDto" : [
+      {
+        "password" : "6592e67b4b52a43826d5d889afa959f5",
+        "deviceId" : "4D3090AC-3618-43F4-9513-F4AB4805D196",
+        "sceneType" : "LOGIN",
+        "loginType" : "PASSWORD",
+        "phoneNumber" : "17512081100"
+      }
+    ]
+  }
+}
+[2026-01-28 20:34:31.886] I NSURLSession-delegate [[NetworkManager]] ⏱️ [Request-AB8DF757] 请求耗时: 0.434秒
+[2026-01-28 20:34:31.888] I NSURLSession-delegate [[NetworkManager]] ✅ [Request-AB8DF757] HTTP状态码: 200
+[2026-01-28 20:34:31.889] I NSURLSession-delegate [[NetworkManager]] 📦 [Request-AB8DF757] 响应头:
+[2026-01-28 20:34:31.890] I NSURLSession-delegate [[NetworkManager]]    Vary: Accept-Encoding
+[2026-01-28 20:34:31.891] I NSURLSession-delegate [[NetworkManager]]    Referrer-Policy: no-referrer-when-downgrade
+[2026-01-28 20:34:31.892] I NSURLSession-delegate [[NetworkManager]]    Connection: keep-alive
+[2026-01-28 20:34:31.892] I NSURLSession-delegate [[NetworkManager]]    Strict-Transport-Security: max-age=31536000; includeSubDomains; preload, max-age=31536000
+[2026-01-28 20:34:31.893] I NSURLSession-delegate [[NetworkManager]]    Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+[2026-01-28 20:34:31.894] I NSURLSession-delegate [[NetworkManager]]    X-XSS-Protection: 1; mode=block, 1; mode=block
+[2026-01-28 20:34:31.894] I NSURLSession-delegate [[NetworkManager]]    X-Content-Type-Options: nosniff, nosniff
+[2026-01-28 20:34:31.895] I NSURLSession-delegate [[NetworkManager]]    Date: Wed, 28 Jan 2026 12:34:31 GMT
+[2026-01-28 20:34:31.896] I NSURLSession-delegate [[NetworkManager]]    Server: nginx
+[2026-01-28 20:34:31.896] I NSURLSession-delegate [[NetworkManager]]    Pragma: no-cache
+[2026-01-28 20:34:31.897] I NSURLSession-delegate [[NetworkManager]]    Content-Type: application/json
+[2026-01-28 20:34:31.898] I NSURLSession-delegate [[NetworkManager]]    X-Frame-Options: DENY, SAMEORIGIN
+[2026-01-28 20:34:31.898] I NSURLSession-delegate [[NetworkManager]]    Content-Encoding: gzip
+[2026-01-28 20:34:31.899] I NSURLSession-delegate [[NetworkManager]]    Expires: 0
+[2026-01-28 20:34:31.899] I NSURLSession-delegate [[NetworkManager]]    Transfer-Encoding: Identity
+[2026-01-28 20:34:31.900] I NSURLSession-delegate [[NetworkManager]] 📥 [Request-AB8DF757] 响应体大小: 599 bytes
+[2026-01-28 20:34:31.900] I NSURLSession-delegate [[NetworkManager]] 📥 [Request-AB8DF757] 响应体内容:
+[2026-01-28 20:34:31.900] I NSURLSession-delegate [[NetworkManager]] {
+  "msg" : "OK",
+  "data" : {
+    "UserLoginResponseDto" : [
+      {
+        "setPswFlg" : "N",
+        "message" : "登录成功",
+        "remainingAttempts" : null,
+        "appAccountToken" : "AAAA3E73-8033-AFAF-B600-000000000000",
+        "expireDay" : 60,
+        "imageUrl" : "https:\/\/yayarun-prod.oss-cn-hangzhou.aliyuncs.com\/avatars\/U17578443016220598_20250914_30373f1141104ec8b20c87d61dde5f1c.jpg",
+        "success" : "Y",
+        "userId" : "U17578443016220598",
+        "userName" : "小俊1100",
+        "token" : "\/FqccqJZd\/JkNB7qRDnc+LFQ0g0pcSPnAs5AYtSu9VfLDjSj1Raho3lyieaAddkUtqJdQrjG+UhB+weiKUVJLrj6MkcVlpdZVWX00+OzlFE=",
+        "membershipType" : null,
+        "email" : "",
+        "phoneNumber" : "17512081100",
+        "notExist" : "N"
+      }
+    ]
+  },
+  "code" : "0000"
+}

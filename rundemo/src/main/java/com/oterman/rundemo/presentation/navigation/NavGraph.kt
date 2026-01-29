@@ -84,7 +84,7 @@ private fun HomeScreen() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "登录成功！\n欢迎使用跑鸭",
+            text = "登录成功！\n欢迎使用demorun",
             style = MaterialTheme.typography.headlineMedium
         )
     }

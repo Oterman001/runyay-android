@@ -48,7 +48,7 @@ fun TermsCheckbox(
         // 使用AnnotatedString来实现部分文本可点击
         val annotatedText = buildAnnotatedString {
             withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
-                append("我已阅读并同意跑鸭的")
+                append("我已阅读并同意demorun的")
             }
             
             pushStringAnnotation(tag = "user_terms", annotation = "user_terms")
@@ -100,7 +100,7 @@ fun SimpleTermsCheckbox(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    text: String = "我已阅读并同意跑鸭的《用户协议》和《隐私政策》"
+    text: String = "我已阅读并同意demorun的《用户协议》和《隐私政策》"
 ) {
     Row(
         modifier = modifier
