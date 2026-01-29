@@ -41,6 +41,9 @@ fun AppNavGraph(
         // 登录页面
         composable(Screen.Login.route) {
             LoginScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
                 onLoginSuccess = {
                     // 登录成功后导航到主页面
                     navController.navigate(Screen.Home.route) {
