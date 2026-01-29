@@ -6,6 +6,11 @@ package com.oterman.rundemo.presentation.navigation
  */
 sealed class Screen(val route: String) {
     /**
+     * 欢迎页面
+     */
+    object Welcome : Screen("welcome")
+
+    /**
      * 登录页面
      */
     object Login : Screen("login")

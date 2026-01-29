@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
                     val startDestination = if (preferencesManager.isUserLoggedIn()) {
                         Screen.Home.route
                     } else {
-                        Screen.Login.route
+                        Screen.Welcome.route
                     }
                     
                     // 设置应用导航图

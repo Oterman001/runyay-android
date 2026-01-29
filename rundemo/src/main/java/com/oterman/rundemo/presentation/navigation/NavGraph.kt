@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.oterman.rundemo.presentation.feature.auth.login.LoginScreen
+import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 
 /**
  * 应用导航图
@@ -19,20 +20,32 @@ import com.oterman.rundemo.presentation.feature.auth.login.LoginScreen
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
-    startDestination: String = Screen.Login.route
+    startDestination: String = Screen.Welcome.route
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
+        // 欢迎页面
+        composable(Screen.Welcome.route) {
+            WelcomeScreen(
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route)
+                }
+            )
+        }
+
         // 登录页面
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
                     // 登录成功后导航到主页面
                     navController.navigate(Screen.Home.route) {
-                        // 清除登录页面，防止返回
-                        popUpTo(Screen.Login.route) { inclusive = true }
+                        // 清除欢迎页面和登录页面，防止返回
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
                 },
                 onNavigateToRegister = {
