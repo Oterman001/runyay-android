@@ -2,12 +2,14 @@ package com.oterman.rundemo.presentation.feature.auth.login
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,6 +19,7 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -24,6 +27,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -31,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -55,7 +61,12 @@ fun LoginScreen(
     )
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
+
+    // 配置折叠工具栏的滚动行为
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        rememberTopAppBarState()
+    )
+
     // 监听登录成功事件
     LaunchedEffect(uiState.loginSuccess) {
         if (uiState.loginSuccess) {
@@ -66,87 +77,110 @@ fun LoginScreen(
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("账号登录") }
+            LargeTopAppBar(
+                title = { Text("账号登录") },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
         }
     ) { paddingValues ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(top = 40.dp),
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            contentPadding = PaddingValues(
+                start = 24.dp,
+                end = 24.dp,
+                top = 40.dp,
+                bottom = 50.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // 手机号输入框
-            PhoneNumberField(
-                phoneNumber = uiState.phoneNumber,
-                onPhoneNumberChange = viewModel::onPhoneNumberChange,
-                errorMessage = uiState.phoneNumberError
-            )
-            
-            // 密码输入框
-            PasswordTextField(
-                value = uiState.password,
-                onValueChange = viewModel::onPasswordChange,
-                isPasswordVisible = uiState.isPasswordVisible,
-                onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
-                errorMessage = uiState.passwordError
-            )
-            
-            // 协议勾选框（带抖动效果）
-            ShakeBox(shouldShake = uiState.shouldShake) {
-                SimpleTermsCheckbox(
-                    checked = uiState.hasAgreedToTerms,
-                    onCheckedChange = { viewModel.toggleTermsAgreement() }
+            item {
+                PhoneNumberField(
+                    phoneNumber = uiState.phoneNumber,
+                    onPhoneNumberChange = viewModel::onPhoneNumberChange,
+                    errorMessage = uiState.phoneNumberError
                 )
             }
-            
-            // 登录按钮
-            GradientButton(
-                text = "登录",
-                onClick = { viewModel.checkTermsAgreementAndLogin() },
-                isLoading = uiState.isLoading,
-                enabled = uiState.phoneNumber.isNotEmpty() &&
-                        uiState.password.isNotEmpty() &&
-                        uiState.phoneNumberError == null &&
-                        uiState.passwordError == null
-            )
-            
-            // 忘记密码链接
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
-            ) {
-                TextButton(onClick = onNavigateToForgotPassword) {
-                    Text(
-                        text = "忘记密码？",
-                        color = MaterialTheme.colorScheme.primary
+
+            // 密码输入框
+            item {
+                PasswordTextField(
+                    value = uiState.password,
+                    onValueChange = viewModel::onPasswordChange,
+                    isPasswordVisible = uiState.isPasswordVisible,
+                    onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
+                    errorMessage = uiState.passwordError
+                )
+            }
+
+            // 协议勾选框（带抖动效果）
+            item {
+                ShakeBox(shouldShake = uiState.shouldShake) {
+                    SimpleTermsCheckbox(
+                        checked = uiState.hasAgreedToTerms,
+                        onCheckedChange = { viewModel.toggleTermsAgreement() }
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            // 注册提示
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 50.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "还没有账户？",
-                    color = MaterialTheme.colorScheme.onSurface
+
+            // 登录按钮
+            item {
+                GradientButton(
+                    text = "登录",
+                    onClick = { viewModel.checkTermsAgreementAndLogin() },
+                    isLoading = uiState.isLoading,
+                    enabled = uiState.phoneNumber.isNotEmpty() &&
+                            uiState.password.isNotEmpty() &&
+                            uiState.phoneNumberError == null &&
+                            uiState.passwordError == null
                 )
-                TextButton(onClick = onNavigateToRegister) {
+            }
+
+            // 忘记密码链接
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    TextButton(onClick = onNavigateToForgotPassword) {
+                        Text(
+                            text = "忘记密码？",
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            // 填充空间（替代原来的 Spacer.weight）
+            item {
+                Spacer(modifier = Modifier.height(200.dp))
+            }
+
+            // 注册提示
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "立即注册",
-                        color = MaterialTheme.colorScheme.primary
+                        text = "还没有账户？",
+                        color = MaterialTheme.colorScheme.onSurface
                     )
+                    TextButton(onClick = onNavigateToRegister) {
+                        Text(
+                            text = "立即注册",
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }
