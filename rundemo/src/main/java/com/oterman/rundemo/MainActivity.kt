@@ -14,13 +14,18 @@ import com.oterman.rundemo.data.network.RetrofitClient
 import com.oterman.rundemo.presentation.navigation.AppNavGraph
 import com.oterman.rundemo.presentation.navigation.Screen
 import com.oterman.rundemo.ui.theme.ComopseDemoHubTheme
+import com.oterman.rundemo.util.Logger
 
 /**
  * 主Activity
  * 应用的入口，负责设置导航和主题
  */
 class MainActivity : ComponentActivity() {
-    
+
+    companion object {
+        private const val TAG = "MainActivity"
+    }
+
     private lateinit var preferencesManager: PreferencesManager
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,7 +33,11 @@ class MainActivity : ComponentActivity() {
         
         // 初始化PreferencesManager
         preferencesManager = PreferencesManager(this)
-        
+
+        // 初始化Logger（默认启用文件日志，设置 tag 前缀为 XRUN）
+        Logger.init(this, prefix = "XRUN")
+        Logger.i(TAG, "应用启动")
+
         // 设置Retrofit的token提供者
         RetrofitClient.setTokenProvider {
             preferencesManager.getUserToken()

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.repository.LoginException
 import com.oterman.rundemo.data.repository.UserRepository
+import com.oterman.rundemo.util.Logger
 import com.oterman.rundemo.util.ValidationUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,11 @@ class LoginViewModel(
     private val context: Context,
     private val userRepository: UserRepository = UserRepository(context)
 ) : ViewModel() {
-    
+
+    companion object {
+        private const val TAG = "LoginViewModel"
+    }
+
     // UI状态
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -93,22 +98,27 @@ class LoginViewModel(
      */
     private fun login() {
         val state = _uiState.value
-        
+
         // 验证输入
         if (!state.canLogin) {
+            Logger.w(TAG, "登录验证失败：手机号或密码格式不正确")
             return
         }
-        
+
+        Logger.d(TAG, "开始登录：手机号=${state.phoneNumber}")
+
         viewModelScope.launch {
             // 设置加载状态
             _uiState.update { it.copy(isLoading = true, errorMessage = null, remainingAttempts = null) }
-            
+
             try {
                 // 调用登录接口
+                Logger.i(TAG, "调用UserRepository.login")
                 val result = userRepository.login(state.phoneNumber, state.password)
                 
                 result.onSuccess { response ->
                     // 登录成功
+                    Logger.i(TAG, "登录成功：userId=${response.userId}")
                     _uiState.update { currentState ->
                         currentState.copy(
                             isLoading = false,
@@ -117,11 +127,13 @@ class LoginViewModel(
                     }
                 }.onFailure { error ->
                     // 登录失败
+                    Logger.e(TAG, "登录失败：${error.message}", error)
                     handleLoginError(error)
                 }
                 
             } catch (e: Exception) {
                 // 异常处理
+                Logger.e(TAG, "登录异常", e)
                 _uiState.update { currentState ->
                     currentState.copy(
                         isLoading = false,
