@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.oterman.rundemo.presentation.feature.auth.forgotpassword.ForgotPasswordScreen
 import com.oterman.rundemo.presentation.feature.auth.login.LoginScreen
 import com.oterman.rundemo.presentation.feature.auth.register.RegisterScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
@@ -53,11 +54,9 @@ fun AppNavGraph(
                     }
                 },
                 onNavigateToRegister = {
-                    // TODO: 导航到注册页面（暂未实现）
                     navController.navigate(Screen.Register.route)
                 },
                 onNavigateToForgotPassword = {
-                    // TODO: 导航到忘记密码页面（暂未实现）
                     navController.navigate(Screen.ForgotPassword.route)
                 }
             )
@@ -96,9 +95,25 @@ fun AppNavGraph(
             )
         }
         
-        // 忘记密码页面（占位符）
+        // 忘记密码页面
         composable(Screen.ForgotPassword.route) {
-            PlaceholderScreen(title = "忘记密码页面")
+            ForgotPasswordScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onResetSuccess = { phoneNumber ->
+                    // 重置成功后导航到登录页面，携带手机号
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.ForgotPassword.route) { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    // 用户不存在时导航到注册页面
+                    navController.navigate(Screen.Register.route) {
+                        popUpTo(Screen.ForgotPassword.route) { inclusive = true }
+                    }
+                }
+            )
         }
         
         // 用户协议页面（占位符）

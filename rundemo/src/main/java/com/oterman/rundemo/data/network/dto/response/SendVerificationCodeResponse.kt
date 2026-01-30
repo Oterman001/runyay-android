@@ -54,5 +54,11 @@ data class SendVerificationCodeResponse(
      */
     val canRegister: Boolean
         get() = notExist == "Y"
+    
+    /**
+     * 用户是否不存在
+     */
+    val userNotExist: Boolean
+        get() = notExist == "Y"
 }
 

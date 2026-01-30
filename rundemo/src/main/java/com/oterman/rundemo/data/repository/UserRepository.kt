@@ -6,10 +6,13 @@ import com.oterman.rundemo.data.network.RetrofitClient
 import com.oterman.rundemo.data.network.api.UserApi
 import com.oterman.rundemo.data.network.dto.request.BaseRequest
 import com.oterman.rundemo.data.network.dto.request.RequestHead
+import com.oterman.rundemo.data.network.dto.request.ResetPasswordRequest
 import com.oterman.rundemo.data.network.dto.request.SendVerificationCodeRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordAndNameRequest
+import com.oterman.rundemo.data.network.dto.request.SetPasswordRequest
 import com.oterman.rundemo.data.network.dto.request.UserLoginRequest
 import com.oterman.rundemo.data.network.dto.request.UserRegisterRequest
+import com.oterman.rundemo.data.network.dto.response.ResetPasswordResponse
 import com.oterman.rundemo.data.network.dto.response.SendVerificationCodeResponse
 import com.oterman.rundemo.data.network.dto.response.UserLoginResponse
 import com.oterman.rundemo.data.network.dto.response.UserRegisterResponse
@@ -377,6 +380,195 @@ class UserRepository(
             }
         }
     }
+    
+    // ==================== 重置密码相关方法 ====================
+    
+    /**
+     * 发送重置密码验证码
+     * @param phoneNumber 手机号
+     * @param captureParam 图形验证码参数（可选）
+     * @return Result<SendVerificationCodeResponse> 发送结果
+     */
+    suspend fun sendResetPasswordVerificationCode(
+        phoneNumber: String,
+        captureParam: String = ""
+    ): Result<SendVerificationCodeResponse> {
+        return try {
+            // 生成时间戳和签名
+            val timestamp = SecurityUtils.getTimestamp()
+            val sign = SecurityUtils.generateSign(
+                params = emptyMap(),
+                timestamp = timestamp,
+                appKey = Constants.Network.APP_KEY
+            )
+            
+            // 构建请求头
+            val requestHead = RequestHead(
+                appKey = Constants.Network.APP_KEY,
+                timestamp = timestamp,
+                sign = sign,
+                token = "",
+                userId = ""
+            )
+            
+            // 构建请求体
+            val requestDto = SendVerificationCodeRequest.forResetPassword(
+                phoneNumber = phoneNumber,
+                captureParam = captureParam
+            )
+            
+            // 构建完整请求
+            val request = BaseRequest(
+                head = requestHead,
+                body = mapOf("SendVerificationCodeRequestDto" to listOf(requestDto))
+            )
+            
+            // 发送网络请求
+            val response = userApi.sendResetVerificationCode(request)
+            
+            // 检查响应
+            if (response.isSuccess()) {
+                val data = response.data?.sendVerificationCodeResponseDto?.firstOrNull()
+                if (data != null) {
+                    Result.success(data)
+                } else {
+                    Result.failure(Exception("响应数据为空"))
+                }
+            } else {
+                Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * 验证重置密码验证码
+     * @param phoneNumber 手机号
+     * @param verificationCode 验证码
+     * @return Result<ResetPasswordResponse> 验证结果（包含token和userId）
+     */
+    suspend fun verifyResetCode(
+        phoneNumber: String,
+        verificationCode: String
+    ): Result<ResetPasswordResponse> {
+        return try {
+            // 获取设备ID
+            val deviceId = SecurityUtils.getDeviceId(context)
+            
+            // 生成时间戳和签名
+            val timestamp = SecurityUtils.getTimestamp()
+            val sign = SecurityUtils.generateSign(
+                params = emptyMap(),
+                timestamp = timestamp,
+                appKey = Constants.Network.APP_KEY
+            )
+            
+            // 构建请求头
+            val requestHead = RequestHead(
+                appKey = Constants.Network.APP_KEY,
+                timestamp = timestamp,
+                sign = sign,
+                token = "",
+                userId = ""
+            )
+            
+            // 构建请求体
+            val requestDto = ResetPasswordRequest(
+                phoneNumber = phoneNumber,
+                verificationCode = verificationCode,
+                deviceId = deviceId
+            )
+            
+            // 构建完整请求
+            val request = BaseRequest(
+                head = requestHead,
+                body = mapOf("ResetPasswordRequestDto" to listOf(requestDto))
+            )
+            
+            // 发送网络请求
+            val response = userApi.verifyResetCode(request)
+            
+            // 检查响应
+            if (response.isSuccess()) {
+                val data = response.data?.resetPasswordResponseDto?.firstOrNull()
+                if (data != null) {
+                    if (data.isVerifySuccess) {
+                        Result.success(data)
+                    } else if (data.userNotExist) {
+                        Result.failure(ResetPasswordException("该手机号未注册", data, isUserNotExist = true))
+                    } else {
+                        Result.failure(ResetPasswordException(data.message ?: "验证码错误", data))
+                    }
+                } else {
+                    Result.failure(Exception("响应数据为空"))
+                }
+            } else {
+                Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * 设置新密码（重置密码）
+     * @param userId 用户ID（验证码验证成功后获取）
+     * @param password 新密码（明文）
+     * @param token 用户Token（验证码验证成功后获取）
+     * @return Result<Boolean> 设置结果
+     */
+    suspend fun setNewPassword(
+        userId: String,
+        password: String,
+        token: String
+    ): Result<Boolean> {
+        return try {
+            // MD5加密密码
+            val encryptedPassword = password.md5()
+            
+            // 生成时间戳和签名
+            val timestamp = SecurityUtils.getTimestamp()
+            val sign = SecurityUtils.generateSign(
+                params = emptyMap(),
+                timestamp = timestamp,
+                appKey = Constants.Network.APP_KEY
+            )
+            
+            // 构建请求头（使用传入的token和userId）
+            val requestHead = RequestHead(
+                appKey = Constants.Network.APP_KEY,
+                timestamp = timestamp,
+                sign = sign,
+                token = token,
+                userId = userId
+            )
+            
+            // 构建请求体
+            val requestDto = SetPasswordRequest(
+                userId = userId,
+                newPassword = encryptedPassword
+            )
+            
+            // 构建完整请求
+            val request = BaseRequest(
+                head = requestHead,
+                body = mapOf("UserSetPswRequestDto" to listOf(requestDto))
+            )
+            
+            // 发送网络请求
+            val response = userApi.setPassword(request)
+            
+            // 检查响应
+            if (response.isSuccess()) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
 
 /**
@@ -396,5 +588,15 @@ class RegisterException(
     message: String,
     val response: UserRegisterResponse? = null,
     val isUserExists: Boolean = false
+) : Exception(message)
+
+/**
+ * 重置密码异常
+ * 用于携带详细的重置密码失败信息
+ */
+class ResetPasswordException(
+    message: String,
+    val response: ResetPasswordResponse? = null,
+    val isUserNotExist: Boolean = false
 ) : Exception(message)
 
