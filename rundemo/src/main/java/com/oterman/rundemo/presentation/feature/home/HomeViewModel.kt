@@ -39,13 +39,15 @@ class HomeViewModel(
     private fun loadAuthState() {
         val isLoggedIn = preferencesManager.isUserLoggedIn()
         val userName = preferencesManager.getUserName()
+        val phoneNumber = preferencesManager.getPhoneNumber()
 
         Logger.d(TAG, "Auth state loaded: isLoggedIn=$isLoggedIn, userName=$userName")
 
         _uiState.update { state ->
             state.copy(
                 isLoggedIn = isLoggedIn,
-                userName = userName
+                userName = userName,
+                phoneNumber = phoneNumber
             )
         }
     }
@@ -101,7 +103,8 @@ class HomeViewModel(
                 state.copy(
                     isLoggingOut = false,
                     isLoggedIn = false,
-                    userName = null
+                    userName = null,
+                    phoneNumber = null
                 )
             }
 

@@ -78,6 +78,7 @@ fun HomeScreen(
                 HomeTab.PROFILE -> ProfileTabContent(
                     isLoggedIn = uiState.isLoggedIn,
                     userName = uiState.userName,
+                    phoneNumber = uiState.phoneNumber,
                     onLogoutClick = viewModel::showLogoutConfirmation,
                     onLoginClick = viewModel::navigateToLogin,
                     onShowWelcomeClick = viewModel::navigateToWelcome,

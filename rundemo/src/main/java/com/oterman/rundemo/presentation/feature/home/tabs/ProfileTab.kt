@@ -7,8 +7,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -16,19 +24,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.presentation.components.settings.SettingsCard
+import com.oterman.rundemo.presentation.components.settings.SettingsItem
+import com.oterman.rundemo.presentation.components.settings.UserProfileCard
 
 /**
  * Profile/Settings tab content
- * Corresponds to iOS Tab3Page
- * Shows login state and provides logout/login actions
+ * Corresponds to iOS SettingPage
+ * Shows user profile, settings groups, and footer
  */
 @Composable
 fun ProfileTabContent(
     isLoggedIn: Boolean,
     userName: String?,
+    phoneNumber: String? = null,
     onLogoutClick: () -> Unit,
     onLoginClick: () -> Unit,
     onShowWelcomeClick: () -> Unit,
@@ -37,151 +48,137 @@ fun ProfileTabContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Title
-        Text(
-            text = "我的",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+        // User Profile Card
+        UserProfileCard(
+            isLoggedIn = isLoggedIn,
+            userName = userName,
+            phoneNumber = phoneNumber,
+            onClick = {
+                if (!isLoggedIn) {
+                    onLoginClick()
+                }
+                // When logged in, clicking could navigate to profile edit page (empty for now)
+            }
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
+        // Settings Group 1: Training Settings
+        SettingsCard {
+            SettingsItem(
+                icon = Icons.Outlined.Flag,
+                title = "跑步目标",
+                onClick = { /* TODO: Navigate to running goal page */ }
+            )
+            SettingsItem(
+                icon = Icons.Outlined.FavoriteBorder,
+                title = "心率区间",
+                onClick = { /* TODO: Navigate to heart rate zone page */ }
+            )
+            SettingsItem(
+                icon = Icons.Outlined.Palette,
+                title = "外观设置",
+                showDivider = false,
+                onClick = { /* TODO: Navigate to appearance settings page */ }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Settings Group 2: Support
+        SettingsCard {
+            SettingsItem(
+                icon = Icons.Outlined.Email,
+                title = "联系我们",
+                onClick = { /* TODO: Navigate to contact us page */ }
+            )
+            SettingsItem(
+                icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                title = "帮助与反馈",
+                onClick = { /* TODO: Navigate to help page */ }
+            )
+            SettingsItem(
+                icon = Icons.Outlined.Star,
+                title = "给个好评",
+                showDivider = false,
+                onClick = { /* TODO: Open app store rating */ }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Debug Group (Show Welcome, Reset First Launch)
+        SettingsCard {
+            SettingsItem(
+                icon = Icons.Outlined.Flag,
+                title = "显示欢迎页",
+                iconTint = MaterialTheme.colorScheme.tertiary,
+                showDivider = true,
+                onClick = onShowWelcomeClick
+            )
+            SettingsItem(
+                icon = Icons.Outlined.Flag,
+                title = "重置首次启动",
+                iconTint = MaterialTheme.colorScheme.tertiary,
+                showDivider = false,
+                onClick = onResetFirstLaunchClick
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Logout button (only when logged in)
         if (isLoggedIn) {
-            LoggedInContent(
-                userName = userName,
-                onLogoutClick = onLogoutClick
-            )
-        } else {
-            NotLoggedInContent(
-                onLoginClick = onLoginClick,
-                onShowWelcomeClick = onShowWelcomeClick,
-                onResetFirstLaunchClick = onResetFirstLaunchClick
-            )
+            OutlinedButton(
+                onClick = onLogoutClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text(
+                    text = "退出登录",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        // Footer
+        Footer()
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 /**
- * Content shown when user is logged in
+ * Footer section with app version and tagline
  */
 @Composable
-private fun LoggedInContent(
-    userName: String?,
-    onLogoutClick: () -> Unit
-) {
+private fun Footer() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // Login status indicator
         Text(
-            text = "已登录",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF4CAF50) // Green color
+            text = "DemoRun V1.0.0",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
-
-        // User name (if available)
-        userName?.let { name ->
-            Text(
-                text = "欢迎，$name",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Logout button
-        OutlinedButton(
-            onClick = onLogoutClick,
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error
-            )
-        ) {
-            Text(
-                text = "退出登录",
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-    }
-}
-
-/**
- * Content shown when user is not logged in
- */
-@Composable
-private fun NotLoggedInContent(
-    onLoginClick: () -> Unit,
-    onShowWelcomeClick: () -> Unit,
-    onResetFirstLaunchClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Not logged in status
         Text(
-            text = "未登录",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = "跑鸭陪你一起跑呀！",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Login button (primary action)
-        Button(
-            onClick = onLoginClick,
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(
-                text = "登录",
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-
-        // Show welcome page button
-        OutlinedButton(
-            onClick = onShowWelcomeClick,
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(
-                text = "显示欢迎页",
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-
-        // Reset first launch button (for debugging)
-        OutlinedButton(
-            onClick = onResetFirstLaunchClick,
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color(0xFFFF9800) // Orange color
-            )
-        ) {
-            Text(
-                text = "重置首次启动",
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
     }
 }

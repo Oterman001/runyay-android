@@ -21,6 +21,7 @@ data class HomeUiState(
     // Auth state (from PreferencesManager)
     val isLoggedIn: Boolean = false,
     val userName: String? = null,
+    val phoneNumber: String? = null,
 
     // Profile tab actions state
     val isLoggingOut: Boolean = false,
