@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import com.oterman.rundemo.presentation.feature.auth.forgotpassword.ForgotPasswordScreen
 import com.oterman.rundemo.presentation.feature.auth.login.LoginScreen
 import com.oterman.rundemo.presentation.feature.auth.register.RegisterScreen
+import com.oterman.rundemo.presentation.feature.home.HomeScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 
 /**
@@ -64,7 +65,14 @@ fun AppNavGraph(
         
         // 主页面（登录成功后的页面）
         composable(Screen.Home.route) {
-            HomeScreen()
+            HomeScreen(
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route)
+                },
+                onNavigateToWelcome = {
+                    navController.navigate(Screen.Welcome.route)
+                }
+            )
         }
         
         // 注册页面
@@ -125,23 +133,6 @@ fun AppNavGraph(
         composable(Screen.PrivacyPolicy.route) {
             PlaceholderScreen(title = "隐私政策")
         }
-    }
-}
-
-/**
- * 主页面
- * 登录成功后显示的页面
- */
-@Composable
-private fun HomeScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "登录成功！\n欢迎使用demorun",
-            style = MaterialTheme.typography.headlineMedium
-        )
     }
 }
 
