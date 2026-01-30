@@ -19,18 +19,16 @@ import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
@@ -53,28 +51,26 @@ fun ProfileTabContent(
     onShowWelcomeClick: () -> Unit,
     onResetFirstLaunchClick: () -> Unit
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        rememberTopAppBarState()
-    )
-
     Scaffold(
         topBar = {
-            MediumTopAppBar(
-                title = { Text("我的") },
-                scrollBehavior = scrollBehavior,
+
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "我的",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
                 windowInsets = WindowInsets(0, 0, 0, 0),
-                colors = TopAppBarDefaults.mediumTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         }
     ) { paddingValues ->
         LazyColumn(
             state = rememberLazyListState(),
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 top = paddingValues.calculateTopPadding(),
                 bottom = paddingValues.calculateBottomPadding() + 16.dp,
@@ -211,12 +207,6 @@ private fun Footer() {
     ) {
         Text(
             text = "DemoRun V1.0.0",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = "跑鸭陪你一起跑呀！",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
