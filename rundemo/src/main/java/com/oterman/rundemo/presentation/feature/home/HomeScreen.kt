@@ -1,7 +1,9 @@
 package com.oterman.rundemo.presentation.feature.home
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
@@ -24,6 +26,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.presentation.feature.home.tabs.DataTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.HomeTabContent
@@ -106,7 +109,10 @@ private fun HomeBottomNavigationBar(
     selectedTab: HomeTab,
     onTabSelected: (HomeTab) -> Unit
 ) {
-    NavigationBar {
+    NavigationBar(
+        modifier = Modifier.height(56.dp)
+//        windowInsets = WindowInsets(0, 0, 0, 0)
+    ) {
         // Tab 1: 首页 (Home)
         NavigationBarItem(
             selected = selectedTab == HomeTab.HOME,
@@ -120,8 +126,7 @@ private fun HomeBottomNavigationBar(
                     },
                     contentDescription = "首页"
                 )
-            },
-            label = { Text("首页") }
+            }
         )
 
         // Tab 2: 数据 (Data/Chart)
@@ -137,8 +142,7 @@ private fun HomeBottomNavigationBar(
                     },
                     contentDescription = "数据"
                 )
-            },
-            label = { Text("数据") }
+            }
         )
 
         // Tab 3: 我的 (Profile)
@@ -154,8 +158,7 @@ private fun HomeBottomNavigationBar(
                     },
                     contentDescription = "我的"
                 )
-            },
-            label = { Text("我的") }
+            }
         )
     }
 }
