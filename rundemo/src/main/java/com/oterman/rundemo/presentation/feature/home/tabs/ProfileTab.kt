@@ -1,13 +1,15 @@
 package com.oterman.rundemo.presentation.feature.home.tabs
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,28 +21,31 @@ import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
 import com.oterman.rundemo.presentation.components.settings.SettingsItem
 import com.oterman.rundemo.presentation.components.settings.UserProfileCard
 
 /**
- * Profile/Settings tab content
+ * Profile/Settings tab content with iOS-style NavigationTitle effect
+ * Large title collapses to small title when scrolling
  * Corresponds to iOS SettingPage
- * Shows user profile, settings groups, and footer
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileTabContent(
     isLoggedIn: Boolean,
@@ -51,34 +56,80 @@ fun ProfileTabContent(
     onShowWelcomeClick: () -> Unit,
     onResetFirstLaunchClick: () -> Unit
 ) {
-    Scaffold(
-        topBar = {
+    val lazyListState = rememberLazyListState()
+    val backgroundColor = MaterialTheme.colorScheme.background
 
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "我的",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                },
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+    // Calculate collapse progress based on scroll offset
+    val collapseProgress by remember {
+        derivedStateOf {
+            val firstItemIndex = lazyListState.firstVisibleItemIndex
+            val firstItemOffset = lazyListState.firstVisibleItemScrollOffset
+
+            if (firstItemIndex > 0) {
+                1f
+            } else {
+                (firstItemOffset / 200f).coerceIn(0f, 1f)
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+    ) {
+        // Collapsed header (small title) - appears when scrolled
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(backgroundColor)
+                .zIndex(1f)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .alpha(collapseProgress)
+        ) {
+            Text(
+                text = "我的",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
-    ) { paddingValues ->
+
+        // Main content
         LazyColumn(
-            state = rememberLazyListState(),
+            state = lazyListState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                top = paddingValues.calculateTopPadding(),
-                bottom = paddingValues.calculateBottomPadding() + 16.dp,
+                bottom = 16.dp,
                 start = 16.dp,
                 end = 16.dp
             ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Large title header (iOS NavigationTitle style)
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 4.dp, end = 4.dp, top = 48.dp, bottom = 16.dp)
+                        .graphicsLayer {
+                            val scale = 1f - (collapseProgress * 0.15f)
+                            scaleX = scale
+                            scaleY = scale
+                            alpha = 1f - collapseProgress
+                            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+                        }
+                ) {
+                    Text(
+                        text = "我的",
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        letterSpacing = 0.sp
+                    )
+                }
+            }
+
             // User Profile Card
             item {
                 UserProfileCard(
