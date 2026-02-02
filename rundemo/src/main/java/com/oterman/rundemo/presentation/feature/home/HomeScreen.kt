@@ -40,6 +40,10 @@ import com.oterman.rundemo.presentation.feature.home.tabs.ProfileTabContent
 fun HomeScreen(
     onNavigateToLogin: () -> Unit = {},
     onNavigateToWelcome: () -> Unit = {},
+    onNavigateToRunDetail: (workoutId: String) -> Unit = {},
+    onNavigateToRunDetailDebug: (workoutId: String) -> Unit = {},
+    onNavigateToDataSourceManage: () -> Unit = {},
+    onNavigateToUserProfile: () -> Unit = {},
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(LocalContext.current)
     )
@@ -77,15 +81,24 @@ fun HomeScreen(
         ) {
             when (uiState.selectedTab) {
                 HomeTab.HOME -> HomeTabContent()
-                HomeTab.DATA -> DataTabContent()
+                HomeTab.DATA -> DataTabContent(
+                    onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },
+                    onRecordLongClick = { workoutId -> onNavigateToRunDetailDebug(workoutId) }
+                )
                 HomeTab.PROFILE -> ProfileTabContent(
                     isLoggedIn = uiState.isLoggedIn,
                     userName = uiState.userName,
                     phoneNumber = uiState.phoneNumber,
+                    avatarUrl = uiState.avatarUrl,
+                    isLoadingAvatar = uiState.isLoadingAvatar,
+                    isImportingFit = uiState.isImportingFit,
                     onLogoutClick = viewModel::showLogoutConfirmation,
                     onLoginClick = viewModel::navigateToLogin,
+                    onUserProfileClick = onNavigateToUserProfile,
                     onShowWelcomeClick = viewModel::navigateToWelcome,
-                    onResetFirstLaunchClick = viewModel::resetFirstLaunch
+                    onResetFirstLaunchClick = viewModel::resetFirstLaunch,
+                    onImportFitFile = viewModel::importFitFile,
+                    onDataSourceManageClick = onNavigateToDataSourceManage
                 )
             }
         }
@@ -96,6 +109,14 @@ fun HomeScreen(
         LogoutConfirmationDialog(
             onConfirm = viewModel::logout,
             onDismiss = viewModel::dismissLogoutConfirmation
+        )
+    }
+    
+    // FIT文件导入结果对话框
+    if (uiState.showImportResultDialog) {
+        FitImportResultDialog(
+            result = uiState.fitImportResult,
+            onDismiss = viewModel::dismissImportResultDialog
         )
     }
 }
@@ -183,6 +204,39 @@ private fun LogoutConfirmationDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("取消")
+            }
+        }
+    )
+}
+
+/**
+ * FIT文件导入结果对话框
+ */
+@Composable
+private fun FitImportResultDialog(
+    result: FitImportResult?,
+    onDismiss: () -> Unit
+) {
+    val (title, message) = when (result) {
+        is FitImportResult.Success -> {
+            "导入成功" to "已成功导入跑步记录\n距离：${String.format("%.2f", result.distance)} 公里\n时长：${String.format("%.1f", result.duration)} 分钟"
+        }
+        is FitImportResult.AlreadyExists -> {
+            "文件已存在" to "该FIT文件之前已导入过，无需重复导入"
+        }
+        is FitImportResult.Error -> {
+            "导入失败" to result.message
+        }
+        null -> return
+    }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("确定")
             }
         }
     )

@@ -1,10 +1,13 @@
 package com.oterman.rundemo.presentation.feature.home
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.oterman.rundemo.data.fit.FitImportService
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.util.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +22,9 @@ import kotlinx.coroutines.launch
  */
 class HomeViewModel(
     private val context: Context,
-    private val preferencesManager: PreferencesManager = PreferencesManager(context)
+    private val preferencesManager: PreferencesManager = PreferencesManager(context),
+    private val fitImportService: FitImportService = FitImportService(context),
+    private val userRepository: UserRepository = UserRepository(context)
 ) : ViewModel() {
 
     companion object {
@@ -40,8 +45,9 @@ class HomeViewModel(
         val isLoggedIn = preferencesManager.isUserLoggedIn()
         val userName = preferencesManager.getUserName()
         val phoneNumber = preferencesManager.getPhoneNumber()
+        val userId = preferencesManager.getUserId()
 
-        Logger.d(TAG, "Auth state loaded: isLoggedIn=$isLoggedIn, userName=$userName")
+        Logger.d(TAG, "Auth state loaded: isLoggedIn=$isLoggedIn, userName=$userName, userId=$userId")
 
         _uiState.update { state ->
             state.copy(
@@ -49,6 +55,33 @@ class HomeViewModel(
                 userName = userName,
                 phoneNumber = phoneNumber
             )
+        }
+
+        // 如果已登录，异步加载头像
+        if (isLoggedIn && userId != null) {
+            loadAvatarUrl(userId)
+        }
+    }
+
+    /**
+     * 通过 API 获取头像临时访问 URL
+     * OSS存储的头像需要带签名的临时URL才能访问
+     */
+    private fun loadAvatarUrl(userId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingAvatar = true) }
+
+            Logger.d(TAG, "开始加载头像URL: userId=$userId")
+
+            val result = userRepository.getAvatarUrl(userId)
+
+            result.onSuccess { url ->
+                Logger.d(TAG, "头像URL加载成功: $url")
+                _uiState.update { it.copy(avatarUrl = url, isLoadingAvatar = false) }
+            }.onFailure { e ->
+                Logger.e(TAG, "头像URL加载失败: ${e.message}")
+                _uiState.update { it.copy(avatarUrl = null, isLoadingAvatar = false) }
+            }
         }
     }
 
@@ -104,7 +137,9 @@ class HomeViewModel(
                     isLoggingOut = false,
                     isLoggedIn = false,
                     userName = null,
-                    phoneNumber = null
+                    phoneNumber = null,
+                    avatarUrl = null,
+                    isLoadingAvatar = false
                 )
             }
 
@@ -158,6 +193,54 @@ class HomeViewModel(
     fun resetFirstLaunch() {
         Logger.d(TAG, "Reset first launch state")
         navigateToWelcome()
+    }
+    
+    // ==================== FIT文件导入 ====================
+    
+    /**
+     * 导入FIT文件
+     * @param uri 选择的FIT文件Uri
+     */
+    fun importFitFile(uri: Uri) {
+        Logger.i(TAG, "开始导入FIT文件: $uri")
+        
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImportingFit = true) }
+            
+            val result = fitImportService.importFitFile(uri)
+            
+            _uiState.update { state ->
+                state.copy(
+                    isImportingFit = false,
+                    showImportResultDialog = true,
+                    fitImportResult = result
+                )
+            }
+            
+            when (result) {
+                is FitImportResult.Success -> {
+                    Logger.i(TAG, "导入成功: ${result.distance}km, ${result.duration}min")
+                }
+                is FitImportResult.AlreadyExists -> {
+                    Logger.w(TAG, "文件已导入过")
+                }
+                is FitImportResult.Error -> {
+                    Logger.e(TAG, "导入失败: ${result.message}")
+                }
+            }
+        }
+    }
+    
+    /**
+     * 关闭导入结果对话框
+     */
+    fun dismissImportResultDialog() {
+        _uiState.update { state ->
+            state.copy(
+                showImportResultDialog = false,
+                fitImportResult = null
+            )
+        }
     }
 }
 

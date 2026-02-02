@@ -4,279 +4,122 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**ComposeDemoHub** is a multi-module Android application showcasing Jetpack Compose implementations. It contains three modules demonstrating different use cases with Material 3 design and modern Android architecture.
+**ComposeDemoHub** is a multi-module Android application showcasing Jetpack Compose with Material 3 design.
 
-### Modules
+| Module | Description | Package |
+|--------|-------------|---------|
+| **app** | Basic demo | `com.oterman.app` |
+| **fitdemo** | Garmin FIT file parser with Mapbox GPS visualization | `com.oterman.fitdemo` |
+| **rundemo** | User authentication system (login/register/forgot password) | `com.oterman.rundemo` |
 
-1. **app** - Basic "Hello World" demo module
-2. **fitdemo** - Garmin FIT file parser with GPS visualization using Mapbox
-3. **rundemo** - User authentication system (login/register) with network integration
-
-## Build and Development Commands
-
-### Build Commands
+## Build Commands
 
 ```bash
-# Build specific module
-./gradlew :fitdemo:build
-./gradlew :rundemo:build
-./gradlew :app:build
-
-# Build all modules
-./gradlew build
-
-# Install to device (debug)
-./gradlew :fitdemo:installDebug
+# Build & install specific module
 ./gradlew :rundemo:installDebug
+./gradlew :fitdemo:installDebug
 
-# Clean build
-./gradlew clean
-```
+# Run tests
+./gradlew :rundemo:test                    # Unit tests
+./gradlew :rundemo:connectedAndroidTest    # Instrumented tests
 
-### Running Applications
-
-```bash
-# Launch fitdemo
-adb shell am start -n com.oterman.fitdemo/.MainActivity
-
-# Launch rundemo
+# Launch via adb
 adb shell am start -n com.oterman.rundemo/.MainActivity
+adb shell am start -n com.oterman.fitdemo/.MainActivity
 ```
 
-### Testing
+## Architecture
 
-```bash
-# Run unit tests for a module
-./gradlew :rundemo:test
-
-# Run instrumented tests
-./gradlew :rundemo:connectedAndroidTest
-
-# Run all tests
-./gradlew test
-```
-
-## Architecture Patterns
-
-### rundemo Module (Clean Architecture)
-
-The rundemo module follows **Clean Architecture** with clear layer separation:
+### rundemo Module (Clean Architecture + MVVM)
 
 ```
 rundemo/
 ├── data/
-│   ├── local/              # DataStore, local storage
+│   ├── local/                  # DataStore (PreferencesManager)
 │   ├── network/
-│   │   ├── api/            # Retrofit API interfaces
-│   │   ├── dto/            # Data Transfer Objects
-│   │   │   ├── request/    # API request models
-│   │   │   └── response/   # API response models
-│   │   └── interceptor/    # OkHttp interceptors
-│   └── repository/         # Repository implementations
-├── domain/
-│   └── model/              # Domain models (business logic)
+│   │   ├── api/                # Retrofit interfaces (UserApi)
+│   │   ├── dto/request/        # API request models
+│   │   ├── dto/response/       # API response models
+│   │   └── interceptor/        # OkHttp interceptors
+│   └── repository/             # UserRepository
+├── domain/model/               # Domain models (UserInfo)
 ├── presentation/
-│   ├── components/         # Reusable Compose components
-│   ├── feature/            # Feature-based screens
-│   │   ├── auth/login/     # LoginScreen + LoginViewModel
-│   │   └── welcome/        # WelcomeScreen
-│   └── navigation/         # NavGraph and Screen definitions
-└── util/                   # Utilities
+│   ├── components/             # Reusable UI (LoadingButton, PasswordTextField, ShakeAnimation)
+│   ├── feature/
+│   │   ├── auth/
+│   │   │   ├── login/          # LoginScreen + LoginViewModel + LoginUiState
+│   │   │   ├── register/       # Multi-step registration flow
+│   │   │   │   └── steps/      # PhoneInputStep, VerificationStep, PasswordStep
+│   │   │   └── forgotpassword/ # Password reset flow
+│   │   │       └── steps/      # PhoneStep, VerificationStep, NewPasswordStep
+│   │   ├── home/               # HomeScreen with bottom tabs
+│   │   │   └── tabs/           # HomeTab, DataTab, ProfileTab
+│   │   └── welcome/            # WelcomeScreen (entry point)
+│   └── navigation/             # NavGraph, Screen sealed class
+└── util/                       # ValidationUtils, SecurityUtils, Logger
 ```
 
-**Key Architecture Principles:**
-- **Feature-based organization**: Each feature (login, register) is self-contained
-- **MVVM pattern**: ViewModels manage UI state, Screens observe state via StateFlow
-- **Single source of truth**: ViewModels hold UI state; Screens are stateless
-- **Unidirectional data flow**: UI events → ViewModel → State updates → UI recomposition
+**Pattern**: Each feature has `{Feature}Screen.kt`, `{Feature}ViewModel.kt`, `{Feature}UiState.kt`, and `{Feature}ViewModelFactory.kt`.
 
 ### fitdemo Module (MVVM)
 
 ```
 fitdemo/
-├── data/
-│   ├── model/              # Data models (FitSummaryData, UiState)
-│   └── repository/         # FIT file parsing repository
-├── ui/
-│   ├── components/         # Reusable UI components (InfoCard, InfoRow)
-│   ├── screen/             # Screens (FitFileScreen, MapScreen)
-│   └── theme/              # Material 3 theme configuration
-├── viewmodel/              # ViewModels
-└── util/                   # Utilities (MapPreferences, FormatUtils)
+├── data/model/                 # FitSummaryData, UiState
+├── data/repository/            # FIT file parsing
+├── ui/screen/                  # FitFileScreen, MapScreen
+├── viewmodel/                  # FitFileViewModel
+└── util/                       # MapPreferences, FormatUtils
 ```
 
-## Technology Stack
+## Key Implementation Patterns
 
-### Core Dependencies
-
-- **Compose BOM**: 2024.09.00 (Material 3)
-- **Kotlin**: 2.0.21
-- **AGP**: 8.13.2
-- **Min SDK**: 33 (Android 13+)
-- **Target SDK**: 36
-
-### Key Libraries
-
-**rundemo specific:**
-- Retrofit 2.9.0 + OkHttp 4.12.0 (networking)
-- Navigation Compose 2.7.6
-- DataStore 1.0.0 (preferences)
-- Material Icons Extended 1.6.0
-
-**fitdemo specific:**
-- Garmin FIT SDK 21.171.0 (FIT file parsing)
-- Mapbox Maps SDK (GPS visualization)
-
-**Common:**
-- Kotlin Coroutines + Flow (async/state management)
-- Lifecycle ViewModel Compose
-- Material 3
-
-## Compose Best Practices (Applied in This Project)
-
-1. **State hoisting**: State is managed in ViewModels, passed down to composables
-2. **Reusable components**: Common UI elements extracted (GradientButton, PasswordTextField, ShakeBox)
-3. **LazyColumn for scrollable content**: Used with `nestedScroll` for collapsing toolbars
-4. **Material 3 theming**: Consistent use of `MaterialTheme.colorScheme`
-5. **Preview annotations**: `@Preview` for development
-6. **Modifier chaining**: Proper order (size → padding → behavior)
-
-## Important Implementation Details
-
-### Collapsing Toolbar Pattern (LoginScreen)
-
-The LoginScreen implements Material 3's collapsing toolbar pattern:
+### Collapsing Toolbar with LazyColumn
 
 ```kotlin
-val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-    rememberTopAppBarState()
-)
+val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
-Scaffold(
-    topBar = {
-        LargeTopAppBar(
-            title = { Text("账号登录") },
-            scrollBehavior = scrollBehavior
-        )
-    }
-) { paddingValues ->
-    LazyColumn(
-        modifier = Modifier
-            .nestedScroll(scrollBehavior.nestedScrollConnection)
-    ) {
-        // Content in items...
+Scaffold(topBar = { LargeTopAppBar(scrollBehavior = scrollBehavior) }) {
+    LazyColumn(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)) {
+        item { /* content */ }
     }
 }
 ```
 
-**Key points:**
-- Use `LargeTopAppBar` or `MediumTopAppBar` for collapsing effect
-- Connect scroll behavior with `.nestedScroll()`
-- Use `LazyColumn` instead of `Column + verticalScroll` for proper integration
-- `Spacer.weight()` doesn't work in LazyColumn; use fixed height instead
+**Important**: Use `LazyColumn` (not `Column + verticalScroll`). `Spacer.weight()` doesn't work in LazyColumn—use fixed heights.
 
-### Navigation Setup
+### Navigation
 
-Navigation uses Jetpack Navigation Compose with sealed class routes:
+Routes defined in `presentation/navigation/Screen.kt` as sealed class. NavGraph in `NavGraph.kt`.
 
 ```kotlin
-// Define routes
-sealed class Screen(val route: String)
-
-// Setup NavGraph
-NavHost(navController, startDestination = Screen.Welcome.route) {
-    composable(Screen.Login.route) {
-        LoginScreen(
-            onLoginSuccess = {
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Welcome.route) { inclusive = true }
-                }
-            }
-        )
-    }
+navController.navigate(Screen.Home.route) {
+    popUpTo(Screen.Welcome.route) { inclusive = true }
 }
 ```
 
-### Custom Reusable Components
+### Multi-Step Flows (Register, Forgot Password)
 
-Located in `presentation/components/`:
-- **GradientButton**: Button with gradient background and loading state
-- **PasswordTextField**: TextField with show/hide password toggle
-- **ShakeBox**: Wrapper that applies shake animation (for validation errors)
-- **SimpleTermsCheckbox**: Checkbox with clickable terms text
+State machine pattern in ViewModel with step enum. Each step is a separate composable in `steps/` subdirectory. ViewModel exposes `currentStep` via StateFlow.
 
-## iOS Reference Code
-
-The `zrun/` directory contains iOS reference implementations (SwiftUI) for comparison. When implementing Android features that have iOS counterparts:
-
-1. Review iOS implementation in `zrun/demo_ios/DemoNav/`
-2. Adapt UI/UX patterns to Android/Compose conventions
-3. Maintain feature parity while following Android best practices
-
-**Example**: The PRD mentions `PhoneRegisterView` (iOS) as reference for implementing Android registration.
-
-## Project Configuration
+## Configuration
 
 ### Maven Repositories
 
-The project uses custom internal Maven repositories (configured in `settings.gradle.kts`):
-- OPPO internal Maven (requires credentials in `gradle.properties`)
-- Internal snapshots/releases at `maven.scm.adc.com`
+Internal OPPO Maven configured in `settings.gradle.kts`. Credentials in `gradle.properties`:
+- `sonatypeUsername` / `sonatypePassword`
+- `prop_oppoMavenUrlRelease`
 
-### Mapbox Token
+### Mapbox
 
-Mapbox access token is configured in `settings.gradle.kts`:
-- Can be overridden via environment variable: `MAPBOX_DOWNLOADS_TOKEN`
-- Default token is embedded (for development only)
+Token in `settings.gradle.kts`. Override via `MAPBOX_DOWNLOADS_TOKEN` env variable.
 
-### Gradle Properties
+## iOS Reference
 
-Key properties in `gradle.properties`:
-- `sonatypeUsername` / `sonatypePassword`: Maven credentials
-- `prop_oppoMavenUrlRelease`: Internal Maven URL
-
-## Development Workflow
-
-### Adding a New Feature (rundemo)
-
-1. Create feature package: `presentation/feature/{feature_name}/`
-2. Add Screen composable: `{Feature}Screen.kt`
-3. Add ViewModel: `{Feature}ViewModel.kt`
-4. Add route to `Screen.kt` sealed class
-5. Register in `NavGraph.kt`
-6. Add network DTOs if needed: `data/network/dto/`
-7. Add API endpoints: `data/network/api/`
-8. Create repository: `data/repository/`
-
-### Adding a Reusable Component
-
-1. Create in `presentation/components/{Component}.kt`
-2. Make composable stateless (hoist state to caller)
-3. Add `@Preview` for development
-4. Document parameters with KDoc
-
-### Working with Collapsing Toolbars
-
-When converting a screen to use collapsing toolbar:
-1. Replace `TopAppBar` → `LargeTopAppBar`
-2. Add `scrollBehavior` parameter
-3. Change `Column + verticalScroll` → `LazyColumn`
-4. Wrap each child in `item {}`
-5. Add `.nestedScroll(scrollBehavior.nestedScrollConnection)` to LazyColumn
-6. Replace `Spacer(Modifier.weight())` with fixed height
+`zrun/demo_ios/DemoNav/` contains SwiftUI reference implementations for feature parity.
 
 ## Module-Specific Notes
 
-### fitdemo
+**fitdemo**: Uses Storage Access Framework (no permissions). FIT parsing on `Dispatchers.IO`. Mapbox requires `ACCESS_FINE_LOCATION`.
 
-- Uses **Storage Access Framework** (no storage permissions needed)
-- FIT file parsing runs on `Dispatchers.IO`
-- Mapbox maps require ACCESS_FINE_LOCATION permission
-- Map styles stored in SharedPreferences (MapPreferences.kt)
-
-### rundemo
-
-- Uses **Retrofit** for API calls
-- Authentication state managed in ViewModel
-- Login failure tracking with attempt limits
-- DataStore for token persistence (planned)
+**rundemo**: Retrofit for networking. Login has failure tracking with attempt limits. DataStore for persistence.

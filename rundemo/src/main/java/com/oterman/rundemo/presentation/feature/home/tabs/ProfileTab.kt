@@ -1,5 +1,8 @@
 package com.oterman.rundemo.presentation.feature.home.tabs
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,9 +20,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -51,13 +56,26 @@ fun ProfileTabContent(
     isLoggedIn: Boolean,
     userName: String?,
     phoneNumber: String? = null,
+    avatarUrl: String? = null,
+    isLoadingAvatar: Boolean = false,
+    isImportingFit: Boolean = false,
     onLogoutClick: () -> Unit,
     onLoginClick: () -> Unit,
+    onUserProfileClick: () -> Unit = {},
     onShowWelcomeClick: () -> Unit,
-    onResetFirstLaunchClick: () -> Unit
+    onResetFirstLaunchClick: () -> Unit,
+    onImportFitFile: (Uri) -> Unit = {},
+    onDataSourceManageClick: () -> Unit = {}
 ) {
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
+    
+    // FIT文件选择器
+    val fitFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let { onImportFitFile(it) }
+    }
 
     // Calculate collapse progress based on scroll offset
     val collapseProgress by remember {
@@ -136,8 +154,12 @@ fun ProfileTabContent(
                     isLoggedIn = isLoggedIn,
                     userName = userName,
                     phoneNumber = phoneNumber,
+                    avatarUrl = avatarUrl,
+                    isLoadingAvatar = isLoadingAvatar,
                     onClick = {
-                        if (!isLoggedIn) {
+                        if (isLoggedIn) {
+                            onUserProfileClick()
+                        } else {
                             onLoginClick()
                         }
                     }
@@ -164,6 +186,32 @@ fun ProfileTabContent(
                         title = "外观设置",
                         showDivider = false,
                         onClick = { /* TODO: Navigate to appearance settings page */ }
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(20.dp)) }
+            
+            // Settings Group: Data Import & Sync
+            item {
+                SettingsCard {
+                    SettingsItem(
+                        icon = Icons.Outlined.Sync,
+                        title = "数据源管理",
+                        subtitle = "佳明、高驰等平台数据同步",
+                        onClick = onDataSourceManageClick
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.FileUpload,
+                        title = "导入FIT文件",
+                        subtitle = if (isImportingFit) "导入中..." else "从本地导入运动数据",
+                        showDivider = false,
+                        onClick = {
+                            if (!isImportingFit) {
+                                // 启动文件选择器，FIT文件没有标准MIME类型，使用*/*
+                                fitFileLauncher.launch(arrayOf("*/*"))
+                            }
+                        }
                     )
                 }
             }

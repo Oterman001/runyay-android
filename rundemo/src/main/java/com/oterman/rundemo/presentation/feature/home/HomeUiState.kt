@@ -11,6 +11,15 @@ enum class HomeTab(val index: Int) {
 }
 
 /**
+ * FIT文件导入结果
+ */
+sealed class FitImportResult {
+    data class Success(val distance: Double, val duration: Double) : FitImportResult()
+    object AlreadyExists : FitImportResult()
+    data class Error(val message: String) : FitImportResult()
+}
+
+/**
  * Home screen UI state
  * Manages bottom navigation and profile tab state
  */
@@ -22,6 +31,8 @@ data class HomeUiState(
     val isLoggedIn: Boolean = false,
     val userName: String? = null,
     val phoneNumber: String? = null,
+    val avatarUrl: String? = null,
+    val isLoadingAvatar: Boolean = false,
 
     // Profile tab actions state
     val isLoggingOut: Boolean = false,
@@ -29,5 +40,10 @@ data class HomeUiState(
 
     // Navigation events
     val navigateToLogin: Boolean = false,
-    val navigateToWelcome: Boolean = false
+    val navigateToWelcome: Boolean = false,
+    
+    // FIT文件导入状态
+    val isImportingFit: Boolean = false,
+    val showImportResultDialog: Boolean = false,
+    val fitImportResult: FitImportResult? = null
 )

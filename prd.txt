@@ -1,8 +1,46 @@
-zrun目录为ios版本的跑步应用代码；
+分析一下当前ios工程(zrun目录为ios代码) 解析完fit数据后，是怎样做数据存储的；入口代码
+ios导入fit以及解析存储见类：GarminFitImportService
+ios存储不合理的点：
+1.多种序列数据存了多行，期望是铺平，存一行，减少数据库行数；
+2.轨迹数据，也期望和序列数据存一个表，放到一行进行存储；
 
-当前期望逐步实现安卓版本的功能，rundemo模块已经建好，要求使用compose技术栈，符合compose最佳实践；
-首先实现登录注册功能，界面与ios界面布局及元素保持一致，不过采用Material3 Design;
+android版本也需要做解析fit并把数据存储起来，安卓版本在设计数据库时需要考虑上上面的优化点；
 
-ios登录注册的界面见：PhoneLoginView & PhoneRegisterView；
+请思考如何设计android版本的数据库表结构以及封装对应的接口，
+先设计表结构以及数据存储接口，fit文件解析下一步再考虑；
 
-请设计安卓版本的登录注册的实现方案，要求采用合理的目录结构，符合compose 最佳实践；
+期望在 ProfileTabContent中，增加一个fit文件导入的入口，点击后，可以选择fit文件，然后导入，导入时，检查是否之前已经导入过，如果导入过，则告知用户已导入；
+fit 文件导入后，需要解析以及存储；
+
+fit解析可以参考fitdemo下的fit解析，以及ios的 GarminFitImportService 类；
+
+
+期望在 DataTabContent 通过列表的形式展示已经导入的跑步记录，item自行设计，点击item，进入rundetaildebugScreen,在该页面展示该条记录所有的数据信息；
+
+在rundemo里，期望实现跑步详情页面,要求：
+1.使用compose技术栈，符合compose最佳实践；
+2.设计基于 Material3 Design；
+3.整体界面的布局参考ios的跑步详情 RunRecordDetailPageV3；
+4.地图使用mapbox，mapbox的相关key相关的配置参考fitdemo下的MapScreen;
+
+点击datatab里的item进入跑步详情页，长按tab 进入debug界面；
+
+
+增加数据源绑定功能：
+1.先探索当前ios 数据源管理，即佳明中国、佳明国际、高驰绑定解绑，数据同步的逻辑；参考 DataSourceManagePage
+2.设计android版本的数据源绑定、解绑、数据同步的实现方案；
+3.ui部分，布局参考ios版本的实现，设计基于 Material3 Design，使用compose技术栈，符合compose最佳实践；
+
+
+期望在详情页右上角appbar部分增加一个下载fit并保存fit文件到手机的功能；
+
+下载fit的流程可以参考下ios的 UnifiedFitFileDownloadManager的downloadFitFileWithPriority，核心流程就是根据originId以及平台信息，获取这条记录的url,包含ossurl以及fiturl；
+优先使用ossurl下载，不行再fiturl下载，下载后支持用户把文件手动保存到某个公开的目录下；
+
+期望实现点击头像区域，进入用户信息页面，用户信息界面的功能与ios 的UserProfileView 保持一致，主要有：
+1.头像区域，点击可以更新头像；
+2.更改昵称；
+3.可以退出登录和注销，注意要调用对应的接口；
+
+请仔细查看ios当前的实现方案，设计安卓版本的实现；
+

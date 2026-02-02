@@ -2,24 +2,30 @@ package com.oterman.rundemo.data.repository
 
 import android.content.Context
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.network.RequestBuilder
 import com.oterman.rundemo.data.network.RetrofitClient
 import com.oterman.rundemo.data.network.api.UserApi
-import com.oterman.rundemo.data.network.dto.request.BaseRequest
-import com.oterman.rundemo.data.network.dto.request.RequestHead
+import com.oterman.rundemo.data.network.dto.request.GetAvatarUrlRequest
 import com.oterman.rundemo.data.network.dto.request.ResetPasswordRequest
 import com.oterman.rundemo.data.network.dto.request.SendVerificationCodeRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordAndNameRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordRequest
+import com.oterman.rundemo.data.network.dto.request.UpdateNicknameRequest
+import com.oterman.rundemo.data.network.dto.request.UserDeactivateRequest
 import com.oterman.rundemo.data.network.dto.request.UserLoginRequest
+import com.oterman.rundemo.data.network.dto.request.UserLogoutRequest
 import com.oterman.rundemo.data.network.dto.request.UserRegisterRequest
 import com.oterman.rundemo.data.network.dto.response.ResetPasswordResponse
 import com.oterman.rundemo.data.network.dto.response.SendVerificationCodeResponse
 import com.oterman.rundemo.data.network.dto.response.UserLoginResponse
 import com.oterman.rundemo.data.network.dto.response.UserRegisterResponse
 import com.oterman.rundemo.domain.model.UserInfo
-import com.oterman.rundemo.util.Constants
+import com.oterman.rundemo.util.Logger
 import com.oterman.rundemo.util.SecurityUtils
 import com.oterman.rundemo.util.SecurityUtils.md5
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
  * 用户数据仓库
@@ -31,7 +37,43 @@ class UserRepository(
     private val userApi: UserApi = RetrofitClient.userApi,
     private val preferencesManager: PreferencesManager = PreferencesManager(context)
 ) {
-    
+    companion object {
+        private const val TAG = "UserRepository"
+    }
+
+    /**
+     * 获取头像临时访问URL
+     * OSS存储的头像需要通过API获取带签名的临时URL才能访问
+     * @param userId 用户ID
+     * @return Result<String?> 带签名的临时头像URL
+     */
+    suspend fun getAvatarUrl(userId: String): Result<String?> {
+        return try {
+            Logger.d(TAG, "获取头像临时URL: userId=$userId")
+
+            val requestDto = GetAvatarUrlRequest(userId = userId)
+            val request = RequestBuilder.createRequest(
+                dtoName = "GetAvatarUrlRequestDto",
+                data = requestDto,
+                preferencesManager = preferencesManager
+            )
+
+            val response = userApi.getAvatarUrl(request)
+
+            if (response.isSuccess()) {
+                val avatarUrl = response.data?.avatarUrlResponseDto?.firstOrNull()?.avatarUrl
+                Logger.d(TAG, "获取头像URL成功: $avatarUrl")
+                Result.success(avatarUrl)
+            } else {
+                Logger.e(TAG, "获取头像URL失败: ${response.msg}")
+                Result.failure(Exception(response.msg ?: "获取头像URL失败"))
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "获取头像URL异常: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
     /**
      * 用户登录
      * @param phoneNumber 手机号
@@ -46,25 +88,6 @@ class UserRepository(
             // MD5加密密码
             val encryptedPassword = password.md5()
             
-            // 生成时间戳
-            val timestamp = SecurityUtils.getTimestamp()
-            
-            // 生成签名
-            val sign = SecurityUtils.generateSign(
-                params = emptyMap(),
-                timestamp = timestamp,
-                appKey = Constants.Network.APP_KEY
-            )
-            
-            // 构建请求头
-            val requestHead = RequestHead(
-                appKey = Constants.Network.APP_KEY,
-                timestamp = timestamp,
-                sign = sign,
-                token = preferencesManager.getUserToken() ?: "",
-                userId = preferencesManager.getUserId() ?: ""
-            )
-            
             // 构建请求体
             val requestDto = UserLoginRequest(
                 phoneNumber = phoneNumber,
@@ -72,10 +95,11 @@ class UserRepository(
                 deviceId = deviceId
             )
             
-            // 构建完整请求（对应iOS的BaseRequest结构）
-            val request = BaseRequest(
-                head = requestHead,
-                body = mapOf("UserLoginRequestDto" to listOf(requestDto))
+            // 构建完整请求
+            val request = RequestBuilder.createRequest(
+                dtoName = "UserLoginRequestDto",
+                data = requestDto,
+                preferencesManager = preferencesManager
             )
             
             // 发送网络请求
@@ -148,10 +172,163 @@ class UserRepository(
     }
     
     /**
-     * 用户登出
+     * 用户登出（仅清除本地数据）
      */
     fun logout() {
         preferencesManager.clearUserData()
+    }
+
+    /**
+     * 调用服务端退出登录接口
+     * 即使失败也会清除本地数据
+     * @return Result<Boolean> 服务端是否成功
+     */
+    suspend fun logoutFromServer(): Result<Boolean> {
+        return try {
+            val userId = preferencesManager.getUserId() ?: return Result.success(true)
+
+            Logger.d(TAG, "调用服务端退出登录接口: userId=$userId")
+
+            val requestDto = UserLogoutRequest(userId = userId)
+            val request = RequestBuilder.createRequest(
+                dtoName = "UserLogoutRequestDto",
+                data = requestDto,
+                preferencesManager = preferencesManager
+            )
+
+            val response = userApi.logout(request)
+
+            // 无论服务端是否成功，都清除本地数据
+            preferencesManager.clearUserData()
+
+            if (response.isSuccess()) {
+                Logger.d(TAG, "服务端退出登录成功")
+                Result.success(true)
+            } else {
+                Logger.w(TAG, "服务端退出登录失败: ${response.msg}")
+                Result.success(true) // 即使服务端失败也返回成功，因为本地已清除
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "退出登录异常: ${e.message}")
+            // 即使异常也清除本地数据
+            preferencesManager.clearUserData()
+            Result.success(true)
+        }
+    }
+
+    /**
+     * 注销账号
+     * @param password 用户密码（明文）
+     * @return Result<Boolean> 注销结果
+     */
+    suspend fun deactivateAccount(password: String): Result<Boolean> {
+        return try {
+            val userId = preferencesManager.getUserId()
+                ?: return Result.failure(Exception("用户未登录"))
+
+            Logger.d(TAG, "注销账号: userId=$userId")
+
+            // MD5加密密码
+            val encryptedPassword = password.md5()
+
+            val requestDto = UserDeactivateRequest(
+                userId = userId,
+                password = encryptedPassword
+            )
+            val request = RequestBuilder.createRequest(
+                dtoName = "UserDeactivateRequestDto",
+                data = requestDto,
+                preferencesManager = preferencesManager
+            )
+
+            val response = userApi.deactivate(request)
+
+            if (response.isSuccess()) {
+                Logger.d(TAG, "注销账号成功")
+                // 清除所有本地数据
+                preferencesManager.clearUserData()
+                Result.success(true)
+            } else {
+                Logger.e(TAG, "注销账号失败: ${response.msg}")
+                Result.failure(Exception(response.msg ?: "注销账号失败"))
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "注销账号异常: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 上传头像
+     * @param imageData 图片数据
+     * @param fileName 文件名
+     * @return Result<String?> 新的头像URL
+     */
+    suspend fun uploadAvatar(imageData: ByteArray, fileName: String): Result<String?> {
+        return try {
+            val userId = preferencesManager.getUserId()
+                ?: return Result.failure(Exception("用户未登录"))
+
+            Logger.d(TAG, "上传头像: userId=$userId, fileName=$fileName, size=${imageData.size}")
+
+            val requestBody = imageData.toRequestBody("image/jpeg".toMediaTypeOrNull())
+            val imagePart = MultipartBody.Part.createFormData("image", fileName, requestBody)
+            val userIdBody = userId.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val response = userApi.uploadAvatar(imagePart, userIdBody)
+
+            if (response.isSuccess()) {
+                val avatarUrl = response.data?.updateAvatarResponseDto?.firstOrNull()?.avatarUrl
+                Logger.d(TAG, "上传头像成功: $avatarUrl")
+                // 更新本地保存的头像URL
+                avatarUrl?.let { preferencesManager.saveImageUrl(it) }
+                Result.success(avatarUrl)
+            } else {
+                Logger.e(TAG, "上传头像失败: ${response.msg}")
+                Result.failure(Exception(response.msg ?: "上传头像失败"))
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "上传头像异常: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 更新昵称
+     * @param nickname 新昵称
+     * @return Result<Boolean> 更新结果
+     */
+    suspend fun updateNickname(nickname: String): Result<Boolean> {
+        return try {
+            val userId = preferencesManager.getUserId()
+                ?: return Result.failure(Exception("用户未登录"))
+
+            Logger.d(TAG, "更新昵称: userId=$userId, nickname=$nickname")
+
+            val requestDto = UpdateNicknameRequest(
+                nickname = nickname
+            )
+            val request = RequestBuilder.createRequest(
+                dtoName = "UpdateNicknameRequestDto",
+                data = requestDto,
+                preferencesManager = preferencesManager
+            )
+
+            val response = userApi.updateNickname(request)
+
+            if (response.isSuccess()) {
+                Logger.d(TAG, "更新昵称成功")
+                // 更新本地保存的用户名
+                preferencesManager.updateUserName(nickname)
+                Result.success(true)
+            } else {
+                Logger.e(TAG, "更新昵称失败: ${response.msg}")
+                Result.failure(Exception(response.msg ?: "更新昵称失败"))
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "更新昵称异常: ${e.message}")
+            Result.failure(e)
+        }
     }
     
     /**
@@ -174,33 +351,18 @@ class UserRepository(
         captureParam: String = ""
     ): Result<SendVerificationCodeResponse> {
         return try {
-            // 生成时间戳和签名
-            val timestamp = SecurityUtils.getTimestamp()
-            val sign = SecurityUtils.generateSign(
-                params = emptyMap(),
-                timestamp = timestamp,
-                appKey = Constants.Network.APP_KEY
-            )
-            
-            // 构建请求头
-            val requestHead = RequestHead(
-                appKey = Constants.Network.APP_KEY,
-                timestamp = timestamp,
-                sign = sign,
-                token = "",
-                userId = ""
-            )
-            
             // 构建请求体
             val requestDto = SendVerificationCodeRequest.forRegister(
                 phoneNumber = phoneNumber,
                 captureParam = captureParam
             )
             
-            // 构建完整请求
-            val request = BaseRequest(
-                head = requestHead,
-                body = mapOf("SendVerificationCodeRequestDto" to listOf(requestDto))
+            // 构建完整请求（未登录场景）
+            val request = RequestBuilder.createRequest(
+                dtoName = "SendVerificationCodeRequestDto",
+                data = requestDto,
+                token = "",
+                userId = ""
             )
             
             // 发送网络请求
@@ -236,23 +398,6 @@ class UserRepository(
             // 获取设备ID
             val deviceId = SecurityUtils.getDeviceId(context)
             
-            // 生成时间戳和签名
-            val timestamp = SecurityUtils.getTimestamp()
-            val sign = SecurityUtils.generateSign(
-                params = emptyMap(),
-                timestamp = timestamp,
-                appKey = Constants.Network.APP_KEY
-            )
-            
-            // 构建请求头
-            val requestHead = RequestHead(
-                appKey = Constants.Network.APP_KEY,
-                timestamp = timestamp,
-                sign = sign,
-                token = "",
-                userId = ""
-            )
-            
             // 构建请求体（注册时不设置用户名和密码）
             val requestDto = UserRegisterRequest(
                 phoneNumber = phoneNumber,
@@ -260,10 +405,12 @@ class UserRepository(
                 deviceId = deviceId
             )
             
-            // 构建完整请求
-            val request = BaseRequest(
-                head = requestHead,
-                body = mapOf("UserRegisterRequestDto" to listOf(requestDto))
+            // 构建完整请求（未登录场景）
+            val request = RequestBuilder.createRequest(
+                dtoName = "UserRegisterRequestDto",
+                data = requestDto,
+                token = "",
+                userId = ""
             )
             
             // 发送网络请求
@@ -311,23 +458,6 @@ class UserRepository(
             // MD5加密密码
             val encryptedPassword = password.md5()
             
-            // 生成时间戳和签名
-            val timestamp = SecurityUtils.getTimestamp()
-            val sign = SecurityUtils.generateSign(
-                params = emptyMap(),
-                timestamp = timestamp,
-                appKey = Constants.Network.APP_KEY
-            )
-            
-            // 构建请求头（使用传入的token和userId）
-            val requestHead = RequestHead(
-                appKey = Constants.Network.APP_KEY,
-                timestamp = timestamp,
-                sign = sign,
-                token = token,
-                userId = userId
-            )
-            
             // 构建请求体
             val requestDto = SetPasswordAndNameRequest(
                 userId = userId,
@@ -335,10 +465,12 @@ class UserRepository(
                 userName = nickname
             )
             
-            // 构建完整请求
-            val request = BaseRequest(
-                head = requestHead,
-                body = mapOf("UserSetPasswordAndNameRequestDto" to listOf(requestDto))
+            // 构建完整请求（使用传入的token和userId）
+            val request = RequestBuilder.createRequest(
+                dtoName = "UserSetPasswordAndNameRequestDto",
+                data = requestDto,
+                token = token,
+                userId = userId
             )
             
             // 发送网络请求
@@ -394,33 +526,18 @@ class UserRepository(
         captureParam: String = ""
     ): Result<SendVerificationCodeResponse> {
         return try {
-            // 生成时间戳和签名
-            val timestamp = SecurityUtils.getTimestamp()
-            val sign = SecurityUtils.generateSign(
-                params = emptyMap(),
-                timestamp = timestamp,
-                appKey = Constants.Network.APP_KEY
-            )
-            
-            // 构建请求头
-            val requestHead = RequestHead(
-                appKey = Constants.Network.APP_KEY,
-                timestamp = timestamp,
-                sign = sign,
-                token = "",
-                userId = ""
-            )
-            
             // 构建请求体
             val requestDto = SendVerificationCodeRequest.forResetPassword(
                 phoneNumber = phoneNumber,
                 captureParam = captureParam
             )
             
-            // 构建完整请求
-            val request = BaseRequest(
-                head = requestHead,
-                body = mapOf("SendVerificationCodeRequestDto" to listOf(requestDto))
+            // 构建完整请求（未登录场景）
+            val request = RequestBuilder.createRequest(
+                dtoName = "SendVerificationCodeRequestDto",
+                data = requestDto,
+                token = "",
+                userId = ""
             )
             
             // 发送网络请求
@@ -456,23 +573,6 @@ class UserRepository(
             // 获取设备ID
             val deviceId = SecurityUtils.getDeviceId(context)
             
-            // 生成时间戳和签名
-            val timestamp = SecurityUtils.getTimestamp()
-            val sign = SecurityUtils.generateSign(
-                params = emptyMap(),
-                timestamp = timestamp,
-                appKey = Constants.Network.APP_KEY
-            )
-            
-            // 构建请求头
-            val requestHead = RequestHead(
-                appKey = Constants.Network.APP_KEY,
-                timestamp = timestamp,
-                sign = sign,
-                token = "",
-                userId = ""
-            )
-            
             // 构建请求体
             val requestDto = ResetPasswordRequest(
                 phoneNumber = phoneNumber,
@@ -480,10 +580,12 @@ class UserRepository(
                 deviceId = deviceId
             )
             
-            // 构建完整请求
-            val request = BaseRequest(
-                head = requestHead,
-                body = mapOf("ResetPasswordRequestDto" to listOf(requestDto))
+            // 构建完整请求（未登录场景）
+            val request = RequestBuilder.createRequest(
+                dtoName = "ResetPasswordRequestDto",
+                data = requestDto,
+                token = "",
+                userId = ""
             )
             
             // 发送网络请求
@@ -527,33 +629,18 @@ class UserRepository(
             // MD5加密密码
             val encryptedPassword = password.md5()
             
-            // 生成时间戳和签名
-            val timestamp = SecurityUtils.getTimestamp()
-            val sign = SecurityUtils.generateSign(
-                params = emptyMap(),
-                timestamp = timestamp,
-                appKey = Constants.Network.APP_KEY
-            )
-            
-            // 构建请求头（使用传入的token和userId）
-            val requestHead = RequestHead(
-                appKey = Constants.Network.APP_KEY,
-                timestamp = timestamp,
-                sign = sign,
-                token = token,
-                userId = userId
-            )
-            
             // 构建请求体
             val requestDto = SetPasswordRequest(
                 userId = userId,
                 newPassword = encryptedPassword
             )
             
-            // 构建完整请求
-            val request = BaseRequest(
-                head = requestHead,
-                body = mapOf("UserSetPswRequestDto" to listOf(requestDto))
+            // 构建完整请求（使用传入的token和userId）
+            val request = RequestBuilder.createRequest(
+                dtoName = "UserSetPswRequestDto",
+                data = requestDto,
+                token = token,
+                userId = userId
             )
             
             // 发送网络请求

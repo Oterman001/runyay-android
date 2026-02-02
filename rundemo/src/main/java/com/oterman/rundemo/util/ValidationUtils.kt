@@ -40,6 +40,34 @@ object ValidationUtils {
     fun isValidNickname(nickname: String): Boolean {
         return nickname.isNotEmpty() && nickname.length <= 20
     }
+
+    /**
+     * 验证昵称格式（严格模式，与iOS一致）
+     * 规则：
+     * - 长度: 1-20 字符
+     * - 不能包含空格
+     * - 只能含: 中文、英文、数字、下划线
+     * - 正则: ^[\u4e00-\u9fa5a-zA-Z0-9_]+$
+     */
+    fun isValidNicknameStrict(nickname: String): Boolean {
+        if (nickname.isEmpty() || nickname.length > 20) return false
+        if (nickname.contains(" ")) return false
+        val nicknameRegex = "^[\\u4e00-\\u9fa5a-zA-Z0-9_]+$".toRegex()
+        return nicknameRegex.matches(nickname)
+    }
+
+    /**
+     * 获取严格模式昵称错误提示
+     */
+    fun getNicknameErrorStrict(nickname: String): String? {
+        return when {
+            nickname.isEmpty() -> "请输入昵称"
+            nickname.length > 20 -> "昵称不能超过20个字符"
+            nickname.contains(" ") -> "昵称不能包含空格"
+            !isValidNicknameStrict(nickname) -> "昵称只能包含中文、英文、数字和下划线"
+            else -> null
+        }
+    }
     
     /**
      * 获取手机号错误提示

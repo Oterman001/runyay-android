@@ -1,21 +1,31 @@
 package com.oterman.rundemo.data.network.api
 
 import com.oterman.rundemo.data.network.dto.request.BaseRequest
+import com.oterman.rundemo.data.network.dto.request.GetAvatarUrlRequest
 import com.oterman.rundemo.data.network.dto.request.ResetPasswordRequest
 import com.oterman.rundemo.data.network.dto.request.SendVerificationCodeRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordAndNameRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordRequest
+import com.oterman.rundemo.data.network.dto.request.UpdateNicknameRequest
+import com.oterman.rundemo.data.network.dto.request.UserDeactivateRequest
 import com.oterman.rundemo.data.network.dto.request.UserLoginRequest
+import com.oterman.rundemo.data.network.dto.request.UserLogoutRequest
 import com.oterman.rundemo.data.network.dto.request.UserRegisterRequest
+import com.oterman.rundemo.data.network.dto.response.AvatarUrlResponseData
 import com.oterman.rundemo.data.network.dto.response.BaseResponse
 import com.oterman.rundemo.data.network.dto.response.ResetPasswordResponse
 import com.oterman.rundemo.data.network.dto.response.ResponseData
 import com.oterman.rundemo.data.network.dto.response.SendVerificationCodeResponse
 import com.oterman.rundemo.data.network.dto.response.SetPasswordResponse
+import com.oterman.rundemo.data.network.dto.response.UpdateAvatarResponseData
+import com.oterman.rundemo.data.network.dto.response.UpdateNicknameResponseData
 import com.oterman.rundemo.data.network.dto.response.UserLoginResponse
 import com.oterman.rundemo.data.network.dto.response.UserRegisterResponse
+import okhttp3.MultipartBody
 import retrofit2.http.Body
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 
 /**
  * 用户相关API接口
@@ -83,5 +93,52 @@ interface UserApi {
     suspend fun setPassword(
         @Body request: BaseRequest<SetPasswordRequest>
     ): BaseResponse<ResponseData<SetPasswordResponse>>
+
+    /**
+     * 获取头像临时访问URL
+     * 对应iOS的AvatarManager获取签名URL接口
+     */
+    @POST("api/user/profile/avatar/url")
+    suspend fun getAvatarUrl(
+        @Body request: BaseRequest<GetAvatarUrlRequest>
+    ): BaseResponse<AvatarUrlResponseData>
+
+    /**
+     * 退出登录
+     * 对应iOS的logout接口
+     */
+    @POST("api/user/login/logout")
+    suspend fun logout(
+        @Body request: BaseRequest<UserLogoutRequest>
+    ): BaseResponse<Unit>
+
+    /**
+     * 注销账号
+     * 对应iOS的deactivateAccount接口
+     */
+    @POST("api/user/login/deactivate")
+    suspend fun deactivate(
+        @Body request: BaseRequest<UserDeactivateRequest>
+    ): BaseResponse<Unit>
+
+    /**
+     * 上传头像
+     * 对应iOS的uploadAvatar接口
+     */
+    @Multipart
+    @POST("api/user/profile/avatar")
+    suspend fun uploadAvatar(
+        @Part image: MultipartBody.Part,
+        @Part("userId") userId: okhttp3.RequestBody
+    ): BaseResponse<UpdateAvatarResponseData>
+
+    /**
+     * 更新昵称
+     * 对应iOS的updateNickname接口
+     */
+    @POST("api/user/profile/nickname")
+    suspend fun updateNickname(
+        @Body request: BaseRequest<UpdateNicknameRequest>
+    ): BaseResponse<UpdateNicknameResponseData>
 }
 
