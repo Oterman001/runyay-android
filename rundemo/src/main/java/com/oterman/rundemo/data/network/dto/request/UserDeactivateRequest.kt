@@ -7,9 +7,9 @@ import com.google.gson.annotations.SerializedName
  * 对应iOS的deactivateAccount接口
  */
 data class UserDeactivateRequest(
-    @SerializedName("userId")
-    val userId: String,
+    @SerializedName("confirmPassword")
+    val confirmPassword: String,
 
-    @SerializedName("password")
-    val password: String
+    @SerializedName("reason")
+    val reason: String = ""
 )

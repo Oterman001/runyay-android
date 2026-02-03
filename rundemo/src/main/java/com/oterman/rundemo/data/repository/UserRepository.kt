@@ -235,8 +235,8 @@ class UserRepository(
             val encryptedPassword = password.md5()
 
             val requestDto = UserDeactivateRequest(
-                userId = userId,
-                password = encryptedPassword
+                confirmPassword = encryptedPassword,
+                reason = ""
             )
             val request = RequestBuilder.createRequest(
                 dtoName = "UserDeactivateRequestDto",
