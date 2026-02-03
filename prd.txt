@@ -10,3 +10,32 @@
 
 ios注销：UserProfileView 和 UserProfileViewModel；
 
+
+期望在首页HomeTabContent上展示各类卡片，参考ios的设计以及样式：
+展示卡片的种类与ios保持一致；
+展示卡片的样式以及整个页面的背景与ios保持一致；
+
+先实现展示：
+总跑量以及vodt卡 topTotalRunView；
+年卡：展示汇总当年的跑量信息
+月卡：展示当月跑量信息
+ios为 latestYearAndMonthRunView
+周卡：当周的跑量信息，ios为latestWeekRunView；
+
+要求：
+1.使用compose技术栈，符合compose最佳实践；
+2.设计基于 Material3 Design；
+3.android版本的卡片的样式、背景色，圆角，页面的背景需要与ios保持一致；
+
+探索设计实现方案；
+
+1.状态栏不是沉浸式，状态栏的背景和主页的背景不一致；
+2.滑动时，大标题没有变为小标题；
+
+请仔细思考并解决这个问题；
+
+
+
+
+
+

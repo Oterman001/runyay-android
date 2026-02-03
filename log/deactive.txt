@@ -1,0 +1,35 @@
+08:58:19.052 10392-10392 XRUN_UserProfileViewModel        I  用户注销账号 (UserProfileViewModel.kt:425)
+08:58:19.053 10392-10392 XRUN_UserRepository              D  注销账号: userId=U17696960585331008 (UserRepository.kt:232)
+08:58:19.058 10392-20137 okhttp.OkHttpClient              I  --> POST https://yayarun.cn/sys/api/user/login/deactivate
+08:58:19.058 10392-20137 okhttp.OkHttpClient              I  Content-Length: 393
+08:58:19.058 10392-20137 okhttp.OkHttpClient              I  Authorization: Bearer QmtCSmI+pbdBXfCOROio8DfbeZjUGBOQZ+nnUC5KckNPCrpdc5K4c2hSfEbbAdBuaUzgByUOk8t8Y6jaly7dUg==
+08:58:19.058 10392-20137 okhttp.OkHttpClient              I  Content-Type: application/json
+08:58:19.058 10392-20137 okhttp.OkHttpClient              I  {"body":{"UserDeactivateRequestDto":[{"password":"6592e67b4b52a43826d5d889afa959f5","userId":"U17696960585331008"}]},"head":{"appKey":"1jns01o9lksa12","sign":"4cdd893875c31a5e928ee5a1bb7fa075ce6a51753eb081d350be06ba9f607621","timestamp":"1770080299054","token":"QmtCSmI+pbdBXfCOROio8DfbeZjUGBOQZ+nnUC5KckNPCrpdc5K4c2hSfEbbAdBuaUzgByUOk8t8Y6jaly7dUg\u003d\u003d","userId":"U17696960585331008"}}
+08:58:19.058 10392-20137 okhttp.OkHttpClient              I  --> END POST (393-byte body)
+08:58:19.273 10392-20137 okhttp.OkHttpClient              I  <-- 200 https://yayarun.cn/sys/api/user/login/deactivate (214ms)
+08:58:19.273 10392-20137 okhttp.OkHttpClient              I  Server: nginx
+08:58:19.273 10392-20137 okhttp.OkHttpClient              I  Date: Tue, 03 Feb 2026 00:58:19 GMT
+08:58:19.273 10392-20137 okhttp.OkHttpClient              I  Content-Type: application/json
+08:58:19.273 10392-20137 okhttp.OkHttpClient              I  Transfer-Encoding: chunked
+08:58:19.273 10392-20137 okhttp.OkHttpClient              I  Connection: keep-alive
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  Vary: Accept-Encoding
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  X-Content-Type-Options: nosniff
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  X-XSS-Protection: 1; mode=block
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  Pragma: no-cache
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  Expires: 0
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  X-Frame-Options: DENY
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  X-Frame-Options: SAMEORIGIN
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  X-Content-Type-Options: nosniff
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  X-XSS-Protection: 1; mode=block
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  Referrer-Policy: no-referrer-when-downgrade
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  Strict-Transport-Security: max-age=31536000
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  {"code":"0025","msg":"参数校验失败:[{0}]","data":null}
+08:58:19.275 10392-20137 okhttp.OkHttpClient              I  <-- END HTTP (60-byte body)
+08:58:19.277 10392-10392 XRUN_UserRepository              E  注销账号失败: 参数校验失败:[{0}] (UserRepository.kt:255)
+08:58:19.277 10392-10392 XRUN_UserProfileViewModel        E  账号注销失败: 参数校验失败:[{0}] (UserProfileViewModel.kt:439)
+
+
+
+
