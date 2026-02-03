@@ -2,6 +2,8 @@ package com.oterman.rundemo.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.oterman.rundemo.domain.model.GoalSettings
+import com.oterman.rundemo.domain.model.GoalType
 import com.oterman.rundemo.util.Constants
 import java.util.Calendar
 
@@ -196,6 +198,68 @@ class PreferencesManager(context: Context) {
      */
     fun updateUserName(userName: String) {
         saveUserName(userName)
+    }
+
+    // ==================== Goal Settings ====================
+
+    /**
+     * 获取目标设置
+     */
+    fun getGoalSettings(): GoalSettings {
+        val goalEnabled = prefs.getBoolean(Constants.PreferenceKeys.KEY_GOAL_ENABLED, false)
+        val goalTypeStr = prefs.getString(Constants.PreferenceKeys.KEY_GOAL_TYPE, GoalType.DISTANCE.name)
+        val goalType = try {
+            GoalType.valueOf(goalTypeStr ?: GoalType.DISTANCE.name)
+        } catch (e: Exception) {
+            GoalType.DISTANCE
+        }
+        val yearDistanceGoal = prefs.getFloat(Constants.PreferenceKeys.KEY_YEAR_DISTANCE_GOAL, 0f).toDouble()
+        val monthDistanceGoal = prefs.getFloat(Constants.PreferenceKeys.KEY_MONTH_DISTANCE_GOAL, 0f).toDouble()
+        val yearDurationGoal = prefs.getFloat(Constants.PreferenceKeys.KEY_YEAR_DURATION_GOAL, 0f).toDouble()
+        val monthDurationGoal = prefs.getFloat(Constants.PreferenceKeys.KEY_MONTH_DURATION_GOAL, 0f).toDouble()
+
+        return GoalSettings(
+            goalEnabled = goalEnabled,
+            goalType = goalType,
+            yearDistanceGoal = yearDistanceGoal,
+            monthDistanceGoal = monthDistanceGoal,
+            yearDurationGoal = yearDurationGoal,
+            monthDurationGoal = monthDurationGoal
+        )
+    }
+
+    /**
+     * 保存目标设置
+     */
+    fun saveGoalSettings(goalSettings: GoalSettings) {
+        prefs.edit().apply {
+            putBoolean(Constants.PreferenceKeys.KEY_GOAL_ENABLED, goalSettings.goalEnabled)
+            putString(Constants.PreferenceKeys.KEY_GOAL_TYPE, goalSettings.goalType.name)
+            putFloat(Constants.PreferenceKeys.KEY_YEAR_DISTANCE_GOAL, goalSettings.yearDistanceGoal.toFloat())
+            putFloat(Constants.PreferenceKeys.KEY_MONTH_DISTANCE_GOAL, goalSettings.monthDistanceGoal.toFloat())
+            putFloat(Constants.PreferenceKeys.KEY_YEAR_DURATION_GOAL, goalSettings.yearDurationGoal.toFloat())
+            putFloat(Constants.PreferenceKeys.KEY_MONTH_DURATION_GOAL, goalSettings.monthDurationGoal.toFloat())
+            apply()
+        }
+    }
+
+    /**
+     * 检查是否启用了目标
+     */
+    fun isGoalEnabled(): Boolean {
+        return prefs.getBoolean(Constants.PreferenceKeys.KEY_GOAL_ENABLED, false)
+    }
+
+    /**
+     * 获取目标类型
+     */
+    fun getGoalType(): GoalType {
+        val goalTypeStr = prefs.getString(Constants.PreferenceKeys.KEY_GOAL_TYPE, GoalType.DISTANCE.name)
+        return try {
+            GoalType.valueOf(goalTypeStr ?: GoalType.DISTANCE.name)
+        } catch (e: Exception) {
+            GoalType.DISTANCE
+        }
     }
 }
 

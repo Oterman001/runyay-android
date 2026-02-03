@@ -18,8 +18,51 @@ data class TotalRunStatistics(
 data class PeriodStatistics(
     val runCount: Int = 0,
     val totalDistance: Double = 0.0,        // km
-    val totalDuration: Double = 0.0         // hours
-)
+    val totalDuration: Double = 0.0,        // hours
+    // Goal-related fields
+    val distanceGoal: Double = 0.0,         // km goal
+    val durationGoal: Double = 0.0,         // hours goal
+    val timeProgress: Float = 0f            // Time elapsed progress (0-1)
+) {
+    /**
+     * Calculate distance goal progress (0-1)
+     */
+    fun getDistanceProgress(): Float {
+        return if (distanceGoal > 0) {
+            (totalDistance / distanceGoal).coerceIn(0.0, 1.0).toFloat()
+        } else 0f
+    }
+
+    /**
+     * Calculate duration goal progress (0-1)
+     */
+    fun getDurationProgress(): Float {
+        return if (durationGoal > 0) {
+            (totalDuration / durationGoal).coerceIn(0.0, 1.0).toFloat()
+        } else 0f
+    }
+
+    /**
+     * Get formatted distance progress percentage
+     */
+    fun getDistanceProgressPercent(): String {
+        return String.format("%.1f%%", getDistanceProgress() * 100)
+    }
+
+    /**
+     * Get formatted duration progress percentage
+     */
+    fun getDurationProgressPercent(): String {
+        return String.format("%.1f%%", getDurationProgress() * 100)
+    }
+
+    /**
+     * Get formatted time progress percentage
+     */
+    fun getTimeProgressPercent(): String {
+        return String.format("%.1f%%", timeProgress * 100)
+    }
+}
 
 /**
  * Weekly statistics with daily breakdown
@@ -65,5 +108,6 @@ data class HomeTabUiState(
     val yearStats: PeriodStatistics = PeriodStatistics(),
     val monthStats: PeriodStatistics = PeriodStatistics(),
     val weekStats: WeekStatistics = WeekStatistics(),
+    val goalSettings: GoalSettings = GoalSettings(),
     val error: String? = null
 )

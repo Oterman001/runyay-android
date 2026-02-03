@@ -102,5 +102,11 @@ sealed class Screen(val route: String) {
     object DataSourceRecordList : Screen("data_source_record_list/{platformCode}") {
         fun createRoute(platformCode: String) = "data_source_record_list/$platformCode"
     }
+
+    /**
+     * 跑步目标设置页面
+     * 用于设置年度/月度跑步目标
+     */
+    object RunGoalSet : Screen("run_goal_set")
 }
 

@@ -44,6 +44,7 @@ fun HomeScreen(
     onNavigateToRunDetailDebug: (workoutId: String) -> Unit = {},
     onNavigateToDataSourceManage: () -> Unit = {},
     onNavigateToUserProfile: () -> Unit = {},
+    onNavigateToRunGoalSet: () -> Unit = {},
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(LocalContext.current)
     )
@@ -80,7 +81,9 @@ fun HomeScreen(
                 .padding(paddingValues)
         ) {
             when (uiState.selectedTab) {
-                HomeTab.HOME -> HomeTabContent()
+                HomeTab.HOME -> HomeTabContent(
+                    onSetGoalClick = onNavigateToRunGoalSet
+                )
                 HomeTab.DATA -> DataTabContent(
                     onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },
                     onRecordLongClick = { workoutId -> onNavigateToRunDetailDebug(workoutId) }
@@ -98,7 +101,8 @@ fun HomeScreen(
                     onShowWelcomeClick = viewModel::navigateToWelcome,
                     onResetFirstLaunchClick = viewModel::resetFirstLaunch,
                     onImportFitFile = viewModel::importFitFile,
-                    onDataSourceManageClick = onNavigateToDataSourceManage
+                    onDataSourceManageClick = onNavigateToDataSourceManage,
+                    onRunGoalClick = onNavigateToRunGoalSet
                 )
             }
         }

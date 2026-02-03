@@ -41,7 +41,8 @@ import com.oterman.rundemo.presentation.feature.home.components.WeekStatisticsCa
 fun HomeTabContent(
     viewModel: HomeTabViewModel = viewModel(
         factory = HomeTabViewModelFactory(LocalContext.current)
-    )
+    ),
+    onSetGoalClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lazyListState = rememberLazyListState()
@@ -140,14 +141,20 @@ fun HomeTabContent(
                     PeriodStatisticsCard(
                         title = "今年",
                         stats = uiState.yearStats,
+                        goalSettings = uiState.goalSettings,
+                        isYearCard = true,
                         modifier = Modifier.weight(1f),
-                        onClick = { /* Navigate to year stats */ }
+                        onClick = { /* Navigate to year stats */ },
+                        onSetGoalClick = onSetGoalClick
                     )
                     PeriodStatisticsCard(
                         title = "本月",
                         stats = uiState.monthStats,
+                        goalSettings = uiState.goalSettings,
+                        isYearCard = false,
                         modifier = Modifier.weight(1f),
-                        onClick = { /* Navigate to month stats */ }
+                        onClick = { /* Navigate to month stats */ },
+                        onSetGoalClick = onSetGoalClick
                     )
                 }
             }

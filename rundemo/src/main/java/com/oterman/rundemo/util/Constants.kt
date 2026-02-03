@@ -32,6 +32,14 @@ object Constants {
         const val KEY_IMAGE_URL = "image_url"
         const val KEY_TOKEN_EXPIRE_DATE = "token_expire_date"
         const val KEY_IS_LOGGED_IN = "is_logged_in"
+
+        // Goal settings keys
+        const val KEY_GOAL_ENABLED = "goal_enabled"
+        const val KEY_GOAL_TYPE = "goal_type"
+        const val KEY_YEAR_DISTANCE_GOAL = "year_distance_goal"
+        const val KEY_MONTH_DISTANCE_GOAL = "month_distance_goal"
+        const val KEY_YEAR_DURATION_GOAL = "year_duration_goal"
+        const val KEY_MONTH_DURATION_GOAL = "month_duration_goal"
     }
     
     /**

@@ -65,7 +65,8 @@ fun ProfileTabContent(
     onShowWelcomeClick: () -> Unit,
     onResetFirstLaunchClick: () -> Unit,
     onImportFitFile: (Uri) -> Unit = {},
-    onDataSourceManageClick: () -> Unit = {}
+    onDataSourceManageClick: () -> Unit = {},
+    onRunGoalClick: () -> Unit = {}
 ) {
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -174,7 +175,7 @@ fun ProfileTabContent(
                     SettingsItem(
                         icon = Icons.Outlined.Flag,
                         title = "跑步目标",
-                        onClick = { /* TODO: Navigate to running goal page */ }
+                        onClick = onRunGoalClick
                     )
                     SettingsItem(
                         icon = Icons.Outlined.FavoriteBorder,

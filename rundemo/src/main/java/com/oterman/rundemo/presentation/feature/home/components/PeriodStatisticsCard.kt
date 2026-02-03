@@ -12,25 +12,43 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.oterman.rundemo.domain.model.GoalSettings
+import com.oterman.rundemo.domain.model.GoalType
 import com.oterman.rundemo.domain.model.PeriodStatistics
 import com.oterman.rundemo.ui.theme.RunBlue
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
- * Year/Month statistics card
+ * Year/Month statistics card with goal support
  * Matches iOS CurYearTotalView / CurMonthTotalView
+ *
+ * Features:
+ * - Shows distance and duration stats
+ * - When goal enabled: shows goal value, progress bars
+ * - When no goal: shows "Set Goal" button
+ * - Dynamic coloring based on goal type
  */
 @Composable
 fun PeriodStatisticsCard(
     title: String,
     stats: PeriodStatistics,
+    goalSettings: GoalSettings = GoalSettings(),
+    isYearCard: Boolean = true,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    onSetGoalClick: () -> Unit = {}
 ) {
+    val hasActiveGoal = if (isYearCard) {
+        goalSettings.hasActiveYearGoal()
+    } else {
+        goalSettings.hasActiveMonthGoal()
+    }
+
     StatisticsCard(
         modifier = modifier.clickable { onClick() }
     ) {
@@ -72,47 +90,164 @@ fun PeriodStatisticsCard(
             }
         }
 
-        Spacer(modifier = Modifier.height(15.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Distance row
-        Row(
-            verticalAlignment = Alignment.Bottom,
-            modifier = Modifier.padding(end = 4.dp)
-        ) {
-            Text(
-                text = String.format("%.1f", stats.totalDistance),
-                color = RunBlue,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.SemiBold
+        // Stats display - order and size depends on goal type
+        if (goalSettings.goalEnabled && goalSettings.goalType == GoalType.DURATION) {
+            // Duration goal: show duration first (larger), then distance
+            DurationRow(
+                duration = stats.totalDuration,
+                goal = stats.durationGoal,
+                isPrimary = true,
+                showGoal = hasActiveGoal
             )
-            Text(
-                text = "公里",
-                color = SecondaryTextColor,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(bottom = 4.dp, start = 2.dp)
+            Spacer(modifier = Modifier.height(4.dp))
+            DistanceRow(
+                distance = stats.totalDistance,
+                goal = stats.distanceGoal,
+                isPrimary = false,
+                showGoal = false
+            )
+        } else {
+            // Distance goal or no goal: show distance first (larger)
+            DistanceRow(
+                distance = stats.totalDistance,
+                goal = stats.distanceGoal,
+                isPrimary = true,
+                showGoal = hasActiveGoal && goalSettings.goalType == GoalType.DISTANCE
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            DurationRow(
+                duration = stats.totalDuration,
+                goal = stats.durationGoal,
+                isPrimary = false,
+                showGoal = false
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        // Goal progress section
+        if (goalSettings.goalEnabled && hasActiveGoal) {
+            // Show progress bars
+            val goalProgress = if (goalSettings.goalType == GoalType.DISTANCE) {
+                stats.getDistanceProgress()
+            } else {
+                stats.getDurationProgress()
+            }
+            val goalProgressText = if (goalSettings.goalType == GoalType.DISTANCE) {
+                stats.getDistanceProgressPercent()
+            } else {
+                stats.getDurationProgressPercent()
+            }
 
-        // Duration row
-        Row(
-            verticalAlignment = Alignment.Bottom,
-            modifier = Modifier.padding(end = 4.dp)
-        ) {
-            Text(
-                text = String.format("%.1f", stats.totalDuration),
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold
+            GoalProgressView(
+                goalProgress = goalProgress,
+                goalProgressText = goalProgressText,
+                timeProgress = stats.timeProgress,
+                timeProgressText = stats.getTimeProgressPercent(),
+                onClick = onSetGoalClick
             )
-            Text(
-                text = "小时",
-                color = SecondaryTextColor,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(bottom = 2.dp, start = 2.dp)
+        } else if (!goalSettings.goalEnabled) {
+            // Show "Set Goal" button
+            Spacer(modifier = Modifier.height(10.dp))
+            SetGoalButton(
+                text = if (isYearCard) "设置年度目标" else "设置月度目标",
+                onClick = onSetGoalClick
             )
         }
+    }
+}
+
+@Composable
+private fun DistanceRow(
+    distance: Double,
+    goal: Double,
+    isPrimary: Boolean,
+    showGoal: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val textColor = if (isPrimary) RunBlue else MaterialTheme.colorScheme.onSurface
+    val fontSize = if (isPrimary) 26.sp else 18.sp
+
+    Row(
+        verticalAlignment = Alignment.Bottom,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = String.format("%.1f", distance),
+            color = textColor,
+            fontSize = fontSize,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        if (showGoal && goal > 0) {
+            Text(
+                text = " / ",
+                color = SecondaryTextColor,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = if (isPrimary) 3.dp else 1.dp)
+            )
+            Text(
+                text = "${goal.toInt()}",
+                color = SecondaryTextColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = if (isPrimary) 3.dp else 1.dp)
+            )
+        }
+
+        Text(
+            text = "公里",
+            color = SecondaryTextColor,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(bottom = if (isPrimary) 4.dp else 2.dp, start = 2.dp)
+        )
+    }
+}
+
+@Composable
+private fun DurationRow(
+    duration: Double,
+    goal: Double,
+    isPrimary: Boolean,
+    showGoal: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val textColor = if (isPrimary) RunBlue else MaterialTheme.colorScheme.onSurface
+    val fontSize = if (isPrimary) 26.sp else 18.sp
+
+    Row(
+        verticalAlignment = Alignment.Bottom,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = String.format("%.1f", duration),
+            color = textColor,
+            fontSize = fontSize,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        if (showGoal && goal > 0) {
+            Text(
+                text = " / ",
+                color = SecondaryTextColor,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = if (isPrimary) 3.dp else 1.dp)
+            )
+            Text(
+                text = "${goal.toInt()}",
+                color = SecondaryTextColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = if (isPrimary) 3.dp else 1.dp)
+            )
+        }
+
+        Text(
+            text = "小时",
+            color = SecondaryTextColor,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(bottom = if (isPrimary) 4.dp else 2.dp, start = 2.dp)
+        )
     }
 }
 
@@ -126,5 +261,46 @@ private fun PeriodStatisticsCardPreview() {
             totalDistance = 356.8,
             totalDuration = 45.5
         )
+    )
+}
+
+@Preview(showBackground = true, name = "With Distance Goal")
+@Composable
+private fun PeriodStatisticsCardWithDistanceGoalPreview() {
+    PeriodStatisticsCard(
+        title = "今年",
+        stats = PeriodStatistics(
+            runCount = 42,
+            totalDistance = 356.8,
+            totalDuration = 45.5,
+            distanceGoal = 1000.0,
+            timeProgress = 0.75f
+        ),
+        goalSettings = GoalSettings(
+            goalEnabled = true,
+            goalType = GoalType.DISTANCE,
+            yearDistanceGoal = 1000.0
+        )
+    )
+}
+
+@Preview(showBackground = true, name = "With Duration Goal")
+@Composable
+private fun PeriodStatisticsCardWithDurationGoalPreview() {
+    PeriodStatisticsCard(
+        title = "本月",
+        stats = PeriodStatistics(
+            runCount = 8,
+            totalDistance = 45.2,
+            totalDuration = 6.5,
+            durationGoal = 20.0,
+            timeProgress = 0.6f
+        ),
+        goalSettings = GoalSettings(
+            goalEnabled = true,
+            goalType = GoalType.DURATION,
+            monthDurationGoal = 20.0
+        ),
+        isYearCard = false
     )
 }

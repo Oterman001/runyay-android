@@ -34,6 +34,7 @@ import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecor
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecordListViewModelFactory
 import com.oterman.rundemo.presentation.feature.home.HomeScreen
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailDebugScreen
+import com.oterman.rundemo.presentation.feature.settings.goal.RunGoalSetPage
 import com.oterman.rundemo.presentation.feature.userprofile.UserProfileScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 
@@ -107,6 +108,9 @@ fun AppNavGraph(
                 },
                 onNavigateToUserProfile = {
                     navController.navigate(Screen.UserProfile.route)
+                },
+                onNavigateToRunGoalSet = {
+                    navController.navigate(Screen.RunGoalSet.route)
                 }
             )
         }
@@ -336,6 +340,15 @@ fun AppNavGraph(
                 },
                 onNavigateToDebugDetail = { workoutId ->
                     navController.navigate(Screen.RunDetailDebug.createRoute(workoutId))
+                }
+            )
+        }
+
+        // 跑步目标设置页面
+        composable(Screen.RunGoalSet.route) {
+            RunGoalSetPage(
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }

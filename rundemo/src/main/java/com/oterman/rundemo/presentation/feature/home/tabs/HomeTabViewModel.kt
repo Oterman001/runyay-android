@@ -4,11 +4,14 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.domain.model.DayRunData
+import com.oterman.rundemo.domain.model.GoalSettings
+import com.oterman.rundemo.domain.model.GoalType
 import com.oterman.rundemo.domain.model.HomeTabUiState
 import com.oterman.rundemo.domain.model.PeriodStatistics
 import com.oterman.rundemo.domain.model.TotalRunStatistics
@@ -26,7 +29,8 @@ import java.util.Date
  * Manages running statistics state for the home tab
  */
 class HomeTabViewModel(
-    private val repository: RunDataRepository
+    private val repository: RunDataRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeTabUiState())
@@ -45,10 +49,11 @@ class HomeTabViewModel(
 
             try {
                 val allRecords = repository.getAllRunRecords().first()
+                val goalSettings = preferencesManager.getGoalSettings()
 
                 val totalStats = calculateTotalStatistics(allRecords)
-                val yearStats = calculateYearStatistics(allRecords)
-                val monthStats = calculateMonthStatistics(allRecords)
+                val yearStats = calculateYearStatistics(allRecords, goalSettings)
+                val monthStats = calculateMonthStatistics(allRecords, goalSettings)
                 val weekStats = calculateWeekStatistics(allRecords)
 
                 _uiState.value = HomeTabUiState(
@@ -57,6 +62,7 @@ class HomeTabViewModel(
                     yearStats = yearStats,
                     monthStats = monthStats,
                     weekStats = weekStats,
+                    goalSettings = goalSettings,
                     error = null
                 )
             } catch (e: Exception) {
@@ -84,7 +90,10 @@ class HomeTabViewModel(
         )
     }
 
-    private fun calculateYearStatistics(allRecords: List<RunRecordEntity>): PeriodStatistics {
+    private fun calculateYearStatistics(
+        allRecords: List<RunRecordEntity>,
+        goalSettings: GoalSettings
+    ): PeriodStatistics {
         val calendar = Calendar.getInstance()
         val currentYear = calendar.get(Calendar.YEAR)
         calendar.set(currentYear, Calendar.JANUARY, 1, 0, 0, 0)
@@ -96,14 +105,23 @@ class HomeTabViewModel(
 
         val yearRecords = allRecords.filter { it.startTime in yearStart until yearEnd }
 
+        // Calculate time progress (how much of the year has passed)
+        val timeProgress = calculateYearTimeProgress()
+
         return PeriodStatistics(
             runCount = yearRecords.size,
             totalDistance = yearRecords.sumOf { it.totalDistance },
-            totalDuration = yearRecords.sumOf { it.activeDuration } / 60.0
+            totalDuration = yearRecords.sumOf { it.activeDuration } / 60.0,
+            distanceGoal = goalSettings.yearDistanceGoal,
+            durationGoal = goalSettings.yearDurationGoal,
+            timeProgress = timeProgress
         )
     }
 
-    private fun calculateMonthStatistics(allRecords: List<RunRecordEntity>): PeriodStatistics {
+    private fun calculateMonthStatistics(
+        allRecords: List<RunRecordEntity>,
+        goalSettings: GoalSettings
+    ): PeriodStatistics {
         val calendar = Calendar.getInstance()
         val currentYear = calendar.get(Calendar.YEAR)
         val currentMonth = calendar.get(Calendar.MONTH)
@@ -117,10 +135,16 @@ class HomeTabViewModel(
 
         val monthRecords = allRecords.filter { it.startTime in monthStart until monthEnd }
 
+        // Calculate time progress (how much of the month has passed)
+        val timeProgress = calculateMonthTimeProgress()
+
         return PeriodStatistics(
             runCount = monthRecords.size,
             totalDistance = monthRecords.sumOf { it.totalDistance },
-            totalDuration = monthRecords.sumOf { it.activeDuration } / 60.0
+            totalDuration = monthRecords.sumOf { it.activeDuration } / 60.0,
+            distanceGoal = goalSettings.monthDistanceGoal,
+            durationGoal = goalSettings.monthDurationGoal,
+            timeProgress = timeProgress
         )
     }
 
@@ -182,6 +206,53 @@ class HomeTabViewModel(
         )
     }
 
+    /**
+     * Calculate how much of the current year has passed (0-1)
+     */
+    private fun calculateYearTimeProgress(): Float {
+        val now = System.currentTimeMillis()
+        val calendar = Calendar.getInstance()
+        val currentYear = calendar.get(Calendar.YEAR)
+
+        // Year start
+        calendar.set(currentYear, Calendar.JANUARY, 1, 0, 0, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val yearStart = calendar.timeInMillis
+
+        // Year end
+        calendar.set(currentYear + 1, Calendar.JANUARY, 1, 0, 0, 0)
+        val yearEnd = calendar.timeInMillis
+
+        val totalDuration = yearEnd - yearStart
+        val elapsed = now - yearStart
+
+        return (elapsed.toFloat() / totalDuration).coerceIn(0f, 1f)
+    }
+
+    /**
+     * Calculate how much of the current month has passed (0-1)
+     */
+    private fun calculateMonthTimeProgress(): Float {
+        val now = System.currentTimeMillis()
+        val calendar = Calendar.getInstance()
+        val currentYear = calendar.get(Calendar.YEAR)
+        val currentMonth = calendar.get(Calendar.MONTH)
+
+        // Month start
+        calendar.set(currentYear, currentMonth, 1, 0, 0, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val monthStart = calendar.timeInMillis
+
+        // Month end
+        calendar.add(Calendar.MONTH, 1)
+        val monthEnd = calendar.timeInMillis
+
+        val totalDuration = monthEnd - monthStart
+        val elapsed = now - monthStart
+
+        return (elapsed.toFloat() / totalDuration).coerceIn(0f, 1f)
+    }
+
     private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
         return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
                 cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
@@ -200,7 +271,8 @@ class HomeTabViewModelFactory(
         if (modelClass.isAssignableFrom(HomeTabViewModel::class.java)) {
             val database = RunDatabase.getInstance(context)
             val repository = RunDataRepositoryImpl(database)
-            return HomeTabViewModel(repository) as T
+            val preferencesManager = PreferencesManager(context)
+            return HomeTabViewModel(repository, preferencesManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
