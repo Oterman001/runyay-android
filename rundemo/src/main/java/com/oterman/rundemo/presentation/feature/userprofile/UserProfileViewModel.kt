@@ -29,8 +29,9 @@ class UserProfileViewModel(
 
     companion object {
         private const val TAG = "UserProfileViewModel"
-        private const val MAX_IMAGE_SIZE = 1024 * 1024 // 1MB
-        private const val JPEG_QUALITY = 80
+        private const val MAX_IMAGE_SIZE = 300 * 1024 // 300KB (裁剪后压缩目标)
+        private const val MAX_DIMENSION = 512 // 最大边长
+        private const val JPEG_QUALITY = 85
     }
 
     private val _uiState = MutableStateFlow(UserProfileUiState())
@@ -102,25 +103,26 @@ class UserProfileViewModel(
     }
 
     /**
-     * 处理选择的图片
+     * 处理选择的图片 (旧方法，保留兼容性)
      */
     fun handleSelectedImage(uri: Uri) {
         dismissAvatarPicker()
-        uploadAvatar(uri)
+        uploadCroppedAvatar(uri)
     }
 
     /**
-     * 上传头像
+     * 上传裁剪后的头像
+     * 用于uCrop裁剪完成后调用
      */
-    private fun uploadAvatar(uri: Uri) {
+    fun uploadCroppedAvatar(croppedUri: Uri) {
         viewModelScope.launch {
             _uiState.update { it.copy(isUploadingAvatar = true) }
 
             try {
-                Logger.d(TAG, "开始上传头像: $uri")
+                Logger.d(TAG, "开始上传裁剪后的头像: $croppedUri")
 
-                // 读取并压缩图片
-                val imageData = compressImage(uri)
+                // 压缩到目标大小 (300KB)
+                val imageData = compressToTargetSize(croppedUri, MAX_IMAGE_SIZE)
                 if (imageData == null) {
                     _uiState.update {
                         it.copy(
@@ -130,6 +132,8 @@ class UserProfileViewModel(
                     }
                     return@launch
                 }
+
+                Logger.d(TAG, "压缩后大小: ${imageData.size / 1024}KB")
 
                 val fileName = "avatar_${System.currentTimeMillis()}.jpg"
                 val result = userRepository.uploadAvatar(imageData, fileName)
@@ -166,58 +170,64 @@ class UserProfileViewModel(
     }
 
     /**
-     * 压缩图片
+     * 压缩图片到目标大小
+     * @param uri 图片Uri
+     * @param targetSize 目标大小(字节)，默认300KB
      * @return 压缩后的图片数据，如果失败返回null
      */
-    private fun compressImage(uri: Uri): ByteArray? {
+    private fun compressToTargetSize(uri: Uri, targetSize: Int): ByteArray? {
         return try {
             val inputStream = context.contentResolver.openInputStream(uri) ?: return null
-            val originalBitmap = BitmapFactory.decodeStream(inputStream)
+            var bitmap = BitmapFactory.decodeStream(inputStream)
             inputStream.close()
 
-            if (originalBitmap == null) return null
+            if (bitmap == null) return null
 
-            // 计算缩放比例，确保最终大小不超过1MB
+            // 1. 先缩放到合适尺寸
+            bitmap = scaleBitmapIfNeeded(bitmap, MAX_DIMENSION)
+
+            // 2. 逐步降低质量直到满足大小要求
             var quality = JPEG_QUALITY
-            var scaledBitmap = originalBitmap
-            var outputStream = ByteArrayOutputStream()
+            var outputStream: ByteArrayOutputStream
 
-            // 先尝试直接压缩
-            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
-
-            // 如果超过大小限制，逐步降低质量和尺寸
-            while (outputStream.size() > MAX_IMAGE_SIZE && quality > 20) {
-                outputStream.reset()
-                quality -= 10
-                scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
-            }
-
-            // 如果还是太大，缩小尺寸
-            if (outputStream.size() > MAX_IMAGE_SIZE) {
-                val scale = Math.sqrt(MAX_IMAGE_SIZE.toDouble() / outputStream.size()).toFloat()
-                val newWidth = (originalBitmap.width * scale).toInt()
-                val newHeight = (originalBitmap.height * scale).toInt()
-                scaledBitmap = Bitmap.createScaledBitmap(originalBitmap, newWidth, newHeight, true)
-
-                outputStream.reset()
-                scaledBitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, outputStream)
-            }
+            do {
+                outputStream = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+                if (outputStream.size() <= targetSize) break
+                quality -= 5
+            } while (quality > 10)
 
             val result = outputStream.toByteArray()
+            Logger.d(TAG, "图片压缩完成: ${result.size / 1024}KB, quality=$quality")
 
             // 清理资源
-            if (scaledBitmap != originalBitmap) {
-                scaledBitmap.recycle()
-            }
-            originalBitmap.recycle()
+            bitmap.recycle()
             outputStream.close()
 
-            Logger.d(TAG, "图片压缩完成: ${result.size} bytes")
             result
         } catch (e: Exception) {
             Logger.e(TAG, "图片压缩失败: ${e.message}")
             null
         }
+    }
+
+    /**
+     * 如果图片尺寸超过最大值，按比例缩小
+     */
+    private fun scaleBitmapIfNeeded(bitmap: Bitmap, maxDimension: Int): Bitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+
+        if (width <= maxDimension && height <= maxDimension) {
+            return bitmap
+        }
+
+        val scale = maxDimension.toFloat() / maxOf(width, height)
+        val newWidth = (width * scale).toInt()
+        val newHeight = (height * scale).toInt()
+
+        Logger.d(TAG, "缩放图片: ${width}x${height} -> ${newWidth}x${newHeight}")
+        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
     }
 
     // ==================== 昵称相关 ====================

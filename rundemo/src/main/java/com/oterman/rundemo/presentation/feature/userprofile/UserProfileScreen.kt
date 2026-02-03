@@ -1,9 +1,16 @@
 package com.oterman.rundemo.presentation.feature.userprofile
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import com.yalantis.ucrop.UCrop
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -80,11 +87,53 @@ fun UserProfileScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    // 图片选择器
+
+    // 裁剪后的目标Uri
+    val croppedImageUri = remember {
+        Uri.fromFile(File(context.cacheDir, "cropped_avatar.jpg"))
+    }
+
+    // uCrop 裁剪结果处理
+    val cropLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.let { data ->
+                UCrop.getOutput(data)?.let { croppedUri ->
+                    viewModel.uploadCroppedAvatar(croppedUri)
+                }
+            }
+        }
+    }
+
+    // 启动裁剪的辅助函数
+    fun launchCrop(sourceUri: Uri) {
+        val options = UCrop.Options().apply {
+            setCompressionFormat(Bitmap.CompressFormat.JPEG)
+            setCompressionQuality(90)
+            setToolbarTitle("裁剪头像")
+            setCircleDimmedLayer(true)
+            setShowCropFrame(true)
+            setShowCropGrid(true)
+            // 配置状态栏和工具栏颜色，避免与状态栏重叠
+            setStatusBarColor(Color.BLACK)
+            setToolbarColor(Color.parseColor("#FF6200EE"))
+            setToolbarWidgetColor(Color.WHITE)
+            setActiveControlsWidgetColor(Color.parseColor("#FF6200EE"))
+        }
+        val intent = UCrop.of(sourceUri, croppedImageUri)
+            .withAspectRatio(1f, 1f)
+            .withMaxResultSize(512, 512)
+            .withOptions(options)
+            .getIntent(context)
+        cropLauncher.launch(intent)
+    }
+
+    // 图片选择器 - 选择后启动裁剪
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { viewModel.handleSelectedImage(it) }
+        uri?.let { launchCrop(it) }
     }
 
     // 相机拍照
@@ -93,11 +142,12 @@ fun UserProfileScreen(
         FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", tempFile)
     }
 
+    // 拍照后启动裁剪
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success: Boolean ->
         if (success) {
-            viewModel.handleSelectedImage(tempImageUri)
+            launchCrop(tempImageUri)
         }
     }
 

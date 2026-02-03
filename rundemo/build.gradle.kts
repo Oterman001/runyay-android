@@ -87,6 +87,9 @@ dependencies {
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
 
+    // uCrop for image cropping
+    implementation("com.github.yalantis:ucrop:2.2.9")
+
     // Mapbox Maps SDK
     implementation("com.mapbox.maps:android:11.18.0")
 
