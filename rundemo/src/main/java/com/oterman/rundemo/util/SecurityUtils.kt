@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.provider.Settings
 import java.security.MessageDigest
+import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -99,16 +100,36 @@ object SecurityUtils {
         return hmacBytes.joinToString("") { "%02x".format(it) }
     }
     
+    private const val PREFS_NAME = "security_prefs"
+    private const val KEY_DEVICE_ID = "device_id"
+
     /**
      * 获取设备ID
-     * 使用Android ID作为设备唯一标识
+     * 优先使用Android ID，如果获取不到则生成UUID并持久化存储
      */
     @SuppressLint("HardwareIds")
     fun getDeviceId(context: Context): String {
-        return Settings.Secure.getString(
+        // 1. 尝试获取Android ID
+        val androidId = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.ANDROID_ID
-        ) ?: "unknown_device"
+        )
+        if (!androidId.isNullOrBlank() && androidId != "9774d56d682e549c") {
+            // 9774d56d682e549c 是某些设备的默认值，不可靠
+            return androidId
+        }
+
+        // 2. 尝试从本地存储获取已保存的UUID
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val savedDeviceId = prefs.getString(KEY_DEVICE_ID, null)
+        if (!savedDeviceId.isNullOrBlank()) {
+            return savedDeviceId
+        }
+
+        // 3. 生成新的UUID并持久化存储
+        val newDeviceId = UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_DEVICE_ID, newDeviceId).apply()
+        return newDeviceId
     }
     
     /**

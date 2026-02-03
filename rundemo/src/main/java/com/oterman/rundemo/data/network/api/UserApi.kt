@@ -124,12 +124,13 @@ interface UserApi {
     /**
      * 上传头像
      * 对应iOS的uploadAvatar接口
+     * multipart结构: avatar(图片) + request(认证JSON)
      */
     @Multipart
     @POST("api/user/profile/avatar")
     suspend fun uploadAvatar(
-        @Part image: MultipartBody.Part,
-        @Part("userId") userId: okhttp3.RequestBody
+        @Part avatar: MultipartBody.Part,
+        @Part("request") request: okhttp3.RequestBody
     ): BaseResponse<UpdateAvatarResponseData>
 
     /**

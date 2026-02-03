@@ -4,9 +4,11 @@ import com.google.gson.annotations.SerializedName
 
 /**
  * 退出登录请求DTO
- * 对应iOS的logout接口
+ * 对应iOS的UserLogoutRequestDto
  */
 data class UserLogoutRequest(
     @SerializedName("userId")
-    val userId: String
+    val userId: String,
+    @SerializedName("deviceId")
+    val deviceId: String
 )

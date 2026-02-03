@@ -20,12 +20,14 @@ import com.oterman.rundemo.data.network.dto.response.SendVerificationCodeRespons
 import com.oterman.rundemo.data.network.dto.response.UserLoginResponse
 import com.oterman.rundemo.data.network.dto.response.UserRegisterResponse
 import com.oterman.rundemo.domain.model.UserInfo
+import com.oterman.rundemo.util.Constants
 import com.oterman.rundemo.util.Logger
 import com.oterman.rundemo.util.SecurityUtils
 import com.oterman.rundemo.util.SecurityUtils.md5
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 /**
  * 用户数据仓库
@@ -186,10 +188,11 @@ class UserRepository(
     suspend fun logoutFromServer(): Result<Boolean> {
         return try {
             val userId = preferencesManager.getUserId() ?: return Result.success(true)
+            val deviceId = SecurityUtils.getDeviceId(context)
 
-            Logger.d(TAG, "调用服务端退出登录接口: userId=$userId")
+            Logger.d(TAG, "调用服务端退出登录接口: userId=$userId, deviceId=$deviceId")
 
-            val requestDto = UserLogoutRequest(userId = userId)
+            val requestDto = UserLogoutRequest(userId = userId, deviceId = deviceId)
             val request = RequestBuilder.createRequest(
                 dtoName = "UserLogoutRequestDto",
                 data = requestDto,
@@ -260,6 +263,7 @@ class UserRepository(
 
     /**
      * 上传头像
+     * 对应iOS的uploadAvatar接口，multipart结构：avatar(图片) + request(认证JSON)
      * @param imageData 图片数据
      * @param fileName 文件名
      * @return Result<String?> 新的头像URL
@@ -268,14 +272,27 @@ class UserRepository(
         return try {
             val userId = preferencesManager.getUserId()
                 ?: return Result.failure(Exception("用户未登录"))
+            val token = preferencesManager.getUserToken() ?: ""
 
             Logger.d(TAG, "上传头像: userId=$userId, fileName=$fileName, size=${imageData.size}")
 
-            val requestBody = imageData.toRequestBody("image/jpeg".toMediaTypeOrNull())
-            val imagePart = MultipartBody.Part.createFormData("image", fileName, requestBody)
-            val userIdBody = userId.toRequestBody("text/plain".toMediaTypeOrNull())
+            // 构建认证JSON (对应iOS的requestHead结构)
+            val headJson = JSONObject().apply {
+                put("token", token)
+                put("userId", userId)
+                put("appKey", Constants.Network.APP_KEY)
+            }
+            val requestJson = JSONObject().apply {
+                put("head", headJson)
+            }
+            val requestBody = requestJson.toString()
+                .toRequestBody("application/json".toMediaTypeOrNull())
 
-            val response = userApi.uploadAvatar(imagePart, userIdBody)
+            // 图片part - 字段名改为avatar (对应iOS)
+            val imageRequestBody = imageData.toRequestBody("image/jpeg".toMediaTypeOrNull())
+            val imagePart = MultipartBody.Part.createFormData("avatar", fileName, imageRequestBody)
+
+            val response = userApi.uploadAvatar(imagePart, requestBody)
 
             if (response.isSuccess()) {
                 val avatarUrl = response.data?.updateAvatarResponseDto?.firstOrNull()?.avatarUrl
