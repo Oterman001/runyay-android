@@ -45,6 +45,7 @@ fun HomeScreen(
     onNavigateToDataSourceManage: () -> Unit = {},
     onNavigateToUserProfile: () -> Unit = {},
     onNavigateToRunGoalSet: () -> Unit = {},
+    onNavigateToRunStatistics: (tab: String) -> Unit = {},
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(LocalContext.current)
     )
@@ -83,7 +84,8 @@ fun HomeScreen(
             when (uiState.selectedTab) {
                 HomeTab.HOME -> HomeTabContent(
                     onSetGoalClick = onNavigateToRunGoalSet,
-                    onNavigateToRunDetail = onNavigateToRunDetail
+                    onNavigateToRunDetail = onNavigateToRunDetail,
+                    onNavigateToRunStatistics = onNavigateToRunStatistics
                 )
                 HomeTab.DATA -> DataTabContent(
                     onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },

@@ -52,7 +52,8 @@ fun HomeTabContent(
         factory = HomeTabViewModelFactory(LocalContext.current)
     ),
     onSetGoalClick: () -> Unit = {},
-    onNavigateToRunDetail: (workoutId: String) -> Unit = {}
+    onNavigateToRunDetail: (workoutId: String) -> Unit = {},
+    onNavigateToRunStatistics: (tab: String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lazyListState = rememberLazyListState()
@@ -140,7 +141,7 @@ fun HomeTabContent(
                 TotalRunVdotCard(
                     stats = uiState.totalStats,
                     modifier = Modifier.padding(bottom = 10.dp),
-                    onClick = { /* Navigate to all records */ }
+                    onClick = { onNavigateToRunStatistics("total") }
                 )
             }
 
@@ -158,7 +159,7 @@ fun HomeTabContent(
                         goalSettings = uiState.goalSettings,
                         isYearCard = true,
                         modifier = Modifier.weight(1f),
-                        onClick = { /* Navigate to year stats */ },
+                        onClick = { onNavigateToRunStatistics("year") },
                         onSetGoalClick = onSetGoalClick
                     )
                     PeriodStatisticsCard(
@@ -167,7 +168,7 @@ fun HomeTabContent(
                         goalSettings = uiState.goalSettings,
                         isYearCard = false,
                         modifier = Modifier.weight(1f),
-                        onClick = { /* Navigate to month stats */ },
+                        onClick = { onNavigateToRunStatistics("month") },
                         onSetGoalClick = onSetGoalClick
                     )
                 }
@@ -192,7 +193,7 @@ fun HomeTabContent(
                             // No records: do nothing
                         }
                     },
-                    onClick = { /* Navigate to week stats */ }
+                    onClick = { onNavigateToRunStatistics("week") }
                 )
             }
 

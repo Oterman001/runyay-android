@@ -35,6 +35,8 @@ import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecor
 import com.oterman.rundemo.presentation.feature.home.HomeScreen
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailDebugScreen
 import com.oterman.rundemo.presentation.feature.settings.goal.RunGoalSetPage
+import com.oterman.rundemo.presentation.feature.statistics.RunStatisticTab
+import com.oterman.rundemo.presentation.feature.statistics.RunStatisticsScreen
 import com.oterman.rundemo.presentation.feature.userprofile.UserProfileScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 
@@ -111,6 +113,9 @@ fun AppNavGraph(
                 },
                 onNavigateToRunGoalSet = {
                     navController.navigate(Screen.RunGoalSet.route)
+                },
+                onNavigateToRunStatistics = { tab ->
+                    navController.navigate(Screen.RunStatistics.createRoute(tab))
                 }
             )
         }
@@ -347,6 +352,22 @@ fun AppNavGraph(
         // 跑步目标设置页面
         composable(Screen.RunGoalSet.route) {
             RunGoalSetPage(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // 跑步统计页面
+        composable(
+            route = Screen.RunStatistics.route,
+            arguments = listOf(
+                navArgument("tab") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val tabName = backStackEntry.arguments?.getString("tab") ?: "week"
+            RunStatisticsScreen(
+                initialTab = RunStatisticTab.fromName(tabName),
                 onNavigateBack = {
                     navController.popBackStack()
                 }

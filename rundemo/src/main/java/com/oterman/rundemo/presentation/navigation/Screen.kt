@@ -108,5 +108,13 @@ sealed class Screen(val route: String) {
      * 用于设置年度/月度跑步目标
      */
     object RunGoalSet : Screen("run_goal_set")
+
+    /**
+     * 跑步统计页面
+     * 用于展示年/月/周/总统计数据
+     */
+    object RunStatistics : Screen("run_statistics/{tab}") {
+        fun createRoute(tab: String = "week") = "run_statistics/$tab"
+    }
 }
 
