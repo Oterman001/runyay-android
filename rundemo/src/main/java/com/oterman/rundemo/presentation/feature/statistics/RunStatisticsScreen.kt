@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.presentation.feature.statistics.week.WeekStatisticsContent
 import kotlinx.coroutines.launch
 
 /**
@@ -117,7 +118,9 @@ fun RunStatisticsScreen(
                 modifier = Modifier.fillMaxSize()
             ) { page ->
                 when (RunStatisticTab.entries[page]) {
-                    RunStatisticTab.WEEK -> WeekTabPlaceholder()
+                    RunStatisticTab.WEEK -> WeekStatisticsContent(
+                        onDayClick = { /* TODO: navigate to day detail */ }
+                    )
                     RunStatisticTab.MONTH -> MonthTabPlaceholder()
                     RunStatisticTab.YEAR -> YearTabPlaceholder()
                     RunStatisticTab.TOTAL -> TotalTabPlaceholder()
@@ -196,23 +199,6 @@ private fun TabButton(
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-/**
- * 周统计占位页面
- */
-@Composable
-private fun WeekTabPlaceholder() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "周统计\n（待实现）",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

@@ -70,7 +70,11 @@ data class PeriodStatistics(
 data class WeekStatistics(
     val totalDistance: Double = 0.0,        // km
     val totalDurationMinutes: Double = 0.0, // minutes
-    val dailyRecords: List<DayRunData> = emptyList()
+    val dailyRecords: List<DayRunData> = emptyList(),
+    // Additional fields for week statistics view
+    val runCount: Int = 0,                      // Number of runs this week
+    val avgPace: String = "--'--\"",            // Average pace formatted
+    val totalElevation: Double = 0.0            // Total elevation gain (meters)
 ) {
     val formattedHours: Int get() = (totalDurationMinutes / 60).toInt()
     val formattedMinutes: Int get() = (totalDurationMinutes % 60).toInt()
@@ -98,7 +102,10 @@ data class DayRunData(
     val isFuture: Boolean = false,
     val isIndoor: Boolean = false,          // For different cell color
     val workoutIds: List<String> = emptyList(),  // All workout IDs for this day
-    val recordInfos: List<DayRunRecordInfo> = emptyList()  // Record details for multi-select dialog
+    val recordInfos: List<DayRunRecordInfo> = emptyList(),  // Record details for multi-select dialog
+    // Additional fields for week detail table
+    val totalDurationMinutes: Double = 0.0,     // Duration in minutes
+    val avgPace: String = "--'--\""             // Average pace formatted
 ) {
     val hasRun: Boolean get() = totalDistance > 0
 
@@ -107,6 +114,17 @@ data class DayRunData(
             isFuture -> ""
             totalDistance > 0 -> String.format("%.1f", totalDistance)
             else -> ""
+        }
+    }
+
+    fun getFormattedDuration(): String {
+        if (totalDurationMinutes <= 0) return "--"
+        val hours = (totalDurationMinutes / 60).toInt()
+        val mins = (totalDurationMinutes % 60).toInt()
+        return if (hours > 0) {
+            "${hours}h${mins}'"
+        } else {
+            "${mins}'"
         }
     }
 }
