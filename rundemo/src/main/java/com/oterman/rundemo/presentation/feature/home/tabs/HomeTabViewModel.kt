@@ -11,6 +11,7 @@ import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.mock.MockDataProvider
 import com.oterman.rundemo.domain.model.DayRunData
+import com.oterman.rundemo.domain.model.DayRunRecordInfo
 import com.oterman.rundemo.domain.model.GoalSettings
 import com.oterman.rundemo.domain.model.GoalType
 import com.oterman.rundemo.domain.model.HomeTabUiState
@@ -204,6 +205,16 @@ class HomeTabViewModel(
             val isToday = isSameDay(dayCal, today)
             val isFuture = dayCal.after(today) && !isToday
 
+            // Build record infos for multi-select dialog
+            val recordInfos = dayRecords.map { record ->
+                DayRunRecordInfo(
+                    workoutId = record.workoutId,
+                    distance = record.totalDistance,
+                    duration = formatDuration(record.activeDuration),
+                    startTime = formatTime(record.startTime)
+                )
+            }
+
             dailyRecords.add(
                 DayRunData(
                     date = Date(dayStart),
@@ -212,7 +223,9 @@ class HomeTabViewModel(
                     runCount = dayRecords.size,
                     isToday = isToday,
                     isFuture = isFuture,
-                    isIndoor = dayRecords.any { it.outdoor == 1 }
+                    isIndoor = dayRecords.any { it.outdoor == 1 },
+                    workoutIds = dayRecords.map { it.workoutId },
+                    recordInfos = recordInfos
                 )
             )
         }
@@ -414,6 +427,14 @@ class HomeTabViewModel(
      */
     private fun formatDate(timestamp: Long): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return sdf.format(Date(timestamp))
+    }
+
+    /**
+     * Format time to "HH:mm"
+     */
+    private fun formatTime(timestamp: Long): String {
+        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
         return sdf.format(Date(timestamp))
     }
 }

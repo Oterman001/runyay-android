@@ -82,7 +82,8 @@ fun HomeScreen(
         ) {
             when (uiState.selectedTab) {
                 HomeTab.HOME -> HomeTabContent(
-                    onSetGoalClick = onNavigateToRunGoalSet
+                    onSetGoalClick = onNavigateToRunGoalSet,
+                    onNavigateToRunDetail = onNavigateToRunDetail
                 )
                 HomeTab.DATA -> DataTabContent(
                     onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },

@@ -77,6 +77,16 @@ data class WeekStatistics(
 }
 
 /**
+ * Simple run record info for day selection dialog
+ */
+data class DayRunRecordInfo(
+    val workoutId: String,
+    val distance: Double,           // km
+    val duration: String,           // formatted like "45'30\""
+    val startTime: String           // formatted like "06:30"
+)
+
+/**
  * Single day run data for week grid
  */
 data class DayRunData(
@@ -86,7 +96,9 @@ data class DayRunData(
     val runCount: Int = 0,
     val isToday: Boolean = false,
     val isFuture: Boolean = false,
-    val isIndoor: Boolean = false           // For different cell color
+    val isIndoor: Boolean = false,          // For different cell color
+    val workoutIds: List<String> = emptyList(),  // All workout IDs for this day
+    val recordInfos: List<DayRunRecordInfo> = emptyList()  // Record details for multi-select dialog
 ) {
     val hasRun: Boolean get() = totalDistance > 0
 

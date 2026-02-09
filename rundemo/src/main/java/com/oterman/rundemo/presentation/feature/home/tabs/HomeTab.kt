@@ -17,7 +17,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -28,9 +30,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.presentation.feature.home.components.AllPBAbilityCard
 import com.oterman.rundemo.presentation.feature.home.components.AllPBSpeedCard
 import com.oterman.rundemo.presentation.feature.home.components.DailySentenceCard
+import com.oterman.rundemo.presentation.feature.home.components.DayRunRecordSelectDialog
 import com.oterman.rundemo.presentation.feature.home.components.LatestRunRecordCard
 import com.oterman.rundemo.presentation.feature.home.components.NextRaceCard
 import com.oterman.rundemo.presentation.feature.home.components.PeriodStatisticsCard
@@ -47,11 +51,16 @@ fun HomeTabContent(
     viewModel: HomeTabViewModel = viewModel(
         factory = HomeTabViewModelFactory(LocalContext.current)
     ),
-    onSetGoalClick: () -> Unit = {}
+    onSetGoalClick: () -> Unit = {},
+    onNavigateToRunDetail: (workoutId: String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
+
+    // State for multi-record selection dialog
+    var showRecordSelectDialog by remember { mutableStateOf(false) }
+    var selectedDayData by remember { mutableStateOf<DayRunData?>(null) }
 
     // Calculate collapse progress based on scroll offset
     val collapseProgress by remember {
@@ -170,7 +179,18 @@ fun HomeTabContent(
                     stats = uiState.weekStats,
                     modifier = Modifier.padding(bottom = 10.dp),
                     onDayClick = { dayData ->
-                        /* Navigate to day detail */
+                        when {
+                            dayData.runCount == 1 && dayData.workoutIds.isNotEmpty() -> {
+                                // Single record: navigate directly
+                                onNavigateToRunDetail(dayData.workoutIds.first())
+                            }
+                            dayData.runCount > 1 -> {
+                                // Multiple records: show selection dialog
+                                selectedDayData = dayData
+                                showRecordSelectDialog = true
+                            }
+                            // No records: do nothing
+                        }
                     },
                     onClick = { /* Navigate to week stats */ }
                 )
@@ -182,7 +202,7 @@ fun HomeTabContent(
                     LatestRunRecordCard(
                         record = record,
                         modifier = Modifier.padding(bottom = 10.dp),
-                        onClick = { /* Navigate to record detail */ }
+                        onClick = { onNavigateToRunDetail(record.workoutId) }
                     )
                 }
             }
@@ -203,7 +223,9 @@ fun HomeTabContent(
                         pbList = uiState.pbAbilityList,
                         modifier = Modifier.padding(bottom = 10.dp),
                         onItemClick = { item ->
-                            /* Navigate to record detail if workoutId exists */
+                            item.workoutId?.let { workoutId ->
+                                onNavigateToRunDetail(workoutId)
+                            }
                         }
                     )
                 }
@@ -232,5 +254,21 @@ fun HomeTabContent(
                 }
             }
         }
+    }
+
+    // Multi-record selection dialog
+    if (showRecordSelectDialog && selectedDayData != null) {
+        DayRunRecordSelectDialog(
+            dayData = selectedDayData!!,
+            onRecordSelected = { workoutId ->
+                showRecordSelectDialog = false
+                selectedDayData = null
+                onNavigateToRunDetail(workoutId)
+            },
+            onDismiss = {
+                showRecordSelectDialog = false
+                selectedDayData = null
+            }
+        )
     }
 }
