@@ -81,6 +81,21 @@ data class WeekStatistics(
 }
 
 /**
+ * Monthly statistics with daily breakdown
+ */
+data class MonthStatistics(
+    val totalDistance: Double = 0.0,           // km
+    val totalDurationMinutes: Double = 0.0,    // minutes
+    val runCount: Int = 0,                     // Number of runs this month
+    val avgPace: String = "--'--\"",           // Average pace formatted
+    val totalElevation: Double = 0.0,          // Total elevation gain (meters)
+    val dailyRecords: List<DayRunData> = emptyList()  // Contains placeholders for calendar layout
+) {
+    val formattedHours: Int get() = (totalDurationMinutes / 60).toInt()
+    val formattedMinutes: Int get() = (totalDurationMinutes % 60).toInt()
+}
+
+/**
  * Simple run record info for day selection dialog
  */
 data class DayRunRecordInfo(
@@ -91,26 +106,29 @@ data class DayRunRecordInfo(
 )
 
 /**
- * Single day run data for week grid
+ * Single day run data for week/month grid
  */
 data class DayRunData(
     val date: Date = Date(),
     val dayOfWeek: String = "",             // "一", "二", etc.
+    val dayOfMonth: Int = 0,                // 1-31, day of month for calendar display
     val totalDistance: Double = 0.0,
     val runCount: Int = 0,
     val isToday: Boolean = false,
     val isFuture: Boolean = false,
     val isIndoor: Boolean = false,          // For different cell color
+    val isPlaceholder: Boolean = false,     // For month calendar empty cells before 1st
     val workoutIds: List<String> = emptyList(),  // All workout IDs for this day
     val recordInfos: List<DayRunRecordInfo> = emptyList(),  // Record details for multi-select dialog
-    // Additional fields for week detail table
+    // Additional fields for week/month detail table
     val totalDurationMinutes: Double = 0.0,     // Duration in minutes
     val avgPace: String = "--'--\""             // Average pace formatted
 ) {
-    val hasRun: Boolean get() = totalDistance > 0
+    val hasRun: Boolean get() = totalDistance > 0 && !isPlaceholder
 
     fun getFormattedDistance(): String {
         return when {
+            isPlaceholder -> ""
             isFuture -> ""
             totalDistance > 0 -> String.format("%.1f", totalDistance)
             else -> ""
@@ -118,7 +136,7 @@ data class DayRunData(
     }
 
     fun getFormattedDuration(): String {
-        if (totalDurationMinutes <= 0) return "--"
+        if (isPlaceholder || totalDurationMinutes <= 0) return "--"
         val hours = (totalDurationMinutes / 60).toInt()
         val mins = (totalDurationMinutes % 60).toInt()
         return if (hours > 0) {
