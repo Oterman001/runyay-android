@@ -28,6 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.presentation.feature.home.components.AllPBAbilityCard
+import com.oterman.rundemo.presentation.feature.home.components.AllPBSpeedCard
+import com.oterman.rundemo.presentation.feature.home.components.DailySentenceCard
+import com.oterman.rundemo.presentation.feature.home.components.LatestRunRecordCard
+import com.oterman.rundemo.presentation.feature.home.components.NextRaceCard
 import com.oterman.rundemo.presentation.feature.home.components.PeriodStatisticsCard
 import com.oterman.rundemo.presentation.feature.home.components.TotalRunVdotCard
 import com.oterman.rundemo.presentation.feature.home.components.WeekStatisticsCard
@@ -163,6 +168,7 @@ fun HomeTabContent(
             item {
                 WeekStatisticsCard(
                     stats = uiState.weekStats,
+                    modifier = Modifier.padding(bottom = 10.dp),
                     onDayClick = { dayData ->
                         /* Navigate to day detail */
                     },
@@ -170,9 +176,61 @@ fun HomeTabContent(
                 )
             }
 
+            // Card 1: Latest Run Record
+            item {
+                uiState.latestRunRecord?.let { record ->
+                    LatestRunRecordCard(
+                        record = record,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                        onClick = { /* Navigate to record detail */ }
+                    )
+                }
+            }
 
+            // Card 3: Next Race
+            item {
+                NextRaceCard(
+                    race = uiState.nextRace,
+                    modifier = Modifier.padding(bottom = 10.dp),
+                    onClick = { /* Navigate to race list or add race */ }
+                )
+            }
 
+            // Card 2: Max Data (PB Ability)
+            item {
+                if (uiState.pbAbilityList.isNotEmpty()) {
+                    AllPBAbilityCard(
+                        pbList = uiState.pbAbilityList,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                        onItemClick = { item ->
+                            /* Navigate to record detail if workoutId exists */
+                        }
+                    )
+                }
+            }
 
+            // Card 5: PB Speed Records
+            item {
+                if (uiState.pbSpeedList.isNotEmpty()) {
+                    AllPBSpeedCard(
+                        pbList = uiState.pbSpeedList,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                        onItemClick = { item ->
+                            /* Navigate to record detail if workoutId exists */
+                        }
+                    )
+                }
+            }
+
+            // Card 4: Daily Sentence
+            item {
+                if (uiState.dailySentence.isNotEmpty()) {
+                    DailySentenceCard(
+                        sentence = uiState.dailySentence,
+                        modifier = Modifier.padding(bottom = 10.dp)
+                    )
+                }
+            }
         }
     }
 }

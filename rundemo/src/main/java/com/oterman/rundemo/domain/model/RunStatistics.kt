@@ -109,5 +109,13 @@ data class HomeTabUiState(
     val monthStats: PeriodStatistics = PeriodStatistics(),
     val weekStats: WeekStatistics = WeekStatistics(),
     val goalSettings: GoalSettings = GoalSettings(),
+
+    // New fields for 5 cards
+    val latestRunRecord: LatestRunRecord? = null,
+    val pbAbilityList: List<PBAbilityInfo> = emptyList(),
+    val pbSpeedList: List<PBSpeedInfo> = emptyList(),
+    val nextRace: NextRaceInfo? = null,
+    val dailySentence: String = "",
+
     val error: String? = null
 )

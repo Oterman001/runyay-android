@@ -9,13 +9,19 @@ import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
+import com.oterman.rundemo.data.mock.MockDataProvider
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.GoalSettings
 import com.oterman.rundemo.domain.model.GoalType
 import com.oterman.rundemo.domain.model.HomeTabUiState
+import com.oterman.rundemo.domain.model.LatestRunRecord
+import com.oterman.rundemo.domain.model.PBAbilityInfo
+import com.oterman.rundemo.domain.model.PBAbilityKey
 import com.oterman.rundemo.domain.model.PeriodStatistics
 import com.oterman.rundemo.domain.model.TotalRunStatistics
 import com.oterman.rundemo.domain.model.WeekStatistics
+import java.text.SimpleDateFormat
+import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,6 +62,13 @@ class HomeTabViewModel(
                 val monthStats = calculateMonthStatistics(allRecords, goalSettings)
                 val weekStats = calculateWeekStatistics(allRecords)
 
+                // New calculations for 5 cards
+                val latestRecord = calculateLatestRunRecord(allRecords)
+                val pbAbilityList = calculatePBAbilityList(allRecords)
+                val pbSpeedList = MockDataProvider.getMockPBSpeedList()  // Use mock for now
+                val nextRace = MockDataProvider.getMockNextRace()        // Use mock for now
+                val dailySentence = MockDataProvider.getRandomDailySentence()
+
                 _uiState.value = HomeTabUiState(
                     isLoading = false,
                     totalStats = totalStats,
@@ -63,6 +76,11 @@ class HomeTabViewModel(
                     monthStats = monthStats,
                     weekStats = weekStats,
                     goalSettings = goalSettings,
+                    latestRunRecord = latestRecord,
+                    pbAbilityList = pbAbilityList,
+                    pbSpeedList = pbSpeedList,
+                    nextRace = nextRace,
+                    dailySentence = dailySentence,
                     error = null
                 )
             } catch (e: Exception) {
@@ -256,6 +274,147 @@ class HomeTabViewModel(
     private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
         return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
                 cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+    }
+
+    /**
+     * Calculate latest run record from all records
+     */
+    private fun calculateLatestRunRecord(allRecords: List<RunRecordEntity>): LatestRunRecord? {
+        val latest = allRecords.maxByOrNull { it.startTime } ?: return null
+        return LatestRunRecord(
+            workoutId = latest.workoutId,
+            runDate = formatRunDate(latest.startTime),
+            startEndTime = formatStartEndTime(latest.startTime, latest.endTime),
+            totalDistance = latest.totalDistance,
+            duration = formatDuration(latest.activeDuration),
+            avgPace = formatPace(latest.averageSpeed),
+            deviceName = latest.deviceInfo ?: "Unknown",
+            isVerified = latest.inclusiveLevel >= 1
+        )
+    }
+
+    /**
+     * Calculate PB ability list (max VDOT, max distance, max duration)
+     * VDOT uses mock data, distance and duration use real data
+     */
+    private fun calculatePBAbilityList(allRecords: List<RunRecordEntity>): List<PBAbilityInfo> {
+        // Max VDOT - use mock since we may not have valid VDOT data
+        val mockVdot = PBAbilityInfo(
+            itemKey = PBAbilityKey.MAX_VDOT,
+            itemMaxValue = "52.5",
+            itemDate = "2024-10-15",
+            workoutId = null
+        )
+
+        // Max Distance - use real data
+        val maxDistanceRecord = allRecords.maxByOrNull { it.totalDistance }
+        val maxDistance = if (maxDistanceRecord != null && maxDistanceRecord.totalDistance > 0) {
+            PBAbilityInfo(
+                itemKey = PBAbilityKey.MAX_DISTANCE,
+                itemMaxValue = String.format("%.2f", maxDistanceRecord.totalDistance),
+                itemDate = formatDate(maxDistanceRecord.startTime),
+                workoutId = maxDistanceRecord.workoutId
+            )
+        } else {
+            PBAbilityInfo(
+                itemKey = PBAbilityKey.MAX_DISTANCE,
+                itemMaxValue = "--",
+                itemDate = null,
+                workoutId = null
+            )
+        }
+
+        // Max Duration - use real data
+        val maxDurationRecord = allRecords.maxByOrNull { it.activeDuration }
+        val maxDuration = if (maxDurationRecord != null && maxDurationRecord.activeDuration > 0) {
+            PBAbilityInfo(
+                itemKey = PBAbilityKey.MAX_DURATION,
+                itemMaxValue = formatDurationLong(maxDurationRecord.activeDuration),
+                itemDate = formatDate(maxDurationRecord.startTime),
+                workoutId = maxDurationRecord.workoutId
+            )
+        } else {
+            PBAbilityInfo(
+                itemKey = PBAbilityKey.MAX_DURATION,
+                itemMaxValue = "--",
+                itemDate = null,
+                workoutId = null
+            )
+        }
+
+        return listOf(mockVdot, maxDistance, maxDuration)
+    }
+
+    /**
+     * Format run date like "2月8日 周六"
+     */
+    private fun formatRunDate(timestamp: Long): String {
+        val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
+        val month = calendar.get(Calendar.MONTH) + 1
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+        val weekDay = when (calendar.get(Calendar.DAY_OF_WEEK)) {
+            Calendar.SUNDAY -> "周日"
+            Calendar.MONDAY -> "周一"
+            Calendar.TUESDAY -> "周二"
+            Calendar.WEDNESDAY -> "周三"
+            Calendar.THURSDAY -> "周四"
+            Calendar.FRIDAY -> "周五"
+            Calendar.SATURDAY -> "周六"
+            else -> ""
+        }
+        return "${month}月${day}日 $weekDay"
+    }
+
+    /**
+     * Format start and end time like "06:30-07:15"
+     */
+    private fun formatStartEndTime(startTime: Long, endTime: Long): String {
+        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+        return "${sdf.format(Date(startTime))}-${sdf.format(Date(endTime))}"
+    }
+
+    /**
+     * Format duration in minutes to "45'30\"" format
+     */
+    private fun formatDuration(minutes: Double): String {
+        val totalSeconds = (minutes * 60).toInt()
+        val mins = totalSeconds / 60
+        val secs = totalSeconds % 60
+        return "${mins}'${String.format("%02d", secs)}\""
+    }
+
+    /**
+     * Format duration in minutes to "4h30'20\"" format for long durations
+     */
+    private fun formatDurationLong(minutes: Double): String {
+        val totalSeconds = (minutes * 60).toInt()
+        val hours = totalSeconds / 3600
+        val mins = (totalSeconds % 3600) / 60
+        val secs = totalSeconds % 60
+        return if (hours > 0) {
+            "${hours}h${mins}'${String.format("%02d", secs)}\""
+        } else {
+            "${mins}'${String.format("%02d", secs)}\""
+        }
+    }
+
+    /**
+     * Format average speed (km/h) to pace "4'20\"" format
+     */
+    private fun formatPace(speedKmh: Double): String {
+        if (speedKmh <= 0) return "--"
+        val paceMinPerKm = 60.0 / speedKmh
+        val mins = paceMinPerKm.toInt()
+        val secs = ((paceMinPerKm - mins) * 60).toInt()
+        return "${mins}'${String.format("%02d", secs)}\""
+    }
+
+    /**
+     * Format date to "yyyy-MM-dd"
+     */
+    private fun formatDate(timestamp: Long): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return sdf.format(Date(timestamp))
     }
 }
 
