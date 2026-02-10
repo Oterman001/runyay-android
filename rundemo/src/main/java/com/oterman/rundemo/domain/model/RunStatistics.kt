@@ -148,6 +148,62 @@ data class DayRunData(
 }
 
 /**
+ * Month range statistics data (for year view's monthly summary)
+ */
+data class MonthRangeData(
+    val year: Int = 0,
+    val month: Int = 0,                       // 1-12
+    val totalDistance: Double = 0.0,          // km
+    val totalDurationMinutes: Double = 0.0,   // minutes
+    val runCount: Int = 0,
+    val avgPace: String = "--'--\"",
+    val totalElevation: Double = 0.0,
+    val dailyRecords: List<DayRunData> = emptyList()  // Daily data for heatmap (with placeholders)
+) {
+    val date: Date get() {
+        val cal = java.util.Calendar.getInstance()
+        cal.set(year, month - 1, 1)
+        return cal.time
+    }
+
+    fun getFormattedDistance(): String {
+        return if (totalDistance >= 1000) {
+            totalDistance.toInt().toString()
+        } else {
+            String.format("%.1f", totalDistance)
+        }
+    }
+
+    fun getFormattedDuration(): String {
+        val hours = totalDurationMinutes / 60.0
+        return String.format("%.1f", hours)
+    }
+}
+
+/**
+ * Year statistics data
+ */
+data class YearStatistics(
+    val year: Int = 0,
+    val totalDistance: Double = 0.0,           // km
+    val totalDurationMinutes: Double = 0.0,    // minutes
+    val runCount: Int = 0,
+    val avgPace: String = "--'--\"",
+    val totalElevation: Double = 0.0,
+    val monthRangeDataList: List<MonthRangeData> = emptyList(),  // 12 months data
+    val maxMonthDistance: Double = 0.0         // Max month distance (for bar chart Y-axis)
+) {
+    val formattedHours: Int get() = (totalDurationMinutes / 60).toInt()
+    val formattedMinutes: Int get() = (totalDurationMinutes % 60).toInt()
+
+    // Calculate average month distance (current year by elapsed months, past years by 12)
+    fun getAverageMonthDistance(isCurYear: Boolean, curMonth: Int): Double {
+        val monthCount = if (isCurYear) curMonth else 12
+        return if (monthCount > 0) totalDistance / monthCount else 0.0
+    }
+}
+
+/**
  * Combined HomeTab UI state
  */
 data class HomeTabUiState(

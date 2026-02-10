@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.presentation.feature.statistics.month.MonthStatisticsContent
 import com.oterman.rundemo.presentation.feature.statistics.week.WeekStatisticsContent
+import com.oterman.rundemo.presentation.feature.statistics.year.YearStatisticsContent
 import kotlinx.coroutines.launch
 
 /**
@@ -125,7 +126,9 @@ fun RunStatisticsScreen(
                     RunStatisticTab.MONTH -> MonthStatisticsContent(
                         onDayClick = { /* TODO: navigate to day detail */ }
                     )
-                    RunStatisticTab.YEAR -> YearTabPlaceholder()
+                    RunStatisticTab.YEAR -> YearStatisticsContent(
+                        onMonthClick = { /* TODO: navigate to month detail */ }
+                    )
                     RunStatisticTab.TOTAL -> TotalTabPlaceholder()
                 }
             }
@@ -202,23 +205,6 @@ private fun TabButton(
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-/**
- * 年统计占位页面
- */
-@Composable
-private fun YearTabPlaceholder() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "年统计\n（待实现）",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
