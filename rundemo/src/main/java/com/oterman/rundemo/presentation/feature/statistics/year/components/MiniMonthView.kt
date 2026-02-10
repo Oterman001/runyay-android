@@ -5,9 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,36 +61,40 @@ fun MiniMonthView(
 
 /**
  * Heatmap grid for mini month view
+ * Uses BoxWithConstraints to dynamically calculate cell size based on available width
  */
 @Composable
 private fun MiniMonthHeatmapGrid(
     dailyRecords: List<DayRunData>,
     modifier: Modifier = Modifier
 ) {
-    val cellSize = 10.dp
     val cellSpacing = 2.dp
     val cellRadius = 3.dp
+    val columns = 7
 
-    // Calculate row count (7 columns)
-    val rowCount = (dailyRecords.size + 6) / 7
+    // Calculate row count
+    val rowCount = (dailyRecords.size + columns - 1) / columns
 
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(cellSpacing)
-    ) {
-        for (rowIndex in 0 until rowCount) {
-            Row(horizontalArrangement = Arrangement.spacedBy(cellSpacing)) {
-                for (colIndex in 0 until 7) {
-                    val index = rowIndex * 7 + colIndex
-                    if (index < dailyRecords.size) {
-                        val dayData = dailyRecords[index]
-                        MiniDayCell(
-                            dayData = dayData,
-                            cellSize = cellSize,
-                            cellRadius = cellRadius
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.size(cellSize))
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        // Dynamically calculate cellSize based on available width
+        val availableWidth = maxWidth
+        val totalSpacing = cellSpacing * (columns - 1)
+        val cellSize = (availableWidth - totalSpacing) / columns
+
+        Column(verticalArrangement = Arrangement.spacedBy(cellSpacing)) {
+            for (rowIndex in 0 until rowCount) {
+                Row(horizontalArrangement = Arrangement.spacedBy(cellSpacing)) {
+                    for (colIndex in 0 until columns) {
+                        val index = rowIndex * columns + colIndex
+                        if (index < dailyRecords.size) {
+                            MiniDayCell(
+                                dayData = dailyRecords[index],
+                                cellSize = cellSize,
+                                cellRadius = cellRadius
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.size(cellSize))
+                        }
                     }
                 }
             }

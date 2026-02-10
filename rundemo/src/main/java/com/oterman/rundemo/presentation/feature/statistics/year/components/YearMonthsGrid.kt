@@ -113,12 +113,12 @@ private fun YearMonthsGrid(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         for (rowIndex in 0 until 4) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 for (colIndex in 0 until 3) {
                     val monthIndex = rowIndex * 3 + colIndex
