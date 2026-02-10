@@ -208,51 +208,61 @@ private fun MonthDayCell(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Heatmap block
+        // Outer Box without clip - allows badge to overflow
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(cellShape)
-                .background(backgroundColor)
-                .then(
-                    if (dayData.isFuture) {
-                        Modifier.border(
-                            width = 1.dp,
-                            color = RunBlue.copy(alpha = 0.4f),
-                            shape = cellShape
-                        )
-                    } else {
-                        Modifier
-                    }
-                ),
-            contentAlignment = Alignment.Center
         ) {
-            // Show distance if has run
-            if (dayData.totalDistance > 0) {
-                Text(
-                    text = dayData.getFormattedDistance(),
-                    color = distanceTextColor,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Normal
-                )
+            // Inner Box with clip - rounded corner heatmap background
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(cellShape)
+                    .background(backgroundColor)
+                    .then(
+                        if (dayData.isFuture) {
+                            Modifier.border(
+                                width = 1.dp,
+                                color = RunBlue.copy(alpha = 0.4f),
+                                shape = cellShape
+                            )
+                        } else {
+                            Modifier
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                // Show distance if has run
+                if (dayData.totalDistance > 0) {
+                    Text(
+                        text = dayData.getFormattedDistance(),
+                        color = distanceTextColor,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
             }
 
-            // Badge for multiple runs
+            // Badge for multiple runs - outside clip, matching DayCell style
             if (dayData.runCount >= 2) {
+                val badgeSize = if (dayData.runCount >= 10) 16.dp else 14.dp
+                val badgeFontSize = if (dayData.runCount >= 10) 8.sp else 9.sp
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 2.dp, y = (-2).dp)
-                        .size(12.dp)
-                        .background(Color.White.copy(alpha = 0.9f), CircleShape),
+                        .offset(x = 3.dp, y = (-3).dp)
+                        .size(badgeSize)
+                        .background(Color(0xFFE0E0E0), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "${dayData.runCount}",
                         color = Color.Red,
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = badgeFontSize,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        lineHeight = badgeFontSize
                     )
                 }
             }

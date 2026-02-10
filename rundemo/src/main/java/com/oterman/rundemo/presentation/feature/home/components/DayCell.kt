@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,46 +69,56 @@ fun DayCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.clickable(enabled = dayData.hasRun) { onClick() }
     ) {
+        // Outer Box without clip - allows badge to overflow
         Box(
-            modifier = Modifier
-                .aspectRatio(1f)
-                .clip(cellShape)
-                .background(backgroundColor)
-                .then(
-                    if (dayData.isFuture) {
-                        Modifier.border(
-                            width = 1.5.dp,
-                            color = RunBlue.copy(alpha = 0.4f),
-                            shape = cellShape
-                        )
-                    } else {
-                        Modifier
-                    }
-                ),
-            contentAlignment = Alignment.Center
+            modifier = Modifier.aspectRatio(1f)
         ) {
-            Text(
-                text = dayData.getFormattedDistance(),
-                color = textColor,
-                fontSize = 11.sp,
-                fontWeight = if (dayData.isToday) FontWeight.SemiBold else FontWeight.Normal
-            )
+            // Inner Box with clip - rounded corner background
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(cellShape)
+                    .background(backgroundColor)
+                    .then(
+                        if (dayData.isFuture) {
+                            Modifier.border(
+                                width = 1.5.dp,
+                                color = RunBlue.copy(alpha = 0.4f),
+                                shape = cellShape
+                            )
+                        } else {
+                            Modifier
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = dayData.getFormattedDistance(),
+                    color = textColor,
+                    fontSize = 11.sp,
+                    fontWeight = if (dayData.isToday) FontWeight.SemiBold else FontWeight.Normal
+                )
+            }
 
-            // Badge for multiple runs
+            // Badge for multiple runs - outside clip, with subtle background
             if (dayData.runCount >= 2) {
+                val badgeSize = if (dayData.runCount >= 10) 18.dp else 16.dp
+                val badgeFontSize = if (dayData.runCount >= 10) 9.sp else 10.sp
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .offset(x = 4.dp, y = (-4).dp)
-                        .size(14.dp)
-                        .background(Color.White.copy(alpha = 0.9f), CircleShape),
+                        .size(badgeSize)
+                        .background(Color(0xFFE0E0E0), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "${dayData.runCount}",
                         color = Color.Red,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = badgeFontSize,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        lineHeight = badgeFontSize
                     )
                 }
             }
