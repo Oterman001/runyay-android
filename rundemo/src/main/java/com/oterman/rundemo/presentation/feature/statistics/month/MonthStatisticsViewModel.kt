@@ -86,6 +86,24 @@ class MonthStatisticsViewModel(
     }
 
     /**
+     * Jump to specific month
+     * Called when user clicks a month in year view
+     */
+    fun goToSpecificMonth(year: Int, month: Int) {
+        Logger.d(TAG, "Jumping to specific month: $year -- $month")
+        currentMonthStart = Calendar.getInstance().apply {
+            set(Calendar.YEAR, year)
+            set(Calendar.MONTH, month - 1) // Calendar.MONTH is 0-based
+            set(Calendar.DAY_OF_MONTH, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        loadMonthData()
+    }
+
+    /**
      * Refresh current month data
      */
     fun refresh() {

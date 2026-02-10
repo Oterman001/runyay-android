@@ -366,10 +366,16 @@ fun AppNavGraph(
             )
         ) { backStackEntry ->
             val tabName = backStackEntry.arguments?.getString("tab") ?: "week"
+            val context = LocalContext.current
             RunStatisticsScreen(
                 initialTab = RunStatisticTab.fromName(tabName),
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToRunDetail = { workoutId ->
+                    // 使用独立Activity以避免MapView销毁阻塞返回动画
+                    val intent = RunDetailActivity.createIntent(context, workoutId)
+                    context.startActivity(intent)
                 }
             )
         }

@@ -29,17 +29,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.domain.model.DayRunData
+import com.oterman.rundemo.domain.model.MonthRangeData
+import com.oterman.rundemo.presentation.feature.home.components.DayRunRecordSelectDialog
 import com.oterman.rundemo.presentation.feature.statistics.month.MonthStatisticsContent
+import com.oterman.rundemo.presentation.feature.statistics.month.MonthStatisticsViewModel
+import com.oterman.rundemo.presentation.feature.statistics.month.MonthStatisticsViewModelFactory
 import com.oterman.rundemo.presentation.feature.statistics.week.WeekStatisticsContent
 import com.oterman.rundemo.presentation.feature.statistics.year.YearStatisticsContent
 import kotlinx.coroutines.launch
@@ -53,12 +62,26 @@ import kotlinx.coroutines.launch
 fun RunStatisticsScreen(
     initialTab: RunStatisticTab = RunStatisticTab.WEEK,
     onNavigateBack: () -> Unit = {},
+    onNavigateToRunDetail: (workoutId: String) -> Unit = {},
     viewModel: RunStatisticsViewModel = viewModel(
         factory = RunStatisticsViewModelFactory(initialTab)
     )
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // State for multi-record selection dialog
+    var showRecordSelectDialog by remember { mutableStateOf(false) }
+    var selectedDayData by remember { mutableStateOf<DayRunData?>(null) }
+
+    // State for month navigation from year view
+    var pendingMonthNavigation by remember { mutableStateOf<MonthRangeData?>(null) }
+
+    // Month ViewModel instance (shared across recompositions)
+    val monthViewModel: MonthStatisticsViewModel = viewModel(
+        factory = MonthStatisticsViewModelFactory(context)
+    )
 
     // HorizontalPager state
     val pagerState = rememberPagerState(
@@ -77,6 +100,18 @@ fun RunStatisticsScreen(
     LaunchedEffect(uiState.selectedTab) {
         if (pagerState.currentPage != uiState.selectedTab.ordinal) {
             pagerState.animateScrollToPage(uiState.selectedTab.ordinal)
+        }
+    }
+
+    // Handle month navigation after tab switch
+    LaunchedEffect(pagerState.currentPage, pendingMonthNavigation) {
+        if (pagerState.currentPage == RunStatisticTab.MONTH.ordinal && pendingMonthNavigation != null) {
+            // Tab has switched to MONTH, now navigate to the specific month
+            monthViewModel.goToSpecificMonth(
+                pendingMonthNavigation!!.year,
+                pendingMonthNavigation!!.month
+            )
+            pendingMonthNavigation = null
         }
     }
 
@@ -121,18 +156,67 @@ fun RunStatisticsScreen(
             ) { page ->
                 when (RunStatisticTab.entries[page]) {
                     RunStatisticTab.WEEK -> WeekStatisticsContent(
-                        onDayClick = { /* TODO: navigate to day detail */ }
+                        onDayClick = { dayData ->
+                            when {
+                                dayData.runCount == 1 && dayData.workoutIds.isNotEmpty() -> {
+                                    // Single record: navigate directly
+                                    onNavigateToRunDetail(dayData.workoutIds.first())
+                                }
+                                dayData.runCount > 1 -> {
+                                    // Multiple records: show selection dialog
+                                    selectedDayData = dayData
+                                    showRecordSelectDialog = true
+                                }
+                                // No records: do nothing
+                            }
+                        }
                     )
                     RunStatisticTab.MONTH -> MonthStatisticsContent(
-                        onDayClick = { /* TODO: navigate to day detail */ }
+                        viewModel = monthViewModel,
+                        onDayClick = { dayData ->
+                            when {
+                                dayData.runCount == 1 && dayData.workoutIds.isNotEmpty() -> {
+                                    // Single record: navigate directly
+                                    onNavigateToRunDetail(dayData.workoutIds.first())
+                                }
+                                dayData.runCount > 1 -> {
+                                    // Multiple records: show selection dialog
+                                    selectedDayData = dayData
+                                    showRecordSelectDialog = true
+                                }
+                                // No records: do nothing
+                            }
+                        }
                     )
                     RunStatisticTab.YEAR -> YearStatisticsContent(
-                        onMonthClick = { /* TODO: navigate to month detail */ }
+                        onMonthClick = { monthData ->
+                            // Switch to MONTH tab and navigate to the clicked month
+                            pendingMonthNavigation = monthData
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(RunStatisticTab.MONTH.ordinal)
+                            }
+                        }
                     )
                     RunStatisticTab.TOTAL -> TotalTabPlaceholder()
                 }
             }
         }
+    }
+
+    // Multi-record selection dialog
+    if (showRecordSelectDialog && selectedDayData != null) {
+        DayRunRecordSelectDialog(
+            dayData = selectedDayData!!,
+            onRecordSelected = { workoutId ->
+                showRecordSelectDialog = false
+                selectedDayData = null
+                onNavigateToRunDetail(workoutId)
+            },
+            onDismiss = {
+                showRecordSelectDialog = false
+                selectedDayData = null
+            }
+        )
     }
 }
 
