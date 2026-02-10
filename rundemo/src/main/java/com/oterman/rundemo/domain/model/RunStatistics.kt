@@ -204,6 +204,73 @@ data class YearStatistics(
 }
 
 /**
+ * Yearly statistics data (for Total view's per-year breakdown)
+ */
+data class YearlyStatistic(
+    val year: Int = 0,
+    val totalDistance: Double = 0.0,          // km
+    val totalDurationMinutes: Double = 0.0,   // minutes
+    val avgPace: String = "--'--\"",          // min/km formatted
+    val totalElevation: Double = 0.0,         // meters
+    val runCount: Int = 0,
+    val totalEnergy: Double = 0.0             // kcal
+) {
+    fun getFormattedDistance(): String {
+        return if (totalDistance >= 1000) {
+            totalDistance.toInt().toString()
+        } else {
+            String.format("%.1f", totalDistance)
+        }
+    }
+
+    fun getFormattedDuration(): String {
+        val hours = totalDurationMinutes / 60.0
+        return String.format("%.1f", hours)
+    }
+
+    fun getFormattedElevation(): String {
+        return String.format("%.0f", totalElevation)
+    }
+}
+
+/**
+ * All-time total statistics (aggregated across all years)
+ */
+data class AllTimeTotalStatistics(
+    val totalDistance: Double = 0.0,           // km
+    val totalDurationMinutes: Double = 0.0,    // minutes
+    val avgPace: String = "--'--\"",           // min/km formatted
+    val totalElevation: Double = 0.0,          // meters
+    val runCount: Int = 0,
+    val yearlyStatistics: List<YearlyStatistic> = emptyList(),
+    val maxYearDistance: Double = 0.0,         // Max year distance (for chart Y-axis)
+    val maxYearDuration: Double = 0.0          // Max year duration in minutes (for chart Y-axis)
+) {
+    val formattedHours: Int get() = (totalDurationMinutes / 60).toInt()
+    val formattedMinutes: Int get() = (totalDurationMinutes % 60).toInt()
+}
+
+/**
+ * Chart display mode for Total view
+ */
+enum class TotalChartDisplayMode {
+    DISTANCE,
+    DURATION;
+
+    val title: String
+        get() = when (this) {
+            DISTANCE -> "距离"
+            DURATION -> "时长"
+        }
+
+    val unit: String
+        get() = when (this) {
+            DISTANCE -> "公里"
+            DURATION -> "小时"
+        }
+}
+
+/**
  * Combined HomeTab UI state
  */
 data class HomeTabUiState(

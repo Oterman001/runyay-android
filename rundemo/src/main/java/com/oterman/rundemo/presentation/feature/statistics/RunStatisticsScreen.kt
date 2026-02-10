@@ -47,6 +47,7 @@ import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.presentation.feature.home.components.DayRunRecordSelectDialog
 import com.oterman.rundemo.presentation.feature.statistics.month.MonthStatisticsContent
+import com.oterman.rundemo.presentation.feature.statistics.total.TotalStatisticsContent
 import com.oterman.rundemo.presentation.feature.statistics.month.MonthStatisticsViewModel
 import com.oterman.rundemo.presentation.feature.statistics.month.MonthStatisticsViewModelFactory
 import com.oterman.rundemo.presentation.feature.statistics.week.WeekStatisticsContent
@@ -100,18 +101,6 @@ fun RunStatisticsScreen(
     LaunchedEffect(uiState.selectedTab) {
         if (pagerState.currentPage != uiState.selectedTab.ordinal) {
             pagerState.animateScrollToPage(uiState.selectedTab.ordinal)
-        }
-    }
-
-    // Handle month navigation after tab switch
-    LaunchedEffect(pagerState.currentPage, pendingMonthNavigation) {
-        if (pagerState.currentPage == RunStatisticTab.MONTH.ordinal && pendingMonthNavigation != null) {
-            // Tab has switched to MONTH, now navigate to the specific month
-            monthViewModel.goToSpecificMonth(
-                pendingMonthNavigation!!.year,
-                pendingMonthNavigation!!.month
-            )
-            pendingMonthNavigation = null
         }
     }
 
@@ -197,7 +186,7 @@ fun RunStatisticsScreen(
                             }
                         }
                     )
-                    RunStatisticTab.TOTAL -> TotalTabPlaceholder()
+                    RunStatisticTab.TOTAL -> TotalStatisticsContent()
                 }
             }
         }
@@ -293,19 +282,3 @@ private fun TabButton(
     }
 }
 
-/**
- * 总统计占位页面
- */
-@Composable
-private fun TotalTabPlaceholder() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "总统计\n（待实现）",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
