@@ -104,6 +104,14 @@ fun RunStatisticsScreen(
         }
     }
 
+    // Handle month navigation from year view
+    LaunchedEffect(pendingMonthNavigation) {
+        pendingMonthNavigation?.let { monthData ->
+            monthViewModel.goToSpecificMonth(monthData.year, monthData.month)
+            pendingMonthNavigation = null
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

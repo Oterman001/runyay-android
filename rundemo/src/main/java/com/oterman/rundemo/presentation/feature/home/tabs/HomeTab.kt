@@ -3,13 +3,13 @@ package com.oterman.rundemo.presentation.feature.home.tabs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -56,7 +56,7 @@ fun HomeTabContent(
     onNavigateToRunStatistics: (tab: String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val lazyListState = rememberLazyListState()
+    val scrollState = rememberScrollState()
     val backgroundColor = MaterialTheme.colorScheme.background
 
     // State for multi-record selection dialog
@@ -66,14 +66,7 @@ fun HomeTabContent(
     // Calculate collapse progress based on scroll offset
     val collapseProgress by remember {
         derivedStateOf {
-            val firstItemIndex = lazyListState.firstVisibleItemIndex
-            val firstItemOffset = lazyListState.firstVisibleItemScrollOffset
-
-            if (firstItemIndex > 0) {
-                1f
-            } else {
-                (firstItemOffset / 200f).coerceIn(0f, 1f)
-            }
+            (scrollState.value / 200f).coerceIn(0f, 1f)
         }
     }
 
@@ -107,152 +100,135 @@ fun HomeTabContent(
         }
 
         // Main content
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 16.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 16.dp)
         ) {
             // Large title header (iOS NavigationTitle style)
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 4.dp, end = 4.dp, top = 48.dp, bottom = 8.dp)
-                        .graphicsLayer {
-                            val scale = 1f - (collapseProgress * 0.15f)
-                            scaleX = scale
-                            scaleY = scale
-                            alpha = 1f - collapseProgress
-                            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
-                        }
-                ) {
-                    Text(
-                        text = "首页",
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        letterSpacing = 0.sp
-                    )
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 4.dp, end = 4.dp, top = 48.dp, bottom = 8.dp)
+                    .graphicsLayer {
+                        val scale = 1f - (collapseProgress * 0.15f)
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = 1f - collapseProgress
+                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+                    }
+            ) {
+                Text(
+                    text = "首页",
+                    fontSize = 34.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    letterSpacing = 0.sp
+                )
             }
 
             // Total Run + VDOT Card
-            item {
-                TotalRunVdotCard(
-                    stats = uiState.totalStats,
-                    modifier = Modifier.padding(bottom = 10.dp),
-                    onClick = { onNavigateToRunStatistics("total") }
-                )
-            }
+            TotalRunVdotCard(
+                stats = uiState.totalStats,
+                modifier = Modifier.padding(bottom = 10.dp),
+                onClick = { onNavigateToRunStatistics("total") }
+            )
 
             // Year + Month Cards (side by side)
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    PeriodStatisticsCard(
-                        title = "今年",
-                        stats = uiState.yearStats,
-                        goalSettings = uiState.goalSettings,
-                        isYearCard = true,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigateToRunStatistics("year") },
-                        onSetGoalClick = onSetGoalClick
-                    )
-                    PeriodStatisticsCard(
-                        title = "本月",
-                        stats = uiState.monthStats,
-                        goalSettings = uiState.goalSettings,
-                        isYearCard = false,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onNavigateToRunStatistics("month") },
-                        onSetGoalClick = onSetGoalClick
-                    )
-                }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                PeriodStatisticsCard(
+                    title = "今年",
+                    stats = uiState.yearStats,
+                    goalSettings = uiState.goalSettings,
+                    isYearCard = true,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onNavigateToRunStatistics("year") },
+                    onSetGoalClick = onSetGoalClick
+                )
+                PeriodStatisticsCard(
+                    title = "本月",
+                    stats = uiState.monthStats,
+                    goalSettings = uiState.goalSettings,
+                    isYearCard = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onNavigateToRunStatistics("month") },
+                    onSetGoalClick = onSetGoalClick
+                )
             }
 
             // Week Card
-            item {
-                WeekStatisticsCard(
-                    stats = uiState.weekStats,
-                    modifier = Modifier.padding(bottom = 10.dp),
-                    onDayClick = { dayData ->
-                        when {
-                            dayData.runCount == 1 && dayData.workoutIds.isNotEmpty() -> {
-                                // Single record: navigate directly
-                                onNavigateToRunDetail(dayData.workoutIds.first())
-                            }
-                            dayData.runCount > 1 -> {
-                                // Multiple records: show selection dialog
-                                selectedDayData = dayData
-                                showRecordSelectDialog = true
-                            }
-                            // No records: do nothing
+            WeekStatisticsCard(
+                stats = uiState.weekStats,
+                modifier = Modifier.padding(bottom = 10.dp),
+                onDayClick = { dayData ->
+                    when {
+                        dayData.runCount == 1 && dayData.workoutIds.isNotEmpty() -> {
+                            // Single record: navigate directly
+                            onNavigateToRunDetail(dayData.workoutIds.first())
                         }
-                    },
-                    onClick = { onNavigateToRunStatistics("week") }
-                )
-            }
+                        dayData.runCount > 1 -> {
+                            // Multiple records: show selection dialog
+                            selectedDayData = dayData
+                            showRecordSelectDialog = true
+                        }
+                        // No records: do nothing
+                    }
+                },
+                onClick = { onNavigateToRunStatistics("week") }
+            )
 
             // Card 1: Latest Run Record
-            item {
-                uiState.latestRunRecord?.let { record ->
-                    LatestRunRecordCard(
-                        record = record,
-                        modifier = Modifier.padding(bottom = 10.dp),
-                        onClick = { onNavigateToRunDetail(record.workoutId) }
-                    )
-                }
+            uiState.latestRunRecord?.let { record ->
+                LatestRunRecordCard(
+                    record = record,
+                    modifier = Modifier.padding(bottom = 10.dp),
+                    onClick = { onNavigateToRunDetail(record.workoutId) }
+                )
             }
 
             // Card 3: Next Race
-            item {
-                NextRaceCard(
-                    race = uiState.nextRace,
+            NextRaceCard(
+                race = uiState.nextRace,
+                modifier = Modifier.padding(bottom = 10.dp),
+                onClick = { /* Navigate to race list or add race */ }
+            )
+
+            // Card 2: Max Data (PB Ability)
+            if (uiState.pbAbilityList.isNotEmpty()) {
+                AllPBAbilityCard(
+                    pbList = uiState.pbAbilityList,
                     modifier = Modifier.padding(bottom = 10.dp),
-                    onClick = { /* Navigate to race list or add race */ }
+                    onItemClick = { item ->
+                        item.workoutId?.let { workoutId ->
+                            onNavigateToRunDetail(workoutId)
+                        }
+                    }
                 )
             }
 
-            // Card 2: Max Data (PB Ability)
-            item {
-                if (uiState.pbAbilityList.isNotEmpty()) {
-                    AllPBAbilityCard(
-                        pbList = uiState.pbAbilityList,
-                        modifier = Modifier.padding(bottom = 10.dp),
-                        onItemClick = { item ->
-                            item.workoutId?.let { workoutId ->
-                                onNavigateToRunDetail(workoutId)
-                            }
-                        }
-                    )
-                }
-            }
-
             // Card 5: PB Speed Records
-            item {
-                if (uiState.pbSpeedList.isNotEmpty()) {
-                    AllPBSpeedCard(
-                        pbList = uiState.pbSpeedList,
-                        modifier = Modifier.padding(bottom = 10.dp),
-                        onItemClick = { item ->
-                            /* Navigate to record detail if workoutId exists */
-                        }
-                    )
-                }
+            if (uiState.pbSpeedList.isNotEmpty()) {
+                AllPBSpeedCard(
+                    pbList = uiState.pbSpeedList,
+                    modifier = Modifier.padding(bottom = 10.dp),
+                    onItemClick = { item ->
+                        /* Navigate to record detail if workoutId exists */
+                    }
+                )
             }
 
             // Card 4: Daily Sentence
-            item {
-                if (uiState.dailySentence.isNotEmpty()) {
-                    DailySentenceCard(
-                        sentence = uiState.dailySentence,
-                        modifier = Modifier.padding(bottom = 10.dp)
-                    )
-                }
+            if (uiState.dailySentence.isNotEmpty()) {
+                DailySentenceCard(
+                    sentence = uiState.dailySentence,
+                    modifier = Modifier.padding(bottom = 10.dp)
+                )
             }
         }
     }
