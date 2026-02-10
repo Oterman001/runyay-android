@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -67,7 +68,9 @@ fun DayCell(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.clickable(enabled = dayData.hasRun) { onClick() }
+        modifier = modifier
+            .widthIn(max = 48.dp)
+            .clickable(enabled = dayData.hasRun) { onClick() }
     ) {
         // Outer Box without clip - allows badge to overflow
         Box(
