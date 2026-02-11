@@ -64,7 +64,7 @@ fun MiniMonthView(
  * Uses BoxWithConstraints to dynamically calculate cell size based on available width
  */
 @Composable
-private fun MiniMonthHeatmapGrid(
+internal fun MiniMonthHeatmapGrid(
     dailyRecords: List<DayRunData>,
     modifier: Modifier = Modifier
 ) {
@@ -106,7 +106,7 @@ private fun MiniMonthHeatmapGrid(
  * Single day cell in mini heatmap
  */
 @Composable
-private fun MiniDayCell(
+internal fun MiniDayCell(
     dayData: DayRunData,
     cellSize: Dp,
     cellRadius: Dp

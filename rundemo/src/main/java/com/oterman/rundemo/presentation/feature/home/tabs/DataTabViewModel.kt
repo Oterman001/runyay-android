@@ -4,42 +4,92 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
+import com.oterman.rundemo.domain.model.DataTabDisplayMode
+import com.oterman.rundemo.domain.model.DayRunData
+import com.oterman.rundemo.domain.model.MonthRangeData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 /**
  * DataTab UI状态
+ * 支持按月分组和折叠展开
  */
 data class DataTabUiState(
     val isLoading: Boolean = true,
-    val runRecords: List<RunRecordEntity> = emptyList(),
-    val error: String? = null
+    val monthGroups: List<MonthRangeData> = emptyList(),    // 按月分组数据
+    val expandedMonths: Set<String> = emptySet(),            // 展开的月份ID集合 ("2025-2")
+    val displayMode: DataTabDisplayMode = DataTabDisplayMode.HEATMAP,  // 显示模式
+    val error: String? = null,
+    val runRecords: List<RunRecordEntity> = emptyList()      // 保留原有字段兼容
 )
 
 /**
  * DataTab ViewModel
- * 管理跑步记录列表的状态
+ * 管理跑步记录列表的状态，支持按月分组和折叠展开
  */
 class DataTabViewModel(
-    private val repository: RunDataRepository
+    private val repository: RunDataRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow(DataTabUiState())
     val uiState: StateFlow<DataTabUiState> = _uiState.asStateFlow()
-    
+
     init {
+        loadDisplayModePreference()
         loadRunRecords()
     }
-    
+
     /**
-     * 加载跑步记录列表
+     * 加载显示模式偏好设置
+     */
+    private fun loadDisplayModePreference() {
+        val useHeatmap = preferencesManager.getDataTabDisplayMode()
+        _uiState.value = _uiState.value.copy(
+            displayMode = if (useHeatmap) DataTabDisplayMode.HEATMAP else DataTabDisplayMode.SIMPLE
+        )
+    }
+
+    /**
+     * 切换显示模式
+     */
+    fun toggleDisplayMode() {
+        val newMode = _uiState.value.displayMode.toggle()
+        _uiState.value = _uiState.value.copy(displayMode = newMode)
+        preferencesManager.saveDataTabDisplayMode(newMode == DataTabDisplayMode.HEATMAP)
+    }
+
+    /**
+     * 切换月份展开/折叠状态
+     */
+    fun toggleMonthExpanded(monthId: String) {
+        val currentExpanded = _uiState.value.expandedMonths
+        val newExpanded = if (currentExpanded.contains(monthId)) {
+            currentExpanded - monthId
+        } else {
+            currentExpanded + monthId
+        }
+        _uiState.value = _uiState.value.copy(expandedMonths = newExpanded)
+    }
+
+    /**
+     * 检查月份是否展开
+     */
+    fun isMonthExpanded(monthId: String): Boolean {
+        return _uiState.value.expandedMonths.contains(monthId)
+    }
+
+    /**
+     * 加载跑步记录列表并按月分组
      */
     private fun loadRunRecords() {
         viewModelScope.launch {
@@ -51,21 +101,177 @@ class DataTabViewModel(
                     )
                 }
                 .collect { records ->
+                    // 保存当前展开状态
+                    val currentExpanded = _uiState.value.expandedMonths
+
+                    // 按月分组
+                    val monthGroups = groupRecordsByMonth(records)
+
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
+                        monthGroups = monthGroups,
                         runRecords = records,
+                        expandedMonths = currentExpanded,
                         error = null
                     )
                 }
         }
     }
-    
+
+    /**
+     * 将跑步记录按月份分组
+     * 从当前月份遍历到最早有数据的月份，中间空月份也生成
+     * 返回按时间降序排列的月份分组列表
+     */
+    private fun groupRecordsByMonth(records: List<RunRecordEntity>): List<MonthRangeData> {
+        if (records.isEmpty()) return emptyList()
+
+        val calendar = Calendar.getInstance()
+
+        // 1. 找到最早记录的年月
+        val earliestRecord = records.minByOrNull { it.startTime } ?: return emptyList()
+        calendar.timeInMillis = earliestRecord.startTime
+        val earliestYear = calendar.get(Calendar.YEAR)
+        val earliestMonth = calendar.get(Calendar.MONTH) + 1
+
+        // 2. 获取当前年月
+        val today = Calendar.getInstance()
+        val currentYear = today.get(Calendar.YEAR)
+        val currentMonth = today.get(Calendar.MONTH) + 1
+
+        // 3. 按年月分组实际记录
+        val recordsByMonth = records.groupBy { record ->
+            calendar.timeInMillis = record.startTime
+            "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH) + 1}"
+        }
+
+        // 4. 从当前月份遍历到最早月份，生成完整列表
+        val result = mutableListOf<MonthRangeData>()
+        var year = currentYear
+        var month = currentMonth
+
+        while (year > earliestYear || (year == earliestYear && month >= earliestMonth)) {
+            val key = "$year-$month"
+            val monthRecords = recordsByMonth[key] ?: emptyList()
+
+            // 计算统计数据
+            val totalDistance = monthRecords.sumOf { it.totalDistance }
+            val totalDuration = monthRecords.sumOf { it.activeDuration }
+            val avgPace = if (totalDistance > 0) {
+                formatPace(totalDuration / totalDistance)
+            } else {
+                "--'--\""
+            }
+
+            // 生成每日数据(用于热力图)
+            val dailyRecords = buildDailyRecordsForMonth(year, month, monthRecords)
+
+            result.add(MonthRangeData(
+                year = year,
+                month = month,
+                totalDistance = totalDistance,
+                totalDurationMinutes = totalDuration,
+                runCount = monthRecords.size,
+                avgPace = avgPace,
+                dailyRecords = dailyRecords
+            ))
+
+            // 上一个月
+            month--
+            if (month < 1) {
+                month = 12
+                year--
+            }
+        }
+
+        return result  // 已经是降序排列（从当前月到最早月）
+    }
+
+    /**
+     * 构建某月的每日数据(包含占位符，用于热力图显示)
+     */
+    private fun buildDailyRecordsForMonth(
+        year: Int,
+        month: Int,
+        records: List<RunRecordEntity>
+    ): List<DayRunData> {
+        val calendar = Calendar.getInstance()
+        calendar.set(year, month - 1, 1)
+
+        // 获取该月第一天是周几 (周日=1, 周一=2, ...)
+        val firstDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+        // 转换为周一=0的索引 (周一开始的日历)
+        val placeholderCount = if (firstDayOfWeek == Calendar.SUNDAY) 6 else firstDayOfWeek - 2
+
+        // 获取该月天数
+        val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+        // 按日期分组记录
+        val recordsByDay = records.groupBy { record ->
+            calendar.timeInMillis = record.startTime
+            calendar.get(Calendar.DAY_OF_MONTH)
+        }
+
+        val today = Calendar.getInstance()
+        val isCurrentMonth = year == today.get(Calendar.YEAR) &&
+                             month == today.get(Calendar.MONTH) + 1
+        val todayDay = today.get(Calendar.DAY_OF_MONTH)
+
+        val result = mutableListOf<DayRunData>()
+
+        // 添加占位符
+        repeat(placeholderCount) {
+            result.add(DayRunData(isPlaceholder = true))
+        }
+
+        // 添加每日数据
+        for (day in 1..daysInMonth) {
+            val dayRecords = recordsByDay[day] ?: emptyList()
+            val isFuture = isCurrentMonth && day > todayDay
+
+            result.add(DayRunData(
+                dayOfMonth = day,
+                totalDistance = dayRecords.sumOf { it.totalDistance },
+                runCount = dayRecords.size,
+                isToday = isCurrentMonth && day == todayDay,
+                isFuture = isFuture,
+                workoutIds = dayRecords.map { it.workoutId }
+            ))
+        }
+
+        return result
+    }
+
+    /**
+     * 格式化配速
+     */
+    private fun formatPace(paceMinPerKm: Double): String {
+        if (paceMinPerKm <= 0 || paceMinPerKm.isNaN() || paceMinPerKm.isInfinite()) {
+            return "--'--\""
+        }
+        val minutes = paceMinPerKm.toInt()
+        val seconds = ((paceMinPerKm - minutes) * 60).toInt()
+        return "${minutes}'${seconds.toString().padStart(2, '0')}\""
+    }
+
     /**
      * 刷新数据
      */
     fun refresh() {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         loadRunRecords()
+    }
+
+    /**
+     * 获取月份内的跑步记录
+     */
+    fun getRecordsForMonth(year: Int, month: Int): List<RunRecordEntity> {
+        val calendar = Calendar.getInstance()
+        return _uiState.value.runRecords.filter { record ->
+            calendar.timeInMillis = record.startTime
+            calendar.get(Calendar.YEAR) == year &&
+            calendar.get(Calendar.MONTH) + 1 == month
+        }.sortedByDescending { it.startTime }
     }
 }
 
@@ -75,15 +281,15 @@ class DataTabViewModel(
 class DataTabViewModelFactory(
     private val context: Context
 ) : ViewModelProvider.Factory {
-    
+
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(DataTabViewModel::class.java)) {
             val database = RunDatabase.getInstance(context)
             val repository = RunDataRepositoryImpl(database)
-            return DataTabViewModel(repository) as T
+            val preferencesManager = PreferencesManager(context)
+            return DataTabViewModel(repository, preferencesManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
-

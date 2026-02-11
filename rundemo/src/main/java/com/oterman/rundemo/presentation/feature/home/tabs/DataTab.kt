@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,11 +20,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarViewMonth
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.outlined.DirectionsRun
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,6 +50,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.domain.model.DataTabDisplayMode
+import com.oterman.rundemo.presentation.feature.home.tabs.components.MonthSection
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -53,7 +59,8 @@ import java.util.Locale
 /**
  * Data tab content with iOS-style NavigationTitle effect
  * Large title collapses to small title when scrolling
- * Corresponds to iOS Tab2Page
+ * Supports monthly grouping with expand/collapse
+ * Corresponds to iOS AllRunRecordPage
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -89,21 +96,37 @@ fun DataTabContent(
             .fillMaxSize()
             .background(backgroundColor)
     ) {
-        // Collapsed header (small title) - appears when scrolled
+        // Fixed header: 固定高度48dp，与其他Tab一致
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(48.dp)
                 .background(backgroundColor)
                 .zIndex(1f)
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-                .alpha(collapseProgress)
         ) {
-            Text(
-                text = "数据",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 折叠后的小标题（滚动时渐显）
+                Text(
+                    text = "数据",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.alpha(collapseProgress)
+                )
+
+                // 模式切换按钮（始终显示，紧凑尺寸）
+                DisplayModeToggleButton(
+                    displayMode = uiState.displayMode,
+                    onClick = { viewModel.toggleDisplayMode() },
+                    modifier = Modifier.size(40.dp)
+                )
+            }
         }
 
         // Main content
@@ -149,7 +172,7 @@ fun DataTabContent(
                     }
                 }
             }
-            
+
             // Error state
             uiState.error?.let { error ->
                 item {
@@ -167,56 +190,105 @@ fun DataTabContent(
                     }
                 }
             }
-            
+
             // Empty state
-            if (!uiState.isLoading && uiState.error == null && uiState.runRecords.isEmpty()) {
+            if (!uiState.isLoading && uiState.error == null && uiState.monthGroups.isEmpty()) {
                 item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.DirectionsRun,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "暂无跑步记录",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "请在「我的」页面导入FIT文件",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
+                    EmptyStateView()
                 }
             }
 
-            // Run records list
-            items(
-                items = uiState.runRecords,
-                key = { it.workoutId }
-            ) { record ->
-                RunRecordItem(
-                    record = record,
-                    onClick = { onRecordClick(record.workoutId) },
-                    onLongClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onRecordLongClick(record.workoutId)
-                    }
-                )
+            // Monthly grouped list
+            uiState.monthGroups.forEach { monthData ->
+                val monthId = "${monthData.year}-${monthData.month}"
+                val isExpanded = viewModel.isMonthExpanded(monthId)
+
+                // Month section with header
+                item(key = "${monthId}_section") {
+                    MonthSection(
+                        monthData = monthData,
+                        isExpanded = isExpanded,
+                        displayMode = uiState.displayMode,
+                        onToggleExpand = { viewModel.toggleMonthExpanded(monthId) },
+                        content = {
+                            // Records within this month (rendered when expanded)
+                            val monthRecords = viewModel.getRecordsForMonth(monthData.year, monthData.month)
+                            Column {
+                                monthRecords.forEach { record ->
+                                    RunRecordItem(
+                                        record = record,
+                                        onClick = { onRecordClick(record.workoutId) },
+                                        onLongClick = {
+                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            onRecordLongClick(record.workoutId)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    )
+                }
             }
+        }
+    }
+}
+
+/**
+ * 显示模式切换按钮
+ */
+@Composable
+private fun DisplayModeToggleButton(
+    displayMode: DataTabDisplayMode,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier
+    ) {
+        Icon(
+            imageVector = when (displayMode) {
+                DataTabDisplayMode.HEATMAP -> Icons.Default.List
+                DataTabDisplayMode.SIMPLE -> Icons.Default.CalendarViewMonth
+            },
+            contentDescription = "切换显示模式",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * 空状态视图
+ */
+@Composable
+private fun EmptyStateView() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.DirectionsRun,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "暂无跑步记录",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "请在「我的」页面导入FIT文件",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
         }
     }
 }
@@ -268,9 +340,9 @@ private fun RunRecordItem(
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             // 中间：主要信息
             Column(
                 modifier = Modifier.weight(1f)
@@ -281,9 +353,9 @@ private fun RunRecordItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 // 距离（大字）
                 Row(
                     verticalAlignment = Alignment.Bottom
@@ -302,9 +374,9 @@ private fun RunRecordItem(
                         modifier = Modifier.padding(bottom = 2.dp)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 // 配速 / 时长
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -321,7 +393,7 @@ private fun RunRecordItem(
                     )
                 }
             }
-            
+
             // 右侧：来源标识
             record.datasource?.let { source ->
                 if (source.isNotBlank()) {
@@ -375,7 +447,7 @@ private fun formatDuration(durationMinutes: Double): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
-    
+
     return if (hours > 0) {
         String.format("%d:%02d:%02d", hours, minutes, seconds)
     } else {

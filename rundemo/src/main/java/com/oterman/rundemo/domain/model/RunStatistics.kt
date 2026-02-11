@@ -271,6 +271,20 @@ enum class TotalChartDisplayMode {
 }
 
 /**
+ * DataTab 显示模式
+ * 对应 iOS AllRunRecordPage 的两种视图模式
+ */
+enum class DataTabDisplayMode {
+    HEATMAP,  // 热力图模式 - 显示迷你月度热力日历
+    SIMPLE;   // 简单文本模式 - 显示文字统计信息
+
+    fun toggle(): DataTabDisplayMode = when (this) {
+        HEATMAP -> SIMPLE
+        SIMPLE -> HEATMAP
+    }
+}
+
+/**
  * Combined HomeTab UI state
  */
 data class HomeTabUiState(

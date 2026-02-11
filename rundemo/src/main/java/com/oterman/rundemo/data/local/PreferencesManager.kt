@@ -261,5 +261,23 @@ class PreferencesManager(context: Context) {
             GoalType.DISTANCE
         }
     }
+
+    // ==================== DataTab Display Settings ====================
+
+    /**
+     * 保存 DataTab 显示模式
+     * @param useHeatmap true=热力图模式, false=简单模式
+     */
+    fun saveDataTabDisplayMode(useHeatmap: Boolean) {
+        prefs.edit().putBoolean(Constants.PreferenceKeys.KEY_DATATAB_USE_HEATMAP, useHeatmap).apply()
+    }
+
+    /**
+     * 获取 DataTab 显示模式
+     * @return true=热力图模式(默认), false=简单模式
+     */
+    fun getDataTabDisplayMode(): Boolean {
+        return prefs.getBoolean(Constants.PreferenceKeys.KEY_DATATAB_USE_HEATMAP, true)
+    }
 }
 

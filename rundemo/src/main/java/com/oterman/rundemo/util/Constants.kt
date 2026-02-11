@@ -40,6 +40,9 @@ object Constants {
         const val KEY_MONTH_DISTANCE_GOAL = "month_distance_goal"
         const val KEY_YEAR_DURATION_GOAL = "year_duration_goal"
         const val KEY_MONTH_DURATION_GOAL = "month_duration_goal"
+
+        // DataTab display settings
+        const val KEY_DATATAB_USE_HEATMAP = "datatab_use_heatmap"
     }
     
     /**
