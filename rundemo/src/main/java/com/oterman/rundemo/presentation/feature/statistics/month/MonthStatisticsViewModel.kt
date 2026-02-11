@@ -9,6 +9,7 @@ import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.DayRunRecordInfo
 import com.oterman.rundemo.domain.model.MonthStatistics
+import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.util.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +46,14 @@ class MonthStatisticsViewModel(
         set(Calendar.MILLISECOND, 0)
     }
 
+    // Trajectory mode state
+    private val _showTrajectoryMode = MutableStateFlow(false)
+    val showTrajectoryMode: StateFlow<Boolean> = _showTrajectoryMode.asStateFlow()
+
+    // Trajectory data cache (workoutId -> TrackPoints)
+    private val _trajectoryDataMap = MutableStateFlow<Map<String, List<TrackPoint>>>(emptyMap())
+    val trajectoryDataMap: StateFlow<Map<String, List<TrackPoint>>> = _trajectoryDataMap.asStateFlow()
+
     init {
         loadMonthData()
         loadDailySentence()
@@ -57,6 +66,9 @@ class MonthStatisticsViewModel(
         Logger.d(TAG, "Navigating to previous month")
         currentMonthStart.add(Calendar.MONTH, -1)
         loadMonthData()
+        if (_showTrajectoryMode.value) {
+            preloadTrajectories()
+        }
     }
 
     /**
@@ -67,6 +79,9 @@ class MonthStatisticsViewModel(
             Logger.d(TAG, "Navigating to next month")
             currentMonthStart.add(Calendar.MONTH, 1)
             loadMonthData()
+            if (_showTrajectoryMode.value) {
+                preloadTrajectories()
+            }
         }
     }
 
@@ -83,6 +98,9 @@ class MonthStatisticsViewModel(
             set(Calendar.MILLISECOND, 0)
         }
         loadMonthData()
+        if (_showTrajectoryMode.value) {
+            preloadTrajectories()
+        }
     }
 
     /**
@@ -101,6 +119,9 @@ class MonthStatisticsViewModel(
             set(Calendar.MILLISECOND, 0)
         }
         loadMonthData()
+        if (_showTrajectoryMode.value) {
+            preloadTrajectories()
+        }
     }
 
     /**
@@ -109,6 +130,57 @@ class MonthStatisticsViewModel(
     fun refresh() {
         loadMonthData()
         loadDailySentence()
+        if (_showTrajectoryMode.value) {
+            preloadTrajectories()
+        }
+    }
+
+    /**
+     * Toggle trajectory display mode
+     */
+    fun toggleTrajectoryMode() {
+        val newMode = !_showTrajectoryMode.value
+        Logger.d(TAG, "Toggling trajectory mode: ${_showTrajectoryMode.value} -> $newMode")
+        _showTrajectoryMode.value = newMode
+        
+        // Preload trajectories when switching to trajectory mode
+        if (newMode) {
+            preloadTrajectories()
+        }
+    }
+
+    /**
+     * Preload trajectory data for current month
+     */
+    fun preloadTrajectories() {
+        viewModelScope.launch {
+            try {
+                Logger.d(TAG, "Preloading trajectories for current month")
+                val dailyRecords = _uiState.value.monthStats.dailyRecords
+                val trajectoryMap = mutableMapOf<String, List<TrackPoint>>()
+                
+                // Load track points for each workout in the month
+                dailyRecords.forEach { dayData ->
+                    if (!dayData.isPlaceholder) {
+                        dayData.workoutIds.forEach { workoutId ->
+                            try {
+                                val trackPoints = repository.getTrackPoints(workoutId)
+                                if (trackPoints.isNotEmpty()) {
+                                    trajectoryMap[workoutId] = trackPoints
+                                }
+                            } catch (e: Exception) {
+                                Logger.e(TAG, "Failed to load track points for $workoutId", e)
+                            }
+                        }
+                    }
+                }
+                
+                _trajectoryDataMap.value = trajectoryMap
+                Logger.d(TAG, "Preloaded ${trajectoryMap.size} trajectories")
+            } catch (e: Exception) {
+                Logger.e(TAG, "Failed to preload trajectories", e)
+            }
+        }
     }
 
     private fun loadMonthData() {

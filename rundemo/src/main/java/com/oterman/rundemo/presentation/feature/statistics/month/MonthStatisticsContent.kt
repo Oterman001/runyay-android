@@ -53,11 +53,17 @@ fun MonthStatisticsContent(
 
         // 2. Month calendar grid (summary + weekday labels + day grid)
         item {
+            val showTrajectoryMode by viewModel.showTrajectoryMode.collectAsState()
+            val trajectoryDataMap by viewModel.trajectoryDataMap.collectAsState()
+            
             MonthCalendarCard(
                 runCount = uiState.monthStats.runCount,
                 totalDistance = uiState.monthStats.totalDistance,
                 dailyRecords = uiState.monthStats.dailyRecords,
-                onDayClick = onDayClick
+                showTrajectoryMode = showTrajectoryMode,
+                trajectoryDataMap = trajectoryDataMap,
+                onDayClick = onDayClick,
+                onToggleTrajectoryMode = { viewModel.toggleTrajectoryMode() }
             )
         }
 

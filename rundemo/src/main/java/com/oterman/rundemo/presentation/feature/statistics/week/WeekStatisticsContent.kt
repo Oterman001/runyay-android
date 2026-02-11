@@ -53,11 +53,17 @@ fun WeekStatisticsContent(
 
         // 2. Week summary + 7-day grid
         item {
+            val showTrajectoryMode by viewModel.showTrajectoryMode.collectAsState()
+            val trajectoryDataMap by viewModel.trajectoryDataMap.collectAsState()
+            
             WeekSummaryAndGrid(
                 runCount = uiState.weekStats.runCount,
                 totalDistance = uiState.weekStats.totalDistance,
                 dailyRecords = uiState.weekStats.dailyRecords,
-                onDayClick = onDayClick
+                showTrajectoryMode = showTrajectoryMode,
+                trajectoryDataMap = trajectoryDataMap,
+                onDayClick = onDayClick,
+                onToggleTrajectoryMode = { viewModel.toggleTrajectoryMode() }
             )
         }
 

@@ -8,6 +8,7 @@ import com.oterman.rundemo.data.mock.MockDataProvider
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.DayRunRecordInfo
+import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.domain.model.WeekStatistics
 import com.oterman.rundemo.util.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +48,14 @@ class WeekStatisticsViewModel(
         set(Calendar.MILLISECOND, 0)
     }
 
+    // Trajectory mode state
+    private val _showTrajectoryMode = MutableStateFlow(false)
+    val showTrajectoryMode: StateFlow<Boolean> = _showTrajectoryMode.asStateFlow()
+
+    // Trajectory data cache (workoutId -> TrackPoints)
+    private val _trajectoryDataMap = MutableStateFlow<Map<String, List<TrackPoint>>>(emptyMap())
+    val trajectoryDataMap: StateFlow<Map<String, List<TrackPoint>>> = _trajectoryDataMap.asStateFlow()
+
     init {
         loadWeekData()
         loadDailySentence()
@@ -59,6 +68,9 @@ class WeekStatisticsViewModel(
         Logger.d(TAG, "Navigating to previous week")
         currentWeekStart.add(Calendar.WEEK_OF_YEAR, -1)
         loadWeekData()
+        if (_showTrajectoryMode.value) {
+            preloadTrajectories()
+        }
     }
 
     /**
@@ -69,6 +81,9 @@ class WeekStatisticsViewModel(
             Logger.d(TAG, "Navigating to next week")
             currentWeekStart.add(Calendar.WEEK_OF_YEAR, 1)
             loadWeekData()
+            if (_showTrajectoryMode.value) {
+                preloadTrajectories()
+            }
         }
     }
 
@@ -86,6 +101,9 @@ class WeekStatisticsViewModel(
             set(Calendar.MILLISECOND, 0)
         }
         loadWeekData()
+        if (_showTrajectoryMode.value) {
+            preloadTrajectories()
+        }
     }
 
     /**
@@ -94,6 +112,55 @@ class WeekStatisticsViewModel(
     fun refresh() {
         loadWeekData()
         loadDailySentence()
+        if (_showTrajectoryMode.value) {
+            preloadTrajectories()
+        }
+    }
+
+    /**
+     * Toggle trajectory display mode
+     */
+    fun toggleTrajectoryMode() {
+        val newMode = !_showTrajectoryMode.value
+        Logger.d(TAG, "Toggling trajectory mode: ${_showTrajectoryMode.value} -> $newMode")
+        _showTrajectoryMode.value = newMode
+        
+        // Preload trajectories when switching to trajectory mode
+        if (newMode) {
+            preloadTrajectories()
+        }
+    }
+
+    /**
+     * Preload trajectory data for current week
+     */
+    fun preloadTrajectories() {
+        viewModelScope.launch {
+            try {
+                Logger.d(TAG, "Preloading trajectories for current week")
+                val dailyRecords = _uiState.value.weekStats.dailyRecords
+                val trajectoryMap = mutableMapOf<String, List<TrackPoint>>()
+                
+                // Load track points for each workout in the week
+                dailyRecords.forEach { dayData ->
+                    dayData.workoutIds.forEach { workoutId ->
+                        try {
+                            val trackPoints = repository.getTrackPoints(workoutId)
+                            if (trackPoints.isNotEmpty()) {
+                                trajectoryMap[workoutId] = trackPoints
+                            }
+                        } catch (e: Exception) {
+                            Logger.e(TAG, "Failed to load track points for $workoutId", e)
+                        }
+                    }
+                }
+                
+                _trajectoryDataMap.value = trajectoryMap
+                Logger.d(TAG, "Preloaded ${trajectoryMap.size} trajectories")
+            } catch (e: Exception) {
+                Logger.e(TAG, "Failed to preload trajectories", e)
+            }
+        }
     }
 
     private fun loadWeekData() {
