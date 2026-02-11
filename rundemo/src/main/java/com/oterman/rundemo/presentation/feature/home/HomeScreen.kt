@@ -51,6 +51,7 @@ fun HomeScreen(
     onNavigateToUserProfile: () -> Unit = {},
     onNavigateToRunGoalSet: () -> Unit = {},
     onNavigateToRunStatistics: (tab: String) -> Unit = {},
+    onNavigateToDebug: () -> Unit = {},
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(LocalContext.current)
     )
@@ -110,7 +111,8 @@ fun HomeScreen(
                     onResetFirstLaunchClick = viewModel::resetFirstLaunch,
                     onImportFitFile = viewModel::importFitFile,
                     onDataSourceManageClick = onNavigateToDataSourceManage,
-                    onRunGoalClick = onNavigateToRunGoalSet
+                    onRunGoalClick = onNavigateToRunGoalSet,
+                    onDebugClick = onNavigateToDebug
                 )
             }
         }

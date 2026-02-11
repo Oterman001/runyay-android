@@ -116,5 +116,11 @@ sealed class Screen(val route: String) {
     object RunStatistics : Screen("run_statistics/{tab}") {
         fun createRoute(tab: String = "week") = "run_statistics/$tab"
     }
+
+    /**
+     * 调试页面
+     * 用于开发调试功能（仅Debug版本可见）
+     */
+    object Debug : Screen("debug")
 }
 

@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
 import com.oterman.rundemo.presentation.components.settings.SettingsItem
 import com.oterman.rundemo.presentation.components.settings.UserProfileCard
@@ -66,7 +67,8 @@ fun ProfileTabContent(
     onResetFirstLaunchClick: () -> Unit,
     onImportFitFile: (Uri) -> Unit = {},
     onDataSourceManageClick: () -> Unit = {},
-    onRunGoalClick: () -> Unit = {}
+    onRunGoalClick: () -> Unit = {},
+    onDebugClick: () -> Unit = {}
 ) {
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -243,23 +245,33 @@ fun ProfileTabContent(
 
             item { Spacer(modifier = Modifier.height(20.dp)) }
 
-            // Debug Group (Show Welcome, Reset First Launch)
-            item {
-                SettingsCard {
-                    SettingsItem(
-                        icon = Icons.Outlined.Flag,
-                        title = "显示欢迎页",
-                        iconTint = MaterialTheme.colorScheme.tertiary,
-                        showDivider = true,
-                        onClick = onShowWelcomeClick
-                    )
-                    SettingsItem(
-                        icon = Icons.Outlined.Flag,
-                        title = "重置首次启动",
-                        iconTint = MaterialTheme.colorScheme.tertiary,
-                        showDivider = false,
-                        onClick = onResetFirstLaunchClick
-                    )
+            // Debug Group (Show Welcome, Reset First Launch) - 仅Debug版本可见
+            if (BuildConfig.DEBUG) {
+                item {
+                    SettingsCard {
+                        SettingsItem(
+                            icon = Icons.Outlined.Flag,
+                            title = "显示欢迎页",
+                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            showDivider = true,
+                            onClick = onShowWelcomeClick
+                        )
+                        SettingsItem(
+                            icon = Icons.Outlined.Flag,
+                            title = "重置首次启动",
+                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            showDivider = true,
+                            onClick = onResetFirstLaunchClick
+                        )
+                        SettingsItem(
+                            icon = Icons.Outlined.Flag,
+                            title = "调试工具",
+                            subtitle = "缓存管理、开发调试",
+                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            showDivider = false,
+                            onClick = onDebugClick
+                        )
+                    }
                 }
             }
 

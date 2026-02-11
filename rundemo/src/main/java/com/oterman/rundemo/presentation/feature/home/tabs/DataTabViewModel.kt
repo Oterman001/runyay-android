@@ -12,12 +12,14 @@ import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.domain.model.DataTabDisplayMode
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.MonthRangeData
+import com.oterman.rundemo.domain.model.TrackPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * DataTab UI状态
@@ -46,6 +48,16 @@ class DataTabViewModel(
 
     private val _uiState = MutableStateFlow(DataTabUiState())
     val uiState: StateFlow<DataTabUiState> = _uiState.asStateFlow()
+
+    // 轨迹点版本号，用于触发UI重组
+    private val _trackPointsVersion = MutableStateFlow(0L)
+    val trackPointsVersion: StateFlow<Long> = _trackPointsVersion.asStateFlow()
+
+    // 轨迹点缓存 (workoutId -> TrackPoints)
+    private val trackPointsCache = ConcurrentHashMap<String, List<TrackPoint>>()
+
+    // 正在加载的轨迹点workoutId
+    private val loadingTrackPoints = ConcurrentHashMap.newKeySet<String>()
 
     init {
         loadDisplayModePreference()
@@ -283,6 +295,62 @@ class DataTabViewModel(
             calendar.get(Calendar.YEAR) == year &&
             calendar.get(Calendar.MONTH) + 1 == month
         }.sortedByDescending { it.startTime }
+    }
+
+    /**
+     * 获取缓存的轨迹点
+     * 如果缓存中没有，返回null并异步加载
+     */
+    fun getCachedTrackPoints(workoutId: String): List<TrackPoint>? {
+        // 先检查缓存
+        trackPointsCache[workoutId]?.let { return it }
+
+        // 如果正在加载，返回null
+        if (loadingTrackPoints.contains(workoutId)) {
+            return null
+        }
+
+        // 异步加载
+        loadTrackPoints(workoutId)
+        return null
+    }
+
+    /**
+     * 异步加载轨迹点
+     */
+    private fun loadTrackPoints(workoutId: String) {
+        if (!loadingTrackPoints.add(workoutId)) {
+            return // 已经在加载
+        }
+
+        viewModelScope.launch {
+            try {
+                val trackPoints = repository.getTrackPoints(workoutId)
+                trackPointsCache[workoutId] = trackPoints
+                // 加载完成后递增版本号，触发 UI 重组
+                _trackPointsVersion.value++
+            } catch (e: Exception) {
+                // 加载失败，缓存空列表
+                trackPointsCache[workoutId] = emptyList()
+                _trackPointsVersion.value++
+            } finally {
+                loadingTrackPoints.remove(workoutId)
+            }
+        }
+    }
+
+    /**
+     * 检查轨迹点是否正在加载
+     */
+    fun isTrackPointsLoading(workoutId: String): Boolean {
+        return loadingTrackPoints.contains(workoutId)
+    }
+
+    /**
+     * 清除轨迹点缓存
+     */
+    fun clearTrackPointsCache() {
+        trackPointsCache.clear()
     }
 }
 

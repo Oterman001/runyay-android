@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,8 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.DataTabDisplayMode
+import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.presentation.components.trajectory.TrajectoryThumbnail
 import com.oterman.rundemo.presentation.feature.home.tabs.components.MonthSection
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -228,16 +231,26 @@ fun DataTabContent(
                         content = {
                             // Records within this month (rendered when expanded)
                             val monthRecords = viewModel.getRecordsForMonth(monthData.year, monthData.month)
+                            // 观察版本号，版本号变化时触发重组
+                            val trackPointsVersion by viewModel.trackPointsVersion.collectAsState()
                             Column {
                                 monthRecords.forEach { record ->
-                                    RunRecordItem(
-                                        record = record,
-                                        onClick = { onRecordClick(record.workoutId) },
-                                        onLongClick = {
-                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            onRecordLongClick(record.workoutId)
-                                        }
-                                    )
+                                    // 使用 key 确保版本号变化时重组
+                                    key(record.workoutId, trackPointsVersion) {
+                                        // 获取缓存的轨迹点
+                                        val trackPoints = viewModel.getCachedTrackPoints(record.workoutId)
+                                        val isLoading = viewModel.isTrackPointsLoading(record.workoutId)
+                                        RunRecordItem(
+                                            record = record,
+                                            trackPoints = trackPoints,
+                                            isTrackPointsLoading = isLoading,
+                                            onClick = { onRecordClick(record.workoutId) },
+                                            onLongClick = {
+                                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                onRecordLongClick(record.workoutId)
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -310,14 +323,22 @@ private fun EmptyStateView() {
 
 /**
  * 跑步记录列表项
+ * 参考iOS TrajectoryRunRecordView布局:
+ * - 第一行: 日期时间 + 来源标签
+ * - 第二行: 轨迹缩略图(80dp) + 数据区域
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RunRecordItem(
     record: RunRecordEntity,
+    trackPoints: List<TrackPoint>?,
+    isTrackPointsLoading: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {}
 ) {
+    // 判断是否为室外跑 (outdoor=0表示室外，outdoor=1表示室内)
+    val isOutdoor = record.outdoor == 0
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -332,101 +353,120 @@ private fun RunRecordItem(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp)
         ) {
-            // 左侧：运动类型图标
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
+            // 第一行：日期时间 + 来源标签
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.DirectionsRun,
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // 中间：主要信息
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                // 日期时间
+                // 日期时间（参考iOS: MM月dd日 HH:mm-HH:mm）
                 Text(
-                    text = formatDate(record.startTime),
+                    text = formatDateCompact(record.startTime, record.endTime),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // 距离（大字）
-                Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Text(
-                        text = String.format("%.2f", record.totalDistance),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "公里",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 2.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // 配速 / 时长
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        text = "配速 ${formatPace(record.averageSpeed)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "时长 ${formatDuration(record.activeDuration)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                // 来源标识
+                record.datasource?.let { source ->
+                    if (source.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    shape = RoundedCornerShape(6.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = formatDatasource(source),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
             }
 
-            // 右侧：来源标识
-            record.datasource?.let { source ->
-                if (source.isNotBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                shape = RoundedCornerShape(6.dp)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 第二行：轨迹缩略图 + 数据区域
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 左侧：轨迹缩略图
+                TrajectoryThumbnail(
+                    workoutId = record.workoutId,
+                    trackPoints = trackPoints,
+                    isLoading = isTrackPointsLoading,
+                    isOutdoor = isOutdoor,
+                    size = 80.dp,
+                    cornerRadius = 8.dp
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // 右侧：数据区域
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // 距离（大字）- 参考iOS 22号字体
+                    Row(
+                        verticalAlignment = Alignment.Bottom
                     ) {
                         Text(
-                            text = formatDatasource(source),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            text = String.format("%.2f", record.totalDistance),
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "公里",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 3.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // 时长 / 配速（参考iOS 13号字体）
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = formatDuration(record.activeDuration),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = formatPace(record.averageSpeed),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // 设备来源
+                    record.deviceInfo?.let { device ->
+                        if (device.isNotBlank()) {
+                            Text(
+                                text = device,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }
@@ -435,12 +475,24 @@ private fun RunRecordItem(
 }
 
 /**
- * 格式化日期显示
+ * 格式化日期显示（完整格式）
  */
 private fun formatDate(timestamp: Long): String {
     val date = Date(timestamp)
     val format = SimpleDateFormat("yyyy年M月d日 EEEE HH:mm", Locale.CHINESE)
     return format.format(date)
+}
+
+/**
+ * 格式化日期显示（紧凑格式）
+ * 参考iOS: MM月dd日 HH:mm-HH:mm
+ */
+private fun formatDateCompact(startTime: Long, endTime: Long): String {
+    val startDate = Date(startTime)
+    val endDate = Date(endTime)
+    val dateFormat = SimpleDateFormat("M月d日", Locale.CHINESE)
+    val timeFormat = SimpleDateFormat("HH:mm", Locale.CHINESE)
+    return "${dateFormat.format(startDate)} ${timeFormat.format(startDate)}-${timeFormat.format(endDate)}"
 }
 
 /**

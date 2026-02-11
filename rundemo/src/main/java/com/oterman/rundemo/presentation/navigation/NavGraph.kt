@@ -38,6 +38,7 @@ import com.oterman.rundemo.presentation.feature.settings.goal.RunGoalSetPage
 import com.oterman.rundemo.presentation.feature.statistics.RunStatisticTab
 import com.oterman.rundemo.presentation.feature.statistics.RunStatisticsScreen
 import com.oterman.rundemo.presentation.feature.userprofile.UserProfileScreen
+import com.oterman.rundemo.presentation.feature.debug.DebugScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 
 /**
@@ -116,6 +117,9 @@ fun AppNavGraph(
                 },
                 onNavigateToRunStatistics = { tab ->
                     navController.navigate(Screen.RunStatistics.createRoute(tab))
+                },
+                onNavigateToDebug = {
+                    navController.navigate(Screen.Debug.route)
                 }
             )
         }
@@ -376,6 +380,15 @@ fun AppNavGraph(
                     // 使用独立Activity以避免MapView销毁阻塞返回动画
                     val intent = RunDetailActivity.createIntent(context, workoutId)
                     context.startActivity(intent)
+                }
+            )
+        }
+
+        // 调试页面
+        composable(Screen.Debug.route) {
+            DebugScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
