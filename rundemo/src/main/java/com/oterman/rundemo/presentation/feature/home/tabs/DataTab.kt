@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.DirectionsRun
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -157,6 +158,20 @@ fun DataTabContent(
                         letterSpacing = 0.sp
                     )
                 }
+            }
+
+            // Top statistics section (参考iOS AllRunTopView)
+            item {
+                AllRunTopView(
+                    totalDistance = uiState.totalDistance,
+                    totalRunCount = uiState.totalRunCount,
+                    totalDuration = uiState.totalDuration,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
             }
 
             // Loading state
@@ -465,5 +480,77 @@ private fun formatDatasource(source: String): String {
         "GGB" -> "佳明国行"
         "FIT" -> "FIT文件"
         else -> source
+    }
+}
+
+/**
+ * 顶部统计信息视图
+ * 参考iOS AllRunTopView实现
+ */
+@Composable
+private fun AllRunTopView(
+    totalDistance: Double,
+    totalRunCount: Int,
+    totalDuration: Double,  // 分钟
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        AllRunItemView(
+            value = String.format("%.1f", totalDistance),
+            unit = "公里",
+            description = "累计跑量"
+        )
+        AllRunItemView(
+            value = totalRunCount.toString(),
+            unit = "次",
+            description = "总次数"
+        )
+        AllRunItemView(
+            value = String.format("%.1f", totalDuration / 60),
+            unit = "小时",
+            description = "总耗时"
+        )
+    }
+}
+
+/**
+ * 统计项视图
+ * 参考iOS AllRunItemView实现
+ */
+@Composable
+private fun AllRunItemView(
+    value: String,
+    unit: String,
+    description: String
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text(
+                text = value,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                text = unit,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 3.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = description,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

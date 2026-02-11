@@ -29,7 +29,10 @@ data class DataTabUiState(
     val expandedMonths: Set<String> = emptySet(),            // 展开的月份ID集合 ("2025-2")
     val displayMode: DataTabDisplayMode = DataTabDisplayMode.HEATMAP,  // 显示模式
     val error: String? = null,
-    val runRecords: List<RunRecordEntity> = emptyList()      // 保留原有字段兼容
+    val runRecords: List<RunRecordEntity> = emptyList(),     // 保留原有字段兼容
+    val totalDistance: Double = 0.0,      // 总跑步距离 (km)
+    val totalRunCount: Int = 0,           // 总跑步次数
+    val totalDuration: Double = 0.0       // 总跑步时长 (分钟)
 )
 
 /**
@@ -107,12 +110,20 @@ class DataTabViewModel(
                     // 按月分组
                     val monthGroups = groupRecordsByMonth(records)
 
+                    // 计算总统计数据
+                    val totalDistance = records.sumOf { it.totalDistance }
+                    val totalRunCount = records.size
+                    val totalDuration = records.sumOf { it.activeDuration }
+
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         monthGroups = monthGroups,
                         runRecords = records,
                         expandedMonths = currentExpanded,
-                        error = null
+                        error = null,
+                        totalDistance = totalDistance,
+                        totalRunCount = totalRunCount,
+                        totalDuration = totalDuration
                     )
                 }
         }

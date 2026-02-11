@@ -102,3 +102,4 @@ rootProject.name = "ComopseDemoHub"
 include(":app")
 include(":fitdemo")
 include(":rundemo")
+include(":m3demo")
