@@ -65,10 +65,12 @@ class MonthStatisticsViewModel(
     fun goToPreviousMonth() {
         Logger.d(TAG, "Navigating to previous month")
         currentMonthStart.add(Calendar.MONTH, -1)
-        loadMonthData()
+        // Clear trajectory data to avoid showing stale data
         if (_showTrajectoryMode.value) {
-            preloadTrajectories()
+            _trajectoryDataMap.value = emptyMap()
         }
+        loadMonthData()
+        // Note: preloadTrajectories() is called in loadMonthData() after data is ready
     }
 
     /**
@@ -78,10 +80,12 @@ class MonthStatisticsViewModel(
         if (_uiState.value.canGoNext) {
             Logger.d(TAG, "Navigating to next month")
             currentMonthStart.add(Calendar.MONTH, 1)
-            loadMonthData()
+            // Clear trajectory data to avoid showing stale data
             if (_showTrajectoryMode.value) {
-                preloadTrajectories()
+                _trajectoryDataMap.value = emptyMap()
             }
+            loadMonthData()
+            // Note: preloadTrajectories() is called in loadMonthData() after data is ready
         }
     }
 
@@ -97,10 +101,12 @@ class MonthStatisticsViewModel(
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        loadMonthData()
+        // Clear trajectory data to avoid showing stale data
         if (_showTrajectoryMode.value) {
-            preloadTrajectories()
+            _trajectoryDataMap.value = emptyMap()
         }
+        loadMonthData()
+        // Note: preloadTrajectories() is called in loadMonthData() after data is ready
     }
 
     /**
@@ -118,21 +124,25 @@ class MonthStatisticsViewModel(
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        loadMonthData()
+        // Clear trajectory data to avoid showing stale data
         if (_showTrajectoryMode.value) {
-            preloadTrajectories()
+            _trajectoryDataMap.value = emptyMap()
         }
+        loadMonthData()
+        // Note: preloadTrajectories() is called in loadMonthData() after data is ready
     }
 
     /**
      * Refresh current month data
      */
     fun refresh() {
+        // Clear trajectory data to avoid showing stale data
+        if (_showTrajectoryMode.value) {
+            _trajectoryDataMap.value = emptyMap()
+        }
         loadMonthData()
         loadDailySentence()
-        if (_showTrajectoryMode.value) {
-            preloadTrajectories()
-        }
+        // Note: preloadTrajectories() is called in loadMonthData() after data is ready
     }
 
     /**
@@ -155,8 +165,9 @@ class MonthStatisticsViewModel(
     fun preloadTrajectories() {
         viewModelScope.launch {
             try {
-                Logger.d(TAG, "Preloading trajectories for current month")
                 val dailyRecords = _uiState.value.monthStats.dailyRecords
+                val allWorkoutIds = dailyRecords.filter { !it.isPlaceholder }.flatMap { it.workoutIds }
+                Logger.d(TAG, "preloadTrajectories: monthYearDisplay=${_uiState.value.monthYearDisplay}, workoutIds=$allWorkoutIds")
                 val trajectoryMap = mutableMapOf<String, List<TrackPoint>>()
                 
                 // Load track points for each workout in the month
@@ -223,6 +234,12 @@ class MonthStatisticsViewModel(
                         canGoNext = canGoNext,
                         error = null
                     )
+                }
+
+                // Load trajectories after data is ready (if in trajectory mode)
+                if (_showTrajectoryMode.value) {
+                    Logger.d(TAG, "loadMonthData completed: monthYearDisplay=$monthYearDisplay, workoutIds=${monthStats.dailyRecords.filter { !it.isPlaceholder }.flatMap { it.workoutIds }}, calling preloadTrajectories")
+                    preloadTrajectories()
                 }
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to load month data", e)

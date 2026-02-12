@@ -67,10 +67,12 @@ class WeekStatisticsViewModel(
     fun goToPreviousWeek() {
         Logger.d(TAG, "Navigating to previous week")
         currentWeekStart.add(Calendar.WEEK_OF_YEAR, -1)
-        loadWeekData()
+        // Clear trajectory data to avoid showing stale data
         if (_showTrajectoryMode.value) {
-            preloadTrajectories()
+            _trajectoryDataMap.value = emptyMap()
         }
+        loadWeekData()
+        // Note: preloadTrajectories() is called in loadWeekData() after data is ready
     }
 
     /**
@@ -80,10 +82,12 @@ class WeekStatisticsViewModel(
         if (_uiState.value.canGoNext) {
             Logger.d(TAG, "Navigating to next week")
             currentWeekStart.add(Calendar.WEEK_OF_YEAR, 1)
-            loadWeekData()
+            // Clear trajectory data to avoid showing stale data
             if (_showTrajectoryMode.value) {
-                preloadTrajectories()
+                _trajectoryDataMap.value = emptyMap()
             }
+            loadWeekData()
+            // Note: preloadTrajectories() is called in loadWeekData() after data is ready
         }
     }
 
@@ -100,21 +104,25 @@ class WeekStatisticsViewModel(
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        loadWeekData()
+        // Clear trajectory data to avoid showing stale data
         if (_showTrajectoryMode.value) {
-            preloadTrajectories()
+            _trajectoryDataMap.value = emptyMap()
         }
+        loadWeekData()
+        // Note: preloadTrajectories() is called in loadWeekData() after data is ready
     }
 
     /**
      * Refresh current week data
      */
     fun refresh() {
+        // Clear trajectory data to avoid showing stale data
+        if (_showTrajectoryMode.value) {
+            _trajectoryDataMap.value = emptyMap()
+        }
         loadWeekData()
         loadDailySentence()
-        if (_showTrajectoryMode.value) {
-            preloadTrajectories()
-        }
+        // Note: preloadTrajectories() is called in loadWeekData() after data is ready
     }
 
     /**
@@ -137,8 +145,9 @@ class WeekStatisticsViewModel(
     fun preloadTrajectories() {
         viewModelScope.launch {
             try {
-                Logger.d(TAG, "Preloading trajectories for current week")
                 val dailyRecords = _uiState.value.weekStats.dailyRecords
+                val allWorkoutIds = dailyRecords.flatMap { it.workoutIds }
+                Logger.d(TAG, "preloadTrajectories: weekDateRange=${_uiState.value.weekDateRange}, workoutIds=$allWorkoutIds")
                 val trajectoryMap = mutableMapOf<String, List<TrackPoint>>()
                 
                 // Load track points for each workout in the week
@@ -201,6 +210,12 @@ class WeekStatisticsViewModel(
                         canGoNext = canGoNext,
                         error = null
                     )
+                }
+
+                // Load trajectories after data is ready (if in trajectory mode)
+                if (_showTrajectoryMode.value) {
+                    Logger.d(TAG, "loadWeekData completed: dateRange=$dateRange, workoutIds=${weekStats.dailyRecords.flatMap { it.workoutIds }}, calling preloadTrajectories")
+                    preloadTrajectories()
                 }
             } catch (e: Exception) {
                 Logger.e(TAG, "Failed to load week data", e)
