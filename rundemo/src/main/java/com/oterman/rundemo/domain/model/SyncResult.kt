@@ -32,6 +32,7 @@ data class ImportedRunSummary(
     val platformCode: String,
     val runDate: Date,
     val distance: Double,
+    val duration: Double = 0.0,
     val displayText: String
 )
 

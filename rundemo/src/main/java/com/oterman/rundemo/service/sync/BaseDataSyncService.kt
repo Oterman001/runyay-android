@@ -1,12 +1,13 @@
 package com.oterman.rundemo.service.sync
 
-import com.oterman.rundemo.data.fit.FitDataMapper
 import com.oterman.rundemo.data.fit.FitFileParser
+import com.oterman.rundemo.data.fit.FitRecordProcessor
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
 import com.oterman.rundemo.data.repository.DataSourceRepository
+import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.FileInfo
 import com.oterman.rundemo.domain.model.ImportedRunSummary
@@ -39,7 +40,8 @@ abstract class BaseDataSyncService(
     protected val runRecordDao: RunRecordDao,
     protected val samplePointDao: RunSamplePointDao,
     protected val segmentDao: RunSegmentDao,
-    protected val dataSourcePreferences: DataSourcePreferences
+    protected val dataSourcePreferences: DataSourcePreferences,
+    protected val runDataRepository: RunDataRepository
 ) : DataSyncService {
 
     companion object {
@@ -54,6 +56,11 @@ abstract class BaseDataSyncService(
 
     /** 时间戳追踪器 */
     protected val timestampTracker = TimestampTracker()
+
+    /** FIT数据处理器 */
+    private val fitRecordProcessor: FitRecordProcessor by lazy {
+        FitRecordProcessor(runDataRepository)
+    }
 
     // ============ 抽象属性（子类必须实现） ============
 
@@ -356,6 +363,7 @@ abstract class BaseDataSyncService(
 
     /**
      * 将文件作为FIT文件处理
+     * 使用 FitRecordProcessor 进行完整处理（包含心率区间、VDOT、PB计算）
      */
     protected suspend fun processAsFitFile(fileInfo: FileInfo, fileData: ByteArray): ImportedRunSummary? {
         // 解析FIT文件
@@ -367,45 +375,12 @@ abstract class BaseDataSyncService(
 
         RLog.d(logTag, "FIT文件解析成功: ${fileInfo.summaryId}")
 
-        // 转换为Entity
-        val runRecordEntity = FitDataMapper.toRunRecordEntity(parseResult, fileInfo.summaryId)
-        if (runRecordEntity == null) {
-            RLog.w(logTag, "转换为Entity失败: ${fileInfo.summaryId}")
-            return null
-        }
-
-        // 更新数据源和originId
-        val updatedEntity = runRecordEntity.copy(
+        // 使用 FitRecordProcessor 进行完整处理并保存
+        return fitRecordProcessor.processAndSave(
+            parseResult = parseResult,
+            originId = fileInfo.summaryId,
             datasource = fileInfo.platformCode,
-            originId = fileInfo.summaryId,
             deviceInfo = fileInfo.deviceName
-        )
-
-        // 转换采样点和分段数据
-        val samplePoints = FitDataMapper.toSamplePointEntities(
-            parseResult,
-            updatedEntity.workoutId,
-            updatedEntity.startTime
-        )
-        val segments = FitDataMapper.toSegmentEntities(parseResult, updatedEntity.workoutId)
-
-        // 保存到数据库
-        runRecordDao.insert(updatedEntity)
-        if (samplePoints.isNotEmpty()) {
-            samplePointDao.insertAll(samplePoints)
-        }
-        if (segments.isNotEmpty()) {
-            segmentDao.insertAll(segments)
-        }
-        RLog.d(logTag, "运动记录保存成功: ${fileInfo.summaryId}, 采样点: ${samplePoints.size}, 分段: ${segments.size}")
-
-        // 创建导入摘要
-        return ImportedRunSummary(
-            originId = fileInfo.summaryId,
-            platformCode = fileInfo.platformCode,
-            runDate = Date(updatedEntity.startTime),
-            distance = updatedEntity.totalDistance,
-            displayText = formatDisplayText(updatedEntity.startTime, updatedEntity.totalDistance)
         )
     }
 

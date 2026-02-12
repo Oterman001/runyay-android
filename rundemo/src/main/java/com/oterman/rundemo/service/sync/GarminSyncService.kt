@@ -5,6 +5,7 @@ import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
 import com.oterman.rundemo.data.repository.DataSourceRepository
+import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 
 /**
@@ -22,8 +23,9 @@ class GarminSyncService(
     runRecordDao: RunRecordDao,
     samplePointDao: RunSamplePointDao,
     segmentDao: RunSegmentDao,
-    dataSourcePreferences: DataSourcePreferences
-) : GarminChinaSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences) {
+    dataSourcePreferences: DataSourcePreferences,
+    runDataRepository: RunDataRepository
+) : GarminChinaSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository) {
 
     override val platform: DataSourcePlatform = DataSourcePlatform.GARMIN_CHINA
 
