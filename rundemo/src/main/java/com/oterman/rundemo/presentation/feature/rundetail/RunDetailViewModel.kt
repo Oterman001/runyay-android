@@ -56,11 +56,27 @@ class RunDetailViewModel(
                 // 获取公里分段
                 val segments = repository.getKilometerSegments(workoutId)
 
+                // 获取训练分段
+                val trainingSegments = repository.getTrainingSegments(workoutId)
+
                 // 构建指标列表
                 val metrics = buildMetricsList(record)
 
                 // 判断是否为户外跑（有GPS轨迹）
                 val isOutdoor = trackPoints.isNotEmpty()
+
+                // 加载图表数据
+                val heartRateSeries = repository.getHeartRateSeries(workoutId)
+                val speedSeries = repository.getSpeedSeries(workoutId)
+                val cadenceSeries = repository.getCadenceSeries(workoutId)
+                val powerSeries = repository.getPowerSeries(workoutId)
+                val strideLengthSeries = repository.getStrideLengthSeries(workoutId)
+                val verticalOscillationSeries = repository.getVerticalOscillationSeries(workoutId)
+                val contactTimeSeries = repository.getContactTimeSeries(workoutId)
+
+                // 加载区间数据
+                val heartRateZones = repository.getHeartRate5Zones(workoutId)
+                val speedZones = repository.getSpeedZones(workoutId)
 
                 _uiState.value = RunDetailUiState(
                     isLoading = false,
@@ -68,7 +84,17 @@ class RunDetailViewModel(
                     trackPoints = trackPoints,
                     segments = segments,
                     metrics = metrics,
-                    isOutdoor = isOutdoor
+                    isOutdoor = isOutdoor,
+                    heartRateSeries = heartRateSeries,
+                    speedSeries = speedSeries,
+                    cadenceSeries = cadenceSeries,
+                    powerSeries = powerSeries,
+                    strideLengthSeries = strideLengthSeries,
+                    verticalOscillationSeries = verticalOscillationSeries,
+                    contactTimeSeries = contactTimeSeries,
+                    heartRateZones = heartRateZones,
+                    speedZones = speedZones,
+                    trainingSegments = trainingSegments
                 )
             } catch (e: Exception) {
                 _uiState.value = RunDetailUiState(isLoading = false, error = e.message ?: "加载失败")

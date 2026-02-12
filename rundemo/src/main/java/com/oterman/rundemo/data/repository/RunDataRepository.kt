@@ -145,6 +145,21 @@ interface RunDataRepository {
      * 获取功率序列数据
      */
     suspend fun getPowerSeries(workoutId: String): List<ChartDataPoint>
+
+    /**
+     * 获取步幅序列数据
+     */
+    suspend fun getStrideLengthSeries(workoutId: String): List<ChartDataPoint>
+
+    /**
+     * 获取垂直振幅序列数据
+     */
+    suspend fun getVerticalOscillationSeries(workoutId: String): List<ChartDataPoint>
+
+    /**
+     * 获取触地时间序列数据
+     */
+    suspend fun getContactTimeSeries(workoutId: String): List<ChartDataPoint>
     
     // ==================== 能力区间 ====================
     

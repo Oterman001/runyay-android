@@ -192,6 +192,33 @@ class RunDataRepositoryImpl(
             )
         }
     }
+
+    override suspend fun getStrideLengthSeries(workoutId: String): List<ChartDataPoint> {
+        return samplePointDao.getStrideLengthSeries(workoutId).map {
+            ChartDataPoint(
+                timeOffset = it.timeOffset,
+                value = it.strideLength ?: 0.0
+            )
+        }
+    }
+
+    override suspend fun getVerticalOscillationSeries(workoutId: String): List<ChartDataPoint> {
+        return samplePointDao.getVerticalOscillationSeries(workoutId).map {
+            ChartDataPoint(
+                timeOffset = it.timeOffset,
+                value = it.verticalOscillation ?: 0.0
+            )
+        }
+    }
+
+    override suspend fun getContactTimeSeries(workoutId: String): List<ChartDataPoint> {
+        return samplePointDao.getContactTimeSeries(workoutId).map {
+            ChartDataPoint(
+                timeOffset = it.timeOffset,
+                value = it.contactTime ?: 0.0
+            )
+        }
+    }
     
     // ==================== 能力区间 ====================
     

@@ -40,16 +40,42 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailDataGrid
-import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailHeaderCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.CadenceChartCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.ContactTimeChartCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.HeartRateChartCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.PaceChartCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.PowerChartCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailHeaderDataCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailMapSection
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailSegmentTable
+import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailWeatherOverlay
+import com.oterman.rundemo.presentation.feature.rundetail.components.StrideLengthChartCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.TrainingEffectCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.VO2MaxCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.VerticalOscillationChartCard
 
 /**
  * 跑步详情页面
- * 用户友好的详情展示，包含地图、头部卡片、数据网格和分段表格
+ * 对标 iOS RunRecordDetailPageV3
+ *
+ * 页面内容顺序：
+ * 1. 地图区域 + 天气覆盖层
+ * 2. Header + DataGrid 合并卡片
+ * 3. 训练效果卡片（条件显示）
+ * 4. VO2Max 卡片（条件显示）
+ * 5. 公里分段表格
+ * 6. 心率图表 + 心率区间
+ * 7. 配速图表 + 配速区间
+ * 8. 步幅图表（条件显示）
+ * 9. 步频图表（条件显示）
+ * 10. 触地时间图表（条件显示）
+ * 11. 垂直振幅图表（条件显示）
+ * 12. 功率图表（条件显示）
+ * 13. 数据来源标签
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -195,34 +221,36 @@ fun RunDetailScreen(
                         state = lazyListState,
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        // 地图区域（占据60%屏幕高度）
+                        // ==================== 1. 地图区域 + 天气 ====================
                         item {
-                            RunDetailMapSection(
-                                trackPoints = uiState.trackPoints,
-                                isOutdoor = uiState.isOutdoor
-                            )
+                            Box {
+                                RunDetailMapSection(
+                                    trackPoints = uiState.trackPoints,
+                                    isOutdoor = uiState.isOutdoor
+                                )
+
+                                // 天气覆盖层（左下角）
+                                if (record.weatherTemperature != 0.0 || record.weatherHumidity > 0) {
+                                    RunDetailWeatherOverlay(
+                                        temperature = record.weatherTemperature,
+                                        humidity = record.weatherHumidity,
+                                        modifier = Modifier
+                                            .align(Alignment.BottomStart)
+                                            .padding(start = 12.dp, bottom = 80.dp)
+                                    )
+                                }
+                            }
                         }
 
-                        // 头部卡片（向上侵入地图区域）
+                        // ==================== 2. Header + DataGrid 合并卡片 ====================
                         item {
-                            RunDetailHeaderCard(
+                            RunDetailHeaderDataCard(
                                 distance = record.totalDistance,
                                 startTime = record.startTime,
                                 endTime = record.endTime,
                                 duration = record.activeDuration,
                                 deviceName = record.deviceVersion,
-                                isOutdoor = uiState.isOutdoor
-                            )
-                        }
-
-                        // 间距
-                        item {
-                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                        }
-
-                        // 数据网格
-                        item {
-                            RunDetailDataGrid(
+                                isOutdoor = uiState.isOutdoor,
                                 metrics = uiState.metrics
                             )
                         }
@@ -232,13 +260,145 @@ fun RunDetailScreen(
                             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
-                        // 公里分段表格
+                        // ==================== 3. 训练效果卡片 ====================
+                        if (record.trainingEffect > 0 || record.anaerobicTrainingEffect > 0) {
+                            item {
+                                TrainingEffectCard(
+                                    aerobicEffect = record.trainingEffect,
+                                    anaerobicEffect = record.anaerobicTrainingEffect
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 4. VO2Max / VDOT 卡片 ====================
+                        if (record.vdot > 0 || record.overallVdot > 0) {
+                            item {
+                                VO2MaxCard(
+                                    vdot = record.vdot,
+                                    overallVdot = record.overallVdot
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 5. 公里分段表格 ====================
                         if (uiState.segments.isNotEmpty()) {
                             item {
                                 RunDetailSegmentTable(
                                     segments = uiState.segments
                                 )
                             }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 6. 心率图表 + 区间 ====================
+                        if (uiState.heartRateSeries.isNotEmpty()) {
+                            item {
+                                HeartRateChartCard(
+                                    heartRateSeries = uiState.heartRateSeries,
+                                    heartRateZones = uiState.heartRateZones,
+                                    avgHeartRate = record.averageHeartRate,
+                                    maxHeartRate = record.maxHeartRate,
+                                    minHeartRate = record.minHeartRate
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 7. 配速图表 + 区间 ====================
+                        if (uiState.speedSeries.isNotEmpty()) {
+                            item {
+                                PaceChartCard(
+                                    speedSeries = uiState.speedSeries,
+                                    speedZones = uiState.speedZones,
+                                    avgSpeed = record.averageSpeed,
+                                    maxSpeed = record.maxSpeed
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 8. 步幅图表 ====================
+                        if (uiState.strideLengthSeries.isNotEmpty()) {
+                            item {
+                                StrideLengthChartCard(
+                                    strideLengthSeries = uiState.strideLengthSeries,
+                                    avgStrideLength = record.averageStrideLength
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 9. 步频图表 ====================
+                        if (uiState.cadenceSeries.isNotEmpty()) {
+                            item {
+                                CadenceChartCard(
+                                    cadenceSeries = uiState.cadenceSeries,
+                                    avgCadence = record.averageCadence
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 10. 触地时间图表 ====================
+                        if (uiState.contactTimeSeries.isNotEmpty()) {
+                            item {
+                                ContactTimeChartCard(
+                                    contactTimeSeries = uiState.contactTimeSeries,
+                                    avgContactTime = record.averageContactTime
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 11. 垂直振幅图表 ====================
+                        if (uiState.verticalOscillationSeries.isNotEmpty()) {
+                            item {
+                                VerticalOscillationChartCard(
+                                    verticalOscillationSeries = uiState.verticalOscillationSeries,
+                                    avgVerticalOscillation = record.averageVerticalOscillation
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 12. 功率图表 ====================
+                        if (uiState.powerSeries.isNotEmpty()) {
+                            item {
+                                PowerChartCard(
+                                    powerSeries = uiState.powerSeries,
+                                    avgPower = record.averagePower
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 13. 数据来源标签 ====================
+                        item {
+                            DataSourceLabel(
+                                datasource = record.datasource
+                            )
                         }
 
                         // 底部留白
@@ -250,6 +410,38 @@ fun RunDetailScreen(
             }
         }
     }
+}
+
+/**
+ * 数据来源标签
+ * 底部居中显示数据来源信息
+ */
+@Composable
+private fun DataSourceLabel(
+    datasource: String?,
+    modifier: Modifier = Modifier
+) {
+    val sourceText = when (datasource) {
+        "GCN" -> "数据来源: Garmin Connect"
+        "GGB" -> "数据来源: 佳明国行"
+        "COROS" -> "数据来源: COROS"
+        "APPLE" -> "数据来源: Apple Watch"
+        "SUUNTO" -> "数据来源: Suunto"
+        "POLAR" -> "数据来源: Polar"
+        null -> "本地数据"
+        else -> "数据来源: $datasource"
+    }
+
+    Text(
+        text = sourceText,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+        textAlign = TextAlign.Center,
+        fontSize = 12.sp,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp, horizontal = 32.dp)
+    )
 }
 
 /**

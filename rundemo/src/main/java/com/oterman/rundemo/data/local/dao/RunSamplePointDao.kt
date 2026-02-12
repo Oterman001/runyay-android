@@ -32,6 +32,24 @@ data class PowerPoint(
     val power: Int?
 )
 
+data class StrideLengthPoint(
+    val sequence: Int,
+    val timeOffset: Int,
+    val strideLength: Double?
+)
+
+data class VerticalOscillationPoint(
+    val sequence: Int,
+    val timeOffset: Int,
+    val verticalOscillation: Double?
+)
+
+data class ContactTimePoint(
+    val sequence: Int,
+    val timeOffset: Int,
+    val contactTime: Double?
+)
+
 /**
  * 采样点DAO
  */
@@ -77,6 +95,24 @@ interface RunSamplePointDao {
     @Query("SELECT sequence, timeOffset, power FROM run_sample_point WHERE workoutId = :workoutId AND power IS NOT NULL ORDER BY sequence")
     suspend fun getPowerSeries(workoutId: String): List<PowerPoint>
     
+    /**
+     * 获取步幅序列数据（用于图表）
+     */
+    @Query("SELECT sequence, timeOffset, strideLength FROM run_sample_point WHERE workoutId = :workoutId AND strideLength IS NOT NULL ORDER BY sequence")
+    suspend fun getStrideLengthSeries(workoutId: String): List<StrideLengthPoint>
+
+    /**
+     * 获取垂直振幅序列数据（用于图表）
+     */
+    @Query("SELECT sequence, timeOffset, verticalOscillation FROM run_sample_point WHERE workoutId = :workoutId AND verticalOscillation IS NOT NULL ORDER BY sequence")
+    suspend fun getVerticalOscillationSeries(workoutId: String): List<VerticalOscillationPoint>
+
+    /**
+     * 获取触地时间序列数据（用于图表）
+     */
+    @Query("SELECT sequence, timeOffset, contactTime FROM run_sample_point WHERE workoutId = :workoutId AND contactTime IS NOT NULL ORDER BY sequence")
+    suspend fun getContactTimeSeries(workoutId: String): List<ContactTimePoint>
+
     /**
      * 删除指定workout的所有采样点
      */

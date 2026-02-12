@@ -93,6 +93,9 @@ dependencies {
     // Mapbox Maps SDK
     implementation("com.mapbox.maps:android:11.18.0")
 
+    // Vico Charts (Compose)
+    implementation("com.patrykandpatrick.vico:compose-m3:2.1.0-beta.1")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

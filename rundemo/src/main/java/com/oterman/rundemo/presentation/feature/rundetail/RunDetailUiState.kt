@@ -1,6 +1,8 @@
 package com.oterman.rundemo.presentation.feature.rundetail
 
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.domain.model.AbilityZone
+import com.oterman.rundemo.domain.model.ChartDataPoint
 import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.domain.model.TrackPoint
 
@@ -15,6 +17,23 @@ data class RunDetailUiState(
     val segments: List<RunSegment> = emptyList(),
     val metrics: List<RunMetricItem> = emptyList(),
     val isOutdoor: Boolean = true,
+
+    // 图表时序数据
+    val heartRateSeries: List<ChartDataPoint> = emptyList(),
+    val speedSeries: List<ChartDataPoint> = emptyList(),
+    val cadenceSeries: List<ChartDataPoint> = emptyList(),
+    val powerSeries: List<ChartDataPoint> = emptyList(),
+    val strideLengthSeries: List<ChartDataPoint> = emptyList(),
+    val verticalOscillationSeries: List<ChartDataPoint> = emptyList(),
+    val contactTimeSeries: List<ChartDataPoint> = emptyList(),
+
+    // 区间数据
+    val heartRateZones: List<AbilityZone> = emptyList(),
+    val speedZones: List<AbilityZone> = emptyList(),
+
+    // 训练分段
+    val trainingSegments: List<RunSegment> = emptyList(),
+
     // FIT下载状态
     val isDownloading: Boolean = false,
     val downloadedFitData: ByteArray? = null,
@@ -40,6 +59,16 @@ data class RunDetailUiState(
         if (segments != other.segments) return false
         if (metrics != other.metrics) return false
         if (isOutdoor != other.isOutdoor) return false
+        if (heartRateSeries != other.heartRateSeries) return false
+        if (speedSeries != other.speedSeries) return false
+        if (cadenceSeries != other.cadenceSeries) return false
+        if (powerSeries != other.powerSeries) return false
+        if (strideLengthSeries != other.strideLengthSeries) return false
+        if (verticalOscillationSeries != other.verticalOscillationSeries) return false
+        if (contactTimeSeries != other.contactTimeSeries) return false
+        if (heartRateZones != other.heartRateZones) return false
+        if (speedZones != other.speedZones) return false
+        if (trainingSegments != other.trainingSegments) return false
         if (isDownloading != other.isDownloading) return false
         if (downloadedFitData != null) {
             if (other.downloadedFitData == null) return false
@@ -59,6 +88,16 @@ data class RunDetailUiState(
         result = 31 * result + segments.hashCode()
         result = 31 * result + metrics.hashCode()
         result = 31 * result + isOutdoor.hashCode()
+        result = 31 * result + heartRateSeries.hashCode()
+        result = 31 * result + speedSeries.hashCode()
+        result = 31 * result + cadenceSeries.hashCode()
+        result = 31 * result + powerSeries.hashCode()
+        result = 31 * result + strideLengthSeries.hashCode()
+        result = 31 * result + verticalOscillationSeries.hashCode()
+        result = 31 * result + contactTimeSeries.hashCode()
+        result = 31 * result + heartRateZones.hashCode()
+        result = 31 * result + speedZones.hashCode()
+        result = 31 * result + trainingSegments.hashCode()
         result = 31 * result + isDownloading.hashCode()
         result = 31 * result + (downloadedFitData?.contentHashCode() ?: 0)
         result = 31 * result + (downloadError?.hashCode() ?: 0)
