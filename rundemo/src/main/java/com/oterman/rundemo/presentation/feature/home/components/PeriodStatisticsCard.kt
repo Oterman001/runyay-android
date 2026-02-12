@@ -2,6 +2,7 @@ package com.oterman.rundemo.presentation.feature.home.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -166,41 +168,62 @@ private fun DistanceRow(
     modifier: Modifier = Modifier
 ) {
     val textColor = if (isPrimary) RunBlue else MaterialTheme.colorScheme.onSurface
-    val fontSize = if (isPrimary) 26.sp else 18.sp
+    val baseFontSize = if (isPrimary) 32.sp else 22.sp
 
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = String.format("%.1f", distance),
-            color = textColor,
-            fontSize = fontSize,
-            fontWeight = FontWeight.SemiBold
-        )
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val density = LocalDensity.current
+        val maxWidthPx = constraints.maxWidth.toFloat()
 
-        if (showGoal && goal > 0) {
-            Text(
-                text = " / ",
-                color = SecondaryTextColor,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(bottom = if (isPrimary) 3.dp else 1.dp)
-            )
-            Text(
-                text = "${goal.toInt()}",
-                color = SecondaryTextColor,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = if (isPrimary) 3.dp else 1.dp)
-            )
+        // Estimate text width to avoid line wrapping
+        val distanceText = String.format("%.1f", distance)
+        val goalText = if (showGoal && goal > 0) " / ${goal.toInt()}" else ""
+        val unitText = "公里"
+        val totalChars = distanceText.length + goalText.length + unitText.length
+
+        // Adjust font size based on content length
+        val adjustedFontSize = with(density) {
+            val estimatedWidth = baseFontSize.toPx() * totalChars * 0.6f
+            if (estimatedWidth > maxWidthPx * 0.95f) {
+                (baseFontSize.value * maxWidthPx * 0.95f / estimatedWidth).sp
+            } else {
+                baseFontSize
+            }
         }
 
-        Text(
-            text = "公里",
-            color = SecondaryTextColor,
-            fontSize = 12.sp,
-            modifier = Modifier.padding(bottom = if (isPrimary) 4.dp else 2.dp, start = 2.dp)
-        )
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = distanceText,
+                color = textColor,
+                fontSize = adjustedFontSize,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.alignByBaseline()
+            )
+
+            if (showGoal && goal > 0) {
+                Text(
+                    text = " / ",
+                    color = SecondaryTextColor,
+                    fontSize = 14.sp,
+                    modifier = Modifier.alignByBaseline()
+                )
+                Text(
+                    text = "${goal.toInt()}",
+                    color = SecondaryTextColor,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.alignByBaseline()
+                )
+            }
+
+            Text(
+                text = unitText,
+                color = SecondaryTextColor,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .alignByBaseline()
+                    .padding(start = 2.dp)
+            )
+        }
     }
 }
 
@@ -213,41 +236,62 @@ private fun DurationRow(
     modifier: Modifier = Modifier
 ) {
     val textColor = if (isPrimary) RunBlue else MaterialTheme.colorScheme.onSurface
-    val fontSize = if (isPrimary) 26.sp else 18.sp
+    val baseFontSize = if (isPrimary) 32.sp else 22.sp
 
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = String.format("%.1f", duration),
-            color = textColor,
-            fontSize = fontSize,
-            fontWeight = FontWeight.SemiBold
-        )
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val density = LocalDensity.current
+        val maxWidthPx = constraints.maxWidth.toFloat()
 
-        if (showGoal && goal > 0) {
-            Text(
-                text = " / ",
-                color = SecondaryTextColor,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(bottom = if (isPrimary) 3.dp else 1.dp)
-            )
-            Text(
-                text = "${goal.toInt()}",
-                color = SecondaryTextColor,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = if (isPrimary) 3.dp else 1.dp)
-            )
+        // Estimate text width to avoid line wrapping
+        val durationText = String.format("%.1f", duration)
+        val goalText = if (showGoal && goal > 0) " / ${goal.toInt()}" else ""
+        val unitText = "小时"
+        val totalChars = durationText.length + goalText.length + unitText.length
+
+        // Adjust font size based on content length
+        val adjustedFontSize = with(density) {
+            val estimatedWidth = baseFontSize.toPx() * totalChars * 0.6f
+            if (estimatedWidth > maxWidthPx * 0.95f) {
+                (baseFontSize.value * maxWidthPx * 0.95f / estimatedWidth).sp
+            } else {
+                baseFontSize
+            }
         }
 
-        Text(
-            text = "小时",
-            color = SecondaryTextColor,
-            fontSize = 12.sp,
-            modifier = Modifier.padding(bottom = if (isPrimary) 4.dp else 2.dp, start = 2.dp)
-        )
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = durationText,
+                color = textColor,
+                fontSize = adjustedFontSize,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.alignByBaseline()
+            )
+
+            if (showGoal && goal > 0) {
+                Text(
+                    text = " / ",
+                    color = SecondaryTextColor,
+                    fontSize = 14.sp,
+                    modifier = Modifier.alignByBaseline()
+                )
+                Text(
+                    text = "${goal.toInt()}",
+                    color = SecondaryTextColor,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.alignByBaseline()
+                )
+            }
+
+            Text(
+                text = unitText,
+                color = SecondaryTextColor,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .alignByBaseline()
+                    .padding(start = 2.dp)
+            )
+        }
     }
 }
 

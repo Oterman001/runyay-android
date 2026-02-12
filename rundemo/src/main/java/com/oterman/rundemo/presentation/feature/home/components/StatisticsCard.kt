@@ -20,7 +20,7 @@ import com.oterman.rundemo.ui.theme.CardBgLight
  * Base card container for statistics cards
  * Matches iOS dashboardCardStyle():
  * - 10dp corner radius
- * - 16dp padding
+ * - 12dp padding
  * - Light gray shadow in light mode only
  */
 @Composable
@@ -53,7 +53,7 @@ fun StatisticsCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(12.dp),
             content = content
         )
     }
