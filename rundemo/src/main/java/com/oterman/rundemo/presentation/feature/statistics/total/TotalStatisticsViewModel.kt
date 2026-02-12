@@ -9,7 +9,7 @@ import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.AllTimeTotalStatistics
 import com.oterman.rundemo.domain.model.TotalChartDisplayMode
 import com.oterman.rundemo.domain.model.YearlyStatistic
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,7 +65,7 @@ class TotalStatisticsViewModel(
             _uiState.update { it.copy(isLoading = true) }
 
             try {
-                Logger.d(TAG, "Loading total statistics data")
+                RLog.d(TAG, "Loading total statistics data")
 
                 // Get all records from the beginning of time
                 val allRecords = repository.getAllRunRecords().first()
@@ -113,7 +113,7 @@ class TotalStatisticsViewModel(
                     maxYearDuration = maxYearDuration
                 )
 
-                Logger.d(TAG, "Total stats loaded: $runCount runs, ${String.format("%.1f", totalDistance)} km, ${yearlyStats.size} years")
+                RLog.d(TAG, "Total stats loaded: $runCount runs, ${String.format("%.1f", totalDistance)} km, ${yearlyStats.size} years")
 
                 _uiState.update {
                     it.copy(
@@ -123,7 +123,7 @@ class TotalStatisticsViewModel(
                     )
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "Failed to load total data", e)
+                RLog.e(TAG, "Failed to load total data", e)
                 _uiState.update {
                     it.copy(
                         isLoading = false,

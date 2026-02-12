@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.fit.FitImportService
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.repository.UserRepository
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,7 +47,7 @@ class HomeViewModel(
         val phoneNumber = preferencesManager.getPhoneNumber()
         val userId = preferencesManager.getUserId()
 
-        Logger.d(TAG, "Auth state loaded: isLoggedIn=$isLoggedIn, userName=$userName, userId=$userId")
+        RLog.d(TAG, "Auth state loaded: isLoggedIn=$isLoggedIn, userName=$userName, userId=$userId")
 
         _uiState.update { state ->
             state.copy(
@@ -71,15 +71,15 @@ class HomeViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingAvatar = true) }
 
-            Logger.d(TAG, "开始加载头像URL: userId=$userId")
+            RLog.d(TAG, "开始加载头像URL: userId=$userId")
 
             val result = userRepository.getAvatarUrl(userId)
 
             result.onSuccess { url ->
-                Logger.d(TAG, "头像URL加载成功: $url")
+                RLog.d(TAG, "头像URL加载成功: $url")
                 _uiState.update { it.copy(avatarUrl = url, isLoadingAvatar = false) }
             }.onFailure { e ->
-                Logger.e(TAG, "头像URL加载失败: ${e.message}")
+                RLog.e(TAG, "头像URL加载失败: ${e.message}")
                 _uiState.update { it.copy(avatarUrl = null, isLoadingAvatar = false) }
             }
         }
@@ -96,7 +96,7 @@ class HomeViewModel(
      * Switch selected tab
      */
     fun selectTab(tab: HomeTab) {
-        Logger.d(TAG, "Tab selected: $tab")
+        RLog.d(TAG, "Tab selected: $tab")
         _uiState.update { state ->
             state.copy(selectedTab = tab)
         }
@@ -126,7 +126,7 @@ class HomeViewModel(
      */
     fun logout() {
         viewModelScope.launch {
-            Logger.i(TAG, "User logging out")
+            RLog.i(TAG, "User logging out")
             _uiState.update { it.copy(isLoggingOut = true, showLogoutConfirmDialog = false) }
 
             // Clear user data
@@ -143,7 +143,7 @@ class HomeViewModel(
                 )
             }
 
-            Logger.i(TAG, "Logout completed")
+            RLog.i(TAG, "Logout completed")
         }
     }
 
@@ -151,7 +151,7 @@ class HomeViewModel(
      * Trigger navigation to login page
      */
     fun navigateToLogin() {
-        Logger.d(TAG, "Navigate to login requested")
+        RLog.d(TAG, "Navigate to login requested")
         _uiState.update { state ->
             state.copy(navigateToLogin = true)
         }
@@ -171,7 +171,7 @@ class HomeViewModel(
      * Corresponds to iOS coordinator.showWelcomePage()
      */
     fun navigateToWelcome() {
-        Logger.d(TAG, "Navigate to welcome requested")
+        RLog.d(TAG, "Navigate to welcome requested")
         _uiState.update { state ->
             state.copy(navigateToWelcome = true)
         }
@@ -191,7 +191,7 @@ class HomeViewModel(
      * Corresponds to iOS coordinator.resetFirstLaunch()
      */
     fun resetFirstLaunch() {
-        Logger.d(TAG, "Reset first launch state")
+        RLog.d(TAG, "Reset first launch state")
         navigateToWelcome()
     }
     
@@ -202,7 +202,7 @@ class HomeViewModel(
      * @param uri 选择的FIT文件Uri
      */
     fun importFitFile(uri: Uri) {
-        Logger.i(TAG, "开始导入FIT文件: $uri")
+        RLog.i(TAG, "开始导入FIT文件: $uri")
         
         viewModelScope.launch {
             _uiState.update { it.copy(isImportingFit = true) }
@@ -219,13 +219,13 @@ class HomeViewModel(
             
             when (result) {
                 is FitImportResult.Success -> {
-                    Logger.i(TAG, "导入成功: ${result.distance}km, ${result.duration}min")
+                    RLog.i(TAG, "导入成功: ${result.distance}km, ${result.duration}min")
                 }
                 is FitImportResult.AlreadyExists -> {
-                    Logger.w(TAG, "文件已导入过")
+                    RLog.w(TAG, "文件已导入过")
                 }
                 is FitImportResult.Error -> {
-                    Logger.e(TAG, "导入失败: ${result.message}")
+                    RLog.e(TAG, "导入失败: ${result.message}")
                 }
             }
         }

@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.repository.RegisterException
 import com.oterman.rundemo.data.repository.UserRepository
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.ValidationUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -86,11 +86,11 @@ class RegisterViewModel(
         val state = _uiState.value
         
         if (!state.canSendSms) {
-            Logger.w(TAG, "发送短信条件不满足")
+            RLog.w(TAG, "发送短信条件不满足")
             return
         }
         
-        Logger.d(TAG, "请求发送短信验证码: ${state.phoneNumber}")
+        RLog.d(TAG, "请求发送短信验证码: ${state.phoneNumber}")
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -98,11 +98,11 @@ class RegisterViewModel(
             val result = userRepository.sendRegisterVerificationCode(state.phoneNumber)
             
             result.onSuccess { response ->
-                Logger.i(TAG, "验证码发送响应: sendFlag=${response.sendFlag}")
+                RLog.i(TAG, "验证码发送响应: sendFlag=${response.sendFlag}")
                 
                 when {
                     response.isSuccess -> {
-                        Logger.i(TAG, "验证码发送成功")
+                        RLog.i(TAG, "验证码发送成功")
                         _uiState.update { it.copy(
                             isLoading = false,
                             currentStep = RegistrationStep.VERIFICATION
@@ -110,7 +110,7 @@ class RegisterViewModel(
                         startResendCountdown()
                     }
                     response.userExists -> {
-                        Logger.w(TAG, "用户已存在")
+                        RLog.w(TAG, "用户已存在")
                         _uiState.update { it.copy(
                             isLoading = false,
                             errorMessage = "该手机号已注册，请前往登录",
@@ -118,7 +118,7 @@ class RegisterViewModel(
                         )}
                     }
                     response.needCaptcha -> {
-                        Logger.w(TAG, "需要图形验证码")
+                        RLog.w(TAG, "需要图形验证码")
                         // TODO: 实现图形验证码功能
                         _uiState.update { it.copy(
                             isLoading = false,
@@ -126,7 +126,7 @@ class RegisterViewModel(
                         )}
                     }
                     else -> {
-                        Logger.e(TAG, "验证码发送失败")
+                        RLog.e(TAG, "验证码发送失败")
                         _uiState.update { it.copy(
                             isLoading = false,
                             errorMessage = "验证码发送失败，请稍后重试"
@@ -134,7 +134,7 @@ class RegisterViewModel(
                     }
                 }
             }.onFailure { error ->
-                Logger.e(TAG, "发送验证码失败: ${error.message}", error)
+                RLog.e(TAG, "发送验证码失败: ${error.message}", error)
                 _uiState.update { it.copy(
                     isLoading = false,
                     errorMessage = "验证码发送失败：${error.message}"
@@ -166,11 +166,11 @@ class RegisterViewModel(
         val state = _uiState.value
         
         if (!state.canVerifyCode) {
-            Logger.w(TAG, "验证码验证条件不满足")
+            RLog.w(TAG, "验证码验证条件不满足")
             return
         }
         
-        Logger.d(TAG, "开始验证短信验证码")
+        RLog.d(TAG, "开始验证短信验证码")
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -181,10 +181,10 @@ class RegisterViewModel(
             )
             
             result.onSuccess { response ->
-                Logger.i(TAG, "注册验证成功: userId=${response.userId}")
+                RLog.i(TAG, "注册验证成功: userId=${response.userId}")
                 
                 if (response.needSetPassword) {
-                    Logger.i(TAG, "服务端要求设置密码，进入密码设置步骤")
+                    RLog.i(TAG, "服务端要求设置密码，进入密码设置步骤")
                     _uiState.update { it.copy(
                         isLoading = false,
                         currentStep = RegistrationStep.PASSWORD,
@@ -192,14 +192,14 @@ class RegisterViewModel(
                         registeredToken = response.token
                     )}
                 } else {
-                    Logger.i(TAG, "注册完成，无需设置密码")
+                    RLog.i(TAG, "注册完成，无需设置密码")
                     _uiState.update { it.copy(
                         isLoading = false,
                         registerSuccess = true
                     )}
                 }
             }.onFailure { error ->
-                Logger.e(TAG, "注册失败: ${error.message}", error)
+                RLog.e(TAG, "注册失败: ${error.message}", error)
                 
                 when (error) {
                     is RegisterException -> {
@@ -293,7 +293,7 @@ class RegisterViewModel(
         val state = _uiState.value
         
         if (!state.canRegister) {
-            Logger.w(TAG, "注册条件不满足")
+            RLog.w(TAG, "注册条件不满足")
             return
         }
         
@@ -301,12 +301,12 @@ class RegisterViewModel(
         val token = state.registeredToken
         
         if (userId.isNullOrEmpty() || token.isNullOrEmpty()) {
-            Logger.e(TAG, "用户ID或Token为空")
+            RLog.e(TAG, "用户ID或Token为空")
             _uiState.update { it.copy(errorMessage = "注册信息丢失，请重新注册") }
             return
         }
         
-        Logger.d(TAG, "开始设置密码和昵称")
+        RLog.d(TAG, "开始设置密码和昵称")
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -319,13 +319,13 @@ class RegisterViewModel(
             )
             
             result.onSuccess { success ->
-                Logger.i(TAG, "密码设置成功")
+                RLog.i(TAG, "密码设置成功")
                 _uiState.update { it.copy(
                     isLoading = false,
                     registerSuccess = true
                 )}
             }.onFailure { error ->
-                Logger.e(TAG, "密码设置失败: ${error.message}", error)
+                RLog.e(TAG, "密码设置失败: ${error.message}", error)
                 _uiState.update { it.copy(
                     isLoading = false,
                     errorMessage = "设置失败：${error.message}"

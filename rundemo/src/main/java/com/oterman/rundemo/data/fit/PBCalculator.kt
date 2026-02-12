@@ -1,10 +1,9 @@
 package com.oterman.rundemo.data.fit
 
-import android.util.Log
 import com.oterman.rundemo.data.local.entity.PBRecordEntity
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.local.entity.RunSegmentEntity
-import java.util.UUID
+import com.oterman.rundemo.util.RLog
 import kotlin.math.abs
 
 /**
@@ -73,7 +72,7 @@ object PBCalculator {
             result.add(createSpeedPB(runRecord, "42k", marathonTime))
         }
 
-        Log.i(TAG, "PB计算完成: ${result.size}项 (${result.map { "${it.subType}=${String.format("%.2f", it.value)}" }.joinToString(", ")})")
+        RLog.i(TAG, "PB计算完成: ${result.size}项 (${result.map { "${it.subType}=${String.format("%.2f", it.value)}" }.joinToString(", ")})")
         return result
     }
 

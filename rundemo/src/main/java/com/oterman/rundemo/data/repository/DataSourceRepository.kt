@@ -1,6 +1,5 @@
 package com.oterman.rundemo.data.repository
 
-import android.util.Log
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.network.RequestBuilder
@@ -8,7 +7,6 @@ import com.oterman.rundemo.data.network.RetrofitClient
 import com.oterman.rundemo.data.network.api.DataSourceApi
 import com.oterman.rundemo.data.network.dto.request.BackfillRequest
 import com.oterman.rundemo.data.network.dto.request.CorosCallbackRequest
-import com.oterman.rundemo.data.network.dto.request.CorosSportDetailRequest
 import com.oterman.rundemo.data.network.dto.request.FileDownloadRequest
 import com.oterman.rundemo.data.network.dto.request.FileListRequest
 import com.oterman.rundemo.data.network.dto.request.GarminCallbackRequest
@@ -22,7 +20,7 @@ import com.oterman.rundemo.data.network.dto.response.PlatformStatusResponse
 import com.oterman.rundemo.domain.model.DataSourceInfo
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.FileInfo
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -52,7 +50,7 @@ class DataSourceRepository(
             val userId = preferencesManager.getUserId() 
                 ?: return@withContext Result.failure(Exception("用户未登录"))
             
-            Logger.i(TAG, "开始查询平台绑定状态, userId=$userId")
+            RLog.i(TAG, "开始查询平台绑定状态, userId=$userId")
             
             val request = createBaseRequest(
                 dtoName = "PlatformStatusRequest",
@@ -61,34 +59,34 @@ class DataSourceRepository(
             
             val response = api.queryPlatformStatus(request)
             
-            Logger.d(TAG, "平台状态响应: code=${response.code}, msg=${response.msg}")
-            Logger.d(TAG, "响应data是否为空: ${response.data == null}")
-            Logger.d(TAG, "platformStatusResponseDto是否为空: ${response.data?.platformStatusResponseDto == null}")
+            RLog.d(TAG, "平台状态响应: code=${response.code}, msg=${response.msg}")
+            RLog.d(TAG, "响应data是否为空: ${response.data == null}")
+            RLog.d(TAG, "platformStatusResponseDto是否为空: ${response.data?.platformStatusResponseDto == null}")
             
             if (response.isSuccess()) {
                 val statuses = response.data?.platformStatusResponseDto ?: emptyList()
                 
-                Logger.i(TAG, "解析到平台状态数量: ${statuses.size}")
+                RLog.i(TAG, "解析到平台状态数量: ${statuses.size}")
                 
                 // 更新本地缓存
                 val statusMap = mutableMapOf<DataSourcePlatform, Boolean>()
                 statuses.forEach { status ->
-                    Logger.d(TAG, "平台: ${status.platformCode}, bindStatusCode=${status.bindStatusCode}, bindStatus=${status.bindStatus}, isBound=${status.isBound}")
+                    RLog.d(TAG, "平台: ${status.platformCode}, bindStatusCode=${status.bindStatusCode}, bindStatus=${status.bindStatus}, isBound=${status.isBound}")
                     DataSourcePlatform.fromCode(status.platformCode)?.let { platform ->
                         statusMap[platform] = status.isBound
-                        Logger.i(TAG, "更新缓存: ${platform.displayName} -> ${if (status.isBound) "已授权" else "未授权"}")
+                        RLog.i(TAG, "更新缓存: ${platform.displayName} -> ${if (status.isBound) "已授权" else "未授权"}")
                     }
                 }
                 dataSourcePreferences.updatePlatformStatus(statusMap)
                 
-                Logger.i(TAG, "平台状态查询成功, 共更新${statusMap.size}个平台状态")
+                RLog.i(TAG, "平台状态查询成功, 共更新${statusMap.size}个平台状态")
                 Result.success(statuses)
             } else {
-                Logger.w(TAG, "平台状态查询失败: ${response.msg}")
+                RLog.w(TAG, "平台状态查询失败: ${response.msg}")
                 Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "查询平台状态异常", e)
+            RLog.e(TAG, "查询平台状态异常", e)
             Result.failure(e)
         }
     }
@@ -110,7 +108,7 @@ class DataSourceRepository(
             val userId = preferencesManager.getUserId()
                 ?: return@withContext Result.failure(Exception("用户未登录"))
 
-            Logger.i(TAG, "开始获取授权URL, platform=${platform.code}, userId=$userId")
+            RLog.i(TAG, "开始获取授权URL, platform=${platform.code}, userId=$userId")
 
             val dtoName = when (platform) {
                 DataSourcePlatform.GARMIN_CHINA, DataSourcePlatform.GARMIN_GLOBAL -> "GarminBindRequest"
@@ -123,7 +121,7 @@ class DataSourceRepository(
                 data = PlatformBindRequest(userId = userId)
             )
 
-            Logger.d(TAG, "发送绑定请求, dtoName=$dtoName")
+            RLog.d(TAG, "发送绑定请求, dtoName=$dtoName")
 
             val response = when (platform) {
                 DataSourcePlatform.GARMIN_CHINA -> api.bindGarminChina(request)
@@ -132,37 +130,37 @@ class DataSourceRepository(
                 else -> return@withContext Result.failure(Exception("不支持的平台"))
             }
 
-            Logger.d(TAG, "收到绑定响应, code=${response.code}, msg=${response.msg}")
+            RLog.d(TAG, "收到绑定响应, code=${response.code}, msg=${response.msg}")
 
             if (response.isSuccess()) {
                 // 根据平台解析不同的响应字段
                 val authUrl = when (platform) {
                     DataSourcePlatform.GARMIN_CHINA, DataSourcePlatform.GARMIN_GLOBAL -> {
                         val url = response.data?.garminBindResponse?.firstOrNull()?.redirectUrl
-                        Logger.d(TAG, "佳明授权URL: $url")
+                        RLog.d(TAG, "佳明授权URL: $url")
                         url
                     }
                     DataSourcePlatform.COROS -> {
                         val url = response.data?.corosBindResponse?.firstOrNull()?.authUrl
-                        Logger.d(TAG, "高驰授权URL: $url")
+                        RLog.d(TAG, "高驰授权URL: $url")
                         url
                     }
                     else -> null
                 }
 
                 if (authUrl != null) {
-                    Logger.i(TAG, "获取授权URL成功, platform=${platform.code}")
+                    RLog.i(TAG, "获取授权URL成功, platform=${platform.code}")
                     Result.success(authUrl)
                 } else {
-                    Logger.w(TAG, "授权URL为空, platformøø=${platform.code}")
+                    RLog.w(TAG, "授权URL为空, platformøø=${platform.code}")
                     Result.failure(Exception("授权URL为空"))
                 }
             } else {
-                Logger.w(TAG, "获取授权URL失败: ${response.msg}")
+                RLog.w(TAG, "获取授权URL失败: ${response.msg}")
                 Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "获取授权URL异常", e)
+            RLog.e(TAG, "获取授权URL异常", e)
             Result.failure(e)
         }
     }
@@ -182,7 +180,7 @@ class DataSourceRepository(
             val userId = preferencesManager.getUserId()
                 ?: return@withContext Result.failure(Exception("用户未登录"))
 
-            Logger.i(TAG, "处理佳明OAuth回调: platform=${platform.code}, token=$oauthToken, verifier=$oauthVerifier")
+            RLog.i(TAG, "处理佳明OAuth回调: platform=${platform.code}, token=$oauthToken, verifier=$oauthVerifier")
 
             val request = createBaseRequest(
                 dtoName = "GarminCallBackDto",  // 与iOS保持一致
@@ -193,7 +191,7 @@ class DataSourceRepository(
                 )
             )
 
-            Logger.d(TAG, "发送佳明回调请求")
+            RLog.d(TAG, "发送佳明回调请求")
 
             val response = when (platform) {
                 DataSourcePlatform.GARMIN_CHINA -> api.callbackGarminChina(request)
@@ -201,18 +199,18 @@ class DataSourceRepository(
                 else -> return@withContext Result.failure(Exception("不支持的平台"))
             }
 
-            Logger.d(TAG, "佳明回调响应: code=${response.code}, msg=${response.msg}")
+            RLog.d(TAG, "佳明回调响应: code=${response.code}, msg=${response.msg}")
 
             if (response.isSuccess()) {
                 dataSourcePreferences.setPlatformBound(platform, true)
-                Logger.i(TAG, "佳明授权成功，已更新本地绑定状态")
+                RLog.i(TAG, "佳明授权成功，已更新本地绑定状态")
                 Result.success(true)
             } else {
-                Logger.w(TAG, "佳明回调失败: ${response.msg}")
+                RLog.w(TAG, "佳明回调失败: ${response.msg}")
                 Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "处理佳明OAuth回调异常", e)
+            RLog.e(TAG, "处理佳明OAuth回调异常", e)
             Result.failure(e)
         }
     }
@@ -230,7 +228,7 @@ class DataSourceRepository(
             val userId = preferencesManager.getUserId()
                 ?: return@withContext Result.failure(Exception("用户未登录"))
 
-            Logger.i(TAG, "处理高驰OAuth回调: code=$code, state=$state")
+            RLog.i(TAG, "处理高驰OAuth回调: code=$code, state=$state")
 
             val request = createBaseRequest(
                 dtoName = "CorosCallbackRequest",  // 与iOS保持一致
@@ -241,22 +239,22 @@ class DataSourceRepository(
                 )
             )
 
-            Logger.d(TAG, "发送高驰回调请求")
+            RLog.d(TAG, "发送高驰回调请求")
 
             val response = api.callbackCoros(request)
 
-            Logger.d(TAG, "高驰回调响应: code=${response.code}, msg=${response.msg}")
+            RLog.d(TAG, "高驰回调响应: code=${response.code}, msg=${response.msg}")
 
             if (response.isSuccess()) {
                 dataSourcePreferences.setPlatformBound(DataSourcePlatform.COROS, true)
-                Logger.i(TAG, "高驰授权成功，已更新本地绑定状态")
+                RLog.i(TAG, "高驰授权成功，已更新本地绑定状态")
                 Result.success(true)
             } else {
-                Logger.w(TAG, "高驰回调失败: ${response.msg}")
+                RLog.w(TAG, "高驰回调失败: ${response.msg}")
                 Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "处理高驰OAuth回调异常", e)
+            RLog.e(TAG, "处理高驰OAuth回调异常", e)
             Result.failure(e)
         }
     }
@@ -303,7 +301,7 @@ class DataSourceRepository(
                 Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "解绑平台失败", e)
+            RLog.e(TAG, "解绑平台失败", e)
             Result.failure(e)
         }
     }
@@ -330,7 +328,7 @@ class DataSourceRepository(
             // 使用传入的时间戳或从preferences获取
             val syncTime = lastSyncTime ?: dataSourcePreferences.getLastSyncTime(platform)
 
-            Logger.d(TAG, "获取佳明文件列表, platform=${platform.code}, pageNum=$pageNum, lastSyncTime=$syncTime")
+            RLog.d(TAG, "获取佳明文件列表, platform=${platform.code}, pageNum=$pageNum, lastSyncTime=$syncTime")
 
             val request = createBaseRequest(
                 dtoName = SyncConstants.DtoNames.GARMIN_FILE_LIST_REQUEST,
@@ -348,14 +346,14 @@ class DataSourceRepository(
                 val files = response.data?.garminFileListResponse?.firstOrNull()?.files
                     ?.map { it.toFileInfo() }
                     ?: emptyList()
-                Logger.d(TAG, "获取佳明文件列表成功, 文件数: ${files.size}")
+                RLog.d(TAG, "获取佳明文件列表成功, 文件数: ${files.size}")
                 Result.success(files)
             } else {
-                Logger.w(TAG, "获取佳明文件列表失败: ${response.msg}")
+                RLog.w(TAG, "获取佳明文件列表失败: ${response.msg}")
                 Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "获取文件列表异常", e)
+            RLog.e(TAG, "获取文件列表异常", e)
             Result.failure(e)
         }
     }
@@ -370,24 +368,24 @@ class DataSourceRepository(
     suspend fun downloadGarminFile(fileInfo: FileInfo): Result<ByteArray> = withContext(Dispatchers.IO) {
         // Level 1: 尝试ossUrl下载
         if (fileInfo.hasOssUrl) {
-            Logger.d(TAG, "佳明: 尝试ossUrl下载: ${fileInfo.summaryId}")
+            RLog.d(TAG, "佳明: 尝试ossUrl下载: ${fileInfo.summaryId}")
             val ossResult = downloadFromUrl(fileInfo.ossUrl!!, fileInfo.summaryId)
             if (ossResult.isSuccess) {
-                Logger.i(TAG, "佳明: ossUrl下载成功: ${fileInfo.summaryId}")
+                RLog.i(TAG, "佳明: ossUrl下载成功: ${fileInfo.summaryId}")
                 return@withContext ossResult
             }
-            Logger.w(TAG, "佳明: ossUrl下载失败，尝试下一级: ${fileInfo.summaryId}")
+            RLog.w(TAG, "佳明: ossUrl下载失败，尝试下一级: ${fileInfo.summaryId}")
         }
 
         // Level 2: 尝试fitUrl下载
         if (fileInfo.hasFitUrl) {
-            Logger.d(TAG, "佳明: 尝试fitUrl下载: ${fileInfo.summaryId}")
+            RLog.d(TAG, "佳明: 尝试fitUrl下载: ${fileInfo.summaryId}")
             val fitResult = downloadFromUrl(fileInfo.fitUrl!!, fileInfo.summaryId)
             if (fitResult.isSuccess) {
-                Logger.i(TAG, "佳明: fitUrl下载成功: ${fileInfo.summaryId}")
+                RLog.i(TAG, "佳明: fitUrl下载成功: ${fileInfo.summaryId}")
                 return@withContext fitResult
             }
-            Logger.w(TAG, "佳明: fitUrl下载失败，尝试后端API: ${fileInfo.summaryId}")
+            RLog.w(TAG, "佳明: fitUrl下载失败，尝试后端API: ${fileInfo.summaryId}")
         }
 
         // Level 3: 后端API下载（兜底）
@@ -395,7 +393,7 @@ class DataSourceRepository(
             val userId = preferencesManager.getUserId()
                 ?: return@withContext Result.failure(Exception("用户未登录"))
 
-            Logger.d(TAG, "佳明: 尝试后端API下载: ${fileInfo.summaryId}")
+            RLog.d(TAG, "佳明: 尝试后端API下载: ${fileInfo.summaryId}")
 
             val request = createBaseRequest(
                 dtoName = SyncConstants.DtoNames.GARMIN_FILE_DOWNLOAD_REQUEST,
@@ -409,10 +407,10 @@ class DataSourceRepository(
 
             val responseBody = api.downloadGarminFile(request)
             val bytes = responseBody.bytes()
-            Logger.i(TAG, "佳明: 后端API下载成功: ${fileInfo.summaryId}")
+            RLog.i(TAG, "佳明: 后端API下载成功: ${fileInfo.summaryId}")
             Result.success(bytes)
         } catch (e: Exception) {
-            Logger.e(TAG, "佳明: 所有下载方式均失败: ${fileInfo.summaryId}", e)
+            RLog.e(TAG, "佳明: 所有下载方式均失败: ${fileInfo.summaryId}", e)
             Result.failure(e)
         }
     }
@@ -436,7 +434,7 @@ class DataSourceRepository(
             val apiStartTime = TimestampUtils.toApiFormat(startTime)
             val apiEndTime = TimestampUtils.toApiFormat(endTime)
 
-            Logger.i(TAG, "触发佳明回填, platform=${platform.code}, startTime=$apiStartTime, endTime=$apiEndTime")
+            RLog.i(TAG, "触发佳明回填, platform=${platform.code}, startTime=$apiStartTime, endTime=$apiEndTime")
 
             val request = createBaseRequest(
                 dtoName = SyncConstants.DtoNames.GARMIN_BACKFILL_REQUEST,
@@ -456,18 +454,18 @@ class DataSourceRepository(
             if (response.isSuccess()) {
                 val backfillResult = response.data?.garminBackfillResponse?.firstOrNull()
                 if (backfillResult?.success == true) {
-                    Logger.i(TAG, "佳明回填请求成功, totalRequests=${backfillResult.totalRequests}")
+                    RLog.i(TAG, "佳明回填请求成功, totalRequests=${backfillResult.totalRequests}")
                     Result.success(true)
                 } else {
-                    Logger.w(TAG, "佳明回填请求失败: ${backfillResult?.message}")
+                    RLog.w(TAG, "佳明回填请求失败: ${backfillResult?.message}")
                     Result.failure(Exception(backfillResult?.message ?: "回填失败"))
                 }
             } else {
-                Logger.w(TAG, "佳明回填响应失败: ${response.msg}")
+                RLog.w(TAG, "佳明回填响应失败: ${response.msg}")
                 Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "触发佳明回填异常", e)
+            RLog.e(TAG, "触发佳明回填异常", e)
             Result.failure(e)
         }
     }
@@ -492,7 +490,7 @@ class DataSourceRepository(
             // 使用传入的时间戳或从preferences获取
             val syncTime = lastSyncTime ?: dataSourcePreferences.getCorosLastSyncTime()
 
-            Logger.d(TAG, "获取高驰文件列表, pageNum=$pageNum, lastSyncTime=$syncTime")
+            RLog.d(TAG, "获取高驰文件列表, pageNum=$pageNum, lastSyncTime=$syncTime")
 
             val request = createBaseRequest(
                 dtoName = SyncConstants.DtoNames.COROS_FILE_LIST_REQUEST,
@@ -510,14 +508,14 @@ class DataSourceRepository(
                 val files = response.data?.corosFileListResponse?.firstOrNull()?.files
                     ?.map { it.toFileInfo() }
                     ?: emptyList()
-                Logger.d(TAG, "获取高驰文件列表成功, 文件数: ${files.size}")
+                RLog.d(TAG, "获取高驰文件列表成功, 文件数: ${files.size}")
                 Result.success(files)
             } else {
-                Logger.w(TAG, "获取高驰文件列表失败: ${response.msg}")
+                RLog.w(TAG, "获取高驰文件列表失败: ${response.msg}")
                 Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "获取高驰文件列表异常", e)
+            RLog.e(TAG, "获取高驰文件列表异常", e)
             Result.failure(e)
         }
     }
@@ -535,24 +533,24 @@ class DataSourceRepository(
         if (fileInfo.hasOssUrl) {
             val ossResult = downloadFromUrl(fileInfo.ossUrl!!, fileInfo.summaryId)
             if (ossResult.isSuccess) {
-                Logger.i(TAG, "ossUrl下载成功: ${fileInfo.summaryId}")
+                RLog.i(TAG, "ossUrl下载成功: ${fileInfo.summaryId}")
                 return@withContext ossResult
             }
-            Logger.w(TAG, "ossUrl下载失败，尝试fitUrl: ${fileInfo.summaryId}")
+            RLog.w(TAG, "ossUrl下载失败，尝试fitUrl: ${fileInfo.summaryId}")
         }
 
         // Level 2: 尝试fitUrl下载
         if (fileInfo.hasFitUrl) {
             val fitResult = downloadFromUrl(fileInfo.fitUrl!!, fileInfo.summaryId)
             if (fitResult.isSuccess) {
-                Logger.i(TAG, "fitUrl下载成功: ${fileInfo.summaryId}")
+                RLog.i(TAG, "fitUrl下载成功: ${fileInfo.summaryId}")
                 return@withContext fitResult
             }
-            Logger.e(TAG, "fitUrl下载也失败: ${fileInfo.summaryId}")
+            RLog.e(TAG, "fitUrl下载也失败: ${fileInfo.summaryId}")
         }
 
         // 两级都失败或不存在
-        Logger.e(TAG, "下载失败: ossUrl和fitUrl均不可用, summaryId=${fileInfo.summaryId}")
+        RLog.e(TAG, "下载失败: ossUrl和fitUrl均不可用, summaryId=${fileInfo.summaryId}")
         Result.failure(Exception("下载失败: ossUrl和fitUrl均不可用"))
     }
 
@@ -579,7 +577,7 @@ class DataSourceRepository(
                 Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "URL下载异常: $url", e)
+            RLog.e(TAG, "URL下载异常: $url", e)
             Result.failure(e)
         }
     }
@@ -601,7 +599,7 @@ class DataSourceRepository(
             val apiStartTime = TimestampUtils.toApiFormat(startTime)
             val apiEndTime = TimestampUtils.toApiFormat(endTime)
 
-            Logger.i(TAG, "触发高驰回填, startTime=$apiStartTime, endTime=$apiEndTime")
+            RLog.i(TAG, "触发高驰回填, startTime=$apiStartTime, endTime=$apiEndTime")
 
             val request = createBaseRequest(
                 dtoName = SyncConstants.DtoNames.COROS_BACKFILL_REQUEST,
@@ -617,18 +615,18 @@ class DataSourceRepository(
             if (response.isSuccess()) {
                 val backfillResult = response.data?.corosBackfillResponse?.firstOrNull()
                 if (backfillResult?.success == true) {
-                    Logger.i(TAG, "高驰回填请求成功, totalRequests=${backfillResult.totalRequests}")
+                    RLog.i(TAG, "高驰回填请求成功, totalRequests=${backfillResult.totalRequests}")
                     Result.success(true)
                 } else {
-                    Logger.w(TAG, "高驰回填请求失败: ${backfillResult?.message}")
+                    RLog.w(TAG, "高驰回填请求失败: ${backfillResult?.message}")
                     Result.failure(Exception(backfillResult?.message ?: "回填失败"))
                 }
             } else {
-                Logger.w(TAG, "高驰回填响应失败: ${response.msg}")
+                RLog.w(TAG, "高驰回填响应失败: ${response.msg}")
                 Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "触发高驰回填异常", e)
+            RLog.e(TAG, "触发高驰回填异常", e)
             Result.failure(e)
         }
     }

@@ -34,7 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.viewinterop.AndroidView
 import com.oterman.rundemo.domain.model.DataSourcePlatform
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 
 private const val TAG = "OAuthWebView"
 
@@ -163,7 +163,7 @@ private fun OAuthWebView(
                         request: WebResourceRequest?
                     ): Boolean {
                         val url = request?.url?.toString() ?: return false
-                        Logger.d(TAG, "WebView导航到: $url")
+                        RLog.d(TAG, "WebView导航到: $url")
 
                         // 检查是否是回调URL
                         if (isCallbackUrl(url, platform)) {
@@ -176,13 +176,13 @@ private fun OAuthWebView(
                     
                     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                         super.onPageStarted(view, url, favicon)
-                        Logger.d(TAG, "页面开始加载: $url")
+                        RLog.d(TAG, "页面开始加载: $url")
                         onLoadingChanged(true)
                     }
                     
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        Logger.d(TAG, "页面加载完成: $url")
+                        RLog.d(TAG, "页面加载完成: $url")
                         onLoadingChanged(false)
                     }
                 }
@@ -224,7 +224,7 @@ private fun isCallbackUrl(url: String, platform: DataSourcePlatform): Boolean {
     }
     
     if (isCallback) {
-        Logger.i(TAG, "检测到回调URL: $url")
+        RLog.i(TAG, "检测到回调URL: $url")
     }
     
     return isCallback
@@ -243,8 +243,8 @@ private fun handleCallbackUrl(
 ) {
     try {
         val uri = Uri.parse(url)
-        Logger.d(TAG, "开始解析回调URL: $url")
-        Logger.d(TAG, "平台类型: ${platform.code}")
+        RLog.d(TAG, "开始解析回调URL: $url")
+        RLog.d(TAG, "平台类型: ${platform.code}")
 
         when (platform) {
             DataSourcePlatform.GARMIN_CHINA, DataSourcePlatform.GARMIN_GLOBAL -> {
@@ -252,18 +252,18 @@ private fun handleCallbackUrl(
                 val oauthToken = uri.getQueryParameter("oauth_token")
                 val oauthVerifier = uri.getQueryParameter("oauth_verifier")
 
-                Logger.i(TAG, "佳明回调参数: oauth_token=$oauthToken, oauth_verifier=$oauthVerifier")
+                RLog.i(TAG, "佳明回调参数: oauth_token=$oauthToken, oauth_verifier=$oauthVerifier")
 
                 if (oauthToken != null && oauthVerifier != null) {
                     if (oauthVerifier == "null" || oauthVerifier.isEmpty()) {
-                        Logger.w(TAG, "用户拒绝佳明授权或授权被取消")
+                        RLog.w(TAG, "用户拒绝佳明授权或授权被取消")
                         onDismiss()
                     } else {
-                        Logger.i(TAG, "佳明授权成功，回调处理")
+                        RLog.i(TAG, "佳明授权成功，回调处理")
                         onAuthCallback(OAuthCallbackParams.OAuth1(oauthToken, oauthVerifier))
                     }
                 } else {
-                    Logger.w(TAG, "佳明授权失败 - 回调参数不完整")
+                    RLog.w(TAG, "佳明授权失败 - 回调参数不完整")
                     onDismiss()
                 }
             }
@@ -281,35 +281,35 @@ private fun handleCallbackUrl(
                 // 服务端期望收到原始的%2B格式，因此需要还原编码
                 val state = stateRegex.find(url)?.groupValues?.get(1)?.replace("+", "%2B")
 
-                Logger.i(TAG, "高驰回调参数(编码修正): code=$code, state=$state")
+                RLog.i(TAG, "高驰回调参数(编码修正): code=$code, state=$state")
 
                 if (code != null && state != null) {
                     if (code.isEmpty()) {
-                        Logger.w(TAG, "用户拒绝高驰授权或授权被取消")
+                        RLog.w(TAG, "用户拒绝高驰授权或授权被取消")
                         onDismiss()
                     } else {
-                        Logger.i(TAG, "高驰授权成功，回调处理")
+                        RLog.i(TAG, "高驰授权成功，回调处理")
                         onAuthCallback(OAuthCallbackParams.OAuth2(code, state))
                     }
                 } else {
                     // 检查是否有error参数（OAuth 2.0错误响应）
                     val error = uri.getQueryParameter("error")
                     if (error != null) {
-                        Logger.w(TAG, "高驰授权失败: error=$error")
+                        RLog.w(TAG, "高驰授权失败: error=$error")
                     } else {
-                        Logger.w(TAG, "高驰授权失败 - 回调参数不完整")
+                        RLog.w(TAG, "高驰授权失败 - 回调参数不完整")
                     }
                     onDismiss()
                 }
             }
 
             else -> {
-                Logger.w(TAG, "不支持的平台类型: ${platform.code}")
+                RLog.w(TAG, "不支持的平台类型: ${platform.code}")
                 onDismiss()
             }
         }
     } catch (e: Exception) {
-        Logger.e(TAG, "解析回调URL异常", e)
+        RLog.e(TAG, "解析回调URL异常", e)
         onDismiss()
     }
 }

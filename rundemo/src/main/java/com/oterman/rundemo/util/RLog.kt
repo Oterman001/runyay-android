@@ -48,7 +48,7 @@ import java.util.Locale
  * /data/data/com.oterman.rundemo/files/logs/rundemo_2026-01-29_001.log
  * ```
  */
-object Logger {
+object RLog {
 
     private var enableFileLogging = false
     private var logDir: File? = null

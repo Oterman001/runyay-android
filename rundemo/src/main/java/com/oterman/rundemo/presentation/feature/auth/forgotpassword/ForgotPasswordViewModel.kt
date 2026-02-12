@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.repository.ResetPasswordException
 import com.oterman.rundemo.data.repository.UserRepository
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.ValidationUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -57,11 +57,11 @@ class ForgotPasswordViewModel(
         val state = _uiState.value
         
         if (!state.canSendCode) {
-            Logger.w(TAG, "发送验证码条件不满足")
+            RLog.w(TAG, "发送验证码条件不满足")
             return
         }
         
-        Logger.d(TAG, "请求发送重置密码验证码: ${state.phoneNumber}")
+        RLog.d(TAG, "请求发送重置密码验证码: ${state.phoneNumber}")
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -69,11 +69,11 @@ class ForgotPasswordViewModel(
             val result = userRepository.sendResetPasswordVerificationCode(state.phoneNumber)
             
             result.onSuccess { response ->
-                Logger.i(TAG, "验证码发送响应: sendFlag=${response.sendFlag}")
+                RLog.i(TAG, "验证码发送响应: sendFlag=${response.sendFlag}")
                 
                 when {
                     response.isSuccess -> {
-                        Logger.i(TAG, "验证码发送成功")
+                        RLog.i(TAG, "验证码发送成功")
                         _uiState.update { it.copy(
                             isLoading = false,
                             currentStep = ResetStep.VERIFICATION
@@ -81,14 +81,14 @@ class ForgotPasswordViewModel(
                         startResendCountdown()
                     }
                     response.userNotExist -> {
-                        Logger.w(TAG, "用户不存在")
+                        RLog.w(TAG, "用户不存在")
                         _uiState.update { it.copy(
                             isLoading = false,
                             showUserNotExistAlert = true
                         )}
                     }
                     response.needCaptcha -> {
-                        Logger.w(TAG, "需要图形验证码")
+                        RLog.w(TAG, "需要图形验证码")
                         // TODO: 实现图形验证码功能
                         _uiState.update { it.copy(
                             isLoading = false,
@@ -96,7 +96,7 @@ class ForgotPasswordViewModel(
                         )}
                     }
                     else -> {
-                        Logger.e(TAG, "验证码发送失败")
+                        RLog.e(TAG, "验证码发送失败")
                         _uiState.update { it.copy(
                             isLoading = false,
                             errorMessage = "验证码发送失败，请稍后重试"
@@ -104,7 +104,7 @@ class ForgotPasswordViewModel(
                     }
                 }
             }.onFailure { error ->
-                Logger.e(TAG, "发送验证码失败: ${error.message}", error)
+                RLog.e(TAG, "发送验证码失败: ${error.message}", error)
                 _uiState.update { it.copy(
                     isLoading = false,
                     errorMessage = "验证码发送失败：${error.message}"
@@ -136,11 +136,11 @@ class ForgotPasswordViewModel(
         val state = _uiState.value
         
         if (!state.canVerifyCode) {
-            Logger.w(TAG, "验证码验证条件不满足")
+            RLog.w(TAG, "验证码验证条件不满足")
             return
         }
         
-        Logger.d(TAG, "开始验证重置密码验证码")
+        RLog.d(TAG, "开始验证重置密码验证码")
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null, verificationCodeError = null) }
@@ -151,7 +151,7 @@ class ForgotPasswordViewModel(
             )
             
             result.onSuccess { response ->
-                Logger.i(TAG, "验证码验证成功: userId=${response.userId}")
+                RLog.i(TAG, "验证码验证成功: userId=${response.userId}")
                 
                 _uiState.update { it.copy(
                     isLoading = false,
@@ -160,7 +160,7 @@ class ForgotPasswordViewModel(
                     resetUserId = response.userId
                 )}
             }.onFailure { error ->
-                Logger.e(TAG, "验证码验证失败: ${error.message}", error)
+                RLog.e(TAG, "验证码验证失败: ${error.message}", error)
                 
                 when (error) {
                     is ResetPasswordException -> {
@@ -241,7 +241,7 @@ class ForgotPasswordViewModel(
         val state = _uiState.value
         
         if (!state.canResetPassword) {
-            Logger.w(TAG, "重置密码条件不满足")
+            RLog.w(TAG, "重置密码条件不满足")
             return
         }
         
@@ -249,12 +249,12 @@ class ForgotPasswordViewModel(
         val token = state.resetToken
         
         if (userId.isNullOrEmpty() || token.isNullOrEmpty()) {
-            Logger.e(TAG, "用户ID或Token为空")
+            RLog.e(TAG, "用户ID或Token为空")
             _uiState.update { it.copy(errorMessage = "验证信息失效，请重新验证") }
             return
         }
         
-        Logger.d(TAG, "开始重置密码")
+        RLog.d(TAG, "开始重置密码")
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -266,13 +266,13 @@ class ForgotPasswordViewModel(
             )
             
             result.onSuccess {
-                Logger.i(TAG, "密码重置成功")
+                RLog.i(TAG, "密码重置成功")
                 _uiState.update { it.copy(
                     isLoading = false,
                     resetSuccess = true
                 )}
             }.onFailure { error ->
-                Logger.e(TAG, "密码重置失败: ${error.message}", error)
+                RLog.e(TAG, "密码重置失败: ${error.message}", error)
                 _uiState.update { it.copy(
                     isLoading = false,
                     errorMessage = "密码重置失败：${error.message}"

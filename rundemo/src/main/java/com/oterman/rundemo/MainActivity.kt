@@ -14,7 +14,7 @@ import com.oterman.rundemo.data.network.RetrofitClient
 import com.oterman.rundemo.presentation.navigation.AppNavGraph
 import com.oterman.rundemo.presentation.navigation.Screen
 import com.oterman.rundemo.ui.theme.ComopseDemoHubTheme
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 
 /**
  * 主Activity
@@ -35,8 +35,8 @@ class MainActivity : ComponentActivity() {
         preferencesManager = PreferencesManager(this)
 
         // 初始化Logger（默认启用文件日志，设置 tag 前缀为 XRUN）
-        Logger.init(this, prefix = "XRUN")
-        Logger.i(TAG, "应用启动")
+        RLog.init(this, prefix = "XRUN")
+        RLog.i(TAG, "应用启动")
 
         // 设置Retrofit的token提供者
         RetrofitClient.setTokenProvider {

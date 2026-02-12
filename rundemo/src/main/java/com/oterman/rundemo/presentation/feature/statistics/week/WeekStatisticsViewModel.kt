@@ -10,11 +10,10 @@ import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.DayRunRecordInfo
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.domain.model.WeekStatistics
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -65,7 +64,7 @@ class WeekStatisticsViewModel(
      * Navigate to previous week
      */
     fun goToPreviousWeek() {
-        Logger.d(TAG, "Navigating to previous week")
+        RLog.d(TAG, "Navigating to previous week")
         currentWeekStart.add(Calendar.WEEK_OF_YEAR, -1)
         // Clear trajectory data to avoid showing stale data
         if (_showTrajectoryMode.value) {
@@ -80,7 +79,7 @@ class WeekStatisticsViewModel(
      */
     fun goToNextWeek() {
         if (_uiState.value.canGoNext) {
-            Logger.d(TAG, "Navigating to next week")
+            RLog.d(TAG, "Navigating to next week")
             currentWeekStart.add(Calendar.WEEK_OF_YEAR, 1)
             // Clear trajectory data to avoid showing stale data
             if (_showTrajectoryMode.value) {
@@ -95,7 +94,7 @@ class WeekStatisticsViewModel(
      * Jump to current week
      */
     fun goToCurrentWeek() {
-        Logger.d(TAG, "Jumping to current week")
+        RLog.d(TAG, "Jumping to current week")
         currentWeekStart = Calendar.getInstance().apply {
             firstDayOfWeek = Calendar.MONDAY
             set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
@@ -130,7 +129,7 @@ class WeekStatisticsViewModel(
      */
     fun toggleTrajectoryMode() {
         val newMode = !_showTrajectoryMode.value
-        Logger.d(TAG, "Toggling trajectory mode: ${_showTrajectoryMode.value} -> $newMode")
+        RLog.d(TAG, "Toggling trajectory mode: ${_showTrajectoryMode.value} -> $newMode")
         _showTrajectoryMode.value = newMode
         
         // Preload trajectories when switching to trajectory mode
@@ -147,7 +146,7 @@ class WeekStatisticsViewModel(
             try {
                 val dailyRecords = _uiState.value.weekStats.dailyRecords
                 val allWorkoutIds = dailyRecords.flatMap { it.workoutIds }
-                Logger.d(TAG, "preloadTrajectories: weekDateRange=${_uiState.value.weekDateRange}, workoutIds=$allWorkoutIds")
+                RLog.d(TAG, "preloadTrajectories: weekDateRange=${_uiState.value.weekDateRange}, workoutIds=$allWorkoutIds")
                 val trajectoryMap = mutableMapOf<String, List<TrackPoint>>()
                 
                 // Load track points for each workout in the week
@@ -159,15 +158,15 @@ class WeekStatisticsViewModel(
                                 trajectoryMap[workoutId] = trackPoints
                             }
                         } catch (e: Exception) {
-                            Logger.e(TAG, "Failed to load track points for $workoutId", e)
+                            RLog.e(TAG, "Failed to load track points for $workoutId", e)
                         }
                     }
                 }
                 
                 _trajectoryDataMap.value = trajectoryMap
-                Logger.d(TAG, "Preloaded ${trajectoryMap.size} trajectories")
+                RLog.d(TAG, "Preloaded ${trajectoryMap.size} trajectories")
             } catch (e: Exception) {
-                Logger.e(TAG, "Failed to preload trajectories", e)
+                RLog.e(TAG, "Failed to preload trajectories", e)
             }
         }
     }
@@ -189,7 +188,7 @@ class WeekStatisticsViewModel(
                 val today = Calendar.getInstance()
                 val canGoNext = weekEndCal.before(today)
 
-                Logger.d(TAG, "Loading week data: $dateRange")
+                RLog.d(TAG, "Loading week data: $dateRange")
 
                 // Get records for this week
                 val weekEndForQuery = weekEndCal.clone() as Calendar
@@ -214,11 +213,11 @@ class WeekStatisticsViewModel(
 
                 // Load trajectories after data is ready (if in trajectory mode)
                 if (_showTrajectoryMode.value) {
-                    Logger.d(TAG, "loadWeekData completed: dateRange=$dateRange, workoutIds=${weekStats.dailyRecords.flatMap { it.workoutIds }}, calling preloadTrajectories")
+                    RLog.d(TAG, "loadWeekData completed: dateRange=$dateRange, workoutIds=${weekStats.dailyRecords.flatMap { it.workoutIds }}, calling preloadTrajectories")
                     preloadTrajectories()
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "Failed to load week data", e)
+                RLog.e(TAG, "Failed to load week data", e)
                 _uiState.update {
                     it.copy(
                         isLoading = false,

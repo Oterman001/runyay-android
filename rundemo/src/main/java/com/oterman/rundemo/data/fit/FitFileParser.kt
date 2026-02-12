@@ -2,22 +2,16 @@ package com.oterman.rundemo.data.fit
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import com.garmin.fit.Decode
-import com.garmin.fit.DeviceInfoMesg
 import com.garmin.fit.DeviceInfoMesgListener
-import com.garmin.fit.EventMesg
 import com.garmin.fit.EventMesgListener
-import com.garmin.fit.FileIdMesg
 import com.garmin.fit.FileIdMesgListener
-import com.garmin.fit.LapMesg
 import com.garmin.fit.LapMesgListener
 import com.garmin.fit.Manufacturer
 import com.garmin.fit.MesgBroadcaster
-import com.garmin.fit.RecordMesg
 import com.garmin.fit.RecordMesgListener
-import com.garmin.fit.SessionMesg
 import com.garmin.fit.SessionMesgListener
+import com.oterman.rundemo.util.RLog
 import java.io.InputStream
 
 /**
@@ -174,15 +168,15 @@ class FitFileParser(private val context: Context) {
          * @return 解析结果，失败返回null
          */
         fun parseFromBytes(data: ByteArray): FitParseResult? {
-            Log.d(TAG, "开始从字节数组解析FIT文件, size=${data.size}")
+            RLog.d(TAG, "开始从字节数组解析FIT文件, size=${data.size}")
             return try {
                 val inputStream = java.io.ByteArrayInputStream(data)
                 val result = parseInputStreamStatic(inputStream)
                 inputStream.close()
-                Log.d(TAG, "FIT文件解析成功: records=${result.records.size}, laps=${result.laps.size}")
+                RLog.d(TAG, "FIT文件解析成功: records=${result.records.size}, laps=${result.laps.size}")
                 result
             } catch (e: Exception) {
-                Log.e(TAG, "解析FIT文件失败", e)
+                RLog.e(TAG, "解析FIT文件失败", e)
                 null
             }
         }
@@ -337,21 +331,21 @@ class FitFileParser(private val context: Context) {
      * @return 解析结果
      */
     fun parse(uri: Uri): Result<FitParseResult> {
-        Log.d(TAG, "开始解析FIT文件: $uri")
+        RLog.d(TAG, "开始解析FIT文件: $uri")
         return try {
             val inputStream = context.contentResolver.openInputStream(uri)
             if (inputStream == null) {
-                Log.e(TAG, "无法打开文件输入流")
+                RLog.e(TAG, "无法打开文件输入流")
                 return Result.failure(Exception("无法打开文件"))
             }
             
             val result = parseInputStream(inputStream)
             inputStream.close()
             
-            Log.d(TAG, "FIT文件解析成功: records=${result.records.size}, laps=${result.laps.size}")
+            RLog.d(TAG, "FIT文件解析成功: records=${result.records.size}, laps=${result.laps.size}")
             Result.success(result)
         } catch (e: Exception) {
-            Log.e(TAG, "解析FIT文件失败", e)
+            RLog.e(TAG, "解析FIT文件失败", e)
             Result.failure(Exception("解析FIT文件失败: ${e.message}", e))
         }
     }

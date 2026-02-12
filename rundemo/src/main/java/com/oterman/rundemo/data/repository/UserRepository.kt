@@ -21,7 +21,7 @@ import com.oterman.rundemo.data.network.dto.response.UserLoginResponse
 import com.oterman.rundemo.data.network.dto.response.UserRegisterResponse
 import com.oterman.rundemo.domain.model.UserInfo
 import com.oterman.rundemo.util.Constants
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.SecurityUtils
 import com.oterman.rundemo.util.SecurityUtils.md5
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -51,7 +51,7 @@ class UserRepository(
      */
     suspend fun getAvatarUrl(userId: String): Result<String?> {
         return try {
-            Logger.d(TAG, "获取头像临时URL: userId=$userId")
+            RLog.d(TAG, "获取头像临时URL: userId=$userId")
 
             val requestDto = GetAvatarUrlRequest(userId = userId)
             val request = RequestBuilder.createRequest(
@@ -64,14 +64,14 @@ class UserRepository(
 
             if (response.isSuccess()) {
                 val avatarUrl = response.data?.avatarUrlResponseDto?.firstOrNull()?.avatarUrl
-                Logger.d(TAG, "获取头像URL成功: $avatarUrl")
+                RLog.d(TAG, "获取头像URL成功: $avatarUrl")
                 Result.success(avatarUrl)
             } else {
-                Logger.e(TAG, "获取头像URL失败: ${response.msg}")
+                RLog.e(TAG, "获取头像URL失败: ${response.msg}")
                 Result.failure(Exception(response.msg ?: "获取头像URL失败"))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "获取头像URL异常: ${e.message}")
+            RLog.e(TAG, "获取头像URL异常: ${e.message}")
             Result.failure(e)
         }
     }
@@ -190,7 +190,7 @@ class UserRepository(
             val userId = preferencesManager.getUserId() ?: return Result.success(true)
             val deviceId = SecurityUtils.getDeviceId(context)
 
-            Logger.d(TAG, "调用服务端退出登录接口: userId=$userId, deviceId=$deviceId")
+            RLog.d(TAG, "调用服务端退出登录接口: userId=$userId, deviceId=$deviceId")
 
             val requestDto = UserLogoutRequest(userId = userId, deviceId = deviceId)
             val request = RequestBuilder.createRequest(
@@ -205,14 +205,14 @@ class UserRepository(
             preferencesManager.clearUserData()
 
             if (response.isSuccess()) {
-                Logger.d(TAG, "服务端退出登录成功")
+                RLog.d(TAG, "服务端退出登录成功")
                 Result.success(true)
             } else {
-                Logger.w(TAG, "服务端退出登录失败: ${response.msg}")
+                RLog.w(TAG, "服务端退出登录失败: ${response.msg}")
                 Result.success(true) // 即使服务端失败也返回成功，因为本地已清除
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "退出登录异常: ${e.message}")
+            RLog.e(TAG, "退出登录异常: ${e.message}")
             // 即使异常也清除本地数据
             preferencesManager.clearUserData()
             Result.success(true)
@@ -229,7 +229,7 @@ class UserRepository(
             val userId = preferencesManager.getUserId()
                 ?: return Result.failure(Exception("用户未登录"))
 
-            Logger.d(TAG, "注销账号: userId=$userId")
+            RLog.d(TAG, "注销账号: userId=$userId")
 
             // MD5加密密码
             val encryptedPassword = password.md5()
@@ -247,16 +247,16 @@ class UserRepository(
             val response = userApi.deactivate(request)
 
             if (response.isSuccess()) {
-                Logger.d(TAG, "注销账号成功")
+                RLog.d(TAG, "注销账号成功")
                 // 清除所有本地数据
                 preferencesManager.clearUserData()
                 Result.success(true)
             } else {
-                Logger.e(TAG, "注销账号失败: ${response.msg}")
+                RLog.e(TAG, "注销账号失败: ${response.msg}")
                 Result.failure(Exception(response.msg ?: "注销账号失败"))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "注销账号异常: ${e.message}")
+            RLog.e(TAG, "注销账号异常: ${e.message}")
             Result.failure(e)
         }
     }
@@ -274,7 +274,7 @@ class UserRepository(
                 ?: return Result.failure(Exception("用户未登录"))
             val token = preferencesManager.getUserToken() ?: ""
 
-            Logger.d(TAG, "上传头像: userId=$userId, fileName=$fileName, size=${imageData.size}")
+            RLog.d(TAG, "上传头像: userId=$userId, fileName=$fileName, size=${imageData.size}")
 
             // 构建认证JSON (对应iOS的requestHead结构)
             val headJson = JSONObject().apply {
@@ -296,16 +296,16 @@ class UserRepository(
 
             if (response.isSuccess()) {
                 val avatarUrl = response.data?.updateAvatarResponseDto?.firstOrNull()?.avatarUrl
-                Logger.d(TAG, "上传头像成功: $avatarUrl")
+                RLog.d(TAG, "上传头像成功: $avatarUrl")
                 // 更新本地保存的头像URL
                 avatarUrl?.let { preferencesManager.saveImageUrl(it) }
                 Result.success(avatarUrl)
             } else {
-                Logger.e(TAG, "上传头像失败: ${response.msg}")
+                RLog.e(TAG, "上传头像失败: ${response.msg}")
                 Result.failure(Exception(response.msg ?: "上传头像失败"))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "上传头像异常: ${e.message}")
+            RLog.e(TAG, "上传头像异常: ${e.message}")
             Result.failure(e)
         }
     }
@@ -320,7 +320,7 @@ class UserRepository(
             val userId = preferencesManager.getUserId()
                 ?: return Result.failure(Exception("用户未登录"))
 
-            Logger.d(TAG, "更新昵称: userId=$userId, nickname=$nickname")
+            RLog.d(TAG, "更新昵称: userId=$userId, nickname=$nickname")
 
             val requestDto = UpdateNicknameRequest(
                 nickname = nickname
@@ -334,16 +334,16 @@ class UserRepository(
             val response = userApi.updateNickname(request)
 
             if (response.isSuccess()) {
-                Logger.d(TAG, "更新昵称成功")
+                RLog.d(TAG, "更新昵称成功")
                 // 更新本地保存的用户名
                 preferencesManager.updateUserName(nickname)
                 Result.success(true)
             } else {
-                Logger.e(TAG, "更新昵称失败: ${response.msg}")
+                RLog.e(TAG, "更新昵称失败: ${response.msg}")
                 Result.failure(Exception(response.msg ?: "更新昵称失败"))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "更新昵称异常: ${e.message}")
+            RLog.e(TAG, "更新昵称异常: ${e.message}")
             Result.failure(e)
         }
     }

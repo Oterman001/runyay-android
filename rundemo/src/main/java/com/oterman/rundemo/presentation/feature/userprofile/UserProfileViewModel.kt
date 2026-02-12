@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.repository.UserRepository
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.ValidationUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,7 +49,7 @@ class UserProfileViewModel(
         val userName = preferencesManager.getUserName() ?: ""
         val phoneNumber = preferencesManager.getPhoneNumber() ?: ""
 
-        Logger.d(TAG, "加载用户信息: userId=$userId, userName=$userName")
+        RLog.d(TAG, "加载用户信息: userId=$userId, userName=$userName")
 
         _uiState.update { state ->
             state.copy(
@@ -72,15 +72,15 @@ class UserProfileViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingAvatar = true) }
 
-            Logger.d(TAG, "开始加载头像URL: userId=$userId")
+            RLog.d(TAG, "开始加载头像URL: userId=$userId")
 
             val result = userRepository.getAvatarUrl(userId)
 
             result.onSuccess { url ->
-                Logger.d(TAG, "头像URL加载成功: $url")
+                RLog.d(TAG, "头像URL加载成功: $url")
                 _uiState.update { it.copy(avatarUrl = url, isLoadingAvatar = false) }
             }.onFailure { e ->
-                Logger.e(TAG, "头像URL加载失败: ${e.message}")
+                RLog.e(TAG, "头像URL加载失败: ${e.message}")
                 _uiState.update { it.copy(avatarUrl = null, isLoadingAvatar = false) }
             }
         }
@@ -119,7 +119,7 @@ class UserProfileViewModel(
             _uiState.update { it.copy(isUploadingAvatar = true) }
 
             try {
-                Logger.d(TAG, "开始上传裁剪后的头像: $croppedUri")
+                RLog.d(TAG, "开始上传裁剪后的头像: $croppedUri")
 
                 // 压缩到目标大小 (300KB)
                 val imageData = compressToTargetSize(croppedUri, MAX_IMAGE_SIZE)
@@ -133,13 +133,13 @@ class UserProfileViewModel(
                     return@launch
                 }
 
-                Logger.d(TAG, "压缩后大小: ${imageData.size / 1024}KB")
+                RLog.d(TAG, "压缩后大小: ${imageData.size / 1024}KB")
 
                 val fileName = "avatar_${System.currentTimeMillis()}.jpg"
                 val result = userRepository.uploadAvatar(imageData, fileName)
 
                 result.onSuccess { newUrl ->
-                    Logger.d(TAG, "头像上传成功: $newUrl")
+                    RLog.d(TAG, "头像上传成功: $newUrl")
                     // 重新加载头像URL以获取带签名的临时URL
                     _uiState.value.userId.takeIf { it.isNotEmpty() }?.let { loadAvatarUrl(it) }
                     _uiState.update {
@@ -149,7 +149,7 @@ class UserProfileViewModel(
                         )
                     }
                 }.onFailure { e ->
-                    Logger.e(TAG, "头像上传失败: ${e.message}")
+                    RLog.e(TAG, "头像上传失败: ${e.message}")
                     _uiState.update {
                         it.copy(
                             isUploadingAvatar = false,
@@ -158,7 +158,7 @@ class UserProfileViewModel(
                     }
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "头像上传异常: ${e.message}")
+                RLog.e(TAG, "头像上传异常: ${e.message}")
                 _uiState.update {
                     it.copy(
                         isUploadingAvatar = false,
@@ -198,7 +198,7 @@ class UserProfileViewModel(
             } while (quality > 10)
 
             val result = outputStream.toByteArray()
-            Logger.d(TAG, "图片压缩完成: ${result.size / 1024}KB, quality=$quality")
+            RLog.d(TAG, "图片压缩完成: ${result.size / 1024}KB, quality=$quality")
 
             // 清理资源
             bitmap.recycle()
@@ -206,7 +206,7 @@ class UserProfileViewModel(
 
             result
         } catch (e: Exception) {
-            Logger.e(TAG, "图片压缩失败: ${e.message}")
+            RLog.e(TAG, "图片压缩失败: ${e.message}")
             null
         }
     }
@@ -226,7 +226,7 @@ class UserProfileViewModel(
         val newWidth = (width * scale).toInt()
         val newHeight = (height * scale).toInt()
 
-        Logger.d(TAG, "缩放图片: ${width}x${height} -> ${newWidth}x${newHeight}")
+        RLog.d(TAG, "缩放图片: ${width}x${height} -> ${newWidth}x${newHeight}")
         return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
     }
 
@@ -283,12 +283,12 @@ class UserProfileViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdatingNickname = true) }
 
-            Logger.d(TAG, "保存昵称: $nickname")
+            RLog.d(TAG, "保存昵称: $nickname")
 
             val result = userRepository.updateNickname(nickname)
 
             result.onSuccess {
-                Logger.d(TAG, "昵称更新成功")
+                RLog.d(TAG, "昵称更新成功")
                 _uiState.update {
                     it.copy(
                         isUpdatingNickname = false,
@@ -299,7 +299,7 @@ class UserProfileViewModel(
                     )
                 }
             }.onFailure { e ->
-                Logger.e(TAG, "昵称更新失败: ${e.message}")
+                RLog.e(TAG, "昵称更新失败: ${e.message}")
                 _uiState.update {
                     it.copy(
                         isUpdatingNickname = false,
@@ -338,12 +338,12 @@ class UserProfileViewModel(
                 )
             }
 
-            Logger.i(TAG, "用户退出登录")
+            RLog.i(TAG, "用户退出登录")
 
             val result = userRepository.logoutFromServer()
 
             result.onSuccess {
-                Logger.d(TAG, "退出登录成功")
+                RLog.d(TAG, "退出登录成功")
                 _uiState.update {
                     it.copy(
                         isLoggingOut = false,
@@ -352,7 +352,7 @@ class UserProfileViewModel(
                 }
             }.onFailure { e ->
                 // 即使失败也导航到登录页，因为本地数据已清除
-                Logger.e(TAG, "退出登录失败: ${e.message}")
+                RLog.e(TAG, "退出登录失败: ${e.message}")
                 _uiState.update {
                     it.copy(
                         isLoggingOut = false,
@@ -432,12 +432,12 @@ class UserProfileViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isDeactivating = true) }
 
-            Logger.i(TAG, "用户注销账号")
+            RLog.i(TAG, "用户注销账号")
 
             val result = userRepository.deactivateAccount(password)
 
             result.onSuccess {
-                Logger.d(TAG, "账号注销成功")
+                RLog.d(TAG, "账号注销成功")
                 _uiState.update {
                     it.copy(
                         isDeactivating = false,
@@ -446,7 +446,7 @@ class UserProfileViewModel(
                     )
                 }
             }.onFailure { e ->
-                Logger.e(TAG, "账号注销失败: ${e.message}")
+                RLog.e(TAG, "账号注销失败: ${e.message}")
                 _uiState.update {
                     it.copy(
                         isDeactivating = false,

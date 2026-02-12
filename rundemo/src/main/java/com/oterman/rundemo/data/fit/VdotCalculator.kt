@@ -1,8 +1,8 @@
 package com.oterman.rundemo.data.fit
 
-import android.util.Log
 import com.oterman.rundemo.data.local.entity.OverallVdotEntity
 import com.oterman.rundemo.data.local.entity.RunSegmentEntity
+import com.oterman.rundemo.util.RLog
 import kotlin.math.exp
 import kotlin.math.pow
 
@@ -57,7 +57,7 @@ object VdotCalculator {
         if (originalVdot < 0) {
             return -1.0
         }
-        Log.d(TAG, "原始VDOT: $originalVdot")
+        RLog.d(TAG, "原始VDOT: $originalVdot")
 
         // 3. 心率调整
         return adjustWithHeartRate(heartRate, originalVdot, maxHR, restHR)
@@ -145,7 +145,7 @@ object VdotCalculator {
         // 使用AbilityZoneCalculator获取心率区间
         val heartRateRanges = AbilityZoneCalculator.calculateHeartRate7Ranges(restHR, maxHR)
         val zone = AbilityZoneCalculator.getZoneByHeartRate(heartRate, heartRateRanges)
-        Log.d(TAG, "心率区间: zone=$zone, HR=$heartRate")
+        RLog.d(TAG, "心率区间: zone=$zone, HR=$heartRate")
 
         // zone >= 5 不调整（高强度运动）
         if (zone >= 5) {
@@ -161,7 +161,7 @@ object VdotCalculator {
         }
 
         val adjustedVdot = originalVdot + (maxHR / heartRate * factor - 1) * (originalVdot - 3.5)
-        Log.d(TAG, "心率调整VDOT: original=$originalVdot, adjusted=$adjustedVdot, factor=$factor")
+        RLog.d(TAG, "心率调整VDOT: original=$originalVdot, adjusted=$adjustedVdot, factor=$factor")
         return adjustedVdot
     }
 
@@ -211,7 +211,7 @@ object VdotCalculator {
             result += hisVdotList[i].originValue * normalizedWeights[i + 1]
         }
 
-        Log.d(TAG, "Overall VDOT: origin=$originVdot, overall=$result, historyCount=$totalCount")
+        RLog.d(TAG, "Overall VDOT: origin=$originVdot, overall=$result, historyCount=$totalCount")
         return result
     }
 
@@ -252,7 +252,7 @@ object VdotCalculator {
 
         // 验证数据充足
         if (sumDistance <= 0 || sumTime <= 0 || sumHeartRate <= 0) {
-            Log.w(TAG, "间歇训练数据不足: distance=$sumDistance, time=$sumTime, heartRate=$sumHeartRate")
+            RLog.w(TAG, "间歇训练数据不足: distance=$sumDistance, time=$sumTime, heartRate=$sumHeartRate")
             return null
         }
 
@@ -269,7 +269,7 @@ object VdotCalculator {
             restHR = restHR
         )
 
-        Log.i(TAG, "间歇训练VDOT: distance=${sumDistance}km, time=${sumTime}min, avgHR=$avgHeartRate, vdot=$vdot")
+        RLog.i(TAG, "间歇训练VDOT: distance=${sumDistance}km, time=${sumTime}min, avgHR=$avgHeartRate, vdot=$vdot")
         return if (vdot > 0) vdot else null
     }
 

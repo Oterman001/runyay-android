@@ -1,11 +1,10 @@
 package com.oterman.rundemo.presentation.feature.datasource
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.repository.DataSourceRepository
-import com.oterman.rundemo.domain.model.DataSourceInfo
 import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,7 +54,7 @@ class DataSourceManageViewModel(
                         }
                     }
                     .onFailure { error ->
-                        Log.e(TAG, "刷新平台状态失败", error)
+                        RLog.e(TAG, "刷新平台状态失败", error)
                         _uiState.update { 
                             it.copy(
                                 isLoading = false,
@@ -64,7 +63,7 @@ class DataSourceManageViewModel(
                         }
                     }
             } catch (e: Exception) {
-                Log.e(TAG, "加载数据源失败", e)
+                RLog.e(TAG, "加载数据源失败", e)
                 _uiState.update { 
                     it.copy(
                         isLoading = false,
@@ -102,7 +101,7 @@ class DataSourceManageViewModel(
         repository.saveDataSourceOrder(currentOrder)
         _uiState.update { it.copy(isEditingOrder = false) }
         
-        Log.d(TAG, "排序已保存: $currentOrder")
+        RLog.d(TAG, "排序已保存: $currentOrder")
     }
     
     /**

@@ -1,8 +1,8 @@
 package com.oterman.rundemo.data.fit
 
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.oterman.rundemo.util.RLog
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -53,14 +53,14 @@ object FitEventConverter {
         val runEvents = mutableListOf<RunEvent>()
         var pauseStartMs: Long? = null
 
-        Log.i(TAG, "开始解析Event，共${events.size}个事件")
+        RLog.i(TAG, "开始解析Event，共${events.size}个事件")
 
         for ((index, event) in events.withIndex()) {
             val eventName = event.event ?: continue
             val eventType = event.eventType ?: continue
             val timestampMs = FitFileParser.fitTimestampToMillis(event.timestamp)
 
-            Log.d(TAG, "Event[$index]: event=$eventName, eventType=$eventType, timestamp=$timestampMs")
+            RLog.d(TAG, "Event[$index]: event=$eventName, eventType=$eventType, timestamp=$timestampMs")
 
             // 只处理timer类型的事件（对齐iOS: eventEnum == .timer）
             if (eventName.lowercase() != "timer") continue
@@ -69,7 +69,7 @@ object FitEventConverter {
                 "stop", "stop_all" -> {
                     // 暂停开始
                     pauseStartMs = timestampMs
-                    Log.i(TAG, "检测到暂停开始: $timestampMs")
+                    RLog.i(TAG, "检测到暂停开始: $timestampMs")
                 }
                 "start" -> {
                     // 恢复（暂停结束）
@@ -81,7 +81,7 @@ object FitEventConverter {
                             eventType = 1 // 暂停事件
                         )
                         runEvents.add(runEvent)
-                        Log.i(TAG, "记录暂停事件: ${runEvent.beginTime} -> ${runEvent.endTime}")
+                        RLog.i(TAG, "记录暂停事件: ${runEvent.beginTime} -> ${runEvent.endTime}")
                         pauseStartMs = null
                     }
                 }
@@ -90,10 +90,10 @@ object FitEventConverter {
 
         return try {
             val jsonString = gson.toJson(runEvents)
-            Log.i(TAG, "成功转换${runEvents.size}个暂停事件")
+            RLog.i(TAG, "成功转换${runEvents.size}个暂停事件")
             jsonString
         } catch (e: Exception) {
-            Log.e(TAG, "转换事件为JSON失败: ${e.message}")
+            RLog.e(TAG, "转换事件为JSON失败: ${e.message}")
             ""
         }
     }
@@ -118,9 +118,9 @@ object FitEventConverter {
                     val endMs = parseBeijingTimeToMs(event.endTime) ?: return@mapNotNull null
                     PauseEvent(beginTimeMs = beginMs, endTimeMs = endMs)
                 }
-                .also { Log.i(TAG, "转换了${it.size}个暂停事件") }
+                .also { RLog.i(TAG, "转换了${it.size}个暂停事件") }
         } catch (e: Exception) {
-            Log.e(TAG, "解析eventStr失败: ${e.message}")
+            RLog.e(TAG, "解析eventStr失败: ${e.message}")
             emptyList()
         }
     }
@@ -166,7 +166,7 @@ object FitEventConverter {
         return try {
             beijingDateFormat.parse(dateStr)?.time
         } catch (e: Exception) {
-            Log.w(TAG, "解析时间字符串失败: $dateStr")
+            RLog.w(TAG, "解析时间字符串失败: $dateStr")
             null
         }
     }

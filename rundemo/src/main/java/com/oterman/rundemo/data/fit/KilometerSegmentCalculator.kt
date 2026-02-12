@@ -1,8 +1,8 @@
 package com.oterman.rundemo.data.fit
 
-import android.util.Log
 import com.oterman.rundemo.data.local.entity.RunSegmentEntity
 import com.oterman.rundemo.util.FitDataConverter
+import com.oterman.rundemo.util.RLog
 
 /**
  * 公里分段计算器
@@ -30,7 +30,7 @@ object KilometerSegmentCalculator {
         pauseList: List<FitEventConverter.PauseEvent>
     ): List<RunSegmentEntity> {
         if (records.isEmpty()) {
-            Log.w(TAG, "Record列表为空，无法计算公里分段")
+            RLog.w(TAG, "Record列表为空，无法计算公里分段")
             return emptyList()
         }
 
@@ -90,7 +90,7 @@ object KilometerSegmentCalculator {
             }
         }
 
-        Log.i(TAG, "成功计算${segments.size}个公里分段")
+        RLog.i(TAG, "成功计算${segments.size}个公里分段")
         return segments
     }
 

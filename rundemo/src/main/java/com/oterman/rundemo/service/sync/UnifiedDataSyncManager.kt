@@ -1,7 +1,6 @@
 package com.oterman.rundemo.service.sync
 
 import android.content.Context
-import android.util.Log
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.dao.RunRecordDao
@@ -15,7 +14,7 @@ import com.oterman.rundemo.domain.model.SyncTimeRange
 import com.oterman.rundemo.service.sync.model.SyncConstants
 import com.oterman.rundemo.service.sync.model.SyncNotification
 import com.oterman.rundemo.service.sync.model.UnifiedSyncResult
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.TimestampUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,9 +26,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -188,14 +185,14 @@ class UnifiedDataSyncManager private constructor(
         val results = mutableMapOf<DataSourcePlatform, SyncResult>()
 
         try {
-           Logger.i(TAG, "开始统一同步, forceRefresh=$forceRefresh")
+           RLog.i(TAG, "开始统一同步, forceRefresh=$forceRefresh")
 
             // 获取所有需要同步的平台
             val platformsToSync = getAuthorizedPlatforms(forceRefresh)
-           Logger.i(TAG, "需要同步的平台: ${platformsToSync.map { it.displayName }}")
+           RLog.i(TAG, "需要同步的平台: ${platformsToSync.map { it.displayName }}")
 
             if (platformsToSync.isEmpty()) {
-               Logger.i(TAG, "没有已授权的平台需要同步")
+               RLog.i(TAG, "没有已授权的平台需要同步")
                 emit(SyncNotification.UnifiedCompleted(UnifiedSyncResult.empty()))
                 return@flow
             }
@@ -205,7 +202,7 @@ class UnifiedDataSyncManager private constructor(
                 val service = getSyncService(platform) ?: continue
                 val timeRange = SyncConstants.getDefaultTimeRange(platform)
 
-               Logger.i(TAG, "开始同步平台: ${platform.displayName}")
+               RLog.i(TAG, "开始同步平台: ${platform.displayName}")
                 emit(SyncNotification.PlatformStarted(platform))
 
                 try {
@@ -232,7 +229,7 @@ class UnifiedDataSyncManager private constructor(
                             is SyncEvent.Completed -> {
                                 results[platform] = event.result
                                 emit(SyncNotification.PlatformCompleted(platform, event.result))
-                               Logger.i(TAG, "平台 ${platform.displayName} 同步完成, 导入: ${event.result.importedCount}")
+                               RLog.i(TAG, "平台 ${platform.displayName} 同步完成, 导入: ${event.result.importedCount}")
                             }
                             is SyncEvent.Failed -> {
                                 val failResult = SyncResult(
@@ -243,12 +240,12 @@ class UnifiedDataSyncManager private constructor(
                                 )
                                 results[platform] = failResult
                                 emit(SyncNotification.PlatformFailed(platform, event.error))
-                               Logger.e(TAG, "平台 ${platform.displayName} 同步失败: ${event.error}")
+                               RLog.e(TAG, "平台 ${platform.displayName} 同步失败: ${event.error}")
                             }
                         }
                     }
                 } catch (e: Exception) {
-                   Logger.e(TAG, "同步平台 ${platform.displayName} 异常", e)
+                   RLog.e(TAG, "同步平台 ${platform.displayName} 异常", e)
                     val failResult = SyncResult(
                         success = false,
                         importedCount = 0,
@@ -263,10 +260,10 @@ class UnifiedDataSyncManager private constructor(
             // 生成统一结果
             val unifiedResult = UnifiedSyncResult.fromPlatformResults(results, startTime)
             emit(SyncNotification.UnifiedCompleted(unifiedResult))
-           Logger.i(TAG, "统一同步完成, 总导入: ${unifiedResult.totalImportedCount}")
+           RLog.i(TAG, "统一同步完成, 总导入: ${unifiedResult.totalImportedCount}")
 
         } catch (e: Exception) {
-           Logger.e(TAG, "统一同步异常", e)
+           RLog.e(TAG, "统一同步异常", e)
             emit(SyncNotification.UnifiedFailed(e.message ?: "同步异常"))
         } finally {
             isUnifiedSyncing.set(false)
@@ -294,7 +291,7 @@ class UnifiedDataSyncManager private constructor(
             return@flow
         }
 
-       Logger.i(TAG, "开始单平台同步: ${platform.displayName}, timeRange=${timeRange.displayName}")
+       RLog.i(TAG, "开始单平台同步: ${platform.displayName}, timeRange=${timeRange.displayName}")
         emit(SyncNotification.PlatformStarted(platform))
 
         try {
@@ -327,7 +324,7 @@ class UnifiedDataSyncManager private constructor(
                 }
             }
         } catch (e: Exception) {
-           Logger.e(TAG, "单平台同步异常: ${platform.displayName}", e)
+           RLog.e(TAG, "单平台同步异常: ${platform.displayName}", e)
             emit(SyncNotification.PlatformFailed(platform, e.message ?: "同步异常"))
         }
     }.flowOn(Dispatchers.IO)
@@ -358,15 +355,15 @@ class UnifiedDataSyncManager private constructor(
             return@flow
         }
 
-       Logger.i(TAG, "触发手动同步: ${platform.displayName}, timeRange=${timeRange.displayName}")
+       RLog.i(TAG, "触发手动同步: ${platform.displayName}, timeRange=${timeRange.displayName}")
 
         // 触发回填请求
         val backfillResult = triggerBackfill(platform, timeRange)
         if (backfillResult.isFailure) {
-           Logger.w(TAG, "回填请求失败: ${backfillResult.exceptionOrNull()?.message}")
+           RLog.w(TAG, "回填请求失败: ${backfillResult.exceptionOrNull()?.message}")
             // 回填失败不影响同步，继续执行
         } else {
-           Logger.i(TAG, "回填请求成功，${SyncConstants.BACKFILL_DELAY_MS}ms后开始同步")
+           RLog.i(TAG, "回填请求成功，${SyncConstants.BACKFILL_DELAY_MS}ms后开始同步")
             // 延迟等待回填数据
             delay(SyncConstants.BACKFILL_DELAY_MS)
         }
@@ -509,7 +506,7 @@ class UnifiedDataSyncManager private constructor(
                 onFailure = { Result.failure(it) }
             )
         } catch (e: Exception) {
-           Logger.e(TAG, "刷新授权状态失败", e)
+           RLog.e(TAG, "刷新授权状态失败", e)
             Result.failure(e)
         }
     }

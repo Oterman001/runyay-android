@@ -10,7 +10,7 @@ import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.DayRunRecordInfo
 import com.oterman.rundemo.domain.model.MonthStatistics
 import com.oterman.rundemo.domain.model.TrackPoint
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,7 +63,7 @@ class MonthStatisticsViewModel(
      * Navigate to previous month
      */
     fun goToPreviousMonth() {
-        Logger.d(TAG, "Navigating to previous month")
+        RLog.d(TAG, "Navigating to previous month")
         currentMonthStart.add(Calendar.MONTH, -1)
         // Clear trajectory data to avoid showing stale data
         if (_showTrajectoryMode.value) {
@@ -78,7 +78,7 @@ class MonthStatisticsViewModel(
      */
     fun goToNextMonth() {
         if (_uiState.value.canGoNext) {
-            Logger.d(TAG, "Navigating to next month")
+            RLog.d(TAG, "Navigating to next month")
             currentMonthStart.add(Calendar.MONTH, 1)
             // Clear trajectory data to avoid showing stale data
             if (_showTrajectoryMode.value) {
@@ -93,7 +93,7 @@ class MonthStatisticsViewModel(
      * Jump to current month (on double tap)
      */
     fun goToCurrentMonth() {
-        Logger.d(TAG, "Jumping to current month")
+        RLog.d(TAG, "Jumping to current month")
         currentMonthStart = Calendar.getInstance().apply {
             set(Calendar.DAY_OF_MONTH, 1)
             set(Calendar.HOUR_OF_DAY, 0)
@@ -114,7 +114,7 @@ class MonthStatisticsViewModel(
      * Called when user clicks a month in year view
      */
     fun goToSpecificMonth(year: Int, month: Int) {
-        Logger.d(TAG, "Jumping to specific month: $year -- $month")
+        RLog.d(TAG, "Jumping to specific month: $year -- $month")
         currentMonthStart = Calendar.getInstance().apply {
             set(Calendar.YEAR, year)
             set(Calendar.MONTH, month - 1) // Calendar.MONTH is 0-based
@@ -150,7 +150,7 @@ class MonthStatisticsViewModel(
      */
     fun toggleTrajectoryMode() {
         val newMode = !_showTrajectoryMode.value
-        Logger.d(TAG, "Toggling trajectory mode: ${_showTrajectoryMode.value} -> $newMode")
+        RLog.d(TAG, "Toggling trajectory mode: ${_showTrajectoryMode.value} -> $newMode")
         _showTrajectoryMode.value = newMode
         
         // Preload trajectories when switching to trajectory mode
@@ -167,7 +167,7 @@ class MonthStatisticsViewModel(
             try {
                 val dailyRecords = _uiState.value.monthStats.dailyRecords
                 val allWorkoutIds = dailyRecords.filter { !it.isPlaceholder }.flatMap { it.workoutIds }
-                Logger.d(TAG, "preloadTrajectories: monthYearDisplay=${_uiState.value.monthYearDisplay}, workoutIds=$allWorkoutIds")
+                RLog.d(TAG, "preloadTrajectories: monthYearDisplay=${_uiState.value.monthYearDisplay}, workoutIds=$allWorkoutIds")
                 val trajectoryMap = mutableMapOf<String, List<TrackPoint>>()
                 
                 // Load track points for each workout in the month
@@ -180,16 +180,16 @@ class MonthStatisticsViewModel(
                                     trajectoryMap[workoutId] = trackPoints
                                 }
                             } catch (e: Exception) {
-                                Logger.e(TAG, "Failed to load track points for $workoutId", e)
+                                RLog.e(TAG, "Failed to load track points for $workoutId", e)
                             }
                         }
                     }
                 }
                 
                 _trajectoryDataMap.value = trajectoryMap
-                Logger.d(TAG, "Preloaded ${trajectoryMap.size} trajectories")
+                RLog.d(TAG, "Preloaded ${trajectoryMap.size} trajectories")
             } catch (e: Exception) {
-                Logger.e(TAG, "Failed to preload trajectories", e)
+                RLog.e(TAG, "Failed to preload trajectories", e)
             }
         }
     }
@@ -218,7 +218,7 @@ class MonthStatisticsViewModel(
                 }
                 val canGoNext = currentMonthStart.before(currentMonthCal)
 
-                Logger.d(TAG, "Loading month data: $monthYearDisplay")
+                RLog.d(TAG, "Loading month data: $monthYearDisplay")
 
                 // Get records for this month
                 val records = repository.getRunRecordsByTimeRange(monthStart, monthEnd)
@@ -238,11 +238,11 @@ class MonthStatisticsViewModel(
 
                 // Load trajectories after data is ready (if in trajectory mode)
                 if (_showTrajectoryMode.value) {
-                    Logger.d(TAG, "loadMonthData completed: monthYearDisplay=$monthYearDisplay, workoutIds=${monthStats.dailyRecords.filter { !it.isPlaceholder }.flatMap { it.workoutIds }}, calling preloadTrajectories")
+                    RLog.d(TAG, "loadMonthData completed: monthYearDisplay=$monthYearDisplay, workoutIds=${monthStats.dailyRecords.filter { !it.isPlaceholder }.flatMap { it.workoutIds }}, calling preloadTrajectories")
                     preloadTrajectories()
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "Failed to load month data", e)
+                RLog.e(TAG, "Failed to load month data", e)
                 _uiState.update {
                     it.copy(
                         isLoading = false,

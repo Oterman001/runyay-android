@@ -1,6 +1,6 @@
 package com.oterman.rundemo.data.fit
 
-import android.util.Log
+import com.oterman.rundemo.util.RLog
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -65,7 +65,7 @@ class SegmentTypeInferenceEngine {
         restHR: Double
     ): String {
         if (lapIndex < 0 || lapIndex >= lapContexts.size) {
-            Log.w(TAG, "无效的lapIndex: $lapIndex, 总数: ${lapContexts.size}")
+            RLog.w(TAG, "无效的lapIndex: $lapIndex, 总数: ${lapContexts.size}")
             return "work"
         }
 
@@ -108,7 +108,7 @@ class SegmentTypeInferenceEngine {
         // 8. 保存推断结果到缓存
         inferredResults[lapIndex] = finalType
 
-        Log.i(TAG, buildString {
+        RLog.i(TAG, buildString {
             append("Lap[$lapIndex] 推断: ")
             append("HR=${String.format("%.0f", currentLap.avgHeartRate)}bpm ")
             append("配速=${formatPace(currentLap.avgPace)} ")
@@ -174,7 +174,7 @@ class SegmentTypeInferenceEngine {
         val fluctuationRatio = if (lapContexts.size > 1) fluctuationCount.toDouble() / (lapContexts.size - 1) else 0.0
         val isIntervalTraining = fluctuationRatio >= SegmentInferenceConfig.intervalTrainingThreshold
 
-        Log.i(TAG, "全局统计: HR均值=${String.format("%.1f", meanHR)}bpm, 配速均值=${formatPace(meanPace)}, " +
+        RLog.i(TAG, "全局统计: HR均值=${String.format("%.1f", meanHR)}bpm, 配速均值=${formatPace(meanPace)}, " +
                 "波动=${fluctuationCount}次(${String.format("%.0f", fluctuationRatio * 100)}%), " +
                 "训练模式=${if (isIntervalTraining) "间歇" else "连续"}")
 
@@ -352,10 +352,10 @@ class SegmentTypeInferenceEngine {
         return when (proposedType) {
             "warmup" -> {
                 if (hasWarmupBefore) {
-                    Log.i(TAG, "  ⚠️ 逻辑约束: 已存在热身段，Lap[$lapIndex] warmup → work")
+                    RLog.i(TAG, "  ⚠️ 逻辑约束: 已存在热身段，Lap[$lapIndex] warmup → work")
                     "work"
                 } else if (hasWorkBefore) {
-                    Log.i(TAG, "  ⚠️ 逻辑约束: warmup不能在work之后，修正为work")
+                    RLog.i(TAG, "  ⚠️ 逻辑约束: warmup不能在work之后，修正为work")
                     "work"
                 } else {
                     "warmup"
@@ -363,10 +363,10 @@ class SegmentTypeInferenceEngine {
             }
             "recovery" -> {
                 if (!hasWorkBefore) {
-                    Log.i(TAG, "  ⚠️ 逻辑约束: recovery前面必须有work，修正为warmup")
+                    RLog.i(TAG, "  ⚠️ 逻辑约束: recovery前面必须有work，修正为warmup")
                     "warmup"
                 } else if (isLastLap && previousType == "recovery") {
-                    Log.i(TAG, "  ⚠️ 逻辑约束: 最后一段recovery且上一段也是recovery，修正为cooldown")
+                    RLog.i(TAG, "  ⚠️ 逻辑约束: 最后一段recovery且上一段也是recovery，修正为cooldown")
                     "cooldown"
                 } else {
                     "recovery"
@@ -374,7 +374,7 @@ class SegmentTypeInferenceEngine {
             }
             "cooldown" -> {
                 if (!hasWorkBefore) {
-                    Log.i(TAG, "  ⚠️ 逻辑约束: cooldown前面必须有work，修正为warmup")
+                    RLog.i(TAG, "  ⚠️ 逻辑约束: cooldown前面必须有work，修正为warmup")
                     "warmup"
                 } else {
                     "cooldown"
@@ -430,7 +430,7 @@ class SegmentTypeInferenceEngine {
         val ratio = majorityEntry.value.toDouble() / groupInferredTypes.size
 
         return if (ratio >= SegmentInferenceConfig.groupConsistencyThreshold) {
-            Log.i(TAG, "  分组一致性修正: Lap[$lapIndex] → ${majorityEntry.key} (占比${String.format("%.0f", ratio * 100)}%)")
+            RLog.i(TAG, "  分组一致性修正: Lap[$lapIndex] → ${majorityEntry.key} (占比${String.format("%.0f", ratio * 100)}%)")
             majorityEntry.key
         } else {
             preliminaryType

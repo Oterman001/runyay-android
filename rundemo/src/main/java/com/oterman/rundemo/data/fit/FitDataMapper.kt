@@ -1,10 +1,10 @@
 package com.oterman.rundemo.data.fit
 
-import android.util.Log
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.local.entity.RunSamplePointEntity
 import com.oterman.rundemo.data.local.entity.RunSegmentEntity
 import com.oterman.rundemo.util.FitDataConverter
+import com.oterman.rundemo.util.RLog
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -126,7 +126,7 @@ object FitDataMapper {
                 .filter { it > 0 }
             if (voValues.isNotEmpty()) {
                 finalVO = voValues.average() / 10.0  // mm转cm
-                Log.i(TAG, "Session垂直振幅为0，从Record回退计算: ${String.format("%.1f", finalVO)}cm (${voValues.size}个样本)")
+                RLog.i(TAG, "Session垂直振幅为0，从Record回退计算: ${String.format("%.1f", finalVO)}cm (${voValues.size}个样本)")
             }
         }
         
@@ -136,7 +136,7 @@ object FitDataMapper {
                 .filter { it > 0 }
             if (ctValues.isNotEmpty()) {
                 finalCT = ctValues.average()
-                Log.i(TAG, "Session触地时间为0，从Record回退计算: ${String.format("%.0f", finalCT)}ms (${ctValues.size}个样本)")
+                RLog.i(TAG, "Session触地时间为0，从Record回退计算: ${String.format("%.0f", finalCT)}ms (${ctValues.size}个样本)")
             }
         }
         
@@ -212,11 +212,11 @@ object FitDataMapper {
         
         return if (isKilometerMode) {
             // 公里自动分段模式：Lap直接作为公里分段
-            Log.i(TAG, "检测到公里自动分段模式，${laps.size}个Lap直接转为公里分段")
+            RLog.i(TAG, "检测到公里自动分段模式，${laps.size}个Lap直接转为公里分段")
             convertLapsToSegments(laps, workoutId, FitDataConverter.SegmentType.KILOMETER)
         } else {
             // 训练分段模式
-            Log.i(TAG, "检测到训练分段模式，${laps.size}个Lap")
+            RLog.i(TAG, "检测到训练分段模式，${laps.size}个Lap")
             
             // 1. 将Lap转为训练分段（segmentType=2），并推断分段类型
             val trainingSegments = convertLapsToTrainingSegments(laps, workoutId, maxHR, restHR)
@@ -229,7 +229,7 @@ object FitDataMapper {
                 pauseList = pauseList
             )
             
-            Log.i(TAG, "训练分段: ${trainingSegments.size}个, 公里分段: ${kmSegments.size}个")
+            RLog.i(TAG, "训练分段: ${trainingSegments.size}个, 公里分段: ${kmSegments.size}个")
             
             // 合并两种分段
             trainingSegments + kmSegments
@@ -290,10 +290,10 @@ object FitDataMapper {
         
         // 如果没有intensity信息，使用推断引擎
         val inferenceEngine = if (!hasIntensity) {
-            Log.i(TAG, "Lap无intensity信息，启用分段类型推断引擎")
+            RLog.i(TAG, "Lap无intensity信息，启用分段类型推断引擎")
             SegmentTypeInferenceEngine()
         } else {
-            Log.i(TAG, "Lap有intensity信息，直接使用")
+            RLog.i(TAG, "Lap有intensity信息，直接使用")
             null
         }
         

@@ -1,7 +1,6 @@
 package com.oterman.rundemo.presentation.feature.rundetail.components
 
 import android.content.Context
-import android.util.Log
 import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.compose.foundation.background
@@ -57,6 +56,7 @@ import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.scalebar.scalebar
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+import com.oterman.rundemo.util.RLog
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.pow
@@ -279,7 +279,7 @@ private fun MapViewComposable(
 
     // 创建MapView
     val mapView = remember {
-        Log.d(TAG, "创建MapView, 轨迹点数: ${trackPoints.size}")
+        RLog.d(TAG, "创建MapView, 轨迹点数: ${trackPoints.size}")
         MapView(context).apply {
             // 启用所有需要的手势
             gestures.rotateEnabled = false       // 禁用旋转
@@ -311,24 +311,24 @@ private fun MapViewComposable(
     // 生命周期管理 - 使用标志防止重复销毁
     DisposableEffect(lifecycleOwner) {
         var isDestroyed = false
-        Log.d("RunDetailPerf", "MapView DisposableEffect setup")
+        RLog.d("RunDetailPerf", "MapView DisposableEffect setup")
 
         val observer = LifecycleEventObserver { _, event ->
             val startTime = System.currentTimeMillis()
             when (event) {
                 Lifecycle.Event.ON_START -> {
                     mapView.onStart()
-                    Log.d("RunDetailPerf", "MapView.onStart() cost=${System.currentTimeMillis() - startTime}ms")
+                    RLog.d("RunDetailPerf", "MapView.onStart() cost=${System.currentTimeMillis() - startTime}ms")
                 }
                 Lifecycle.Event.ON_STOP -> {
                     mapView.onStop()
-                    Log.d("RunDetailPerf", "MapView.onStop() cost=${System.currentTimeMillis() - startTime}ms")
+                    RLog.d("RunDetailPerf", "MapView.onStop() cost=${System.currentTimeMillis() - startTime}ms")
                 }
                 Lifecycle.Event.ON_DESTROY -> {
                     if (!isDestroyed) {
                         isDestroyed = true
                         mapView.onDestroy()
-                        Log.d("RunDetailPerf", "MapView.onDestroy(lifecycle) cost=${System.currentTimeMillis() - startTime}ms")
+                        RLog.d("RunDetailPerf", "MapView.onDestroy(lifecycle) cost=${System.currentTimeMillis() - startTime}ms")
                     }
                 }
                 else -> {}
@@ -339,15 +339,15 @@ private fun MapViewComposable(
 
         onDispose {
             val startTime = System.currentTimeMillis()
-            Log.d("RunDetailPerf", "MapView onDispose START")
+            RLog.d("RunDetailPerf", "MapView onDispose START")
             lifecycleOwner.lifecycle.removeObserver(observer)
             // 仅在生命周期观察者未触发销毁时（如配置更改）才在这里销毁
             if (!isDestroyed) {
                 isDestroyed = true
                 mapView.onDestroy()
-                Log.d("RunDetailPerf", "MapView.onDestroy(dispose) cost=${System.currentTimeMillis() - startTime}ms")
+                RLog.d("RunDetailPerf", "MapView.onDestroy(dispose) cost=${System.currentTimeMillis() - startTime}ms")
             }
-            Log.d("RunDetailPerf", "MapView onDispose END, total=${System.currentTimeMillis() - startTime}ms")
+            RLog.d("RunDetailPerf", "MapView onDispose END, total=${System.currentTimeMillis() - startTime}ms")
         }
     }
 
@@ -355,21 +355,21 @@ private fun MapViewComposable(
     AndroidView(
         factory = {
             mapView.apply {
-                Log.d(TAG, "初始化地图样式: $styleUri")
+                RLog.d(TAG, "初始化地图样式: $styleUri")
                 mapboxMap.loadStyle(styleUri) { style ->
                     if (trackPoints.isNotEmpty()) {
-                        Log.d(TAG, "添加轨迹到地图")
+                        RLog.d(TAG, "添加轨迹到地图")
                         addTrackToMap(style, trackPoints, trackColors)
                         addKilometerMarkers(style, trackPoints, trackColors)
                         centerMapOnTrack(this, trackPoints)
                     } else {
-                        Log.w(TAG, "轨迹点为空")
+                        RLog.w(TAG, "轨迹点为空")
                     }
                 }
             }
         },
         update = { view ->
-            Log.d(TAG, "更新地图样式: $styleUri, isDark: $isDarkTheme")
+            RLog.d(TAG, "更新地图样式: $styleUri, isDark: $isDarkTheme")
             view.mapboxMap.loadStyle(styleUri) { style ->
                 if (trackPoints.isNotEmpty()) {
                     addTrackToMap(style, trackPoints, trackColors)
@@ -394,7 +394,7 @@ private fun addTrackToMap(
         // 过滤有效坐标点
         val validPoints = trackPoints.filter { it.isValidCoordinate() }
         if (validPoints.isEmpty()) {
-            Log.w(TAG, "没有有效的轨迹点")
+            RLog.w(TAG, "没有有效的轨迹点")
             return
         }
 
@@ -403,7 +403,7 @@ private fun addTrackToMap(
             Point.fromLngLat(point.longitude, point.latitude)
         }
 
-        Log.d(TAG, "创建轨迹线，点数: ${points.size}")
+        RLog.d(TAG, "创建轨迹线，点数: ${points.size}")
 
         // 创建LineString
         val lineString = LineString.fromLngLats(points)
@@ -461,9 +461,9 @@ private fun addTrackToMap(
             )
         }
 
-        Log.d(TAG, "轨迹添加成功")
+        RLog.d(TAG, "轨迹添加成功")
     } catch (e: Exception) {
-        Log.e(TAG, "添加轨迹失败", e)
+        RLog.e(TAG, "添加轨迹失败", e)
     }
 }
 
@@ -477,7 +477,7 @@ private fun addKilometerMarkers(
 ) {
     try {
         val kmPositions = calculateKilometerPositions(trackPoints)
-        Log.d(TAG, "公里标记点数: ${kmPositions.size}")
+        RLog.d(TAG, "公里标记点数: ${kmPositions.size}")
 
         kmPositions.forEachIndexed { index, point ->
             val kmNumber = index + 1
@@ -514,9 +514,9 @@ private fun addKilometerMarkers(
             )
         }
 
-        Log.d(TAG, "公里标记添加成功")
+        RLog.d(TAG, "公里标记添加成功")
     } catch (e: Exception) {
-        Log.e(TAG, "添加公里标记失败", e)
+        RLog.e(TAG, "添加公里标记失败", e)
     }
 }
 
@@ -620,7 +620,7 @@ private fun centerMapOnTrack(mapView: MapView, trackPoints: List<TrackPoint>) {
             else -> 15.0
         }
 
-        Log.d(TAG, "居中地图: lat=$centerLat, lon=$centerLon, zoom=$zoom")
+        RLog.d(TAG, "居中地图: lat=$centerLat, lon=$centerLon, zoom=$zoom")
 
         // 设置相机位置
         val cameraOptions = cameraOptions {
@@ -631,6 +631,6 @@ private fun centerMapOnTrack(mapView: MapView, trackPoints: List<TrackPoint>) {
 
         mapView.mapboxMap.setCamera(cameraOptions)
     } catch (e: Exception) {
-        Log.e(TAG, "居中地图失败", e)
+        RLog.e(TAG, "居中地图失败", e)
     }
 }

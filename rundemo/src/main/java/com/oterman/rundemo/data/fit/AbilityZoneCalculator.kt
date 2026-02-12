@@ -1,8 +1,8 @@
 package com.oterman.rundemo.data.fit
 
-import android.util.Log
 import com.oterman.rundemo.data.local.entity.RunAbilityZoneEntity
 import com.oterman.rundemo.util.FitDataConverter
+import com.oterman.rundemo.util.RLog
 import java.util.Locale
 
 /**
@@ -173,7 +173,7 @@ object AbilityZoneCalculator {
         pauseList: List<FitEventConverter.PauseEvent>
     ): List<RunAbilityZoneEntity> {
         if (vdot <= 0) {
-            Log.w(TAG, "VDOT无效($vdot)，跳过配速区间计算")
+            RLog.w(TAG, "VDOT无效($vdot)，跳过配速区间计算")
             return emptyList()
         }
 
@@ -225,7 +225,7 @@ object AbilityZoneCalculator {
             )
         }.sortedBy { it.zoneIndex }
 
-        Log.i(TAG, "配速区间计算完成：${result.size}个区间，总时间=${String.format(Locale.getDefault(), "%.1f", totalTime / 60)}min")
+        RLog.i(TAG, "配速区间计算完成：${result.size}个区间，总时间=${String.format(Locale.getDefault(), "%.1f", totalTime / 60)}min")
         return result
     }
 
@@ -290,7 +290,7 @@ object AbilityZoneCalculator {
             )
         }.sortedBy { it.zoneIndex }
 
-        Log.i(TAG, "心率区间(type=$zoneType)计算完成：${result.size}个区间，总时间=${String.format(Locale.getDefault(), "%.1f", totalTime / 60)}min，训练负荷=${String.format(Locale.getDefault(), "%.1f", trainLoad)}")
+        RLog.i(TAG, "心率区间(type=$zoneType)计算完成：${result.size}个区间，总时间=${String.format(Locale.getDefault(), "%.1f", totalTime / 60)}min，训练负荷=${String.format(Locale.getDefault(), "%.1f", trainLoad)}")
         return Pair(result, trainLoad)
     }
 

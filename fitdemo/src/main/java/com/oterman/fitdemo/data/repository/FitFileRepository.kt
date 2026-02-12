@@ -45,28 +45,28 @@ class FitFileRepository(private val context: Context) {
      * 解析FIT文件
      */
     fun parseFitFile(uri: Uri): Result<FitSummaryData> {
-        Log.d(TAG, "开始解析FIT文件: $uri")
+        Logger.d(TAG, "开始解析FIT文件: $uri")
         return try {
             val inputStream = context.contentResolver.openInputStream(uri)
             if (inputStream == null) {
-                Log.e(TAG, "无法打开文件输入流")
+                Logger.e(TAG, "无法打开文件输入流")
                 return Result.failure(Exception("无法打开文件"))
             }
             
-            Log.d(TAG, "文件输入流打开成功，开始解析...")
+            Logger.d(TAG, "文件输入流打开成功，开始解析...")
             val data = parseInputStream(inputStream)
             inputStream.close()
             
-            Log.d(TAG, "文件解析成功")
+            Logger.d(TAG, "文件解析成功")
             Result.success(data)
         } catch (e: Exception) {
-            Log.e(TAG, "解析FIT文件失败", e)
+            Logger.e(TAG, "解析FIT文件失败", e)
             Result.failure(Exception("解析FIT文件失败: ${e.message}", e))
         }
     }
 
     private fun parseInputStream(inputStream: InputStream): FitSummaryData {
-        Log.d(TAG, "创建Decode和MesgBroadcaster")
+        Logger.d(TAG, "创建Decode和MesgBroadcaster")
         val decode = Decode()
         val mesgBroadcaster = MesgBroadcaster(decode)
         
@@ -81,11 +81,11 @@ class FitFileRepository(private val context: Context) {
         var hasHeartRate = false
         var hasCadence = false
         
-        Log.d(TAG, "注册消息监听器")
+        Logger.d(TAG, "注册消息监听器")
         
         // 监听文件ID消息
         mesgBroadcaster.addListener(FileIdMesgListener { mesg ->
-            Log.d(TAG, "收到FileIdMesg")
+            Logger.d(TAG, "收到FileIdMesg")
             fileInfo = FileInfo(
                 type = mesg.type?.name,
                 manufacturer = getManufacturerName(mesg.manufacturer),
@@ -190,13 +190,13 @@ class FitFileRepository(private val context: Context) {
         })
         
         // 读取FIT文件
-        Log.d(TAG, "开始读取FIT文件...")
+        Logger.d(TAG, "开始读取FIT文件...")
         if (!decode.read(inputStream, mesgBroadcaster)) {
-            Log.e(TAG, "Decode.read返回false")
+            Logger.e(TAG, "Decode.read返回false")
             throw Exception("FIT文件解析失败")
         }
         
-        Log.d(TAG, "FIT文件读取完成, 记录数: $recordCount, 区间数: ${laps.size}, 轨迹点: ${trackPoints.size}")
+        Logger.d(TAG, "FIT文件读取完成, 记录数: $recordCount, 区间数: ${laps.size}, 轨迹点: ${trackPoints.size}")
         
         val trackInfo = TrackInfo(
             totalRecords = recordCount,
@@ -205,7 +205,7 @@ class FitFileRepository(private val context: Context) {
             hasCadenceData = hasCadence
         )
         
-        Log.d(TAG, "构建FitSummaryData对象")
+        Logger.d(TAG, "构建FitSummaryData对象")
         return FitSummaryData(
             fileInfo = fileInfo,
             sessionSummary = sessionSummary,

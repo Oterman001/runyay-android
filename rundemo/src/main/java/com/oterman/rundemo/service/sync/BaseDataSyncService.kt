@@ -1,6 +1,5 @@
 package com.oterman.rundemo.service.sync
 
-import android.util.Log
 import com.oterman.rundemo.data.fit.FitDataMapper
 import com.oterman.rundemo.data.fit.FitFileParser
 import com.oterman.rundemo.data.local.DataSourcePreferences
@@ -16,7 +15,7 @@ import com.oterman.rundemo.domain.model.SyncTimeRange
 import com.oterman.rundemo.service.sync.model.PageSyncResult
 import com.oterman.rundemo.service.sync.model.SyncConstants
 import com.oterman.rundemo.service.sync.model.TimestampTracker
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.TimestampUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -149,7 +148,7 @@ abstract class BaseDataSyncService(
             timestampTracker.reset()
 
             emit(SyncEvent.Started)
-           Logger.i(logTag, "开始${platform.displayName}数据同步，时间范围: ${timeRange.displayName}")
+            RLog.i(logTag, "开始${platform.displayName}数据同步，时间范围: ${timeRange.displayName}")
 
             // 同步前准备
             onBeforeSync(timeRange)
@@ -166,10 +165,10 @@ abstract class BaseDataSyncService(
             onAfterSync(syncResult)
 
             emit(SyncEvent.Completed(syncResult))
-           Logger.i(logTag, "${platform.displayName}数据同步完成，导入: ${syncResult.importedCount} 条记录")
+            RLog.i(logTag, "${platform.displayName}数据同步完成，导入: ${syncResult.importedCount} 条记录")
 
         } catch (e: Exception) {
-           Logger.e(logTag, "同步过程出错", e)
+            RLog.e(logTag, "同步过程出错", e)
             emit(SyncEvent.Failed(e.message ?: "同步失败"))
         } finally {
             isSyncing.set(false)
@@ -179,12 +178,12 @@ abstract class BaseDataSyncService(
     override fun cancelSync() {
         syncJob?.cancel()
         isSyncing.set(false)
-       Logger.i(logTag, "同步已取消")
+        RLog.i(logTag, "同步已取消")
     }
 
     override fun clearSyncTimestamp() {
         clearSyncTimestampInternal()
-       Logger.i(logTag, "同步时间戳已清除")
+        RLog.i(logTag, "同步时间戳已清除")
     }
 
     // ============ 核心同步逻辑 ============
@@ -202,10 +201,10 @@ abstract class BaseDataSyncService(
         val errors = mutableListOf<String>()
         val lastSyncTime = getLastSyncTimestamp()
 
-       Logger.d(logTag, "开始分页同步，lastSyncTime=$lastSyncTime")
+        RLog.d(logTag, "开始分页同步，lastSyncTime=$lastSyncTime")
 
         while (hasMorePages && coroutineContext.isActive) {
-           Logger.i(logTag, "正在获取第 $pageNum 页数据...")
+            RLog.i(logTag, "正在获取第 $pageNum 页数据...")
 
             val pageResult = fetchAndProcessPage(pageNum, lastSyncTime, emitEvent)
 
@@ -247,11 +246,11 @@ abstract class BaseDataSyncService(
 
         return result.fold(
             onSuccess = { files ->
-               Logger.i(logTag, "第 $pageNum 页获取成功，文件数: ${files.size}")
+                RLog.i(logTag, "第 $pageNum 页获取成功，文件数: ${files.size}")
                 processFilePage(files, pageNum, emitEvent)
             },
             onFailure = { error ->
-               Logger.e(logTag, "获取文件列表失败", error)
+                RLog.e(logTag, "获取文件列表失败", error)
                 PageSyncResult.failure("获取文件列表失败: ${error.message}", pageNum)
             }
         )
@@ -283,7 +282,7 @@ abstract class BaseDataSyncService(
             // 检查是否已存在
             if (runRecordDao.getByOriginId(file.summaryId, file.platformCode) != null) {
                 skippedCount++
-               Logger.d(logTag, "文件已存在，跳过: ${file.summaryId}")
+                RLog.d(logTag, "文件已存在，跳过: ${file.summaryId}")
                 continue
             }
 
@@ -303,7 +302,7 @@ abstract class BaseDataSyncService(
                     skippedCount++
                 }
             } catch (e: Exception) {
-               Logger.e(logTag, "处理文件失败: ${file.summaryId}", e)
+                RLog.e(logTag, "处理文件失败: ${file.summaryId}", e)
                 failedCount++
                 errors.add("${file.summaryId}: ${e.message}")
 
@@ -342,14 +341,14 @@ abstract class BaseDataSyncService(
      * 处理单个文件
      */
     private suspend fun processFile(fileInfo: FileInfo): ImportedRunSummary? {
-       Logger.d(logTag, "开始处理文件: ${fileInfo.summaryId}")
+        RLog.d(logTag, "开始处理文件: ${fileInfo.summaryId}")
 
         // 下载文件
         val downloadResult = downloadFile(fileInfo)
         val fileData = downloadResult.getOrNull()
             ?: throw Exception("文件下载失败: ${downloadResult.exceptionOrNull()?.message}")
 
-       Logger.d(logTag, "文件下载成功: ${fileInfo.summaryId}, 大小: ${fileData.size} bytes")
+        RLog.d(logTag, "文件下载成功: ${fileInfo.summaryId}, 大小: ${fileData.size} bytes")
 
         // 处理文件数据
         return processFileData(fileInfo, fileData)
@@ -362,16 +361,16 @@ abstract class BaseDataSyncService(
         // 解析FIT文件
         val parseResult = FitFileParser.parseFromBytes(fileData)
         if (parseResult == null) {
-           Logger.w(logTag, "FIT文件解析失败: ${fileInfo.summaryId}")
+            RLog.w(logTag, "FIT文件解析失败: ${fileInfo.summaryId}")
             return null
         }
 
-       Logger.d(logTag, "FIT文件解析成功: ${fileInfo.summaryId}")
+        RLog.d(logTag, "FIT文件解析成功: ${fileInfo.summaryId}")
 
         // 转换为Entity
         val runRecordEntity = FitDataMapper.toRunRecordEntity(parseResult, fileInfo.summaryId)
         if (runRecordEntity == null) {
-           Logger.w(logTag, "转换为Entity失败: ${fileInfo.summaryId}")
+            RLog.w(logTag, "转换为Entity失败: ${fileInfo.summaryId}")
             return null
         }
 
@@ -398,7 +397,7 @@ abstract class BaseDataSyncService(
         if (segments.isNotEmpty()) {
             segmentDao.insertAll(segments)
         }
-       Logger.d(logTag, "运动记录保存成功: ${fileInfo.summaryId}, 采样点: ${samplePoints.size}, 分段: ${segments.size}")
+        RLog.d(logTag, "运动记录保存成功: ${fileInfo.summaryId}, 采样点: ${samplePoints.size}, 分段: ${segments.size}")
 
         // 创建导入摘要
         return ImportedRunSummary(
@@ -418,7 +417,7 @@ abstract class BaseDataSyncService(
         if (nextTimestamp != null) {
             val normalized = TimestampUtils.normalizeTimestamp(nextTimestamp)
             updateLastSyncTimestamp(normalized)
-           Logger.i(logTag, "同步时间戳已更新: $normalized (hasErrors=${timestampTracker.hasErrors()})")
+            RLog.i(logTag, "同步时间戳已更新: $normalized (hasErrors=${timestampTracker.hasErrors()})")
         }
     }
 

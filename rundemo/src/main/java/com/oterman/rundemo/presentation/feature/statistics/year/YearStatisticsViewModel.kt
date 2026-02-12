@@ -10,7 +10,7 @@ import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.DayRunRecordInfo
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.domain.model.YearStatistics
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,7 +49,7 @@ class YearStatisticsViewModel(
      * Navigate to previous year
      */
     fun goToPreviousYear() {
-        Logger.d(TAG, "Navigating to previous year")
+        RLog.d(TAG, "Navigating to previous year")
         currentYear -= 1
         loadYearData()
     }
@@ -59,7 +59,7 @@ class YearStatisticsViewModel(
      */
     fun goToNextYear() {
         if (_uiState.value.canGoNext) {
-            Logger.d(TAG, "Navigating to next year")
+            RLog.d(TAG, "Navigating to next year")
             currentYear += 1
             loadYearData()
         }
@@ -69,7 +69,7 @@ class YearStatisticsViewModel(
      * Jump to current year (on double tap)
      */
     fun goToCurrentYear() {
-        Logger.d(TAG, "Jumping to current year")
+        RLog.d(TAG, "Jumping to current year")
         currentYear = Calendar.getInstance().get(Calendar.YEAR)
         loadYearData()
     }
@@ -108,7 +108,7 @@ class YearStatisticsViewModel(
                 // Check if can navigate to next year
                 val canGoNext = currentYear < todayYear
 
-                Logger.d(TAG, "Loading year data: ${currentYear}年")
+                RLog.d(TAG, "Loading year data: ${currentYear}年")
 
                 val monthRangeDataList = mutableListOf<MonthRangeData>()
                 var maxMonthDistance = 0.0
@@ -168,7 +168,7 @@ class YearStatisticsViewModel(
                     )
                 }
             } catch (e: Exception) {
-                Logger.e(TAG, "Failed to load year data", e)
+                RLog.e(TAG, "Failed to load year data", e)
                 _uiState.update {
                     it.copy(
                         isLoading = false,

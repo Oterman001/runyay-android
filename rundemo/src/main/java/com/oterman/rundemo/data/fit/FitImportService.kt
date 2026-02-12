@@ -3,7 +3,6 @@ package com.oterman.rundemo.data.fit
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import android.util.Log
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.local.entity.RunSegmentEntity
@@ -11,6 +10,7 @@ import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.presentation.feature.home.FitImportResult
 import com.oterman.rundemo.util.FitDataConverter
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -35,43 +35,43 @@ class FitImportService(private val context: Context) {
      * @return 导入结果
      */
     suspend fun importFitFile(uri: Uri): FitImportResult = withContext(Dispatchers.IO) {
-        Log.i(TAG, "========== 开始导入FIT文件 ==========")
-        Log.i(TAG, "文件Uri: $uri")
+        RLog.i(TAG, "========== 开始导入FIT文件 ==========")
+        RLog.i(TAG, "文件Uri: $uri")
         
         try {
             // 1. 获取文件名
             val fileName = getFileName(uri) ?: uri.lastPathSegment ?: "unknown.fit"
-            Log.i(TAG, "文件名: $fileName")
+            RLog.i(TAG, "文件名: $fileName")
             
             // 2. 解析FIT文件
-            Log.i(TAG, "开始解析FIT文件...")
+            RLog.i(TAG, "开始解析FIT文件...")
             val parseResult = parser.parse(uri).getOrElse { error ->
-                Log.e(TAG, "解析失败: ${error.message}")
+                RLog.e(TAG, "解析失败: ${error.message}")
                 return@withContext FitImportResult.Error("解析失败: ${error.message}")
             }
             
             // 3. 验证解析结果
             if (parseResult.session == null) {
-                Log.e(TAG, "FIT文件中没有Session数据")
+                RLog.e(TAG, "FIT文件中没有Session数据")
                 return@withContext FitImportResult.Error("无效的FIT文件：缺少运动数据")
             }
             
-            Log.i(TAG, "解析成功: records=${parseResult.records.size}, laps=${parseResult.laps.size}")
+            RLog.i(TAG, "解析成功: records=${parseResult.records.size}, laps=${parseResult.laps.size}")
             
             // 4. 去重检查
             val originId = fileName
-            Log.i(TAG, "检查是否已导入: originId=$originId")
+            RLog.i(TAG, "检查是否已导入: originId=$originId")
             
             if (repository.existsByOriginId(originId, FitDataConverter.Datasource.LOCAL_FIT)) {
-                Log.w(TAG, "文件已导入过，跳过")
+                RLog.w(TAG, "文件已导入过，跳过")
                 return@withContext FitImportResult.AlreadyExists
             }
             
             // 5. 转换为Entity
-            Log.i(TAG, "开始转换数据...")
+            RLog.i(TAG, "开始转换数据...")
             val runRecord = FitDataMapper.toRunRecordEntity(parseResult, fileName)
             if (runRecord == null) {
-                Log.e(TAG, "转换RunRecord失败")
+                RLog.e(TAG, "转换RunRecord失败")
                 return@withContext FitImportResult.Error("数据转换失败")
             }
             
@@ -88,13 +88,13 @@ class FitImportService(private val context: Context) {
                 parseResult = parseResult,
                 workoutId = runRecord.workoutId,
                 startTimeMs = runRecord.startTime,
-                maxHR = runRecord.maxHeartRate.takeIf { it > 0 } ?: 200.0,
+                maxHR = runRecord.maxHeartRate.takeIf { it > 0 } ?: 190.0,
                 restHR = 60.0,  // TODO: 后续从用户设置获取
                 pauseList = pauseList
             )
             
             // 6. 计算心率区间
-            Log.i(TAG, "开始计算心率区间...")
+            RLog.i(TAG, "开始计算心率区间...")
             val maxHR = runRecord.maxHeartRate.takeIf { it > 0 } ?: 190.0
             val restHR = 60.0  // TODO: 后续从用户设置获取
             
@@ -130,7 +130,7 @@ class FitImportService(private val context: Context) {
             }
             
             // 7. 计算VDOT
-            Log.i(TAG, "开始计算VDOT...")
+            RLog.i(TAG, "开始计算VDOT...")
             val vdotResult = calculateAndSaveVdot(
                 runRecord = updatedRunRecord,
                 segments = segments,
@@ -144,7 +144,7 @@ class FitImportService(private val context: Context) {
                 )
                 
                 // 8. 用VDOT计算配速区间
-                Log.i(TAG, "开始计算配速区间...")
+                RLog.i(TAG, "开始计算配速区间...")
                 val speedZones = AbilityZoneCalculator.calculateSpeedZones(
                     records = parseResult.records,
                     workoutId = updatedRunRecord.workoutId,
@@ -153,10 +153,10 @@ class FitImportService(private val context: Context) {
                     pauseList = pauseList
                 )
                 zones.addAll(speedZones)
-                Log.i(TAG, "配速区间计算完成: ${speedZones.size}个区间")
+                RLog.i(TAG, "配速区间计算完成: ${speedZones.size}个区间")
             }
             
-            Log.i(TAG, """
+            RLog.i(TAG, """
                 转换完成:
                 - workoutId: ${updatedRunRecord.workoutId}
                 - 距离: ${String.format("%.2f", updatedRunRecord.totalDistance)}km
@@ -170,7 +170,7 @@ class FitImportService(private val context: Context) {
             """.trimIndent())
             
             // 9. 保存到数据库
-            Log.i(TAG, "开始保存数据...")
+            RLog.i(TAG, "开始保存数据...")
             repository.saveRunRecord(
                 record = updatedRunRecord,
                 samplePoints = samplePoints,
@@ -184,10 +184,10 @@ class FitImportService(private val context: Context) {
             }
             
             // 11. 计算并保存PB记录
-            Log.i(TAG, "开始计算PB...")
+            RLog.i(TAG, "开始计算PB...")
             calculateAndSavePB(updatedRunRecord, segments)
             
-            Log.i(TAG, "========== FIT文件导入成功 ==========")
+            RLog.i(TAG, "========== FIT文件导入成功 ==========")
             
             FitImportResult.Success(
                 distance = updatedRunRecord.totalDistance,
@@ -195,7 +195,7 @@ class FitImportService(private val context: Context) {
             )
             
         } catch (e: Exception) {
-            Log.e(TAG, "导入失败", e)
+            RLog.e(TAG, "导入失败", e)
             FitImportResult.Error("导入失败: ${e.message}")
         }
     }
@@ -218,7 +218,7 @@ class FitImportService(private val context: Context) {
     ): Pair<Double, Double>? {
         // 数据不足，跳过VDOT计算
         if (runRecord.totalDistance <= 0 || runRecord.activeDuration <= 0 || runRecord.averageHeartRate <= 0) {
-            Log.w(TAG, "数据不足，跳过VDOT计算: distance=${runRecord.totalDistance}, duration=${runRecord.activeDuration}, hr=${runRecord.averageHeartRate}")
+            RLog.w(TAG, "数据不足，跳过VDOT计算: distance=${runRecord.totalDistance}, duration=${runRecord.activeDuration}, hr=${runRecord.averageHeartRate}")
             return null
         }
 
@@ -233,7 +233,7 @@ class FitImportService(private val context: Context) {
 
         if (hasIntervalTraining) {
             // 1a. 间歇训练：使用分段计算VDOT
-            Log.i(TAG, "检测到间歇训练，使用分段计算VDOT")
+            RLog.i(TAG, "检测到间歇训练，使用分段计算VDOT")
             val segmentVdot = VdotCalculator.calculateFromSegments(
                 segments = segments,
                 temperature = runRecord.weatherTemperature.takeIf { it != 0.0 },
@@ -243,9 +243,9 @@ class FitImportService(private val context: Context) {
             if (segmentVdot != null) {
                 vdot = segmentVdot
                 useIntervalVdot = true
-                Log.i(TAG, "间歇训练VDOT计算成功: $vdot")
+                RLog.i(TAG, "间歇训练VDOT计算成功: $vdot")
             } else {
-                Log.w(TAG, "间歇训练VDOT计算失败，使用整体数据计算")
+                RLog.w(TAG, "间歇训练VDOT计算失败，使用整体数据计算")
             }
         }
 
@@ -259,15 +259,15 @@ class FitImportService(private val context: Context) {
                 maxHR = maxHR,
                 restHR = restHR
             )
-            Log.i(TAG, "整体VDOT计算: $vdot")
+            RLog.i(TAG, "整体VDOT计算: $vdot")
         }
 
         if (vdot <= 0) {
-            Log.w(TAG, "VDOT计算结果无效: $vdot")
+            RLog.w(TAG, "VDOT计算结果无效: $vdot")
             return null
         }
 
-        Log.i(TAG, "最终VDOT: $vdot")
+        RLog.i(TAG, "最终VDOT: $vdot")
 
         // 2. 获取历史45天VDOT数据并计算OverallVDOT
         val historyStartDate = runRecord.startTime - 45L * 24 * 60 * 60 * 1000 // 45天前
@@ -280,7 +280,7 @@ class FitImportService(private val context: Context) {
             activeDuration = runRecord.activeDuration
         ) ?: vdot // 如果Overall计算失败，使用原始VDOT
 
-        Log.i(TAG, "OverallVDOT计算: vdot=$vdot, overallVdot=$overallVdot")
+        RLog.i(TAG, "OverallVDOT计算: vdot=$vdot, overallVdot=$overallVdot")
         return Pair(vdot, overallVdot)
     }
 
@@ -302,9 +302,9 @@ class FitImportService(private val context: Context) {
                 inclusiveLevel = runRecord.inclusiveLevel
             )
             repository.saveOverallVdot(entity)
-            Log.i(TAG, "OverallVdot保存成功: workoutId=${runRecord.workoutId}")
+            RLog.i(TAG, "OverallVdot保存成功: workoutId=${runRecord.workoutId}")
         } catch (e: Exception) {
-            Log.e(TAG, "OverallVdot保存失败", e)
+            RLog.e(TAG, "OverallVdot保存失败", e)
         }
     }
 
@@ -323,7 +323,7 @@ class FitImportService(private val context: Context) {
             // 1. 计算当前跑步的所有PB候选值
             val currentPBs = PBCalculator.calculateCurrentPBs(runRecord, segments)
             if (currentPBs.isEmpty()) {
-                Log.w(TAG, "PB计算结果为空")
+                RLog.w(TAG, "PB计算结果为空")
                 return
             }
 
@@ -333,13 +333,13 @@ class FitImportService(private val context: Context) {
                 val isBetter = repository.savePBIfBetter(pb)
                 if (isBetter) {
                     newPBCount++
-                    Log.i(TAG, "新PB! ${pb.type}/${pb.subType} = ${String.format("%.2f", pb.value)}")
+                    RLog.i(TAG, "新PB! ${pb.type}/${pb.subType} = ${String.format("%.2f", pb.value)}")
                 }
             }
 
-            Log.i(TAG, "PB计算保存完成: 共${currentPBs.size}项候选，${newPBCount}项为新PB")
+            RLog.i(TAG, "PB计算保存完成: 共${currentPBs.size}项候选，${newPBCount}项为新PB")
         } catch (e: Exception) {
-            Log.e(TAG, "PB计算保存失败", e)
+            RLog.e(TAG, "PB计算保存失败", e)
         }
     }
 
@@ -357,7 +357,7 @@ class FitImportService(private val context: Context) {
                 } else null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "获取文件名失败", e)
+            RLog.e(TAG, "获取文件名失败", e)
             null
         }
     }

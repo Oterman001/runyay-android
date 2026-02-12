@@ -6,7 +6,7 @@ import com.oterman.rundemo.data.network.RetrofitClient
 import com.oterman.rundemo.data.network.api.DataSourceApi
 import com.oterman.rundemo.data.network.dto.request.FitFileDetailRequest
 import com.oterman.rundemo.data.network.dto.response.FitFileDetailResponse
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -45,7 +45,7 @@ class FitDownloadRepository(
             val userId = preferencesManager.getUserId()
                 ?: return@withContext Result.failure(Exception("用户未登录"))
 
-            Logger.d(TAG, "获取FIT文件URL: summaryId=$summaryId, platformCode=$platformCode")
+            RLog.d(TAG, "获取FIT文件URL: summaryId=$summaryId, platformCode=$platformCode")
 
             val request = RequestBuilder.createRequest(
                 dtoName = "FitFileDetailRequest",
@@ -62,18 +62,18 @@ class FitDownloadRepository(
             if (response.isSuccess()) {
                 val fitDetail = response.data?.fitFileDetailResponse?.firstOrNull()
                 if (fitDetail != null) {
-                    Logger.i(TAG, "获取FIT文件URL成功: ossUrl=${fitDetail.ossUrl}, fitUrl=${fitDetail.fitUrl}")
+                    RLog.i(TAG, "获取FIT文件URL成功: ossUrl=${fitDetail.ossUrl}, fitUrl=${fitDetail.fitUrl}")
                     Result.success(fitDetail)
                 } else {
-                    Logger.w(TAG, "未找到FIT文件信息")
+                    RLog.w(TAG, "未找到FIT文件信息")
                     Result.failure(Exception("未找到FIT文件信息"))
                 }
             } else {
-                Logger.w(TAG, "获取FIT信息失败: ${response.msg}")
+                RLog.w(TAG, "获取FIT信息失败: ${response.msg}")
                 Result.failure(Exception(response.msg ?: "获取FIT信息失败"))
             }
         } catch (e: Exception) {
-            Logger.e(TAG, "获取FIT文件URL异常", e)
+            RLog.e(TAG, "获取FIT文件URL异常", e)
             Result.failure(e)
         }
     }
@@ -86,17 +86,17 @@ class FitDownloadRepository(
         withContext(Dispatchers.IO) {
             // 1. 优先尝试ossUrl（通常是压缩文件）
             if (!urlInfo.ossUrl.isNullOrEmpty()) {
-                Logger.d(TAG, "尝试从ossUrl下载: ${urlInfo.ossUrl}")
+                RLog.d(TAG, "尝试从ossUrl下载: ${urlInfo.ossUrl}")
                 val ossResult = downloadAndDecompress(urlInfo.ossUrl)
                 if (ossResult.isSuccess) {
-                    Logger.i(TAG, "ossUrl下载成功")
+                    RLog.i(TAG, "ossUrl下载成功")
                     return@withContext ossResult
                 }
-                Logger.w(TAG, "ossUrl下载失败，尝试fitUrl")
+                RLog.w(TAG, "ossUrl下载失败，尝试fitUrl")
             }
 
             // 2. 降级使用fitUrl
-            Logger.d(TAG, "从fitUrl下载: ${urlInfo.fitUrl}")
+            RLog.d(TAG, "从fitUrl下载: ${urlInfo.fitUrl}")
             downloadFromUrl(urlInfo.fitUrl)
         }
 
@@ -117,22 +117,22 @@ class FitDownloadRepository(
             // 尝试解压（根据文件头判断格式）
             val decompressed = when {
                 isGzip(data) -> {
-                    Logger.d(TAG, "检测到GZIP格式，开始解压")
+                    RLog.d(TAG, "检测到GZIP格式，开始解压")
                     decompressGzip(data)
                 }
                 isZip(data) -> {
-                    Logger.d(TAG, "检测到ZIP格式，开始解压")
+                    RLog.d(TAG, "检测到ZIP格式，开始解压")
                     decompressZip(data)
                 }
                 else -> {
-                    Logger.d(TAG, "非压缩格式，直接使用")
+                    RLog.d(TAG, "非压缩格式，直接使用")
                     data // 可能已经是FIT文件
                 }
             }
 
             Result.success(decompressed)
         } catch (e: Exception) {
-            Logger.e(TAG, "下载并解压失败", e)
+            RLog.e(TAG, "下载并解压失败", e)
             Result.failure(e)
         }
     }
@@ -150,10 +150,10 @@ class FitDownloadRepository(
             }
 
             val data = response.body?.bytes() ?: return Result.failure(Exception("响应体为空"))
-            Logger.i(TAG, "fitUrl下载成功，大小: ${data.size} bytes")
+            RLog.i(TAG, "fitUrl下载成功，大小: ${data.size} bytes")
             Result.success(data)
         } catch (e: Exception) {
-            Logger.e(TAG, "URL下载异常", e)
+            RLog.e(TAG, "URL下载异常", e)
             Result.failure(e)
         }
     }

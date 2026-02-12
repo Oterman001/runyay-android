@@ -3,7 +3,6 @@ package com.oterman.rundemo
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,6 +12,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailScreen
 import com.oterman.rundemo.ui.theme.ComopseDemoHubTheme
+import com.oterman.rundemo.util.RLog
 
 /**
  * 跑步详情独立Activity
@@ -39,12 +39,12 @@ class RunDetailActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "onCreate START")
+        RLog.d(TAG, "onCreate START")
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         val workoutId = intent.getStringExtra(EXTRA_WORKOUT_ID) ?: run {
-            Log.e(TAG, "workoutId is null, finishing activity")
+            RLog.e(TAG, "workoutId is null, finishing activity")
             finish()
             return
         }
@@ -62,34 +62,34 @@ class RunDetailActivity : ComponentActivity() {
                 }
             }
         }
-        Log.d(TAG, "onCreate END, cost=${System.currentTimeMillis() - startTime}ms")
+        RLog.d(TAG, "onCreate END, cost=${System.currentTimeMillis() - startTime}ms")
     }
 
     override fun onStart() {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "onStart START")
+        RLog.d(TAG, "onStart START")
         super.onStart()
-        Log.d(TAG, "onStart END, cost=${System.currentTimeMillis() - startTime}ms")
+        RLog.d(TAG, "onStart END, cost=${System.currentTimeMillis() - startTime}ms")
     }
 
     override fun onStop() {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "onStop START")
+        RLog.d(TAG, "onStop START")
         super.onStop()
-        Log.d(TAG, "onStop END, cost=${System.currentTimeMillis() - startTime}ms")
+        RLog.d(TAG, "onStop END, cost=${System.currentTimeMillis() - startTime}ms")
     }
 
     override fun onDestroy() {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "onDestroy START")
+        RLog.d(TAG, "onDestroy START")
         super.onDestroy()
-        Log.d(TAG, "onDestroy END, cost=${System.currentTimeMillis() - startTime}ms")
+        RLog.d(TAG, "onDestroy END, cost=${System.currentTimeMillis() - startTime}ms")
     }
 
     override fun finish() {
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "finish() called")
+        RLog.d(TAG, "finish() called")
         super.finish()
-        Log.d(TAG, "finish() returned, cost=${System.currentTimeMillis() - startTime}ms")
+        RLog.d(TAG, "finish() returned, cost=${System.currentTimeMillis() - startTime}ms")
     }
 }

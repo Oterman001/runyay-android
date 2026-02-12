@@ -8,7 +8,7 @@ import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.ImportedRunSummary
 import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.service.sync.model.SyncNotification
-import com.oterman.rundemo.util.Logger
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,7 +62,7 @@ class DataSourceDetailViewModel(
                     _uiState.update { it.copy(isAuthorized = isAuthorized) }
                 }
                 .onFailure { error ->
-                    Logger.e(TAG, "刷新授权状态失败", error)
+                    RLog.e(TAG, "刷新授权状态失败", error)
                 }
         }
     }
@@ -85,7 +85,7 @@ class DataSourceDetailViewModel(
                     }
                 }
                 .onFailure { error ->
-                    Logger.e(TAG, "获取授权URL失败", error)
+                    RLog.e(TAG, "获取授权URL失败", error)
                     _uiState.update { 
                         it.copy(
                             isLoading = false,
@@ -102,7 +102,7 @@ class DataSourceDetailViewModel(
      * 根据平台类型调用不同的回调处理方法
      */
     fun handleOAuthCallback(params: OAuthCallbackParams) {
-        Logger.i(TAG, "处理OAuth回调: platform=${platform.code}, params=$params")
+        RLog.i(TAG, "处理OAuth回调: platform=${platform.code}, params=$params")
 
         _uiState.update {
             it.copy(
@@ -114,7 +114,7 @@ class DataSourceDetailViewModel(
         viewModelScope.launch {
             val result = when (params) {
                 is OAuthCallbackParams.OAuth1 -> {
-                    Logger.d(TAG, "调用佳明回调处理, token=${params.oauthToken}, verifier=${params.oauthVerifier}")
+                    RLog.d(TAG, "调用佳明回调处理, token=${params.oauthToken}, verifier=${params.oauthVerifier}")
                     repository.handleGarminOAuthCallback(
                         platform = platform,
                         oauthToken = params.oauthToken,
@@ -122,7 +122,7 @@ class DataSourceDetailViewModel(
                     )
                 }
                 is OAuthCallbackParams.OAuth2 -> {
-                    Logger.d(TAG, "调用高驰回调处理, code=${params.code}, state=${params.state}")
+                    RLog.d(TAG, "调用高驰回调处理, code=${params.code}, state=${params.state}")
                     repository.handleCorosOAuthCallback(
                         code = params.code,
                         state = params.state
@@ -132,7 +132,7 @@ class DataSourceDetailViewModel(
 
             result
                 .onSuccess {
-                    Logger.i(TAG, "OAuth回调处理成功，授权完成")
+                    RLog.i(TAG, "OAuth回调处理成功，授权完成")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -142,7 +142,7 @@ class DataSourceDetailViewModel(
                     }
                 }
                 .onFailure { error ->
-                    Logger.e(TAG, "处理OAuth回调失败", error)
+                    RLog.e(TAG, "处理OAuth回调失败", error)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -204,7 +204,7 @@ class DataSourceDetailViewModel(
                     }
                 }
                 .onFailure { error ->
-                    Logger.e(TAG, "解绑失败", error)
+                    RLog.e(TAG, "解绑失败", error)
                     _uiState.update { 
                         it.copy(
                             isUnbinding = false,
@@ -251,7 +251,7 @@ class DataSourceDetailViewModel(
         }
 
         viewModelScope.launch {
-            Logger.i(TAG, "开始手动同步: ${platform.displayName}")
+            RLog.i(TAG, "开始手动同步: ${platform.displayName}")
             syncManager.triggerManualSync(platform).collect { notification ->
                 handleSyncNotification(notification)
             }
@@ -264,13 +264,13 @@ class DataSourceDetailViewModel(
     private fun handleSyncNotification(notification: SyncNotification) {
         when (notification) {
             is SyncNotification.PlatformStarted -> {
-                Logger.d(TAG, "同步开始: ${notification.platform.displayName}")
+                RLog.d(TAG, "同步开始: ${notification.platform.displayName}")
             }
             is SyncNotification.PlatformProgress -> {
-                Logger.d(TAG, "同步进度: ${notification.current}/${notification.total} - ${notification.message}")
+                RLog.d(TAG, "同步进度: ${notification.current}/${notification.total} - ${notification.message}")
             }
             is SyncNotification.RecordImported -> {
-                Logger.d(TAG, "导入记录: ${notification.displayText}")
+                RLog.d(TAG, "导入记录: ${notification.displayText}")
                 // 添加导入记录到列表（最新的在前，最多50条）
                 _uiState.update { state ->
                     val newRecord = createImportedSummary(notification)
@@ -279,7 +279,7 @@ class DataSourceDetailViewModel(
                 }
             }
             is SyncNotification.PlatformCompleted -> {
-                Logger.i(TAG, "同步完成: ${notification.platform.displayName}, 导入: ${notification.result.importedCount}")
+                RLog.i(TAG, "同步完成: ${notification.platform.displayName}, 导入: ${notification.result.importedCount}")
                 val message = if (notification.result.importedCount > 0) {
                     "同步完成，已导入 ${notification.result.importedCount} 条记录"
                 } else {
@@ -294,7 +294,7 @@ class DataSourceDetailViewModel(
                 }
             }
             is SyncNotification.PlatformFailed -> {
-                Logger.e(TAG, "同步失败: ${notification.platform.displayName}, 错误: ${notification.error}")
+                RLog.e(TAG, "同步失败: ${notification.platform.displayName}, 错误: ${notification.error}")
                 _uiState.update {
                     it.copy(
                         isSyncing = false,
@@ -305,7 +305,7 @@ class DataSourceDetailViewModel(
             }
             else -> {
                 // 忽略其他通知类型（UnifiedCompleted, UnifiedFailed等）
-                Logger.d(TAG, "忽略通知: $notification")
+                RLog.d(TAG, "忽略通知: $notification")
             }
         }
     }
