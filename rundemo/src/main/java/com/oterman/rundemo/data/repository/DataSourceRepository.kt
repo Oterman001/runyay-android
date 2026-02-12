@@ -154,7 +154,7 @@ class DataSourceRepository(
                     Logger.i(TAG, "获取授权URL成功, platform=${platform.code}")
                     Result.success(authUrl)
                 } else {
-                    Logger.w(TAG, "授权URL为空, platform=${platform.code}")
+                    Logger.w(TAG, "授权URL为空, platformøø=${platform.code}")
                     Result.failure(Exception("授权URL为空"))
                 }
             } else {
@@ -362,11 +362,40 @@ class DataSourceRepository(
 
     /**
      * 下载FIT文件（佳明）
+     * 三级下载策略：
+     * Level 1: ossUrl优先（如果有且有效）
+     * Level 2: fitUrl下载（ossUrl失败或不存在时）
+     * Level 3: 后端API下载（兜底方案）
      */
     suspend fun downloadGarminFile(fileInfo: FileInfo): Result<ByteArray> = withContext(Dispatchers.IO) {
+        // Level 1: 尝试ossUrl下载
+        if (fileInfo.hasOssUrl) {
+            Logger.d(TAG, "佳明: 尝试ossUrl下载: ${fileInfo.summaryId}")
+            val ossResult = downloadFromUrl(fileInfo.ossUrl!!, fileInfo.summaryId)
+            if (ossResult.isSuccess) {
+                Logger.i(TAG, "佳明: ossUrl下载成功: ${fileInfo.summaryId}")
+                return@withContext ossResult
+            }
+            Logger.w(TAG, "佳明: ossUrl下载失败，尝试下一级: ${fileInfo.summaryId}")
+        }
+
+        // Level 2: 尝试fitUrl下载
+        if (fileInfo.hasFitUrl) {
+            Logger.d(TAG, "佳明: 尝试fitUrl下载: ${fileInfo.summaryId}")
+            val fitResult = downloadFromUrl(fileInfo.fitUrl!!, fileInfo.summaryId)
+            if (fitResult.isSuccess) {
+                Logger.i(TAG, "佳明: fitUrl下载成功: ${fileInfo.summaryId}")
+                return@withContext fitResult
+            }
+            Logger.w(TAG, "佳明: fitUrl下载失败，尝试后端API: ${fileInfo.summaryId}")
+        }
+
+        // Level 3: 后端API下载（兜底）
         try {
             val userId = preferencesManager.getUserId()
                 ?: return@withContext Result.failure(Exception("用户未登录"))
+
+            Logger.d(TAG, "佳明: 尝试后端API下载: ${fileInfo.summaryId}")
 
             val request = createBaseRequest(
                 dtoName = SyncConstants.DtoNames.GARMIN_FILE_DOWNLOAD_REQUEST,
@@ -380,10 +409,10 @@ class DataSourceRepository(
 
             val responseBody = api.downloadGarminFile(request)
             val bytes = responseBody.bytes()
-
+            Logger.i(TAG, "佳明: 后端API下载成功: ${fileInfo.summaryId}")
             Result.success(bytes)
         } catch (e: Exception) {
-            Logger.e(TAG, "下载佳明文件失败", e)
+            Logger.e(TAG, "佳明: 所有下载方式均失败: ${fileInfo.summaryId}", e)
             Result.failure(e)
         }
     }

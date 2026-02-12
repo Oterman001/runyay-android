@@ -7,6 +7,7 @@ import com.oterman.rundemo.data.local.dao.RunSegmentDao
 import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.FileInfo
+import com.oterman.rundemo.domain.model.ImportedRunSummary
 import com.oterman.rundemo.domain.model.SyncTimeRange
 import com.oterman.rundemo.service.sync.model.SyncConstants
 import com.oterman.rundemo.util.TimestampUtils
@@ -54,6 +55,13 @@ class GarminGlobalSyncService(
             pageSize = pageSize,
             lastSyncTime = lastSyncTime
         )
+    }
+
+    override suspend fun processFileData(
+        fileInfo: FileInfo,
+        fileData: ByteArray
+    ): ImportedRunSummary? {
+        return super.processFileData(fileInfo, fileData)
     }
 
     override suspend fun downloadFile(fileInfo: FileInfo): Result<ByteArray> {
