@@ -31,6 +31,7 @@ import com.oterman.rundemo.presentation.feature.home.components.DayCell
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.statistics.components.DayTrajectoryCell
 import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
  * Week summary header showing run count and total distance
@@ -82,8 +83,10 @@ fun WeekDayGrid(
                         // 轨迹模式：显示轨迹缩略图
                         val workoutId = dayData.workoutIds.firstOrNull()
                         val trackPoints = workoutId?.let { trajectoryDataMap[it] }
-                        
-                        Box(
+
+                        // 用 Column 包裹，添加周标识（与 DayCell 保持一致）
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable(enabled = dayData.hasRun) { onDayClick(dayData) }
@@ -92,6 +95,14 @@ fun WeekDayGrid(
                                 workoutId = workoutId,
                                 trackPoints = trackPoints,
                                 isFuture = dayData.isFuture
+                            )
+                            // 周标识
+                            Text(
+                                text = dayData.dayOfWeek,
+                                fontSize = 11.sp,
+                                color = if (dayData.isToday) MaterialTheme.colorScheme.primary else SecondaryTextColor,
+                                fontWeight = if (dayData.isToday) FontWeight.SemiBold else FontWeight.Normal,
+                                modifier = Modifier.padding(top = 2.dp)
                             )
                         }
                     } else {
@@ -182,13 +193,28 @@ fun WeekSummaryAndGrid(
                             // 轨迹模式：显示轨迹缩略图
                             val workoutId = dayData.workoutIds.firstOrNull()
                             val trackPoints = workoutId?.let { trajectoryDataMap[it] }
-                            
-                            DayTrajectoryCell(
-                                workoutId = workoutId,
-                                trackPoints = trackPoints,
-                                isFuture = dayData.isFuture,
-                                modifier = Modifier.weight(1f)
-                            )
+
+                            // 用 Column 包裹，添加周标识（与 DayCell 保持一致）
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable(enabled = dayData.hasRun) { onDayClick(dayData) }
+                            ) {
+                                DayTrajectoryCell(
+                                    workoutId = workoutId,
+                                    trackPoints = trackPoints,
+                                    isFuture = dayData.isFuture
+                                )
+                                // 周标识
+                                Text(
+                                    text = dayData.dayOfWeek,
+                                    fontSize = 11.sp,
+                                    color = if (dayData.isToday) MaterialTheme.colorScheme.primary else SecondaryTextColor,
+                                    fontWeight = if (dayData.isToday) FontWeight.SemiBold else FontWeight.Normal,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
                         } else {
                             // 距离模式：显示距离热力图
                             DayCell(
