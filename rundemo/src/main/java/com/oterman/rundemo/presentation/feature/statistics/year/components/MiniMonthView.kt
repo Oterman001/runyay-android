@@ -32,12 +32,17 @@ import com.oterman.rundemo.ui.theme.RunBlue
 /**
  * Mini month heatmap view for year grid (3x4 layout)
  * Corresponds to iOS MiniMonthView
+ *
+ * @param cellSpacing 格子间距，年度统计场景默认使用较小间距
+ * @param maxCellSize 格子最大尺寸，年度统计场景默认不限制
  */
 @Composable
 fun MiniMonthView(
     monthRangeData: MonthRangeData,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    cellSpacing: Dp = 2.dp,
+    maxCellSize: Dp = Dp.Unspecified
 ) {
     Column(
         modifier = modifier
@@ -54,7 +59,9 @@ fun MiniMonthView(
 
         // 7x6 heatmap grid (7 columns, up to 6 rows)
         MiniMonthHeatmapGrid(
-            dailyRecords = monthRangeData.dailyRecords
+            dailyRecords = monthRangeData.dailyRecords,
+            cellSpacing = cellSpacing,
+            maxCellSize = maxCellSize
         )
     }
 }
@@ -62,24 +69,33 @@ fun MiniMonthView(
 /**
  * Heatmap grid for mini month view
  * Uses BoxWithConstraints to dynamically calculate cell size based on available width
+ *
+ * @param cellSpacing 格子间距，默认2dp
+ * @param maxCellSize 格子最大尺寸，默认不限制（Dp.Unspecified）
  */
 @Composable
 internal fun MiniMonthHeatmapGrid(
     dailyRecords: List<DayRunData>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    cellSpacing: Dp = 2.dp,
+    maxCellSize: Dp = Dp.Unspecified
 ) {
-    val cellSpacing = 2.dp
-    val cellRadius = 3.dp
+    val cellRadius = 2.dp
     val columns = 7
 
     // Calculate row count
     val rowCount = (dailyRecords.size + columns - 1) / columns
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        // Dynamically calculate cellSize based on available width
+        // Dynamically calculate cellSize based on available width, but cap at maxCellSize if specified
         val availableWidth = maxWidth
         val totalSpacing = cellSpacing * (columns - 1)
-        val cellSize = (availableWidth - totalSpacing) / columns
+        val calculatedCellSize = (availableWidth - totalSpacing) / columns
+        val cellSize = if (maxCellSize != Dp.Unspecified) {
+            minOf(calculatedCellSize, maxCellSize)
+        } else {
+            calculatedCellSize
+        }
 
         Column(verticalArrangement = Arrangement.spacedBy(cellSpacing)) {
             for (rowIndex in 0 until rowCount) {

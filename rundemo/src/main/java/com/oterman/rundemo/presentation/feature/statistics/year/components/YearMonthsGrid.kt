@@ -126,7 +126,9 @@ private fun YearMonthsGrid(
                         MiniMonthView(
                             monthRangeData = monthRangeDataList[monthIndex],
                             onClick = { onMonthClick(monthRangeDataList[monthIndex]) },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            cellSpacing = 3.dp,
+                            maxCellSize = 30.dp
                         )
                     }
                 }

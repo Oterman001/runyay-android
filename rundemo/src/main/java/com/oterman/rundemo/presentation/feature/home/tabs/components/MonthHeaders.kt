@@ -80,7 +80,9 @@ fun HeatmapMonthHeader(
             contentAlignment = Alignment.CenterEnd
         ) {
             MiniMonthHeatmapGrid(
-                dailyRecords = monthData.dailyRecords
+                dailyRecords = monthData.dailyRecords,
+                cellSpacing = 5.dp,  // DataTab场景：较大间距
+                maxCellSize = 12.dp  // DataTab场景：限制格子大小
             )
         }
     }
