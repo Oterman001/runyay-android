@@ -5,12 +5,6 @@
 3.整体界面的布局参考ios的跑步详情 RunRecordDetailPageV3；
 4.地图使用mapbox，mapbox的相关key相关的配置参考fitdemo下的MapScreen;
 
-
-当前在UserProfileScreen页面中，调用注销时，服务端返回参数校验失败，请仔细对比ios版本的注销接口，找出不一样的地方，修复这个问题；
-
-ios注销：UserProfileView 和 UserProfileViewModel；
-
-
 期望在首页HomeTabContent上展示各类卡片，参考ios的设计以及样式：
 展示卡片的种类与ios保持一致；
 展示卡片的样式以及整个页面的背景与ios保持一致；
@@ -27,12 +21,82 @@ ios为 latestYearAndMonthRunView
 2.设计基于 Material3 Design；
 3.android版本的卡片的样式、背景色，圆角，页面的背景需要与ios保持一致；
 
-探索设计实现方案；
 
-1.状态栏不是沉浸式，状态栏的背景和主页的背景不一致；
-2.滑动时，大标题没有变为小标题；
+1.完善rundemo模块里HomeTab里年、月目标设置以及目标进度展示的逻辑；
+参考ios的年卡和月卡目标设置以及设置目标后进度展示的样式，完
 
-请仔细思考并解决这个问题；
+ios相关的类位于zrun目录下的：CurYearTotalView和 CurMonthTotalView；
+
+2.完善ProfileTab里的跑步目标设置逻辑，
+参考ios的实现，ios为：RunGoalSetFullPage
+
+
+完善rundemo模块里HomeTab里，如下卡的展示：
+1.最近一次跑步记录卡展示；
+ios对应的类为：RunDashboardPage里的latestRunRecordView
+
+2.最大数据卡，
+对应RunDashboardPage里的allPBAbilityView
+跑力采用假数据，最远距离、最长时间采用真实数据
+
+3.下次赛事卡
+ios为RunDashboardPage里的upcomingMarathonRace 
+先填充假数据
+
+4.每日一句卡
+DailySentenceView
+
+
+5.Pb记录卡
+采用假数据
+
+要求：
+android版本卡片完全克隆ios对应卡的样式，能获取到到数据的，采用真实数据展示，比如最远距离，最长时间，获取不到数据的，采用假数据；
+
+
+搭建年月周总统计视图框架，然后逐步实现年月周总统计视图
+
+
+完善下如下逻辑：
+1.点击最近一次跑步数据的卡，应该进入到跑步详情页；
+2.点击最大数据卡里的某项时，也应该进入到详情页；
+3.点击周卡某一天，如果该天有一条记录，应该直接跳转到跑步详情页；
+如果某一天有多条跑步记录，应该给出弹窗选项，用户可以选择某一条记录查看对应的详情页；
+
+期望在rundemo模块，参考ios代码，完善android版本的全部记录页展示功能
+
+ios的关键类位于zrun目录下的：AllRunRecordPage
+
+1.要求按照ios的样式完整的克隆所有记录界面的功能，包括两种模式的切换、按月折叠展开；
+2.单条记录item的样式可暂时维持现状，下一步再参考ios的做调整；
+
+
+期望在所有跑步记录DataTab界面，item样式参考ios的做调整；
+
+ios的关键类位于zrun目录下的：AllRunRecordPage 和 TrajectoryRunRecordView
+
+重点思考下轨迹缩略图的处理，可以参考下ios的方案，zrun目录下的关键类TrajectoryDisplayManager；
+
+
+当前期望在周统计视图和月统计视图增加轨迹模式，即每日格子跑步轨迹缩略图；
+实现可完全参考ios的实现；
+ios的相关类，位于zrun目录下的RunWeekView和RunMonthView;
+
+周视图：MonthStatisticsContent
+月视图：MonthStatisticsContent
+
+另外，针对周视图里的 WeekSummaryAndGrid 应该和ios的一样，维持一个卡片样式，模式切换位于卡片内右上角；
+
+
+分析当前安卓里解析fit文件和ios版本解析fit文件的差异，期望是android解析fit文件对齐ios的解析，找出缺失的逻辑，以及设计补齐方案
+
+ios fit文件解析以及导入zrun目录下：GarminFitImportService
+当前android fit文件解析以及导入：FitImportService
+
+
+
+
+think hard；
 
 
 

@@ -1,10 +1,14 @@
 package com.oterman.rundemo.data.repository
 
+import com.oterman.rundemo.data.local.dao.OverallVdotDao
+import com.oterman.rundemo.data.local.dao.PBRecordDao
 import com.oterman.rundemo.data.local.dao.RunAbilityZoneDao
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
 import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.local.entity.OverallVdotEntity
+import com.oterman.rundemo.data.local.entity.PBRecordEntity
 import com.oterman.rundemo.data.local.entity.RunAbilityZoneEntity
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.local.entity.RunSamplePointEntity
@@ -31,6 +35,8 @@ class RunDataRepositoryImpl(
     private val samplePointDao: RunSamplePointDao = database.runSamplePointDao()
     private val segmentDao: RunSegmentDao = database.runSegmentDao()
     private val abilityZoneDao: RunAbilityZoneDao = database.runAbilityZoneDao()
+    private val pbRecordDao: PBRecordDao = database.pbRecordDao()
+    private val overallVdotDao: OverallVdotDao = database.overallVdotDao()
     
     // ==================== 保存操作 ====================
     
@@ -201,10 +207,65 @@ class RunDataRepositoryImpl(
         return abilityZoneDao.getSpeedZones(workoutId).map { it.toAbilityZone() }
     }
     
+    // ==================== PB记录 ====================
+    
+    override suspend fun getBestPB(type: String, subType: String): PBRecordEntity? {
+        return pbRecordDao.getBestRecord(type, subType)
+    }
+    
+    override suspend fun savePBIfBetter(pbRecord: PBRecordEntity): Boolean {
+        val currentBest = pbRecordDao.getBestRecord(pbRecord.type, pbRecord.subType)
+        
+        // 对于Speed类型，值越小越好（用时更短）
+        // 对于Ability类型，值越大越好（距离更远/步频更高等）
+        val isBetter = if (currentBest == null) {
+            true
+        } else if (pbRecord.type == "Speed") {
+            pbRecord.value < currentBest.value
+        } else {
+            pbRecord.value > currentBest.value
+        }
+        
+        if (isBetter) {
+            // 清除旧的PB，插入新的
+            pbRecordDao.clearBestForTypeAndSubType(pbRecord.type, pbRecord.subType)
+            pbRecordDao.insert(pbRecord)
+        }
+        
+        return isBetter
+    }
+    
+    override suspend fun savePBRecords(records: List<PBRecordEntity>) {
+        pbRecordDao.insertAll(records)
+    }
+    
+    override suspend fun getAllPBByType(type: String): List<PBRecordEntity> {
+        return pbRecordDao.getAllByType(type)
+    }
+    
+    // ==================== VDOT ====================
+    
+    override suspend fun saveOverallVdot(vdot: OverallVdotEntity) {
+        overallVdotDao.insert(vdot)
+    }
+    
+    override suspend fun getRecentVdots(limit: Int): List<OverallVdotEntity> {
+        return overallVdotDao.getRecentVdots(limit)
+    }
+    
+    override suspend fun getLatestVdot(): OverallVdotEntity? {
+        return overallVdotDao.getLatestVdot()
+    }
+
+    override suspend fun getVdotsByDateRange(startDate: Long, endDate: Long): List<OverallVdotEntity> {
+        return overallVdotDao.getVdotsByDateRange(startDate, endDate)
+    }
+    
     // ==================== 删除操作 ====================
     
     override suspend fun deleteRunRecord(workoutId: String) {
         // 由于设置了ForeignKey CASCADE，删除主记录会自动删除关联数据
+        // 注意：PB和VDOT不通过CASCADE删除（它们不是外键关联）
         runRecordDao.deleteByWorkoutId(workoutId)
     }
     

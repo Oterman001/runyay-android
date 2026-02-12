@@ -1,5 +1,7 @@
 package com.oterman.rundemo.data.repository
 
+import com.oterman.rundemo.data.local.entity.OverallVdotEntity
+import com.oterman.rundemo.data.local.entity.PBRecordEntity
 import com.oterman.rundemo.data.local.entity.RunAbilityZoneEntity
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.local.entity.RunSamplePointEntity
@@ -160,6 +162,51 @@ interface RunDataRepository {
      * 获取配速区间
      */
     suspend fun getSpeedZones(workoutId: String): List<AbilityZone>
+    
+    // ==================== PB记录 ====================
+    
+    /**
+     * 获取某类型某子类型的当前最佳PB
+     */
+    suspend fun getBestPB(type: String, subType: String): PBRecordEntity?
+    
+    /**
+     * 保存PB记录（如果是新的PB则替换旧的）
+     */
+    suspend fun savePBIfBetter(pbRecord: PBRecordEntity): Boolean
+    
+    /**
+     * 批量保存PB记录
+     */
+    suspend fun savePBRecords(records: List<PBRecordEntity>)
+    
+    /**
+     * 获取某类型所有PB记录
+     */
+    suspend fun getAllPBByType(type: String): List<PBRecordEntity>
+    
+    // ==================== VDOT ====================
+    
+    /**
+     * 保存VDOT记录
+     */
+    suspend fun saveOverallVdot(vdot: OverallVdotEntity)
+    
+    /**
+     * 获取最近N条VDOT记录
+     */
+    suspend fun getRecentVdots(limit: Int = 10): List<OverallVdotEntity>
+    
+    /**
+     * 获取最新的VDOT记录
+     */
+    suspend fun getLatestVdot(): OverallVdotEntity?
+
+    /**
+     * 获取指定日期范围内的VDOT记录（按日期倒序）
+     * 用于Overall VDOT的历史加权计算
+     */
+    suspend fun getVdotsByDateRange(startDate: Long, endDate: Long): List<OverallVdotEntity>
     
     // ==================== 删除操作 ====================
     
