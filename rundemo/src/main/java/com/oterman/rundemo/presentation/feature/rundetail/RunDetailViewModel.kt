@@ -287,7 +287,7 @@ class RunDetailViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(RunDetailViewModel::class.java)) {
             val database = RunDatabase.getInstance(context)
-            val repository = RunDataRepositoryImpl(database)
+            val repository = RunDataRepositoryImpl.getInstance(database)
             val preferencesManager = PreferencesManager(context)
             val fitDownloadRepository = FitDownloadRepository(preferencesManager)
             return RunDetailViewModel(workoutId, repository, fitDownloadRepository) as T

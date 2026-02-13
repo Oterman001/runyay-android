@@ -78,7 +78,7 @@ class UnifiedDataSyncManager private constructor(
             val runRecordDao = database.runRecordDao()
             val samplePointDao = database.runSamplePointDao()
             val segmentDao = database.runSegmentDao()
-            val runDataRepository = RunDataRepositoryImpl(database)
+            val runDataRepository = RunDataRepositoryImpl.getInstance(database)
 
             return UnifiedDataSyncManager(
                 context = context,

@@ -26,7 +26,7 @@ import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.Date
@@ -44,60 +44,62 @@ class HomeTabViewModel(
     val uiState: StateFlow<HomeTabUiState> = _uiState.asStateFlow()
 
     init {
-        loadStatistics()
+        observeRunRecords()
     }
 
     /**
-     * Load all statistics
+     * Continuously observe run records from database.
+     * Automatically refreshes UI when records change (e.g. after sync).
      */
-    fun loadStatistics() {
+    private fun observeRunRecords() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            try {
-                val allRecords = repository.getAllRunRecords().first()
-                val goalSettings = preferencesManager.getGoalSettings()
+            repository.getAllRunRecords()
+                .catch { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = e.message ?: "Failed to load statistics"
+                    )
+                }
+                .collect { allRecords ->
+                    val goalSettings = preferencesManager.getGoalSettings()
 
-                val totalStats = calculateTotalStatistics(allRecords)
-                val yearStats = calculateYearStatistics(allRecords, goalSettings)
-                val monthStats = calculateMonthStatistics(allRecords, goalSettings)
-                val weekStats = calculateWeekStatistics(allRecords)
+                    val totalStats = calculateTotalStatistics(allRecords)
+                    val yearStats = calculateYearStatistics(allRecords, goalSettings)
+                    val monthStats = calculateMonthStatistics(allRecords, goalSettings)
+                    val weekStats = calculateWeekStatistics(allRecords)
 
-                // New calculations for 5 cards
-                val latestRecord = calculateLatestRunRecord(allRecords)
-                val pbAbilityList = calculatePBAbilityList(allRecords)
-                val pbSpeedList = MockDataProvider.getMockPBSpeedList()  // Use mock for now
-                val nextRace = MockDataProvider.getMockNextRace()        // Use mock for now
-                val dailySentence = MockDataProvider.getRandomDailySentence()
+                    // New calculations for 5 cards
+                    val latestRecord = calculateLatestRunRecord(allRecords)
+                    val pbAbilityList = calculatePBAbilityList(allRecords)
+                    val pbSpeedList = MockDataProvider.getMockPBSpeedList()  // Use mock for now
+                    val nextRace = MockDataProvider.getMockNextRace()        // Use mock for now
+                    val dailySentence = MockDataProvider.getRandomDailySentence()
 
-                _uiState.value = HomeTabUiState(
-                    isLoading = false,
-                    totalStats = totalStats,
-                    yearStats = yearStats,
-                    monthStats = monthStats,
-                    weekStats = weekStats,
-                    goalSettings = goalSettings,
-                    latestRunRecord = latestRecord,
-                    pbAbilityList = pbAbilityList,
-                    pbSpeedList = pbSpeedList,
-                    nextRace = nextRace,
-                    dailySentence = dailySentence,
-                    error = null
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Failed to load statistics"
-                )
-            }
+                    _uiState.value = HomeTabUiState(
+                        isLoading = false,
+                        totalStats = totalStats,
+                        yearStats = yearStats,
+                        monthStats = monthStats,
+                        weekStats = weekStats,
+                        goalSettings = goalSettings,
+                        latestRunRecord = latestRecord,
+                        pbAbilityList = pbAbilityList,
+                        pbSpeedList = pbSpeedList,
+                        nextRace = nextRace,
+                        dailySentence = dailySentence,
+                        error = null
+                    )
+                }
         }
     }
 
     /**
-     * Refresh statistics
+     * Refresh statistics (for non-DB changes like goal settings update)
      */
     fun refresh() {
-        loadStatistics()
+        observeRunRecords()
     }
 
     private fun calculateTotalStatistics(allRecords: List<RunRecordEntity>): TotalRunStatistics {
@@ -450,7 +452,7 @@ class HomeTabViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HomeTabViewModel::class.java)) {
             val database = RunDatabase.getInstance(context)
-            val repository = RunDataRepositoryImpl(database)
+            val repository = RunDataRepositoryImpl.getInstance(database)
             val preferencesManager = PreferencesManager(context)
             return HomeTabViewModel(repository, preferencesManager) as T
         }

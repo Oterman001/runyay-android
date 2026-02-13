@@ -18,7 +18,7 @@ class YearStatisticsViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(YearStatisticsViewModel::class.java)) {
             val database = RunDatabase.getInstance(context)
-            val repository = RunDataRepositoryImpl(database)
+            val repository = RunDataRepositoryImpl.getInstance(database)
             val preferencesManager = PreferencesManager(context)
             return YearStatisticsViewModel(repository, preferencesManager) as T
         }

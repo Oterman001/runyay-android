@@ -365,7 +365,7 @@ class DataTabViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(DataTabViewModel::class.java)) {
             val database = RunDatabase.getInstance(context)
-            val repository = RunDataRepositoryImpl(database)
+            val repository = RunDataRepositoryImpl.getInstance(database)
             val preferencesManager = PreferencesManager(context)
             return DataTabViewModel(repository, preferencesManager) as T
         }

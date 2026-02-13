@@ -21,22 +21,45 @@ import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.domain.model.SegmentType
 import com.oterman.rundemo.domain.model.TrackPoint
 import androidx.room.withTransaction
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import java.util.Date
 
 /**
- * 跑步数据仓库实现
+ * 跑步数据仓库实现（单例）
  */
-class RunDataRepositoryImpl(
+class RunDataRepositoryImpl private constructor(
     private val database: RunDatabase
 ) : RunDataRepository {
-    
+
+    companion object {
+        @Volatile
+        private var INSTANCE: RunDataRepositoryImpl? = null
+
+        fun getInstance(database: RunDatabase): RunDataRepositoryImpl {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: RunDataRepositoryImpl(database).also { INSTANCE = it }
+            }
+        }
+    }
+
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private val runRecordDao: RunRecordDao = database.runRecordDao()
     private val samplePointDao: RunSamplePointDao = database.runSamplePointDao()
     private val segmentDao: RunSegmentDao = database.runSegmentDao()
     private val abilityZoneDao: RunAbilityZoneDao = database.runAbilityZoneDao()
     private val pbRecordDao: PBRecordDao = database.pbRecordDao()
     private val overallVdotDao: OverallVdotDao = database.overallVdotDao()
+
+    private val allRunRecords: StateFlow<List<RunRecordEntity>> =
+        runRecordDao.getAllByStartTimeDesc()
+            .stateIn(repositoryScope, SharingStarted.Eagerly, emptyList())
     
     // ==================== 保存操作 ====================
     
@@ -109,7 +132,7 @@ class RunDataRepositoryImpl(
     }
     
     override fun getAllRunRecords(): Flow<List<RunRecordEntity>> {
-        return runRecordDao.getAllByStartTimeDesc()
+        return allRunRecords
     }
     
     override suspend fun getRunRecordsByTimeRange(startTime: Long, endTime: Long): List<RunRecordEntity> {

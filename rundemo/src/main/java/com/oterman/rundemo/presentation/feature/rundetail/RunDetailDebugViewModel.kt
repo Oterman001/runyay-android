@@ -106,7 +106,7 @@ class RunDetailDebugViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(RunDetailDebugViewModel::class.java)) {
             val database = RunDatabase.getInstance(context)
-            val repository = RunDataRepositoryImpl(database)
+            val repository = RunDataRepositoryImpl.getInstance(database)
             return RunDetailDebugViewModel(workoutId, repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

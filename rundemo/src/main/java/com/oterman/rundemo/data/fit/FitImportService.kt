@@ -30,7 +30,7 @@ class FitImportService(private val context: Context) {
 
     private val parser = FitFileParser(context)
     private val repository: RunDataRepository by lazy {
-        RunDataRepositoryImpl(RunDatabase.getInstance(context))
+        RunDataRepositoryImpl.getInstance(RunDatabase.getInstance(context))
     }
 
     /** FIT数据处理器 */
