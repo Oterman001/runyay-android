@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Route
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,16 +26,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Year navigation header with previous/next buttons and year display
+ * Year navigation header with previous/next buttons, year display,
+ * and trajectory mode toggle
  * Double-tap on date to jump to current year
  */
 @Composable
 fun YearNavigationHeader(
     yearDisplay: String,
     canGoNext: Boolean,
+    showTrajectoryMode: Boolean,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onDateDoubleClick: () -> Unit,
+    onToggleMode: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -68,6 +73,21 @@ fun YearNavigationHeader(
             }
         )
 
+        // Trajectory mode toggle button
+        IconButton(
+            onClick = onToggleMode,
+            modifier = Modifier.size(44.dp)
+        ) {
+            Icon(
+                imageVector = if (showTrajectoryMode)
+                    Icons.Outlined.Visibility
+                else
+                    Icons.Outlined.Route,
+                contentDescription = if (showTrajectoryMode) "切换到月份显示" else "切换到轨迹墙显示",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
         // Next year button
         IconButton(
             onClick = onNextClick,
@@ -91,8 +111,10 @@ private fun YearNavigationHeaderPreview() {
     YearNavigationHeader(
         yearDisplay = "2024年",
         canGoNext = false,
+        showTrajectoryMode = false,
         onPreviousClick = {},
         onNextClick = {},
-        onDateDoubleClick = {}
+        onDateDoubleClick = {},
+        onToggleMode = {}
     )
 }

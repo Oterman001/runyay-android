@@ -41,6 +41,10 @@ class YearStatisticsViewModel(
     private var currentYear: Int = Calendar.getInstance().get(Calendar.YEAR)
 
     init {
+        // Load saved items per row preference
+        val savedItemsPerRow = preferencesManager.getTrajectoryItemsPerRow()
+        _uiState.update { it.copy(itemsPerRow = savedItemsPerRow) }
+
         loadYearData()
         loadDailySentence()
     }
@@ -52,6 +56,9 @@ class YearStatisticsViewModel(
         RLog.d(TAG, "Navigating to previous year")
         currentYear -= 1
         loadYearData()
+        if (_uiState.value.showTrajectoryMode) {
+            loadTrajectoryDataForYear()
+        }
     }
 
     /**
@@ -62,6 +69,9 @@ class YearStatisticsViewModel(
             RLog.d(TAG, "Navigating to next year")
             currentYear += 1
             loadYearData()
+            if (_uiState.value.showTrajectoryMode) {
+                loadTrajectoryDataForYear()
+            }
         }
     }
 
@@ -72,6 +82,9 @@ class YearStatisticsViewModel(
         RLog.d(TAG, "Jumping to current year")
         currentYear = Calendar.getInstance().get(Calendar.YEAR)
         loadYearData()
+        if (_uiState.value.showTrajectoryMode) {
+            loadTrajectoryDataForYear()
+        }
     }
 
     /**
@@ -94,6 +107,87 @@ class YearStatisticsViewModel(
     fun refresh() {
         loadYearData()
         loadDailySentence()
+        if (_uiState.value.showTrajectoryMode) {
+            loadTrajectoryDataForYear()
+        }
+    }
+
+    /**
+     * Toggle between heatmap and trajectory wall modes
+     */
+    fun toggleTrajectoryMode() {
+        val entering = !_uiState.value.showTrajectoryMode
+        _uiState.update { it.copy(showTrajectoryMode = entering) }
+        if (entering) {
+            loadTrajectoryDataForYear()
+        }
+    }
+
+    /**
+     * Load trajectory data for the current year
+     * Filters outdoor runs with distance >= 0.5km, trajectoryStatus != 2, inclusiveLevel != 0
+     */
+    fun loadTrajectoryDataForYear() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingTrajectory = true) }
+            try {
+                val workoutIds = mutableListOf<Pair<String, Long>>()
+
+                for (month in 1..12) {
+                    val monthStart = getMonthStart(currentYear, month)
+                    val monthEnd = getMonthEnd(currentYear, month)
+                    val records = repository.getRunRecordsByTimeRange(monthStart, monthEnd)
+
+                    for (record in records) {
+                        if (record.outdoor == 0 &&
+                            record.totalDistance >= 0.5 &&
+                            record.trajectoryStatus != 2 &&
+                            record.inclusiveLevel != 0
+                        ) {
+                            workoutIds.add(record.workoutId to record.startTime)
+                        }
+                    }
+                }
+
+                // Sort by startTime ascending
+                workoutIds.sortBy { it.second }
+
+                _uiState.update {
+                    it.copy(
+                        trajectoryWorkoutIds = workoutIds.map { pair -> pair.first },
+                        isLoadingTrajectory = false
+                    )
+                }
+                RLog.d(TAG, "Loaded ${workoutIds.size} trajectory workout IDs for year $currentYear")
+            } catch (e: Exception) {
+                RLog.e(TAG, "Failed to load trajectory data", e)
+                _uiState.update { it.copy(isLoadingTrajectory = false) }
+            }
+        }
+    }
+
+    /**
+     * Set items per row and persist to preferences
+     */
+    fun setItemsPerRow(count: Int) {
+        if (count in 3..10) {
+            _uiState.update { it.copy(itemsPerRow = count) }
+            preferencesManager.saveTrajectoryItemsPerRow(count)
+        }
+    }
+
+    /**
+     * Toggle settings bottom sheet visibility
+     */
+    fun toggleSettingsSheet() {
+        _uiState.update { it.copy(showSettingsSheet = !it.showSettingsSheet) }
+    }
+
+    /**
+     * Dismiss settings bottom sheet
+     */
+    fun dismissSettingsSheet() {
+        _uiState.update { it.copy(showSettingsSheet = false) }
     }
 
     private fun loadYearData() {

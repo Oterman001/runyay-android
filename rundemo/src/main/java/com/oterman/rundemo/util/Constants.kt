@@ -43,6 +43,9 @@ object Constants {
 
         // DataTab display settings
         const val KEY_DATATAB_USE_HEATMAP = "datatab_use_heatmap"
+
+        // Trajectory wall settings
+        const val KEY_TRAJECTORY_ITEMS_PER_ROW = "trajectory_items_per_row"
     }
     
     /**

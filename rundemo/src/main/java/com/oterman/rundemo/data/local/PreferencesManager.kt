@@ -279,5 +279,23 @@ class PreferencesManager(context: Context) {
     fun getDataTabDisplayMode(): Boolean {
         return prefs.getBoolean(Constants.PreferenceKeys.KEY_DATATAB_USE_HEATMAP, true)
     }
+
+    // ==================== Trajectory Wall Settings ====================
+
+    /**
+     * 保存轨迹墙每行个数
+     */
+    fun saveTrajectoryItemsPerRow(count: Int) {
+        prefs.edit().putInt(Constants.PreferenceKeys.KEY_TRAJECTORY_ITEMS_PER_ROW, count).apply()
+    }
+
+    /**
+     * 获取轨迹墙每行个数
+     * @return 每行个数 (默认6)
+     */
+    fun getTrajectoryItemsPerRow(): Int {
+        val saved = prefs.getInt(Constants.PreferenceKeys.KEY_TRAJECTORY_ITEMS_PER_ROW, 6)
+        return if (saved in 3..10) saved else 6
+    }
 }
 

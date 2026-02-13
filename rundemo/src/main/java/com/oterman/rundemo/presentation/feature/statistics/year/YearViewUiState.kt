@@ -11,5 +11,11 @@ data class YearViewUiState(
     val yearStats: YearStatistics = YearStatistics(),
     val canGoNext: Boolean = false,            // Whether can navigate to next year (disabled if current year)
     val dailySentence: String = "",
-    val error: String? = null
+    val error: String? = null,
+    // Trajectory wall mode
+    val showTrajectoryMode: Boolean = false,
+    val trajectoryWorkoutIds: List<String> = emptyList(),
+    val isLoadingTrajectory: Boolean = false,
+    val itemsPerRow: Int = 6,
+    val showSettingsSheet: Boolean = false
 )
