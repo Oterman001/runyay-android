@@ -45,5 +45,10 @@ data class HomeUiState(
     // FIT文件导入状态
     val isImportingFit: Boolean = false,
     val showImportResultDialog: Boolean = false,
-    val fitImportResult: FitImportResult? = null
+    val fitImportResult: FitImportResult? = null,
+
+    // 数据同步状态
+    val isSyncing: Boolean = false,
+    val showSyncIcon: Boolean = false,
+    val syncSuccessMessage: String? = null
 )

@@ -24,12 +24,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -57,6 +60,20 @@ fun HomeScreen(
     )
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // 进入首页时自动触发同步
+    LaunchedEffect(Unit) {
+        viewModel.startSyncIfNeeded()
+    }
+
+    // 同步成功消息 Snackbar
+    LaunchedEffect(uiState.syncSuccessMessage) {
+        uiState.syncSuccessMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.dismissSyncSuccess()
+        }
+    }
 
     // Handle navigation events
     LaunchedEffect(uiState.navigateToLogin) {
@@ -74,6 +91,7 @@ fun HomeScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             HomeBottomNavigationBar(
                 selectedTab = uiState.selectedTab,
@@ -89,6 +107,8 @@ fun HomeScreen(
         ) {
             when (uiState.selectedTab) {
                 HomeTab.HOME -> HomeTabContent(
+                    showSyncIcon = uiState.showSyncIcon,
+                    isSyncing = uiState.isSyncing,
                     onSetGoalClick = onNavigateToRunGoalSet,
                     onNavigateToRunDetail = onNavigateToRunDetail,
                     onNavigateToRunStatistics = onNavigateToRunStatistics

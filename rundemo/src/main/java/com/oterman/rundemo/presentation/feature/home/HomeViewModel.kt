@@ -8,7 +8,12 @@ import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.fit.FitImportService
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.repository.UserRepository
+import com.oterman.rundemo.service.sync.DataSyncForegroundService
+import com.oterman.rundemo.service.sync.SyncUiState
+import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.util.RLog
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +29,8 @@ class HomeViewModel(
     private val context: Context,
     private val preferencesManager: PreferencesManager = PreferencesManager(context),
     private val fitImportService: FitImportService = FitImportService(context),
-    private val userRepository: UserRepository = UserRepository(context)
+    private val userRepository: UserRepository = UserRepository(context),
+    private val syncManager: UnifiedDataSyncManager = UnifiedDataSyncManager.getInstance(context)
 ) : ViewModel() {
 
     companion object {
@@ -34,8 +40,11 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private var syncIconDelayJob: Job? = null
+
     init {
         loadAuthState()
+        observeSyncState()
     }
 
     /**
@@ -83,6 +92,66 @@ class HomeViewModel(
                 _uiState.update { it.copy(avatarUrl = null, isLoadingAvatar = false) }
             }
         }
+    }
+
+    /**
+     * 观察同步状态，更新UI
+     */
+    private fun observeSyncState() {
+        viewModelScope.launch {
+            syncManager.syncUiState.collect { syncState ->
+                when (syncState) {
+                    is SyncUiState.Idle -> {
+                        syncIconDelayJob?.cancel()
+                        _uiState.update {
+                            it.copy(isSyncing = false, showSyncIcon = false)
+                        }
+                    }
+                    is SyncUiState.Syncing -> {
+                        _uiState.update { it.copy(isSyncing = true) }
+                        // 2秒后才显示同步图标（匹配iOS行为）
+                        syncIconDelayJob?.cancel()
+                        syncIconDelayJob = viewModelScope.launch {
+                            delay(2000)
+                            _uiState.update { it.copy(showSyncIcon = true) }
+                        }
+                    }
+                    is SyncUiState.Completed -> {
+                        syncIconDelayJob?.cancel()
+                        val result = syncState.result
+                        val message = if (result.totalImportedCount > 0) {
+                            "成功导入 ${result.totalImportedCount} 条数据"
+                        } else null
+                        _uiState.update {
+                            it.copy(
+                                isSyncing = false,
+                                showSyncIcon = false,
+                                syncSuccessMessage = message
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 启动同步（通过ForegroundService）
+     */
+    fun startSyncIfNeeded() {
+        if (_uiState.value.isSyncing) {
+            RLog.d(TAG, "已在同步中，跳过")
+            return
+        }
+        RLog.i(TAG, "首页触发自动同步")
+        DataSyncForegroundService.start(context)
+    }
+
+    /**
+     * 清除同步成功消息
+     */
+    fun dismissSyncSuccess() {
+        _uiState.update { it.copy(syncSuccessMessage = null) }
     }
 
     /**

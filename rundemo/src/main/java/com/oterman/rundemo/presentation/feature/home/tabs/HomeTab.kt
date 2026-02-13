@@ -1,5 +1,8 @@
 package com.oterman.rundemo.presentation.feature.home.tabs
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +35,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.presentation.feature.home.components.AllPBAbilityCard
+import com.oterman.rundemo.presentation.feature.home.components.RotatingSyncIcon
 import com.oterman.rundemo.presentation.feature.home.components.AllPBSpeedCard
 import com.oterman.rundemo.presentation.feature.home.components.DailySentenceCard
 import com.oterman.rundemo.presentation.feature.home.components.DayRunRecordSelectDialog
@@ -51,6 +55,8 @@ fun HomeTabContent(
     viewModel: HomeTabViewModel = viewModel(
         factory = HomeTabViewModelFactory(LocalContext.current)
     ),
+    showSyncIcon: Boolean = false,
+    isSyncing: Boolean = false,
     onSetGoalClick: () -> Unit = {},
     onNavigateToRunDetail: (workoutId: String) -> Unit = {},
     onNavigateToRunStatistics: (tab: String) -> Unit = {}
@@ -76,13 +82,15 @@ fun HomeTabContent(
             .background(backgroundColor)
     ) {
         // Collapsed header (small title) - appears when scrolled
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(backgroundColor)
                 .zIndex(1f)
                 .padding(horizontal = 20.dp, vertical = 12.dp)
-                .alpha(collapseProgress)
+                .alpha(collapseProgress),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "首页",
@@ -90,6 +98,9 @@ fun HomeTabContent(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground
             )
+            if (showSyncIcon) {
+                RotatingSyncIcon(isRotating = isSyncing)
+            }
         }
 
         // Loading indicator
@@ -107,7 +118,7 @@ fun HomeTabContent(
                 .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 16.dp)
         ) {
             // Large title header (iOS NavigationTitle style)
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 4.dp, end = 4.dp, top = 48.dp, bottom = 8.dp)
@@ -117,7 +128,9 @@ fun HomeTabContent(
                         scaleY = scale
                         alpha = 1f - collapseProgress
                         transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
-                    }
+                    },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "首页",
@@ -126,6 +139,13 @@ fun HomeTabContent(
                     color = MaterialTheme.colorScheme.onBackground,
                     letterSpacing = 0.sp
                 )
+                AnimatedVisibility(
+                    visible = showSyncIcon,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    RotatingSyncIcon(isRotating = isSyncing)
+                }
             }
 
             // Total Run + VDOT Card

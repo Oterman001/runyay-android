@@ -24,13 +24,26 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+
+/**
+ * 同步UI状态，供UI层观察
+ */
+sealed class SyncUiState {
+    object Idle : SyncUiState()
+    data class Syncing(val startTime: Long = System.currentTimeMillis()) : SyncUiState()
+    data class Completed(val result: UnifiedSyncResult) : SyncUiState()
+}
 
 /**
  * 统一数据同步管理器
@@ -148,6 +161,10 @@ class UnifiedDataSyncManager private constructor(
     )
     val syncNotifications: SharedFlow<SyncNotification> = _syncNotifications.asSharedFlow()
 
+    // 同步UI状态
+    private val _syncUiState = MutableStateFlow<SyncUiState>(SyncUiState.Idle)
+    val syncUiState: StateFlow<SyncUiState> = _syncUiState.asStateFlow()
+
     /**
      * 授权状态缓存条目
      */
@@ -176,6 +193,46 @@ class UnifiedDataSyncManager private constructor(
     }
 
     // ============ 统一同步 ============
+
+    /**
+     * 启动统一同步（fire-and-forget）
+     * 在manager自己的scope中执行，更新syncUiState供UI观察
+     * 如果已在同步中则忽略
+     */
+    fun launchUnifiedSync() {
+        if (isUnifiedSyncing.get()) {
+            RLog.d(TAG, "launchUnifiedSync: 已在同步中，忽略")
+            return
+        }
+
+        scope.launch {
+            _syncUiState.value = SyncUiState.Syncing()
+            try {
+                var finalResult: UnifiedSyncResult? = null
+                executeUnifiedSync().collect { notification ->
+                    _syncNotifications.tryEmit(notification)
+                    when (notification) {
+                        is SyncNotification.UnifiedCompleted -> {
+                            finalResult = notification.result
+                        }
+                        is SyncNotification.UnifiedFailed -> {
+                            finalResult = UnifiedSyncResult.empty()
+                        }
+                        else -> { /* progress events */ }
+                    }
+                }
+                val result = finalResult ?: UnifiedSyncResult.empty()
+                _syncUiState.value = SyncUiState.Completed(result)
+                delay(3000)
+                _syncUiState.value = SyncUiState.Idle
+            } catch (e: Exception) {
+                RLog.e(TAG, "launchUnifiedSync异常", e)
+                _syncUiState.value = SyncUiState.Completed(UnifiedSyncResult.empty())
+                delay(3000)
+                _syncUiState.value = SyncUiState.Idle
+            }
+        }
+    }
 
     /**
      * 执行统一同步（所有已授权平台）
