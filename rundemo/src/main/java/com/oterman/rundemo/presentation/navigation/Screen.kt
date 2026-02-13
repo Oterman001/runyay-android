@@ -122,5 +122,11 @@ sealed class Screen(val route: String) {
      * 用于开发调试功能（仅Debug版本可见）
      */
     object Debug : Screen("debug")
+
+    /**
+     * 数据同步状态页面
+     * 用于展示数据同步进度和导入记录
+     */
+    object DataSyncStatus : Screen("data_sync_status")
 }
 

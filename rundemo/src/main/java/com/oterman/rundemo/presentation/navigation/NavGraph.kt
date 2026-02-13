@@ -39,6 +39,7 @@ import com.oterman.rundemo.presentation.feature.statistics.RunStatisticTab
 import com.oterman.rundemo.presentation.feature.statistics.RunStatisticsScreen
 import com.oterman.rundemo.presentation.feature.userprofile.UserProfileScreen
 import com.oterman.rundemo.presentation.feature.debug.DebugScreen
+import com.oterman.rundemo.presentation.feature.syncstatus.DataSyncStatusScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 
 /**
@@ -120,6 +121,9 @@ fun AppNavGraph(
                 },
                 onNavigateToDebug = {
                     navController.navigate(Screen.Debug.route)
+                },
+                onNavigateToSyncStatus = {
+                    navController.navigate(Screen.DataSyncStatus.route)
                 }
             )
         }
@@ -387,6 +391,15 @@ fun AppNavGraph(
         // 调试页面
         composable(Screen.Debug.route) {
             DebugScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // 数据同步状态页面
+        composable(Screen.DataSyncStatus.route) {
+            DataSyncStatusScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

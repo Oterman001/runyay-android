@@ -55,6 +55,7 @@ fun HomeScreen(
     onNavigateToRunGoalSet: () -> Unit = {},
     onNavigateToRunStatistics: (tab: String) -> Unit = {},
     onNavigateToDebug: () -> Unit = {},
+    onNavigateToSyncStatus: () -> Unit = {},
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(LocalContext.current)
     )
@@ -109,6 +110,7 @@ fun HomeScreen(
                 HomeTab.HOME -> HomeTabContent(
                     showSyncIcon = uiState.showSyncIcon,
                     isSyncing = uiState.isSyncing,
+                    onSyncIconClick = onNavigateToSyncStatus,
                     onSetGoalClick = onNavigateToRunGoalSet,
                     onNavigateToRunDetail = onNavigateToRunDetail,
                     onNavigateToRunStatistics = onNavigateToRunStatistics

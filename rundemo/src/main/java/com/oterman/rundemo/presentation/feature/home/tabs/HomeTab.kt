@@ -57,6 +57,7 @@ fun HomeTabContent(
     ),
     showSyncIcon: Boolean = false,
     isSyncing: Boolean = false,
+    onSyncIconClick: () -> Unit = {},
     onSetGoalClick: () -> Unit = {},
     onNavigateToRunDetail: (workoutId: String) -> Unit = {},
     onNavigateToRunStatistics: (tab: String) -> Unit = {}
@@ -99,7 +100,7 @@ fun HomeTabContent(
                 color = MaterialTheme.colorScheme.onBackground
             )
             if (showSyncIcon) {
-                RotatingSyncIcon(isRotating = isSyncing)
+                RotatingSyncIcon(isRotating = isSyncing, onClick = onSyncIconClick)
             }
         }
 
@@ -144,7 +145,7 @@ fun HomeTabContent(
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
-                    RotatingSyncIcon(isRotating = isSyncing)
+                    RotatingSyncIcon(isRotating = isSyncing, onClick = onSyncIconClick)
                 }
             }
 
