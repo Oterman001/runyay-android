@@ -6,6 +6,34 @@ import androidx.compose.ui.graphics.Color
 import com.oterman.rundemo.domain.model.ChartDataPoint
 
 /**
+ * 海拔折线图卡片
+ * 显示跑步过程中的海拔变化
+ */
+@Composable
+fun AltitudeChartCard(
+    altitudeSeries: List<ChartDataPoint>,
+    elevationAscended: Double = 0.0,
+    modifier: Modifier = Modifier
+) {
+    if (altitudeSeries.isEmpty()) return
+
+    val minAltitude = altitudeSeries.minOf { it.value }
+    val maxAltitude = altitudeSeries.maxOf { it.value }
+    val avgAltitude = altitudeSeries.map { it.value }.average()
+
+    RunDataLineChart(
+        title = "海拔",
+        dataPoints = altitudeSeries,
+        lineColor = Color(0xFF8D6E63),
+        unit = "m",
+        avgValue = avgAltitude,
+        maxValue = maxAltitude,
+        minValue = minAltitude,
+        modifier = modifier
+    )
+}
+
+/**
  * 步幅折线图卡片
  * 对标iOS步幅图表
  */

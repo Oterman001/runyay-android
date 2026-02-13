@@ -180,6 +180,77 @@ fun RunDataLineChart(
 }
 
 /**
+ * 嵌入式折线图内容（无外层Card/标题，仅Canvas + X轴标签）
+ * 用于在组合卡片（如HeartRateChartCard、PaceChartCard）内嵌入折线图
+ */
+@Composable
+fun RunDataLineChartContent(
+    dataPoints: List<ChartDataPoint>,
+    lineColor: Color,
+    avgValue: Double? = null,
+    invertYAxis: Boolean = false,
+    chartHeight: Int = 160,
+    modifier: Modifier = Modifier
+) {
+    if (dataPoints.isEmpty()) return
+
+    val calculatedMin = dataPoints.minOf { it.value }
+    val calculatedMax = dataPoints.maxOf { it.value }
+    val calculatedAvg = avgValue ?: dataPoints.map { it.value }.average()
+
+    val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(chartHeight.dp)
+    ) {
+        drawLineChart(
+            dataPoints = dataPoints,
+            lineColor = lineColor,
+            avgValue = calculatedAvg,
+            minValue = calculatedMin,
+            maxValue = calculatedMax,
+            invertYAxis = invertYAxis,
+            gridColor = surfaceVariant,
+            avgLineColor = onSurfaceVariant
+        )
+    }
+
+    // X 轴时间标签
+    Spacer(modifier = Modifier.height(4.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        val totalSeconds = if (dataPoints.isNotEmpty()) {
+            dataPoints.last().timeOffset - dataPoints.first().timeOffset
+        } else 0
+
+        Text(
+            text = "0:00",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = formatTimeLabel(totalSeconds / 2),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = formatTimeLabel(totalSeconds),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp
+        )
+    }
+}
+
+/**
  * 绘制折线图
  */
 private fun DrawScope.drawLineChart(

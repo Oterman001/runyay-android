@@ -242,6 +242,15 @@ class RunDataRepositoryImpl private constructor(
             )
         }
     }
+
+    override suspend fun getAltitudeSeries(workoutId: String): List<ChartDataPoint> {
+        return samplePointDao.getAltitudeSeries(workoutId).map {
+            ChartDataPoint(
+                timeOffset = it.timeOffset,
+                value = it.altitude ?: 0.0
+            )
+        }
+    }
     
     // ==================== 能力区间 ====================
     

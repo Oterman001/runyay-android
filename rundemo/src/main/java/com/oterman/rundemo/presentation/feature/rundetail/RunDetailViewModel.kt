@@ -73,9 +73,11 @@ class RunDetailViewModel(
                 val strideLengthSeries = repository.getStrideLengthSeries(workoutId)
                 val verticalOscillationSeries = repository.getVerticalOscillationSeries(workoutId)
                 val contactTimeSeries = repository.getContactTimeSeries(workoutId)
+                val altitudeSeries = repository.getAltitudeSeries(workoutId)
 
-                // 加载区间数据
-                val heartRateZones = repository.getHeartRate5Zones(workoutId)
+                // 加载区间数据（同时加载7区间和5区间）
+                val heartRate7Zones = repository.getHeartRate7Zones(workoutId)
+                val heartRate5Zones = repository.getHeartRate5Zones(workoutId)
                 val speedZones = repository.getSpeedZones(workoutId)
 
                 _uiState.value = RunDetailUiState(
@@ -92,7 +94,9 @@ class RunDetailViewModel(
                     strideLengthSeries = strideLengthSeries,
                     verticalOscillationSeries = verticalOscillationSeries,
                     contactTimeSeries = contactTimeSeries,
-                    heartRateZones = heartRateZones,
+                    altitudeSeries = altitudeSeries,
+                    heartRate7Zones = heartRate7Zones,
+                    heartRate5Zones = heartRate5Zones,
                     speedZones = speedZones,
                     trainingSegments = trainingSegments
                 )
@@ -104,66 +108,123 @@ class RunDetailViewModel(
 
     /**
      * 构建展示用的指标列表
+     * 严格对标 iOS V3 initGridCellData() 顺序，最多12项，3列排布
+     *
+     * 顺序: 运动时间 → 动态跑力(VDOT) → 平均配速 → 运动负荷(条件) → 平均心率 → 最大心率
+     *       → 平均步幅(条件) → 平均步频(条件) → 累计上升 → 消耗能量(条件) → 平均功率(条件)
      */
     private fun buildMetricsList(record: com.oterman.rundemo.data.local.entity.RunRecordEntity): List<RunMetricItem> {
         val metrics = mutableListOf<RunMetricItem>()
 
-        // 时长
+        // 1. 运动时间（始终显示）
         metrics.add(
             RunMetricItem(
                 value = formatDuration(record.activeDuration),
-                label = "时长"
+                label = "运动时间"
             )
         )
 
-        // 配速
+        // 2. 动态跑力 VDOT（始终显示）
+        val vdotValue = if (record.vdot > 0) {
+            String.format("%.1f", record.vdot)
+        } else {
+            "-"
+        }
+        metrics.add(
+            RunMetricItem(
+                value = vdotValue,
+                label = "动态跑力"
+            )
+        )
+
+        // 3. 平均配速（始终显示）
         metrics.add(
             RunMetricItem(
                 value = formatPace(record.averageSpeed),
-                label = "配速",
+                label = "平均配速",
                 unit = "/km"
             )
         )
 
-        // 心率
-        if (record.averageHeartRate > 0) {
+        // 4. 运动负荷（条件：trainingLoad > 0）
+        if (record.trainingLoad > 0) {
             metrics.add(
                 RunMetricItem(
-                    value = record.averageHeartRate.toInt().toString(),
-                    label = "心率",
-                    unit = "bpm"
+                    value = String.format("%.0f", record.trainingLoad),
+                    label = "运动负荷",
+                    unit = "TL"
                 )
             )
         }
 
-        // 步频
+        // 5. 平均心率（始终显示）
+        metrics.add(
+            RunMetricItem(
+                value = if (record.averageHeartRate > 0) record.averageHeartRate.toInt().toString() else "-",
+                label = "平均心率",
+                unit = "bpm"
+            )
+        )
+
+        // 6. 最大心率（始终显示）
+        metrics.add(
+            RunMetricItem(
+                value = if (record.maxHeartRate > 0) record.maxHeartRate.toInt().toString() else "-",
+                label = "最大心率",
+                unit = "bpm"
+            )
+        )
+
+        // 7. 平均步幅（条件：averageStrideLength > 0）
+        if (record.averageStrideLength > 0) {
+            metrics.add(
+                RunMetricItem(
+                    value = String.format("%.0f", record.averageStrideLength),
+                    label = "平均步幅",
+                    unit = "cm"
+                )
+            )
+        }
+
+        // 8. 平均步频（条件：averageCadence > 0）
         if (record.averageCadence > 0) {
             metrics.add(
                 RunMetricItem(
                     value = record.averageCadence.toInt().toString(),
-                    label = "步频",
-                    unit = "spm"
+                    label = "平均步频",
+                    unit = "/min"
                 )
             )
         }
 
-        // 步幅
-        if (record.averageStrideLength > 0) {
+        // 9. 累计上升（始终显示）
+        metrics.add(
+            RunMetricItem(
+                value = if (record.elevationAscended > 0) String.format("%.0f", record.elevationAscended) else "-",
+                label = "累计上升",
+                unit = "m"
+            )
+        )
+
+        // 10. 垂直步幅比 - 暂不实现（无字段）
+
+        // 11. 消耗能量（条件：totalCalories > 0）
+        if (record.totalCalories > 0) {
             metrics.add(
                 RunMetricItem(
-                    value = String.format("%.2f", record.averageStrideLength),
-                    label = "步幅",
-                    unit = "m"
+                    value = String.format("%.0f", record.totalCalories),
+                    label = "消耗能量",
+                    unit = "kcal"
                 )
             )
         }
 
-        // 功率
+        // 12. 平均功率（条件：averagePower > 0）
         if (record.averagePower > 0) {
             metrics.add(
                 RunMetricItem(
                     value = record.averagePower.toInt().toString(),
-                    label = "功率",
+                    label = "平均功率",
                     unit = "W"
                 )
             )

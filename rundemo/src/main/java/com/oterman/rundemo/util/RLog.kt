@@ -159,7 +159,7 @@ object RLog {
             val className = element.className
 
             // 跳过 Logger 类自身的调用
-            if (!className.contains("Logger")) {
+            if (!className.contains("RLog")) {
                 val fileName = element.fileName ?: "Unknown.kt"
                 val lineNumber = element.lineNumber
                 return "($fileName:$lineNumber)"

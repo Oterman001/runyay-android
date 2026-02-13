@@ -160,6 +160,11 @@ interface RunDataRepository {
      * 获取触地时间序列数据
      */
     suspend fun getContactTimeSeries(workoutId: String): List<ChartDataPoint>
+
+    /**
+     * 获取海拔序列数据
+     */
+    suspend fun getAltitudeSeries(workoutId: String): List<ChartDataPoint>
     
     // ==================== 能力区间 ====================
     

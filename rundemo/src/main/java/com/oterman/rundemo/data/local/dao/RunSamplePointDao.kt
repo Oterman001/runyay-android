@@ -50,6 +50,12 @@ data class ContactTimePoint(
     val contactTime: Double?
 )
 
+data class AltitudePoint(
+    val sequence: Int,
+    val timeOffset: Int,
+    val altitude: Double?
+)
+
 /**
  * 采样点DAO
  */
@@ -112,6 +118,12 @@ interface RunSamplePointDao {
      */
     @Query("SELECT sequence, timeOffset, contactTime FROM run_sample_point WHERE workoutId = :workoutId AND contactTime IS NOT NULL ORDER BY sequence")
     suspend fun getContactTimeSeries(workoutId: String): List<ContactTimePoint>
+
+    /**
+     * 获取海拔序列数据（用于图表）
+     */
+    @Query("SELECT sequence, timeOffset, altitude FROM run_sample_point WHERE workoutId = :workoutId AND altitude IS NOT NULL ORDER BY sequence")
+    suspend fun getAltitudeSeries(workoutId: String): List<AltitudePoint>
 
     /**
      * 删除指定workout的所有采样点

@@ -26,9 +26,11 @@ data class RunDetailUiState(
     val strideLengthSeries: List<ChartDataPoint> = emptyList(),
     val verticalOscillationSeries: List<ChartDataPoint> = emptyList(),
     val contactTimeSeries: List<ChartDataPoint> = emptyList(),
+    val altitudeSeries: List<ChartDataPoint> = emptyList(),
 
     // 区间数据
-    val heartRateZones: List<AbilityZone> = emptyList(),
+    val heartRate7Zones: List<AbilityZone> = emptyList(),
+    val heartRate5Zones: List<AbilityZone> = emptyList(),
     val speedZones: List<AbilityZone> = emptyList(),
 
     // 训练分段
@@ -66,7 +68,9 @@ data class RunDetailUiState(
         if (strideLengthSeries != other.strideLengthSeries) return false
         if (verticalOscillationSeries != other.verticalOscillationSeries) return false
         if (contactTimeSeries != other.contactTimeSeries) return false
-        if (heartRateZones != other.heartRateZones) return false
+        if (altitudeSeries != other.altitudeSeries) return false
+        if (heartRate7Zones != other.heartRate7Zones) return false
+        if (heartRate5Zones != other.heartRate5Zones) return false
         if (speedZones != other.speedZones) return false
         if (trainingSegments != other.trainingSegments) return false
         if (isDownloading != other.isDownloading) return false
@@ -95,7 +99,9 @@ data class RunDetailUiState(
         result = 31 * result + strideLengthSeries.hashCode()
         result = 31 * result + verticalOscillationSeries.hashCode()
         result = 31 * result + contactTimeSeries.hashCode()
-        result = 31 * result + heartRateZones.hashCode()
+        result = 31 * result + altitudeSeries.hashCode()
+        result = 31 * result + heartRate7Zones.hashCode()
+        result = 31 * result + heartRate5Zones.hashCode()
         result = 31 * result + speedZones.hashCode()
         result = 31 * result + trainingSegments.hashCode()
         result = 31 * result + isDownloading.hashCode()

@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.presentation.feature.rundetail.components.AltitudeChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.CadenceChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.ContactTimeChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.HeartRateChartCard
@@ -52,6 +53,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.PowerChartC
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailHeaderDataCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailMapSection
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailSegmentTable
+import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailTrainingSegmentTable
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailWeatherOverlay
 import com.oterman.rundemo.presentation.feature.rundetail.components.StrideLengthChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.TrainingEffectCard
@@ -64,18 +66,20 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.VerticalOsc
  *
  * 页面内容顺序：
  * 1. 地图区域 + 天气覆盖层
- * 2. Header + DataGrid 合并卡片
+ * 2. Header + DataGrid 合并卡片（含VDOT/跑力，最多12项指标）
  * 3. 训练效果卡片（条件显示）
- * 4. VO2Max 卡片（条件显示）
+ * 4. VO2Max 卡片（仅当VDOT=0但overallVdot有值时显示）
  * 5. 公里分段表格
- * 6. 心率图表 + 心率区间
- * 7. 配速图表 + 配速区间
- * 8. 步幅图表（条件显示）
- * 9. 步频图表（条件显示）
- * 10. 触地时间图表（条件显示）
- * 11. 垂直振幅图表（条件显示）
- * 12. 功率图表（条件显示）
- * 13. 数据来源标签
+ * 6. 训练分段表格（条件显示）
+ * 7. 心率图表 + 心率区间（单卡，5/7区间切换）
+ * 8. 配速图表 + 配速区间（单卡）
+ * 9. 海拔图表（条件显示）
+ * 10. 步幅图表（条件显示）
+ * 11. 步频图表（条件显示）
+ * 12. 触地时间图表（条件显示）
+ * 13. 垂直振幅图表（条件显示）
+ * 14. 功率图表（条件显示）
+ * 15. 数据来源标签
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -274,7 +278,9 @@ fun RunDetailScreen(
                         }
 
                         // ==================== 4. VO2Max / VDOT 卡片 ====================
-                        if (record.vdot > 0 || record.overallVdot > 0) {
+                        // 仅当VDOT=0但overallVdot有值时显示独立VO2Max卡片
+                        // （当VDOT>0时，跑力已在Header DataGrid中展示）
+                        if (record.vdot <= 0 && record.overallVdot > 0) {
                             item {
                                 VO2MaxCard(
                                     vdot = record.vdot,
@@ -298,12 +304,25 @@ fun RunDetailScreen(
                             }
                         }
 
-                        // ==================== 6. 心率图表 + 区间 ====================
+                        // ==================== 6. 训练分段表格 ====================
+                        if (uiState.trainingSegments.isNotEmpty()) {
+                            item {
+                                RunDetailTrainingSegmentTable(
+                                    segments = uiState.trainingSegments
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 7. 心率图表 + 区间（单卡 + 5/7区间切换） ====================
                         if (uiState.heartRateSeries.isNotEmpty()) {
                             item {
                                 HeartRateChartCard(
                                     heartRateSeries = uiState.heartRateSeries,
-                                    heartRateZones = uiState.heartRateZones,
+                                    heartRate7Zones = uiState.heartRate7Zones,
+                                    heartRate5Zones = uiState.heartRate5Zones,
                                     avgHeartRate = record.averageHeartRate,
                                     maxHeartRate = record.maxHeartRate,
                                     minHeartRate = record.minHeartRate
@@ -314,7 +333,7 @@ fun RunDetailScreen(
                             }
                         }
 
-                        // ==================== 7. 配速图表 + 区间 ====================
+                        // ==================== 8. 配速图表 + 区间（单卡） ====================
                         if (uiState.speedSeries.isNotEmpty()) {
                             item {
                                 PaceChartCard(
@@ -329,7 +348,20 @@ fun RunDetailScreen(
                             }
                         }
 
-                        // ==================== 8. 步幅图表 ====================
+                        // ==================== 9. 海拔图表 ====================
+                        if (uiState.altitudeSeries.isNotEmpty()) {
+                            item {
+                                AltitudeChartCard(
+                                    altitudeSeries = uiState.altitudeSeries,
+                                    elevationAscended = record.elevationAscended
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                            }
+                        }
+
+                        // ==================== 10. 步幅图表 ====================
                         if (uiState.strideLengthSeries.isNotEmpty()) {
                             item {
                                 StrideLengthChartCard(
@@ -342,7 +374,7 @@ fun RunDetailScreen(
                             }
                         }
 
-                        // ==================== 9. 步频图表 ====================
+                        // ==================== 11. 步频图表 ====================
                         if (uiState.cadenceSeries.isNotEmpty()) {
                             item {
                                 CadenceChartCard(
@@ -355,7 +387,7 @@ fun RunDetailScreen(
                             }
                         }
 
-                        // ==================== 10. 触地时间图表 ====================
+                        // ==================== 12. 触地时间图表 ====================
                         if (uiState.contactTimeSeries.isNotEmpty()) {
                             item {
                                 ContactTimeChartCard(
@@ -368,7 +400,7 @@ fun RunDetailScreen(
                             }
                         }
 
-                        // ==================== 11. 垂直振幅图表 ====================
+                        // ==================== 13. 垂直振幅图表 ====================
                         if (uiState.verticalOscillationSeries.isNotEmpty()) {
                             item {
                                 VerticalOscillationChartCard(
@@ -381,7 +413,7 @@ fun RunDetailScreen(
                             }
                         }
 
-                        // ==================== 12. 功率图表 ====================
+                        // ==================== 14. 功率图表 ====================
                         if (uiState.powerSeries.isNotEmpty()) {
                             item {
                                 PowerChartCard(
@@ -394,7 +426,7 @@ fun RunDetailScreen(
                             }
                         }
 
-                        // ==================== 13. 数据来源标签 ====================
+                        // ==================== 15. 数据来源标签 ====================
                         item {
                             DataSourceLabel(
                                 datasource = record.datasource
