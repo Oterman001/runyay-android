@@ -251,6 +251,12 @@ class UnifiedDataSyncManager private constructor(
         try {
            RLog.i(TAG, "开始统一同步, forceRefresh=$forceRefresh")
 
+            // 先从服务器刷新授权状态（对齐iOS行为，避免首次进入时本地缓存为空）
+            val refreshResult = refreshAuthorizationStatus()
+            if (refreshResult.isFailure) {
+                RLog.w(TAG, "刷新授权状态失败，使用本地缓存: ${refreshResult.exceptionOrNull()?.message}")
+            }
+
             // 获取所有需要同步的平台
             val platformsToSync = getAuthorizedPlatforms(forceRefresh)
            RLog.i(TAG, "需要同步的平台: ${platformsToSync.map { it.displayName }}")
