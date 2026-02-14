@@ -1,19 +1,15 @@
 package com.oterman.rundemo.presentation.feature.statistics.year.components
 
 import android.graphics.Bitmap
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,11 +17,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +41,7 @@ import com.oterman.rundemo.domain.trajectory.TrajectoryThumbnailManager
 fun TrajectoryWallCell(
     workoutId: String,
     repository: RunDataRepository,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -50,6 +51,8 @@ fun TrajectoryWallCell(
     var bitmap by remember(workoutId, isDark) { mutableStateOf<Bitmap?>(null) }
     var isLoading by remember(workoutId) { mutableStateOf(true) }
     var sizePx by remember { mutableStateOf(0) }
+
+    val borderColor = MaterialTheme.colorScheme.outlineVariant
 
     LaunchedEffect(workoutId, isDark, sizePx) {
         if (sizePx <= 0) return@LaunchedEffect
@@ -76,11 +79,42 @@ fun TrajectoryWallCell(
         modifier = modifier
             .aspectRatio(1f)
             .clip(RoundedCornerShape(6.dp))
+            .clickable { onClick() }
             .onSizeChanged { sizePx = it.width }
+            .then(
+                if (bitmap == null) {
+                    Modifier.drawBehind {
+                        val strokeWidth = 1.dp.toPx()
+                        val dashLength = 4.dp.toPx()
+                        val gapLength = 4.dp.toPx()
+                        val cornerRadius = 6.dp.toPx()
+                        drawRoundRect(
+                            color = borderColor,
+                            size = Size(size.width - strokeWidth, size.height - strokeWidth),
+                            topLeft = androidx.compose.ui.geometry.Offset(strokeWidth / 2, strokeWidth / 2),
+                            cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+                            style = Stroke(
+                                width = strokeWidth,
+                                pathEffect = PathEffect.dashPathEffect(
+                                    floatArrayOf(dashLength, gapLength),
+                                    0f
+                                )
+                            )
+                        )
+                    }
+                } else {
+                    Modifier
+                }
+            ),
+        contentAlignment = Alignment.Center
     ) {
         when {
-            isLoading || (bitmap == null && sizePx > 0) -> {
-                ShimmerBox(modifier = Modifier.fillMaxSize())
+            isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
             }
             bitmap != null -> {
                 Image(
@@ -90,41 +124,6 @@ fun TrajectoryWallCell(
                     contentScale = ContentScale.Crop
                 )
             }
-            else -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
-            }
         }
     }
-}
-
-@Composable
-private fun ShimmerBox(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "wall_shimmer")
-    val translateAnim by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "wall_shimmer_translate"
-    )
-
-    val shimmerColors = listOf(
-        MaterialTheme.colorScheme.surfaceVariant,
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        MaterialTheme.colorScheme.surfaceVariant
-    )
-
-    val brush = Brush.linearGradient(
-        colors = shimmerColors,
-        start = Offset(translateAnim - 200f, translateAnim - 200f),
-        end = Offset(translateAnim, translateAnim)
-    )
-
-    Box(modifier = modifier.background(brush))
 }

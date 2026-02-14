@@ -1,16 +1,31 @@
 package com.oterman.rundemo.presentation.feature.statistics.year
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Route
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -19,6 +34,7 @@ import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.presentation.feature.home.components.DailySentenceCard
+import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.statistics.week.components.HeartRateZonePlaceholder
 import com.oterman.rundemo.presentation.feature.statistics.week.components.SpeedZonePlaceholder
 import com.oterman.rundemo.presentation.feature.statistics.week.components.StatisticCardsGrid
@@ -26,8 +42,9 @@ import com.oterman.rundemo.presentation.feature.statistics.year.components.Traje
 import com.oterman.rundemo.presentation.feature.statistics.year.components.TrajectoryWallGrid
 import com.oterman.rundemo.presentation.feature.statistics.year.components.YearBarChart
 import com.oterman.rundemo.presentation.feature.statistics.year.components.YearDetailTable
-import com.oterman.rundemo.presentation.feature.statistics.year.components.YearMonthsGridCard
+import com.oterman.rundemo.presentation.feature.statistics.year.components.YearMonthsGrid
 import com.oterman.rundemo.presentation.feature.statistics.year.components.YearNavigationHeader
+import com.oterman.rundemo.presentation.feature.statistics.year.components.YearSummaryHeader
 
 /**
  * Main content for Year Statistics tab
@@ -36,6 +53,7 @@ import com.oterman.rundemo.presentation.feature.statistics.year.components.YearN
 @Composable
 fun YearStatisticsContent(
     onMonthClick: (MonthRangeData) -> Unit = {},
+    onWorkoutClick: (workoutId: String) -> Unit = {},
     viewModel: YearStatisticsViewModel = viewModel(
         factory = YearStatisticsViewModelFactory(LocalContext.current)
     )
@@ -46,6 +64,9 @@ fun YearStatisticsContent(
         RunDataRepositoryImpl.getInstance(RunDatabase.getInstance(context))
     }
 
+    val isDark = isSystemInDarkTheme()
+    val dividerColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -53,86 +74,125 @@ fun YearStatisticsContent(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // 1. Year navigation header with trajectory mode toggle
+        // 1. Year navigation header (prev / year / next)
         YearNavigationHeader(
             yearDisplay = uiState.yearDisplay,
             canGoNext = uiState.canGoNext,
-            showTrajectoryMode = uiState.showTrajectoryMode,
             onPreviousClick = viewModel::goToPreviousYear,
             onNextClick = viewModel::goToNextYear,
-            onDateDoubleClick = viewModel::goToCurrentYear,
-            onToggleMode = viewModel::toggleTrajectoryMode
+            onDateDoubleClick = viewModel::goToCurrentYear
         )
 
-        if (uiState.showTrajectoryMode) {
-            // Trajectory wall mode
-            TrajectoryWallGrid(
-                trajectoryWorkoutIds = uiState.trajectoryWorkoutIds,
-                itemsPerRow = uiState.itemsPerRow,
-                isLoading = uiState.isLoadingTrajectory,
-                repository = repository,
-                onSettingsClick = viewModel::toggleSettingsSheet
-            )
-
-            // Daily sentence
-            if (uiState.dailySentence.isNotEmpty()) {
-                DailySentenceCard(
-                    sentence = uiState.dailySentence
-                )
-            }
-        } else {
-            // Heatmap mode (default)
-
-            // 2. 12-month heatmap grid
-            YearMonthsGridCard(
-                runCount = uiState.yearStats.runCount,
-                totalDistance = uiState.yearStats.totalDistance,
-                monthRangeDataList = uiState.yearStats.monthRangeDataList,
-                onMonthClick = onMonthClick
-            )
-
-            // 3. Four statistics cards (2x2 grid) - reuse week component
-            StatisticCardsGrid(
-                totalDistance = uiState.yearStats.totalDistance,
-                totalDurationMinutes = uiState.yearStats.totalDurationMinutes,
-                avgPace = uiState.yearStats.avgPace,
-                totalElevation = uiState.yearStats.totalElevation
-            )
-
-            // 4. Heart rate zone placeholder - reuse week component
-            HeartRateZonePlaceholder()
-
-            // 5. Speed zone placeholder - reuse week component
-            SpeedZonePlaceholder()
-
-            // 6. Year bar chart (only show if there's data)
-            if (uiState.yearStats.totalDistance > 0) {
-                YearBarChart(
-                    monthRangeDataList = uiState.yearStats.monthRangeDataList,
-                    maxMonthDistance = uiState.yearStats.maxMonthDistance,
-                    avgMonthDistance = uiState.yearStats.getAverageMonthDistance(
-                        viewModel.isCurYear(),
-                        viewModel.getCurMonth()
+        // 2. Unified card: header + buttons + content (heatmap or trajectory)
+        StatisticsCard {
+            Column {
+                // Header row with summary text and buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    YearSummaryHeader(
+                        runCount = uiState.yearStats.runCount,
+                        totalDistance = uiState.yearStats.totalDistance
                     )
-                )
-            }
 
-            // 7. Year detail table (only show if there's data)
-            if (uiState.yearStats.totalDistance > 0) {
-                YearDetailTable(
-                    monthRangeDataList = uiState.yearStats.monthRangeDataList,
-                    yearStats = uiState.yearStats,
-                    isCurYear = viewModel.isCurYear(),
-                    curMonth = viewModel.getCurMonth()
-                )
-            }
+                    Spacer(modifier = Modifier.weight(1f))
 
-            // 8. Daily sentence - reuse home component
-            if (uiState.dailySentence.isNotEmpty()) {
-                DailySentenceCard(
-                    sentence = uiState.dailySentence
+                    if (uiState.showTrajectoryMode) {
+                        IconButton(
+                            onClick = viewModel::toggleSettingsSheet,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Settings,
+                                contentDescription = "轨迹墙设置",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = viewModel::toggleTrajectoryMode,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (uiState.showTrajectoryMode)
+                                Icons.Outlined.Visibility
+                            else
+                                Icons.Outlined.Route,
+                            contentDescription = if (uiState.showTrajectoryMode) "切换到月份显示" else "切换到轨迹墙显示",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = dividerColor,
+                    modifier = Modifier.padding(vertical = 12.dp)
                 )
+
+                // Conditional content
+                if (uiState.showTrajectoryMode) {
+                    TrajectoryWallGrid(
+                        trajectoryWorkoutIds = uiState.trajectoryWorkoutIds,
+                        itemsPerRow = uiState.itemsPerRow,
+                        isLoading = uiState.isLoadingTrajectory,
+                        repository = repository,
+                        onWorkoutClick = onWorkoutClick
+                    )
+                } else {
+                    YearMonthsGrid(
+                        monthRangeDataList = uiState.yearStats.monthRangeDataList,
+                        onMonthClick = onMonthClick
+                    )
+                }
             }
+        }
+
+        // 3. Statistics cards (always visible)
+        StatisticCardsGrid(
+            totalDistance = uiState.yearStats.totalDistance,
+            totalDurationMinutes = uiState.yearStats.totalDurationMinutes,
+            avgPace = uiState.yearStats.avgPace,
+            totalElevation = uiState.yearStats.totalElevation
+        )
+
+        // 4. Heart rate zone placeholder (always visible)
+        HeartRateZonePlaceholder()
+
+        // 5. Speed zone placeholder (always visible)
+        SpeedZonePlaceholder()
+
+        // 6. Year bar chart (only show if there's data)
+        if (uiState.yearStats.totalDistance > 0) {
+            YearBarChart(
+                monthRangeDataList = uiState.yearStats.monthRangeDataList,
+                maxMonthDistance = uiState.yearStats.maxMonthDistance,
+                avgMonthDistance = uiState.yearStats.getAverageMonthDistance(
+                    viewModel.isCurYear(),
+                    viewModel.getCurMonth()
+                )
+            )
+        }
+
+        // 7. Year detail table (only show if there's data)
+        if (uiState.yearStats.totalDistance > 0) {
+            YearDetailTable(
+                monthRangeDataList = uiState.yearStats.monthRangeDataList,
+                yearStats = uiState.yearStats,
+                isCurYear = viewModel.isCurYear(),
+                curMonth = viewModel.getCurMonth()
+            )
+        }
+
+        // 8. Daily sentence
+        if (uiState.dailySentence.isNotEmpty()) {
+            DailySentenceCard(
+                sentence = uiState.dailySentence
+            )
         }
     }
 

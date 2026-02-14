@@ -190,7 +190,8 @@ fun RunStatisticsScreen(
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(RunStatisticTab.MONTH.ordinal)
                             }
-                        }
+                        },
+                        onWorkoutClick = onNavigateToRunDetail
                     )
                     RunStatisticTab.TOTAL -> TotalStatisticsContent()
                 }

@@ -132,7 +132,7 @@ internal fun MiniDayCell(
 
     val backgroundColor = when {
         dayData.isPlaceholder -> Color.Transparent
-        dayData.isFuture -> Color.Transparent
+        dayData.isFuture -> if (isDark) NoDataBgDark else NoDataBg
         dayData.totalDistance <= 0 -> if (isDark) NoDataBgDark else NoDataBg
         dayData.totalDistance >= fullColorThreshold -> RunBlue
         else -> {

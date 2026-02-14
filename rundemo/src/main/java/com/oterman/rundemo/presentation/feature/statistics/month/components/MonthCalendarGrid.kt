@@ -197,6 +197,7 @@ private fun MonthDayCell(
             label = "month_day_cell_crossfade"
         ) { trajectoryMode ->
             Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)

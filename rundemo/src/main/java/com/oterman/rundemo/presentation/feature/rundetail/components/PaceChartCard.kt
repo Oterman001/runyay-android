@@ -7,9 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.ChartDataPoint
+import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 
 /**
@@ -46,17 +44,9 @@ fun PaceChartCard(
     val filteredSeries = speedSeries.filter { it.value in 0.1..20.0 }
     if (filteredSeries.isEmpty()) return
 
-    Card(
+    AppCard(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = RunDetailLayoutConstants.HeaderCardMargin.dp),
-        shape = RoundedCornerShape(RunDetailLayoutConstants.HeaderCardRadius.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+            .padding(horizontal = RunDetailLayoutConstants.HeaderCardMargin.dp)
     ) {
         Column(
             modifier = Modifier
