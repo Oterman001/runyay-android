@@ -43,6 +43,8 @@ class HomeTabViewModel(
     private val _uiState = MutableStateFlow(HomeTabUiState())
     val uiState: StateFlow<HomeTabUiState> = _uiState.asStateFlow()
 
+    private var latestRecords: List<RunRecordEntity> = emptyList()
+
     init {
         observeRunRecords()
     }
@@ -63,6 +65,7 @@ class HomeTabViewModel(
                     )
                 }
                 .collect { allRecords ->
+                    latestRecords = allRecords
                     val goalSettings = preferencesManager.getGoalSettings()
 
                     val totalStats = calculateTotalStatistics(allRecords)
@@ -96,10 +99,19 @@ class HomeTabViewModel(
     }
 
     /**
-     * Refresh statistics (for non-DB changes like goal settings update)
+     * Refresh goal settings from SharedPreferences and recalculate period stats.
+     * Called when HomeTab resumes (e.g. returning from goal settings page).
      */
-    fun refresh() {
-        observeRunRecords()
+    fun refreshGoalSettings() {
+        if (latestRecords.isEmpty()) return
+        val goalSettings = preferencesManager.getGoalSettings()
+        val yearStats = calculateYearStatistics(latestRecords, goalSettings)
+        val monthStats = calculateMonthStatistics(latestRecords, goalSettings)
+        _uiState.value = _uiState.value.copy(
+            goalSettings = goalSettings,
+            yearStats = yearStats,
+            monthStats = monthStats
+        )
     }
 
     private fun calculateTotalStatistics(allRecords: List<RunRecordEntity>): TotalRunStatistics {
