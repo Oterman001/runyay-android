@@ -103,7 +103,7 @@ fun WeekStatisticsCard(
             }
         }
 
-        // 7-day grid
+        // 7-day grid - fill width evenly via weight(1f), no max constraint for week view
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)

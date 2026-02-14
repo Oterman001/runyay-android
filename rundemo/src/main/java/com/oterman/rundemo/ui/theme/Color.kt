@@ -19,6 +19,15 @@ val CardBgDark = Color(0xFF1C1C1E)        // Card background (dark mode)
 val NoDataBg = Color(0xFFF2F2F7)          // No data cell background
 val NoDataBgDark = Color(0xFF2C2C2E)      // No data cell background (dark mode)
 
+// Day Cell Heatmap Colors
+val DayCellActiveColor = RunBlue              // Unified active cell base color (for distance heatmap)
+val DayCellBadgeBg = Color(0xFFE0E0E0)        // Badge background for multi-run indicator
+val DayCellBadgeText = Color(0xFFFF3B30)       // Badge text color (red)
+
+// Divider Colors
+val DividerLight = Color(0xFFE5E5EA)           // Divider color (light mode)
+val DividerDark = Color(0xFF3A3A3C)            // Divider color (dark mode)
+
 // Countdown circle colors (for race card)
 val CountdownRed = Color(0xFFFF3B30)      // Race <= 7 days
 val CountdownOrange = Color(0xFFFF9500)   // Race <= 30 days

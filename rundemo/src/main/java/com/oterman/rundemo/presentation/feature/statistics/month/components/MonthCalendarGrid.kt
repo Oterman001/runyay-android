@@ -3,7 +3,6 @@ package com.oterman.rundemo.presentation.feature.statistics.month.components
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -14,11 +13,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material.icons.filled.Timeline
@@ -30,7 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,10 +35,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.presentation.feature.home.components.DayHeatmapBox
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.statistics.components.DayTrajectoryCell
-import com.oterman.rundemo.ui.theme.NoDataBg
-import com.oterman.rundemo.ui.theme.NoDataBgDark
+import com.oterman.rundemo.ui.theme.DividerDark
+import com.oterman.rundemo.ui.theme.DividerLight
 import com.oterman.rundemo.ui.theme.RunBlue
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
@@ -144,7 +141,7 @@ fun MonthCalendarGrid(
 
 /**
  * Single day cell in month calendar
- * Shows day number on top and heatmap block or trajectory thumbnail below
+ * Shows day number on top and heatmap block (via shared DayHeatmapBox) or trajectory thumbnail below
  */
 @Composable
 private fun MonthDayCell(
@@ -154,10 +151,6 @@ private fun MonthDayCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
-    val cellShape = RoundedCornerShape(6.dp)
-    val fullColorThreshold = 5.0
-
     if (dayData.isPlaceholder) {
         // Empty placeholder cell
         Box(
@@ -213,7 +206,7 @@ private fun MonthDayCell(
                     // 轨迹模式：显示轨迹缩略图
                     val workoutId = dayData.workoutIds.firstOrNull()
                     val trackPoints = workoutId?.let { trajectoryDataMap[it] }
-                    
+
                     DayTrajectoryCell(
                         workoutId = workoutId,
                         trackPoints = trackPoints,
@@ -221,106 +214,21 @@ private fun MonthDayCell(
                         isFuture = dayData.isFuture
                     )
                 } else {
-                    // 距离模式：显示热力图
-                    DistanceHeatmapCell(
+                    // 距离模式：复用共享的 DayHeatmapBox 组件
+                    DayHeatmapBox(
                         dayData = dayData,
-                        isDark = isDark,
-                        cellShape = cellShape,
-                        fullColorThreshold = fullColorThreshold
+                        maxCellSize = 64.dp,
+                        cornerRadius = 6.dp,
+                        fontSize = 9.sp,
+                        borderWidth = 1.dp,
+                        badgeSize = 14.dp,
+                        badgeLargeSize = 16.dp,
+                        badgeFontSize = 9.sp,
+                        badgeLargeFontSize = 8.sp,
+                        badgeOffsetX = 3.dp,
+                        badgeOffsetY = (-3).dp
                     )
                 }
-            }
-        }
-    }
-}
-
-/**
- * Distance heatmap cell component (extracted from original MonthDayCell)
- */
-@Composable
-private fun DistanceHeatmapCell(
-    dayData: DayRunData,
-    isDark: Boolean,
-    cellShape: RoundedCornerShape,
-    fullColorThreshold: Double
-) {
-    // Calculate background color based on distance
-    val backgroundColor = when {
-        dayData.isFuture -> Color.Transparent
-        dayData.totalDistance <= 0 -> if (isDark) NoDataBgDark else NoDataBg
-        dayData.totalDistance >= fullColorThreshold -> {
-            if (dayData.isIndoor) Color(0xFF8B5CF6) else RunBlue
-        }
-        else -> {
-            val intensity = (dayData.totalDistance / fullColorThreshold).coerceIn(0.0, 1.0)
-            val baseColor = if (dayData.isIndoor) Color(0xFF8B5CF6) else RunBlue
-            val minAlpha = if (isDark) 0.3f else 0.2f
-            baseColor.copy(alpha = (minAlpha + intensity * (1f - minAlpha)).toFloat())
-        }
-    }
-
-    val distanceTextColor = when {
-        dayData.totalDistance > 0 -> Color.White
-        dayData.isFuture -> SecondaryTextColor
-        else -> SecondaryTextColor
-    }
-
-    // Outer Box without clip - allows badge to overflow
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-    ) {
-        // Inner Box with clip - rounded corner heatmap background
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clip(cellShape)
-                .background(backgroundColor)
-                .then(
-                    if (dayData.isFuture) {
-                        Modifier.border(
-                            width = 1.dp,
-                            color = RunBlue.copy(alpha = 0.4f),
-                            shape = cellShape
-                        )
-                    } else {
-                        Modifier
-                    }
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            // Show distance if has run
-            if (dayData.totalDistance > 0) {
-                Text(
-                    text = dayData.getFormattedDistance(),
-                    color = distanceTextColor,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Normal
-                )
-            }
-        }
-
-        // Badge for multiple runs - outside clip, matching DayCell style
-        if (dayData.runCount >= 2) {
-            val badgeSize = if (dayData.runCount >= 10) 16.dp else 14.dp
-            val badgeFontSize = if (dayData.runCount >= 10) 8.sp else 9.sp
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 3.dp, y = (-3).dp)
-                    .size(badgeSize)
-                    .background(Color(0xFFE0E0E0), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "${dayData.runCount}",
-                    color = Color.Red,
-                    fontSize = badgeFontSize,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    lineHeight = badgeFontSize
-                )
             }
         }
     }
@@ -342,7 +250,7 @@ fun MonthCalendarCard(
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
-    val dividerColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
+    val dividerColor = if (isDark) DividerDark else DividerLight
 
     StatisticsCard(modifier = modifier) {
         Column {
@@ -360,14 +268,14 @@ fun MonthCalendarCard(
                 } else {
                     "本月还没有跑步记录"
                 }
-                
+
                 Text(
                     text = summaryText,
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
-                
+
                 // Toggle button
                 IconButton(
                     onClick = onToggleTrajectoryMode,

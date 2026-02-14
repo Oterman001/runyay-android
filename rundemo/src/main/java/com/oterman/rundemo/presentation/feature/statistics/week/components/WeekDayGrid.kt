@@ -4,7 +4,6 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,8 +16,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -74,6 +71,7 @@ fun WeekDayGrid(
             animationSpec = tween(durationMillis = 300),
             label = "trajectory_mode_crossfade"
         ) { trajectoryMode ->
+            // Fill width evenly via weight(1f), no max constraint for week view
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -82,7 +80,8 @@ fun WeekDayGrid(
                     if (trajectoryMode) {
                         // 轨迹模式：显示轨迹缩略图
                         val workoutId = dayData.workoutIds.firstOrNull()
-                        val trackPoints = workoutId?.let { trajectoryDataMap[it] }
+                        val trackPoints =
+                            workoutId?.let { trajectoryDataMap[it] }
 
                         // 用 Column 包裹，添加周标识（与 DayCell 保持一致）
                         Column(
@@ -96,11 +95,11 @@ fun WeekDayGrid(
                                 trackPoints = trackPoints,
                                 isFuture = dayData.isFuture
                             )
-                            // 周标识
+                            // 周标识 - 统一使用 RunBlue 表示 today
                             Text(
                                 text = dayData.dayOfWeek,
                                 fontSize = 11.sp,
-                                color = if (dayData.isToday) MaterialTheme.colorScheme.primary else SecondaryTextColor,
+                                color = if (dayData.isToday) RunBlue else SecondaryTextColor,
                                 fontWeight = if (dayData.isToday) FontWeight.SemiBold else FontWeight.Normal,
                                 modifier = Modifier.padding(top = 2.dp)
                             )
@@ -149,14 +148,14 @@ fun WeekSummaryAndGrid(
                 } else {
                     "本周还没有跑步记录"
                 }
-                
+
                 Text(
                     text = summaryText,
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
-                
+
                 // Toggle button
                 IconButton(
                     onClick = onToggleTrajectoryMode,
@@ -177,8 +176,8 @@ fun WeekSummaryAndGrid(
                     )
                 }
             }
-            
-            // Day grid with animation
+
+            // Day grid with animation - fill width evenly, no max constraint for week view
             Crossfade(
                 targetState = showTrajectoryMode,
                 animationSpec = tween(durationMillis = 300),
@@ -192,25 +191,28 @@ fun WeekSummaryAndGrid(
                         if (trajectoryMode) {
                             // 轨迹模式：显示轨迹缩略图
                             val workoutId = dayData.workoutIds.firstOrNull()
-                            val trackPoints = workoutId?.let { trajectoryDataMap[it] }
+                            val trackPoints =
+                                workoutId?.let { trajectoryDataMap[it] }
 
                             // 用 Column 包裹，添加周标识（与 DayCell 保持一致）
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clickable(enabled = dayData.hasRun) { onDayClick(dayData) }
+                                    .clickable(enabled = dayData.hasRun) {
+                                        onDayClick(dayData)
+                                    }
                             ) {
                                 DayTrajectoryCell(
                                     workoutId = workoutId,
                                     trackPoints = trackPoints,
                                     isFuture = dayData.isFuture
                                 )
-                                // 周标识
+                                // 周标识 - 统一使用 RunBlue 表示 today
                                 Text(
                                     text = dayData.dayOfWeek,
                                     fontSize = 11.sp,
-                                    color = if (dayData.isToday) MaterialTheme.colorScheme.primary else SecondaryTextColor,
+                                    color = if (dayData.isToday) RunBlue else SecondaryTextColor,
                                     fontWeight = if (dayData.isToday) FontWeight.SemiBold else FontWeight.Normal,
                                     modifier = Modifier.padding(top = 2.dp)
                                 )
