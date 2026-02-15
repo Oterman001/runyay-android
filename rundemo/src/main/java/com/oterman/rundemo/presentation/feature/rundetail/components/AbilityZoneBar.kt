@@ -1,14 +1,12 @@
 package com.oterman.rundemo.presentation.feature.rundetail.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -27,12 +25,17 @@ import com.oterman.rundemo.domain.model.AbilityZoneType
 
 /**
  * 心率/配速区间水平条形图
- * 对标iOS HeartRateAndZoneView / SpeedChartAndZoneView 中的区间展示部分
+ * 对标iOS AbilityZoneItemView 的两行布局
+ *
+ * 布局:
+ * ┌──────────────────────────────────────────────────────┐
+ * │ 轻松跑(E)    │  ████████░░░░░░░  │ 33.1%            │
+ * │ 5:47~6:21    │                    │ 1:23:45          │
+ * └──────────────────────────────────────────────────────┘
  */
 @Composable
 fun AbilityZoneBar(
     zones: List<AbilityZone>,
-    title: String = "区间分布",
     modifier: Modifier = Modifier
 ) {
     if (zones.isEmpty()) return
@@ -41,19 +44,8 @@ fun AbilityZoneBar(
     if (totalDuration <= 0) return
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp)
+        modifier = modifier.fillMaxWidth()
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
         zones.forEach { zone ->
             val percentage = if (totalDuration > 0) zone.duration / totalDuration else 0.0
             ZoneBarRow(
@@ -61,7 +53,7 @@ fun AbilityZoneBar(
                 percentage = percentage.toFloat(),
                 color = getZoneColor(zone)
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
         }
     }
 }
@@ -73,61 +65,74 @@ private fun ZoneBarRow(
     color: Color
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(35.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 区间名称
-        Text(
-            text = zone.getZoneName(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(28.dp),
-            textAlign = TextAlign.Center,
-            fontSize = 11.sp
-        )
+        // Left: Zone description + speed range (85dp fixed)
+        Column(
+            modifier = Modifier.width(85.dp)
+        ) {
+            Text(
+                text = zone.getZoneDescription(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 11.sp,
+                maxLines = 1
+            )
+            Text(
+                text = zone.getFormattedSpeedRange(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                maxLines = 1
+            )
+        }
 
         Spacer(modifier = Modifier.width(6.dp))
 
-        // 进度条
+        // Middle: Progress bar (capsule shape, 13dp height)
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(14.dp)
-                .clip(RoundedCornerShape(3.dp))
+                .height(13.dp)
+                .clip(RoundedCornerShape(6.5.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(fraction = percentage.coerceIn(0f, 1f))
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(3.dp))
+                    .height(13.dp)
+                    .clip(RoundedCornerShape(6.5.dp))
                     .background(color)
             )
         }
 
         Spacer(modifier = Modifier.width(6.dp))
 
-        // 百分比
-        Text(
-            text = String.format("%.0f%%", percentage * 100),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(36.dp),
-            textAlign = TextAlign.End,
-            fontSize = 11.sp
-        )
-
-        Spacer(modifier = Modifier.width(4.dp))
-
-        // 时长
-        Text(
-            text = zone.getFormattedDuration(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(40.dp),
-            textAlign = TextAlign.End,
-            fontSize = 11.sp
-        )
+        // Right: Percentage + duration (55dp fixed)
+        Column(
+            modifier = Modifier.width(55.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            Text(
+                text = zone.getFormattedPercentage(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 11.sp,
+                textAlign = TextAlign.End
+            )
+            Text(
+                text = zone.getFormattedDuration(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                textAlign = TextAlign.End
+            )
+        }
     }
 }
 
@@ -164,4 +169,3 @@ private fun getZoneColor(zone: AbilityZone): Color {
         }
     }
 }
-

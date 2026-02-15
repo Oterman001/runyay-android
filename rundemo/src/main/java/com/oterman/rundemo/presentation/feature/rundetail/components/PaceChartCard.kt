@@ -1,6 +1,5 @@
 package com.oterman.rundemo.presentation.feature.rundetail.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -105,25 +104,7 @@ fun PaceChartCard(
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "配速区间",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                AbilityZoneBar(
-                    zones = speedZones,
-                    title = ""
-                )
+                AbilityZoneBar(zones = speedZones)
             }
         }
     }

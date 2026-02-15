@@ -54,7 +54,7 @@ fun PeriodStatisticsCard(
     StatisticsCard(
         modifier = modifier.clickable { onClick() }
     ) {
-        // Header row
+        // Header row 今年跑步多少次
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -168,7 +168,7 @@ private fun DistanceRow(
     modifier: Modifier = Modifier
 ) {
     val textColor = if (isPrimary) RunBlue else MaterialTheme.colorScheme.onSurface
-    val baseFontSize = if (isPrimary) 32.sp else 22.sp
+    val baseFontSize = if (isPrimary) 21.sp else 21.sp
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val density = LocalDensity.current
@@ -203,13 +203,13 @@ private fun DistanceRow(
                 Text(
                     text = " / ",
                     color = SecondaryTextColor,
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     modifier = Modifier.alignByBaseline()
                 )
                 Text(
                     text = "${goal.toInt()}",
                     color = SecondaryTextColor,
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.alignByBaseline()
                 )
@@ -218,7 +218,7 @@ private fun DistanceRow(
             Text(
                 text = unitText,
                 color = SecondaryTextColor,
-                fontSize = 12.sp,
+                fontSize = 10.sp,
                 modifier = Modifier
                     .alignByBaseline()
                     .padding(start = 2.dp)
@@ -236,7 +236,7 @@ private fun DurationRow(
     modifier: Modifier = Modifier
 ) {
     val textColor = if (isPrimary) RunBlue else MaterialTheme.colorScheme.onSurface
-    val baseFontSize = if (isPrimary) 32.sp else 22.sp
+    val baseFontSize = if (isPrimary) 24.sp else 24.sp
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val density = LocalDensity.current
@@ -271,13 +271,13 @@ private fun DurationRow(
                 Text(
                     text = " / ",
                     color = SecondaryTextColor,
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     modifier = Modifier.alignByBaseline()
                 )
                 Text(
                     text = "${goal.toInt()}",
                     color = SecondaryTextColor,
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.alignByBaseline()
                 )
@@ -286,7 +286,7 @@ private fun DurationRow(
             Text(
                 text = unitText,
                 color = SecondaryTextColor,
-                fontSize = 12.sp,
+                fontSize = 10.sp,
                 modifier = Modifier
                     .alignByBaseline()
                     .padding(start = 2.dp)

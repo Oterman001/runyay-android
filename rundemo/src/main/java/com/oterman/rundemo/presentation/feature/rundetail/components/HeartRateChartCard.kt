@@ -116,36 +116,18 @@ fun HeartRateChartCard(
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
 
-                // 区间切换标题行
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "心率区间",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                // 5区间/7区间 切换按钮
+                if (heartRate7Zones.isNotEmpty() && heartRate5Zones.isNotEmpty()) {
+                    HeartRateZoneToggle(
+                        show7Zone = show7Zone,
+                        onToggle = { show7Zone = it }
                     )
-
-                    // 5区间/7区间 切换按钮
-                    if (heartRate7Zones.isNotEmpty() && heartRate5Zones.isNotEmpty()) {
-                        HeartRateZoneToggle(
-                            show7Zone = show7Zone,
-                            onToggle = { show7Zone = it }
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
 
                 // 区间条形图
                 if (displayedZones.isNotEmpty()) {
-                    AbilityZoneBar(
-                        zones = displayedZones,
-                        title = ""
-                    )
+                    AbilityZoneBar(zones = displayedZones)
                 }
             }
         }

@@ -169,7 +169,7 @@ fun HomeTabContent(
             // Total Run + VDOT Card
             TotalRunVdotCard(
                 stats = uiState.totalStats,
-                modifier = Modifier.padding(bottom = 10.dp),
+                modifier = Modifier.padding(bottom = 10.dp, top = 10.dp),
                 onClick = { onNavigateToRunStatistics("total") }
             )
 

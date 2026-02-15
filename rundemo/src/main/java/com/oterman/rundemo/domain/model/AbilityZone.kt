@@ -36,7 +36,76 @@ data class AbilityZone(
             AbilityZoneType.SPEED -> "E${zoneIndex}"  // E/M/T/I/R
         }
     }
-    
+
+    /**
+     * 获取配速区间描述（中文名称）
+     * 对标iOS AbilityZoneItemView 的区间描述
+     */
+    fun getZoneDescription(): String {
+        return when (zoneType) {
+            AbilityZoneType.SPEED -> when (zoneIndex) {
+                1 -> "恢复/热身"
+                2 -> "轻松跑(E)"
+                3 -> "马拉松配速(M)"
+                4 -> "乳酸阈值(T)"
+                5 -> "无氧耐力(A)"
+                6 -> "最大摄氧(I)"
+                7 -> "爆发力训练(R)"
+                else -> "Z$zoneIndex"
+            }
+            AbilityZoneType.HEART_RATE_7 -> when (zoneIndex) {
+                1 -> "热身放松"
+                2 -> "轻松有氧"
+                3 -> "有氧耐力"
+                4 -> "马拉松配速"
+                5 -> "乳酸阈值"
+                6 -> "无氧耐力"
+                7 -> "极限冲刺"
+                else -> "Z$zoneIndex"
+            }
+            AbilityZoneType.HEART_RATE_5 -> when (zoneIndex) {
+                1 -> "热身放松"
+                2 -> "燃脂有氧"
+                3 -> "有氧耐力"
+                4 -> "无氧阈值"
+                5 -> "极限冲刺"
+                else -> "Z$zoneIndex"
+            }
+        }
+    }
+
+    /**
+     * 格式化配速范围（如 "5:47~6:21"）
+     * 将min/km的double值转为配速字符串
+     */
+    fun getFormattedSpeedRange(): String {
+        if (zoneType != AbilityZoneType.SPEED) {
+            // 心率区间显示心率范围
+            return if (minValue > 0 && maxValue > 0) {
+                "${minValue.toInt()}~${maxValue.toInt()}"
+            } else if (minValue > 0) {
+                ">=${minValue.toInt()}"
+            } else if (maxValue > 0) {
+                "<=${maxValue.toInt()}"
+            } else ""
+        }
+        val minPace = formatPaceDouble(minValue)
+        val maxPace = formatPaceDouble(maxValue)
+        return when {
+            minValue > 0 && maxValue > 0 -> "$maxPace~$minPace"
+            minValue > 0 -> ">=$minPace"
+            maxValue > 0 -> "<=$maxPace"
+            else -> ""
+        }
+    }
+
+    private fun formatPaceDouble(paceMinPerKm: Double): String {
+        if (paceMinPerKm <= 0) return "-"
+        val minutes = paceMinPerKm.toInt()
+        val seconds = ((paceMinPerKm - minutes) * 60).toInt()
+        return "$minutes:${seconds.toString().padStart(2, '0')}"
+    }
+
     /**
      * 格式化时长显示
      */
@@ -45,7 +114,7 @@ data class AbilityZone(
         val seconds = ((duration - minutes) * 60).toInt()
         return String.format("%d:%02d", minutes, seconds)
     }
-    
+
     /**
      * 格式化百分比显示
      */

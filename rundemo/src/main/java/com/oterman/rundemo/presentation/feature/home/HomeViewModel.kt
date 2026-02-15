@@ -144,7 +144,7 @@ class HomeViewModel(
             return
         }
         RLog.i(TAG, "首页触发自动同步")
-        DataSyncForegroundService.start(context)
+       // DataSyncForegroundService.start(context)
     }
 
     /**

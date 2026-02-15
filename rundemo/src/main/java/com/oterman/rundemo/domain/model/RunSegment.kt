@@ -78,9 +78,9 @@ data class RunSegment(
      */
     fun getFormattedDistance(): String {
         return if (distance < 1) {
-            String.format("%.0f", distance * 1000) + "m"
+            String.format("%.2f", distance)
         } else {
-            String.format("%.2f", distance) + "km"
+            String.format("%.1f", distance)
         }
     }
     
