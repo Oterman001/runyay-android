@@ -27,7 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -113,7 +113,7 @@ private fun SimpleStatCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = RunBlue,
+                    tint = RunTheme.colorScheme.blue,
                     modifier = Modifier.size(18.dp)
                 )
                 Text(

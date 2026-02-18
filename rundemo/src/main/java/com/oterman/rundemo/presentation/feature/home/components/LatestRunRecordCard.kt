@@ -26,7 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.LatestRunRecord
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -51,7 +51,7 @@ fun LatestRunRecordCard(
                 Icon(
                     imageVector = Icons.Default.DirectionsRun,
                     contentDescription = null,
-                    tint = RunBlue,
+                    tint = RunTheme.colorScheme.blue,
                     modifier = Modifier.size(18.dp)
                 )
                 Text(

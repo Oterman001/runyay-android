@@ -14,8 +14,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import com.oterman.rundemo.ui.theme.RunTheme
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -38,7 +38,7 @@ fun RotatingSyncIcon(
     Icon(
         imageVector = Icons.Filled.Sync,
         contentDescription = "同步中",
-        tint = Color(0xFF007AFF),
+        tint = RunTheme.colorScheme.blue,
         modifier = modifier
             .size(22.dp)
             .graphicsLayer {

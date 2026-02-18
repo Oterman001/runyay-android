@@ -30,7 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.NextRaceInfo
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -54,7 +54,7 @@ fun NextRaceCard(
                 Icon(
                     imageVector = Icons.Default.Flag,
                     contentDescription = null,
-                    tint = RunBlue,
+                    tint = RunTheme.colorScheme.blue,
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
@@ -150,7 +150,7 @@ fun NextRaceCard(
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = RunBlue,
+                        tint = RunTheme.colorScheme.blue,
                         modifier = Modifier.size(18.dp)
                     )
                 }

@@ -48,7 +48,7 @@ import com.oterman.rundemo.domain.trajectory.ThumbnailState
 import com.oterman.rundemo.domain.trajectory.TrajectoryThumbnailManager
 import com.oterman.rundemo.ui.theme.NoDataBg
 import com.oterman.rundemo.ui.theme.NoDataBgDark
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -125,7 +125,7 @@ fun DayTrajectoryCell(
                 if (isFuture) {
                     Modifier.border(
                         width = 1.5.dp,
-                        color = RunBlue.copy(alpha = 0.4f),
+                        color = RunTheme.colorScheme.blue.copy(alpha = 0.4f),
                         shape = cellShape
                     )
                 } else {

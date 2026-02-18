@@ -27,12 +27,11 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.DayRunData
-import com.oterman.rundemo.ui.theme.DayCellActiveColor
 import com.oterman.rundemo.ui.theme.DayCellBadgeBg
 import com.oterman.rundemo.ui.theme.DayCellBadgeText
 import com.oterman.rundemo.ui.theme.NoDataBg
 import com.oterman.rundemo.ui.theme.NoDataBgDark
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -74,15 +73,15 @@ fun DayHeatmapBox(
     val isDark = isSystemInDarkTheme()
     val cellShape = RoundedCornerShape(cornerRadius)
 
-    // Unified color calculation - all use DayCellActiveColor (RunBlue), no indoor/outdoor distinction
+    // Unified color calculation - all use RunTheme.colorScheme.dayCellActive (RunTheme.colorScheme.blue), no indoor/outdoor distinction
     val backgroundColor = when {
         dayData.isFuture -> Color.Transparent
         dayData.totalDistance <= 0 -> if (isDark) NoDataBgDark else NoDataBg
-        dayData.totalDistance >= fullColorThreshold -> DayCellActiveColor
+        dayData.totalDistance >= fullColorThreshold -> RunTheme.colorScheme.dayCellActive
         else -> {
             val intensity = (dayData.totalDistance / fullColorThreshold).coerceIn(0.0, 1.0)
             val minAlpha = if (isDark) 0.3f else 0.2f
-            DayCellActiveColor.copy(alpha = (minAlpha + intensity * (1f - minAlpha)).toFloat())
+            RunTheme.colorScheme.dayCellActive.copy(alpha = (minAlpha + intensity * (1f - minAlpha)).toFloat())
         }
     }
 
@@ -113,7 +112,7 @@ fun DayHeatmapBox(
                     if (dayData.isFuture) {
                         Modifier.border(
                             width = borderWidth,
-                            color = DayCellActiveColor.copy(alpha = 0.4f),
+                            color = RunTheme.colorScheme.dayCellActive.copy(alpha = 0.4f),
                             shape = cellShape
                         )
                     } else {
@@ -177,11 +176,11 @@ fun DayCell(
             fullColorThreshold = fullColorThreshold
         )
 
-        // Weekday label - uses RunBlue for today, not MaterialTheme.colorScheme.primary
+        // Weekday label - uses RunTheme.colorScheme.blue for today, not MaterialTheme.colorScheme.primary
         Text(
             text = dayData.dayOfWeek,
             fontSize = 11.sp,
-            color = if (dayData.isToday) RunBlue else SecondaryTextColor,
+            color = if (dayData.isToday) RunTheme.colorScheme.blue else SecondaryTextColor,
             fontWeight = if (dayData.isToday) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.padding(top = 2.dp)
         )

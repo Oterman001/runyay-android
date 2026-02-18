@@ -53,6 +53,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.DataTabDisplayMode
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryThumbnail
 import com.oterman.rundemo.presentation.feature.home.tabs.components.MonthSection
@@ -588,7 +589,7 @@ private fun AllRunItemView(
                 text = value,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
+                color = RunTheme.colorScheme.blue
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(

@@ -40,7 +40,7 @@ import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.statistics.components.DayTrajectoryCell
 import com.oterman.rundemo.ui.theme.DividerDark
 import com.oterman.rundemo.ui.theme.DividerLight
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -173,7 +173,7 @@ private fun MonthDayCell(
                 .then(
                     if (dayData.isToday) {
                         Modifier
-                            .background(RunBlue, CircleShape)
+                            .background(RunTheme.colorScheme.blue, CircleShape)
                     } else {
                         Modifier
                     }
@@ -293,7 +293,7 @@ fun MonthCalendarCard(
                         } else {
                             "切换到轨迹显示"
                         },
-                        tint = RunBlue
+                        tint = RunTheme.colorScheme.blue
                     )
                 }
             }

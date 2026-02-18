@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.domain.model.GoalType
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -166,7 +166,7 @@ fun RunGoalSetPage(
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = RunBlue
+                    containerColor = RunTheme.colorScheme.blue
                 )
             ) {
                 Text(
@@ -213,7 +213,7 @@ private fun GoalToggleSection(
             checked = enabled,
             onCheckedChange = onToggle,
             colors = SwitchDefaults.colors(
-                checkedTrackColor = RunBlue
+                checkedTrackColor = RunTheme.colorScheme.blue
             )
         )
     }
@@ -249,8 +249,8 @@ private fun GoalTypePickerSection(
                 },
                 modifier = Modifier.weight(1f),
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = RunBlue.copy(alpha = 0.15f),
-                    selectedLabelColor = RunBlue
+                    selectedContainerColor = RunTheme.colorScheme.blue.copy(alpha = 0.15f),
+                    selectedLabelColor = RunTheme.colorScheme.blue
                 )
             )
 
@@ -266,8 +266,8 @@ private fun GoalTypePickerSection(
                 },
                 modifier = Modifier.weight(1f),
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = RunBlue.copy(alpha = 0.15f),
-                    selectedLabelColor = RunBlue
+                    selectedContainerColor = RunTheme.colorScheme.blue.copy(alpha = 0.15f),
+                    selectedLabelColor = RunTheme.colorScheme.blue
                 )
             )
         }
@@ -388,7 +388,7 @@ private fun GoalInputField(
             Text(
                 text = autoFillText,
                 fontSize = 13.sp,
-                color = RunBlue,
+                color = RunTheme.colorScheme.blue,
                 modifier = Modifier
                     .clickable { onAutoFill() }
                     .padding(4.dp)

@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.RunOrange
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
@@ -53,7 +53,7 @@ fun GoalProgressView(
             label = goalLabel,
             progressText = goalProgressText,
             progress = goalProgress,
-            progressColor = RunBlue
+            progressColor = RunTheme.colorScheme.blue
         )
 
         // Time elapsed progress bar
@@ -128,14 +128,14 @@ fun SetGoalButton(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(RunBlue.copy(alpha = 0.1f))
+            .background(RunTheme.colorScheme.blue.copy(alpha = 0.1f))
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = RunBlue,
+            color = RunTheme.colorScheme.blue,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium
         )

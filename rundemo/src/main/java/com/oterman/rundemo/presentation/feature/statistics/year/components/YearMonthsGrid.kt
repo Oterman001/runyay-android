@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.MonthRangeData
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -48,7 +48,7 @@ internal fun YearSummaryHeader(
             text = String.format("%.1f", totalDistance),
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold,
-            color = RunBlue
+            color = RunTheme.colorScheme.blue
         )
         Text(
             text = "公里",

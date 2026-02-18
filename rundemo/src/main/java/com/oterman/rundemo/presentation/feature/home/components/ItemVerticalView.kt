@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -23,7 +23,7 @@ import com.oterman.rundemo.ui.theme.SecondaryTextColor
 fun ItemVerticalView(
     itemValue: String,
     itemDesc: String,
-    valueColor: Color = RunBlue,
+    valueColor: Color = RunTheme.colorScheme.blue,
     modifier: Modifier = Modifier
 ) {
     Column(

@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.MonthStatistics
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -88,7 +88,7 @@ fun MonthDetailTable(
             if (displayRecords.isNotEmpty()) {
                 HorizontalDivider(
                     thickness = 1.dp,
-                    color = RunBlue.copy(alpha = 0.3f),
+                    color = RunTheme.colorScheme.blue.copy(alpha = 0.3f),
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
 
@@ -122,7 +122,7 @@ private fun TableRow(
     isSummary: Boolean = false
 ) {
     val textColor = when {
-        isSummary -> RunBlue
+        isSummary -> RunTheme.colorScheme.blue
         isHeader -> SecondaryTextColor
         else -> MaterialTheme.colorScheme.onSurface
     }
@@ -147,7 +147,7 @@ private fun TableRow(
             text = col1,
             fontSize = fontSize,
             fontWeight = fontWeight,
-            color = if (isToday) RunBlue else textColor,
+            color = if (isToday) RunTheme.colorScheme.blue else textColor,
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(0.8f)
         )

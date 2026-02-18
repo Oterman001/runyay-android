@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -56,10 +56,11 @@ fun WeekBarChart(
     // Colors
     val barGradient = Brush.verticalGradient(
         colors = listOf(
-            RunBlue,
-            RunBlue.copy(alpha = 0.6f)
+            RunTheme.colorScheme.blue,
+            RunTheme.colorScheme.blue.copy(alpha = 0.6f)
         )
     )
+    val todayLabelColor = RunTheme.colorScheme.blue
     val bgBarColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
     val textColor = SecondaryTextColor
     val gridLineColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
@@ -152,7 +153,7 @@ fun WeekBarChart(
                         text = dayData.dayOfWeek,
                         style = TextStyle(
                             fontSize = 11.sp,
-                            color = if (dayData.isToday) RunBlue else textColor,
+                            color = if (dayData.isToday) todayLabelColor else textColor,
                             fontWeight = if (dayData.isToday) FontWeight.SemiBold else FontWeight.Normal
                         )
                     )

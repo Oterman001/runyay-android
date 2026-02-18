@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.GoalSettings
 import com.oterman.rundemo.domain.model.GoalType
 import com.oterman.rundemo.domain.model.PeriodStatistics
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -167,7 +167,7 @@ private fun DistanceRow(
     showGoal: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val textColor = if (isPrimary) RunBlue else MaterialTheme.colorScheme.onSurface
+    val textColor = if (isPrimary) RunTheme.colorScheme.blue else MaterialTheme.colorScheme.onSurface
     val baseFontSize = if (isPrimary) 21.sp else 21.sp
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
@@ -235,7 +235,7 @@ private fun DurationRow(
     showGoal: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val textColor = if (isPrimary) RunBlue else MaterialTheme.colorScheme.onSurface
+    val textColor = if (isPrimary) RunTheme.colorScheme.blue else MaterialTheme.colorScheme.onSurface
     val baseFontSize = if (isPrimary) 24.sp else 24.sp
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {

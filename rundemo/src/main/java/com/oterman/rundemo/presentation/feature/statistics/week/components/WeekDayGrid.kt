@@ -27,7 +27,7 @@ import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.feature.home.components.DayCell
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.statistics.components.DayTrajectoryCell
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -95,11 +95,11 @@ fun WeekDayGrid(
                                 trackPoints = trackPoints,
                                 isFuture = dayData.isFuture
                             )
-                            // 周标识 - 统一使用 RunBlue 表示 today
+                            // 周标识 - 统一使用 RunTheme.colorScheme.blue 表示 today
                             Text(
                                 text = dayData.dayOfWeek,
                                 fontSize = 11.sp,
-                                color = if (dayData.isToday) RunBlue else SecondaryTextColor,
+                                color = if (dayData.isToday) RunTheme.colorScheme.blue else SecondaryTextColor,
                                 fontWeight = if (dayData.isToday) FontWeight.SemiBold else FontWeight.Normal,
                                 modifier = Modifier.padding(top = 2.dp)
                             )
@@ -172,7 +172,7 @@ fun WeekSummaryAndGrid(
                         } else {
                             "切换到轨迹显示"
                         },
-                        tint = RunBlue
+                        tint = RunTheme.colorScheme.blue
                     )
                 }
             }
@@ -208,11 +208,11 @@ fun WeekSummaryAndGrid(
                                     trackPoints = trackPoints,
                                     isFuture = dayData.isFuture
                                 )
-                                // 周标识 - 统一使用 RunBlue 表示 today
+                                // 周标识 - 统一使用 RunTheme.colorScheme.blue 表示 today
                                 Text(
                                     text = dayData.dayOfWeek,
                                     fontSize = 11.sp,
-                                    color = if (dayData.isToday) RunBlue else SecondaryTextColor,
+                                    color = if (dayData.isToday) RunTheme.colorScheme.blue else SecondaryTextColor,
                                     fontWeight = if (dayData.isToday) FontWeight.SemiBold else FontWeight.Normal,
                                     modifier = Modifier.padding(top = 2.dp)
                                 )

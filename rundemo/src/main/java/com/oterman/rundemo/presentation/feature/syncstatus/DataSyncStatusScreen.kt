@@ -60,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.service.sync.model.UnifiedSyncResult
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -148,7 +149,7 @@ private fun SyncStatusHeaderCard(syncStatus: SyncStatusType) {
             Icon(
                 imageVector = if (isSyncing) Icons.Filled.Sync else Icons.Filled.CheckCircle,
                 contentDescription = null,
-                tint = if (isSyncing) Color(0xFF007AFF) else Color(0xFF34C759),
+                tint = if (isSyncing) RunTheme.colorScheme.blue else Color(0xFF34C759),
                 modifier = Modifier
                     .size(24.dp)
                     .graphicsLayer {
@@ -229,7 +230,7 @@ private fun ImportedRecordsSection(records: List<ImportedRecordItem>) {
                 Icon(
                     imageVector = Icons.Filled.Assignment,
                     contentDescription = null,
-                    tint = Color(0xFF007AFF),
+                    tint = RunTheme.colorScheme.blue,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -284,7 +285,7 @@ private fun ImportedRecordsSection(records: List<ImportedRecordItem>) {
             Icon(
                 imageVector = Icons.Filled.Info,
                 contentDescription = null,
-                tint = Color(0xFF007AFF),
+                tint = RunTheme.colorScheme.blue,
                 modifier = Modifier.size(14.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
@@ -308,7 +309,7 @@ private fun SyncResultSummaryCard(result: UnifiedSyncResult) {
             Icon(
                 imageVector = Icons.Filled.InsertChart,
                 contentDescription = null,
-                tint = Color(0xFF007AFF),
+                tint = RunTheme.colorScheme.blue,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -356,7 +357,7 @@ private fun SyncResultSummaryCard(result: UnifiedSyncResult) {
             icon = Icons.Filled.DirectionsRun,
             title = "导入记录",
             value = "${result.totalImportedCount} 条",
-            tintColor = Color(0xFF007AFF)
+            tintColor = RunTheme.colorScheme.blue
         )
     }
 }

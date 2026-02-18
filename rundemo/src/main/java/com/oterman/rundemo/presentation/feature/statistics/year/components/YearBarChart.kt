@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -52,8 +52,8 @@ fun YearBarChart(
     // Colors
     val barGradient = Brush.verticalGradient(
         colors = listOf(
-            RunBlue,
-            RunBlue.copy(alpha = 0.6f)
+            RunTheme.colorScheme.blue,
+            RunTheme.colorScheme.blue.copy(alpha = 0.6f)
         )
     )
     val bgBarColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)

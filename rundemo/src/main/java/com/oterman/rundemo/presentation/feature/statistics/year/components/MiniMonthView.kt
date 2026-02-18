@@ -27,7 +27,7 @@ import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.ui.theme.NoDataBg
 import com.oterman.rundemo.ui.theme.NoDataBgDark
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * Mini month heatmap view for year grid (3x4 layout)
@@ -134,11 +134,11 @@ internal fun MiniDayCell(
         dayData.isPlaceholder -> Color.Transparent
         dayData.isFuture -> if (isDark) NoDataBgDark else NoDataBg
         dayData.totalDistance <= 0 -> if (isDark) NoDataBgDark else NoDataBg
-        dayData.totalDistance >= fullColorThreshold -> RunBlue
+        dayData.totalDistance >= fullColorThreshold -> RunTheme.colorScheme.blue
         else -> {
             val intensity = (dayData.totalDistance / fullColorThreshold).coerceIn(0.0, 1.0)
             val minAlpha = if (isDark) 0.3f else 0.2f
-            RunBlue.copy(alpha = (minAlpha + intensity * (1f - minAlpha)).toFloat())
+            RunTheme.colorScheme.blue.copy(alpha = (minAlpha + intensity * (1f - minAlpha)).toFloat())
         }
     }
 

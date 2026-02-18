@@ -23,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -36,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.presentation.feature.home.tabs.DataTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.HomeTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.ProfileTabContent
@@ -166,6 +168,14 @@ private fun HomeBottomNavigationBar(
     selectedTab: HomeTab,
     onTabSelected: (HomeTab) -> Unit
 ) {
+    val tabColors = NavigationBarItemDefaults.colors(
+        selectedIconColor = RunTheme.colorScheme.blue,
+        selectedTextColor = RunTheme.colorScheme.blue,
+        indicatorColor = RunTheme.colorScheme.blue.copy(alpha = 0.1f),
+        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+
     Column(
         modifier = Modifier.background(NavigationBarDefaults.containerColor)
     ) {
@@ -173,10 +183,10 @@ private fun HomeBottomNavigationBar(
             modifier = Modifier.height(56.dp),
             windowInsets = WindowInsets(0, 0, 0, 0)
         ) {
-        // Tab 1: 首页 (Home)
         NavigationBarItem(
             selected = selectedTab == HomeTab.HOME,
             onClick = { onTabSelected(HomeTab.HOME) },
+            colors = tabColors,
             icon = {
                 Icon(
                     imageVector = if (selectedTab == HomeTab.HOME) {
@@ -189,10 +199,10 @@ private fun HomeBottomNavigationBar(
             }
         )
 
-        // Tab 2: 数据 (Data/Chart)
         NavigationBarItem(
             selected = selectedTab == HomeTab.DATA,
             onClick = { onTabSelected(HomeTab.DATA) },
+            colors = tabColors,
             icon = {
                 Icon(
                     imageVector = if (selectedTab == HomeTab.DATA) {
@@ -205,10 +215,10 @@ private fun HomeBottomNavigationBar(
             }
         )
 
-        // Tab 3: 我的 (Profile)
         NavigationBarItem(
             selected = selectedTab == HomeTab.PROFILE,
             onClick = { onTabSelected(HomeTab.PROFILE) },
+            colors = tabColors,
             icon = {
                 Icon(
                     imageVector = if (selectedTab == HomeTab.PROFILE) {

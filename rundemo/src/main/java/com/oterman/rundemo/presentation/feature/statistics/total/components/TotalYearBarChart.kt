@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.TotalChartDisplayMode
 import com.oterman.rundemo.domain.model.YearlyStatistic
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -78,14 +78,14 @@ fun TotalYearBarChart(
     // Colors
     val barGradient = Brush.verticalGradient(
         colors = listOf(
-            RunBlue,
-            RunBlue.copy(alpha = 0.6f)
+            RunTheme.colorScheme.blue,
+            RunTheme.colorScheme.blue.copy(alpha = 0.6f)
         )
     )
     val bgBarColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
     val textColor = SecondaryTextColor
     val gridLineColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
-    val toggleBgColor = RunBlue.copy(alpha = 0.1f)
+    val toggleBgColor = RunTheme.colorScheme.blue.copy(alpha = 0.1f)
 
     StatisticsCard(modifier = modifier) {
         Column {
@@ -108,7 +108,7 @@ fun TotalYearBarChart(
                 Text(
                     text = if (chartDisplayMode == TotalChartDisplayMode.DISTANCE) "切换到时长" else "切换到距离",
                     fontSize = 12.sp,
-                    color = RunBlue,
+                    color = RunTheme.colorScheme.blue,
                     modifier = Modifier
                         .background(toggleBgColor, RoundedCornerShape(8.dp))
                         .clickable { onToggleDisplayMode() }

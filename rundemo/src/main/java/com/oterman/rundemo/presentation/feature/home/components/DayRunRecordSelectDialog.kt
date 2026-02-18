@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.DayRunRecordInfo
-import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -148,7 +148,7 @@ private fun RecordSelectItem(
                     text = String.format("%.2f", record.distance),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = RunBlue
+                    color = RunTheme.colorScheme.blue
                 )
                 Text(
                     text = " km",
