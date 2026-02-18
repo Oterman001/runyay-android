@@ -3,6 +3,7 @@ package com.oterman.rundemo.presentation.feature.rundetail
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.ChartDataPoint
+import com.oterman.rundemo.domain.model.MergedRunSegment
 import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.domain.model.TrackPoint
 
@@ -35,6 +36,8 @@ data class RunDetailUiState(
 
     // 训练分段
     val trainingSegments: List<RunSegment> = emptyList(),
+    val mergedTrainingSegments: List<MergedRunSegment> = emptyList(),
+    val expandedSegmentIds: Set<String> = emptySet(),
 
     // FIT下载状态
     val isDownloading: Boolean = false,
@@ -73,6 +76,8 @@ data class RunDetailUiState(
         if (heartRate5Zones != other.heartRate5Zones) return false
         if (speedZones != other.speedZones) return false
         if (trainingSegments != other.trainingSegments) return false
+        if (mergedTrainingSegments != other.mergedTrainingSegments) return false
+        if (expandedSegmentIds != other.expandedSegmentIds) return false
         if (isDownloading != other.isDownloading) return false
         if (downloadedFitData != null) {
             if (other.downloadedFitData == null) return false
@@ -104,6 +109,8 @@ data class RunDetailUiState(
         result = 31 * result + heartRate5Zones.hashCode()
         result = 31 * result + speedZones.hashCode()
         result = 31 * result + trainingSegments.hashCode()
+        result = 31 * result + mergedTrainingSegments.hashCode()
+        result = 31 * result + expandedSegmentIds.hashCode()
         result = 31 * result + isDownloading.hashCode()
         result = 31 * result + (downloadedFitData?.contentHashCode() ?: 0)
         result = 31 * result + (downloadError?.hashCode() ?: 0)

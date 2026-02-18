@@ -8,10 +8,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,9 +31,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.IntervalType
+import com.oterman.rundemo.domain.model.MergedRunSegment
 import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
@@ -38,25 +46,38 @@ private enum class TrainingFilter(val label: String) {
     RECOVERY("恢复")
 }
 
+private fun getIntervalColor(intervalType: IntervalType): Color {
+    return when (intervalType) {
+        IntervalType.WARMUP -> Color(0xFFE65100)
+        IntervalType.WORK -> Color(0xFFEEB23C)
+        IntervalType.RECOVERY -> Color(0xFF2E7D32)
+        IntervalType.COOLDOWN -> Color(0xFF6A1B9A)
+        IntervalType.UNKNOWN -> Color(0xFF616161)
+    }
+}
+
 /**
  * 训练分段表格
  * 对标 iOS MergedSegmentGridView
- * 6列: 序号, 距离, 耗时, 配速, 心率, 步频
- * 带筛选按钮（全部/训练/恢复）
+ * 7列: #, 类型, 距离, 耗时, 配速, 心率, 步频
+ * 带筛选按钮（全部/训练/恢复）+ 合并行展开折叠
  */
 @Composable
 fun RunDetailTrainingSegmentTable(
     segments: List<RunSegment>,
+    mergedSegments: List<MergedRunSegment>,
+    expandedSegmentIds: Set<String>,
+    onToggleExpansion: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (segments.isEmpty()) return
 
     var selectedFilter by remember { mutableStateOf(TrainingFilter.ALL) }
 
-    val filteredSegments = when (selectedFilter) {
-        TrainingFilter.ALL -> segments
-        TrainingFilter.WORK -> segments.filter { it.intervalType == IntervalType.WORK }
-        TrainingFilter.RECOVERY -> segments.filter { it.intervalType == IntervalType.RECOVERY }
+    val filteredMergedSegments = when (selectedFilter) {
+        TrainingFilter.ALL -> mergedSegments
+        TrainingFilter.WORK -> mergedSegments.filter { it.intervalType == IntervalType.WORK }
+        TrainingFilter.RECOVERY -> mergedSegments.filter { it.intervalType == IntervalType.RECOVERY }
     }
 
     AppCard(
@@ -74,7 +95,7 @@ fun RunDetailTrainingSegmentTable(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp)
+                modifier = Modifier.padding(horizontal = 12.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -83,25 +104,37 @@ fun RunDetailTrainingSegmentTable(
             FilterButtonsRow(
                 selectedFilter = selectedFilter,
                 onFilterSelected = { selectedFilter = it },
-                modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp)
+                modifier = Modifier.padding(horizontal = 12.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // 表头
             TrainingSegmentTableHeader(
-                modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp)
+                modifier = Modifier.padding(horizontal = 4.dp)
             )
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // 分段数据行
-            filteredSegments.forEachIndexed { index, segment ->
-                TrainingSegmentRow(
-                    segment = segment,
-                    index = index
+            // 合并分段数据行
+            filteredMergedSegments.forEachIndexed { index, mergedSegment ->
+                MergedSegmentRow(
+                    mergedSegment = mergedSegment,
+                    index = index,
+                    isExpanded = expandedSegmentIds.contains(mergedSegment.id),
+                    onToggle = { onToggleExpansion(mergedSegment.id) }
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+
+                // 展开的子分段行
+                if (expandedSegmentIds.contains(mergedSegment.id) && mergedSegment.isMerged) {
+                    mergedSegment.subSegments.forEachIndexed { subIndex, subSegment ->
+                        SubSegmentRow(
+                            segment = subSegment,
+                            subIndex = subIndex,
+                            parentDisplayName = mergedSegment.getDisplayName()
+                        )
+                    }
+                }
             }
         }
     }
@@ -148,10 +181,20 @@ private fun TrainingSegmentTableHeader(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        val headers = listOf("序号", "距离", "耗时", "配速", "心率", "步频")
-        headers.forEach { header ->
+        // # 列（窄）
+        Text(
+            text = "#",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            fontSize = 12.sp,
+            modifier = Modifier.weight(0.5f)
+        )
+        // 类型, 距离, 耗时, 配速, 心率, 步频
+        listOf("类型", "距离", "耗时", "配速", "心率", "步频").forEach { header ->
             Text(
                 text = header,
                 style = MaterialTheme.typography.labelSmall,
@@ -165,9 +208,11 @@ private fun TrainingSegmentTableHeader(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun TrainingSegmentRow(
-    segment: RunSegment,
-    index: Int
+private fun MergedSegmentRow(
+    mergedSegment: MergedRunSegment,
+    index: Int,
+    isExpanded: Boolean,
+    onToggle: () -> Unit
 ) {
     val bgColor = if (index % 2 == 0) {
         Color.LightGray.copy(alpha = 0.1f)
@@ -179,26 +224,53 @@ private fun TrainingSegmentRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(bgColor)
-            .padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp)
+            .then(
+                if (mergedSegment.isMerged) Modifier.clickable { onToggle() }
+                else Modifier
+            )
+            .padding(horizontal = 4.dp)
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 序号 + interval type tag
+        // # 列 - 序号 + chevron
         Box(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(0.5f),
             contentAlignment = Alignment.Center
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                IntervalTypeTag(intervalType = segment.intervalType)
+            Text(
+                text = "${index + 1}",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (mergedSegment.isMerged) {
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown
+                    else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .align(Alignment.CenterEnd)
+                        .offset(x = 8.dp),
+                    tint = Color(0xFF1E88E5)
+                )
             }
         }
 
+        // 类型列
+        Text(
+            text = mergedSegment.getDisplayName(),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = getIntervalColor(mergedSegment.intervalType),
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+
         // 距离
         Text(
-            text = segment.getFormattedDistance(),
+            text = mergedSegment.getFormattedDistance(),
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
@@ -208,7 +280,7 @@ private fun TrainingSegmentRow(
 
         // 耗时
         Text(
-            text = segment.getFormattedDuration(),
+            text = mergedSegment.getFormattedDuration(),
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
@@ -218,7 +290,7 @@ private fun TrainingSegmentRow(
 
         // 配速
         Text(
-            text = segment.getFormattedSpeed(),
+            text = mergedSegment.getFormattedSpeed(),
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
@@ -228,7 +300,7 @@ private fun TrainingSegmentRow(
 
         // 心率
         Text(
-            text = if (segment.averageHeartRate > 0) "${segment.averageHeartRate.toInt()}" else "-",
+            text = mergedSegment.getFormattedHeartRate(),
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
@@ -238,7 +310,7 @@ private fun TrainingSegmentRow(
 
         // 步频
         Text(
-            text = if (segment.averageCadence > 0) "${segment.averageCadence.toInt()}" else "-",
+            text = mergedSegment.getFormattedCadence(),
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
@@ -248,25 +320,90 @@ private fun TrainingSegmentRow(
     }
 }
 
-/**
- * 间歇类型标签（小彩色标签）
- */
 @Composable
-private fun IntervalTypeTag(
-    intervalType: IntervalType
+private fun SubSegmentRow(
+    segment: RunSegment,
+    subIndex: Int,
+    parentDisplayName: String
 ) {
-    val textColor = when (intervalType) {
-        IntervalType.WARMUP -> Color(0xFFE65100)
-        IntervalType.WORK -> Color(0xFF1565C0)
-        IntervalType.RECOVERY -> Color(0xFF2E7D32)
-        IntervalType.COOLDOWN -> Color(0xFF6A1B9A)
-        IntervalType.UNKNOWN -> Color(0xFF616161)
-    }
+    val bgColor = Color.LightGray.copy(alpha = 0.05f)
+    val textAlpha = 0.8f
 
-    Text(
-        text = intervalType.displayName,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Medium,
-        color = textColor
-    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bgColor)
+            .padding(horizontal = 4.dp)
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // # 列 - 缩进 + 子序号
+        Box(
+            modifier = Modifier.weight(0.5f),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = "${subIndex + 1}",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = textAlpha),
+                modifier = Modifier.padding(start = 10.dp)
+            )
+        }
+
+        // 类型列
+        Text(
+            text = parentDisplayName,
+            fontSize = 11.sp,
+            color = getIntervalColor(segment.intervalType).copy(alpha = textAlpha),
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+
+        // 距离
+        Text(
+            text = segment.getFormattedDistance(),
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = textAlpha),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
+
+        // 耗时
+        Text(
+            text = segment.getFormattedDuration(),
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = textAlpha),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
+
+        // 配速 - 使用 getComputedPace()
+        Text(
+            text = segment.getComputedPace(),
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = textAlpha),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
+
+        // 心率
+        Text(
+            text = if (segment.averageHeartRate > 0) "${segment.averageHeartRate.toInt()}" else "-",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = textAlpha),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
+
+        // 步频
+        Text(
+            text = if (segment.averageCadence > 0) "${segment.averageCadence.toInt()}" else "-",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = textAlpha),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
+    }
 }

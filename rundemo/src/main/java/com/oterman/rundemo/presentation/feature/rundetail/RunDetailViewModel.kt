@@ -9,6 +9,9 @@ import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.FitDownloadRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
+import com.oterman.rundemo.domain.model.IntervalType
+import com.oterman.rundemo.domain.model.MergedRunSegment
+import com.oterman.rundemo.domain.model.RunSegment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +32,8 @@ class RunDetailViewModel(
 
     private val _uiState = MutableStateFlow(RunDetailUiState())
     val uiState: StateFlow<RunDetailUiState> = _uiState.asStateFlow()
+
+    private val _expandedSegmentIds = mutableSetOf<String>()
 
     init {
         loadData()
@@ -58,6 +63,9 @@ class RunDetailViewModel(
 
                 // 获取训练分段
                 val trainingSegments = repository.getTrainingSegments(workoutId)
+
+                // 创建合并分段数据
+                val mergedTrainingSegments = createMergedSegmentData(trainingSegments)
 
                 // 构建指标列表
                 val metrics = buildMetricsList(record)
@@ -98,12 +106,97 @@ class RunDetailViewModel(
                     heartRate7Zones = heartRate7Zones,
                     heartRate5Zones = heartRate5Zones,
                     speedZones = speedZones,
-                    trainingSegments = trainingSegments
+                    trainingSegments = trainingSegments,
+                    mergedTrainingSegments = mergedTrainingSegments,
+                    expandedSegmentIds = _expandedSegmentIds.toSet()
                 )
             } catch (e: Exception) {
                 _uiState.value = RunDetailUiState(isLoading = false, error = e.message ?: "加载失败")
             }
         }
+    }
+
+    /**
+     * 切换合并分段的展开/折叠状态
+     */
+    fun toggleSegmentExpansion(segmentId: String) {
+        if (_expandedSegmentIds.contains(segmentId)) {
+            _expandedSegmentIds.remove(segmentId)
+        } else {
+            _expandedSegmentIds.add(segmentId)
+        }
+        _uiState.value = _uiState.value.copy(
+            expandedSegmentIds = _expandedSegmentIds.toSet()
+        )
+    }
+
+    /**
+     * 从训练分段创建合并分段数据（对标iOS createMergedSegmentData）
+     */
+    private fun createMergedSegmentData(segments: List<RunSegment>): List<MergedRunSegment> {
+        if (segments.isEmpty()) return emptyList()
+
+        val groupedSegments = groupContinuousSegments(segments)
+        val allMerged = mutableListOf<MergedRunSegment>()
+
+        for (group in groupedSegments) {
+            if (group.size > 1 && canMerge(group)) {
+                allMerged.add(MergedRunSegment.fromSegments(group))
+            } else {
+                for (segment in group) {
+                    allMerged.add(MergedRunSegment.fromSingleSegment(segment))
+                }
+            }
+        }
+
+        return allMerged.sortedBy { it.firstSegmentSeq }
+    }
+
+    /**
+     * 判断分段组是否可以合并
+     */
+    private fun canMerge(segments: List<RunSegment>): Boolean {
+        val first = segments.firstOrNull() ?: return false
+        val wktStepIndex = first.wktStepIndex ?: return false
+        if (wktStepIndex == 0) return false
+
+        return segments.all {
+            it.wktStepIndex == wktStepIndex && it.intervalType == first.intervalType
+        }
+    }
+
+    /**
+     * 将分段按连续性分组
+     */
+    private fun groupContinuousSegments(segments: List<RunSegment>): List<List<RunSegment>> {
+        if (segments.isEmpty()) return emptyList()
+
+        val sorted = segments.sortedBy { it.seq }
+        val groups = mutableListOf<MutableList<RunSegment>>()
+        var currentGroup = mutableListOf(sorted[0])
+
+        for (i in 1 until sorted.size) {
+            if (shouldContinueGroup(sorted[i], sorted[i - 1])) {
+                currentGroup.add(sorted[i])
+            } else {
+                groups.add(currentGroup)
+                currentGroup = mutableListOf(sorted[i])
+            }
+        }
+        groups.add(currentGroup)
+        return groups
+    }
+
+    /**
+     * 判断当前分段是否应与前一个分段继续分组
+     */
+    private fun shouldContinueGroup(current: RunSegment, previous: RunSegment): Boolean {
+        if (current.seq != previous.seq + 1) return false
+        if (current.wktStepIndex != previous.wktStepIndex) return false
+        if (current.intervalType != previous.intervalType) return false
+        val wktStepIndex = current.wktStepIndex ?: return false
+        if (wktStepIndex == 0) return false
+        return true
     }
 
     /**

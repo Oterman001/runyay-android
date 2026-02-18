@@ -308,7 +308,10 @@ fun RunDetailScreen(
                         if (uiState.trainingSegments.isNotEmpty()) {
                             item {
                                 RunDetailTrainingSegmentTable(
-                                    segments = uiState.trainingSegments
+                                    segments = uiState.trainingSegments,
+                                    mergedSegments = uiState.mergedTrainingSegments,
+                                    expandedSegmentIds = uiState.expandedSegmentIds,
+                                    onToggleExpansion = { viewModel.toggleSegmentExpansion(it) }
                                 )
                             }
                             item {

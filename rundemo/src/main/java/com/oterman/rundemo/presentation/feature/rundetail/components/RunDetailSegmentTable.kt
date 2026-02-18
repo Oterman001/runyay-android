@@ -51,14 +51,14 @@ fun RunDetailSegmentTable(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp)
+                modifier = Modifier.padding(horizontal = 12.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // 表头
             SegmentTableHeader(
-                modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp)
+                modifier = Modifier.padding(horizontal = 12.dp)
             )
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -113,7 +113,7 @@ private fun SegmentTableRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(bgColor)
-            .padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp)
+            .padding(horizontal = 12.dp)
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
