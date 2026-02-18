@@ -1,13 +1,34 @@
 package com.oterman.rundemo.presentation.feature.rundetail.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.ChartDataPoint
+import com.oterman.rundemo.presentation.components.AppCard
+import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+
+private val AltitudeLineColor = Color(0xFF8D6E63)
 
 /**
  * 海拔折线图卡片
- * 显示跑步过程中的海拔变化
+ * 展示海拔折线图 + 累计爬升/下降 + 平均/最高/最低海拔
+ * 对标 iOS createAltitudeLineChart
  */
 @Composable
 fun AltitudeChartCard(
@@ -17,20 +38,100 @@ fun AltitudeChartCard(
 ) {
     if (altitudeSeries.isEmpty()) return
 
-    val minAltitude = altitudeSeries.minOf { it.value }
-    val maxAltitude = altitudeSeries.maxOf { it.value }
-    val avgAltitude = altitudeSeries.map { it.value }.average()
+    val minAltitude = remember(altitudeSeries) { altitudeSeries.minOf { it.value } }
+    val maxAltitude = remember(altitudeSeries) { altitudeSeries.maxOf { it.value } }
+    val avgAltitude = remember(altitudeSeries) { altitudeSeries.map { it.value }.average() }
+    val elevationDescended = remember(altitudeSeries) {
+        var descent = 0.0
+        for (i in 1 until altitudeSeries.size) {
+            val diff = altitudeSeries[i - 1].value - altitudeSeries[i].value
+            if (diff > 0) descent += diff
+        }
+        descent
+    }
 
-    RunDataLineChart(
-        title = "海拔",
-        dataPoints = altitudeSeries,
-        lineColor = Color(0xFF8D6E63),
-        unit = "m",
-        avgValue = avgAltitude,
-        maxValue = maxAltitude,
-        minValue = minAltitude,
+    AppCard(
         modifier = modifier
-    )
+            .padding(horizontal = RunDetailLayoutConstants.HeaderCardMargin.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(RunDetailLayoutConstants.HeaderCardPadding.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "⛰ 海拔(m)",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "↑${formatAltitudeValue(elevationAscended)}m  ↓${formatAltitudeValue(elevationDescended)}m",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 11.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Text(
+                    text = "均${formatAltitudeValue(avgAltitude)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "最高${formatAltitudeValue(maxAltitude)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "最低${formatAltitudeValue(minAltitude)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            RunDataLineChartContent(
+                dataPoints = altitudeSeries,
+                lineColor = AltitudeLineColor,
+                avgValue = avgAltitude,
+                chartHeight = 160
+            )
+
+            Text(
+                text = "长按查看数值 · 双指缩放",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                textAlign = TextAlign.Center,
+                fontSize = 10.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+private fun formatAltitudeValue(value: Double): String {
+    return if (value == value.toLong().toDouble()) {
+        value.toInt().toString()
+    } else {
+        String.format("%.1f", value)
+    }
 }
 
 /**
