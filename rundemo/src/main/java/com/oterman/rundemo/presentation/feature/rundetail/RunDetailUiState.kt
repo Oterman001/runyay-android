@@ -125,8 +125,24 @@ data class RunDetailUiState(
 data class RunMetricItem(
     val value: String,
     val label: String,
-    val unit: String? = null
+    val unit: String? = null,
+    val tag: RunPerformanceTag? = null,
+    val isVdot: Boolean = false
 )
+
+/**
+ * 性能标签（运动负荷、垂直步幅比等级）
+ */
+data class RunPerformanceTag(
+    val tagName: String,
+    val tagColor: Long,
+    val tagType: PerformTagType
+)
+
+enum class PerformTagType {
+    TRAINING_LOAD,
+    STRIDE_RATIO
+}
 
 /**
  * 布局常量 - 匹配iOS V3LayoutConstants

@@ -226,7 +226,8 @@ class RunDetailViewModel(
         metrics.add(
             RunMetricItem(
                 value = vdotValue,
-                label = "动态跑力"
+                label = "动态跑力",
+                isVdot = true
             )
         )
 
@@ -245,7 +246,8 @@ class RunDetailViewModel(
                 RunMetricItem(
                     value = String.format("%.0f", record.trainingLoad),
                     label = "运动负荷",
-                    unit = "TL"
+                    unit = "TL",
+                    tag = getTrainingLoadTag(record.trainingLoad)
                 )
             )
         }
@@ -299,7 +301,19 @@ class RunDetailViewModel(
             )
         )
 
-        // 10. 垂直步幅比 - 暂不实现（无字段）
+        // 10. 垂直步幅比（条件：averageStrideLength > 0 && averageVerticalOscillation > 0）
+        if (record.averageStrideLength > 0 && record.averageVerticalOscillation > 0) {
+            val ratio = record.averageVerticalOscillation / record.averageStrideLength
+            val ratioPercent = ratio * 100
+            metrics.add(
+                RunMetricItem(
+                    value = String.format("%.1f", ratioPercent),
+                    label = "垂直步幅比",
+                    unit = "%",
+                    tag = getVerticalStrideRatioTag(ratioPercent)
+                )
+            )
+        }
 
         // 11. 消耗能量（条件：totalCalories > 0）
         if (record.totalCalories > 0) {
@@ -351,6 +365,32 @@ class RunDetailViewModel(
         val minutes = paceMinPerKm.toInt()
         val seconds = ((paceMinPerKm - minutes) * 60).toInt()
         return "${minutes}'${seconds.toString().padStart(2, '0')}\""
+    }
+
+    /**
+     * 垂直步幅比 tag 等级
+     */
+    private fun getVerticalStrideRatioTag(ratioPercent: Double): RunPerformanceTag {
+        return when {
+            ratioPercent < 6 -> RunPerformanceTag("凌波鸭", 0xFF90CAF9, PerformTagType.STRIDE_RATIO)
+            ratioPercent < 8 -> RunPerformanceTag("踏浪鸭", 0xFF4CAF50, PerformTagType.STRIDE_RATIO)
+            ratioPercent < 10 -> RunPerformanceTag("轻羽鸭", 0xFFFFC107, PerformTagType.STRIDE_RATIO)
+            ratioPercent < 12 -> RunPerformanceTag("稳健鸭", 0xFFFF9800, PerformTagType.STRIDE_RATIO)
+            else -> RunPerformanceTag("蓄力鸭", 0xFFF44336, PerformTagType.STRIDE_RATIO)
+        }
+    }
+
+    /**
+     * 运动负荷 tag 等级
+     */
+    private fun getTrainingLoadTag(trainingLoad: Double): RunPerformanceTag {
+        return when {
+            trainingLoad < 50 -> RunPerformanceTag("很低", 0xFF90CAF9, PerformTagType.TRAINING_LOAD)
+            trainingLoad < 120 -> RunPerformanceTag("较低", 0xFF4CAF50, PerformTagType.TRAINING_LOAD)
+            trainingLoad < 250 -> RunPerformanceTag("中等", 0xFFFFC107, PerformTagType.TRAINING_LOAD)
+            trainingLoad < 400 -> RunPerformanceTag("高", 0xFFFF9800, PerformTagType.TRAINING_LOAD)
+            else -> RunPerformanceTag("很高", 0xFFF44336, PerformTagType.TRAINING_LOAD)
+        }
     }
 
     /**

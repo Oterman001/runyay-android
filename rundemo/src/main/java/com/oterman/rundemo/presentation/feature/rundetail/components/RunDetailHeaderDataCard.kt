@@ -2,6 +2,7 @@ package com.oterman.rundemo.presentation.feature.rundetail.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,24 +18,36 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Watch
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.oterman.rundemo.presentation.feature.rundetail.PerformTagType
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
+import com.oterman.rundemo.presentation.feature.rundetail.RunPerformanceTag
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -53,6 +66,10 @@ fun RunDetailHeaderDataCard(
     metrics: List<RunMetricItem>,
     modifier: Modifier = Modifier
 ) {
+    // Tag dialog state
+    var showTagDialog by remember { mutableStateOf(false) }
+    var dialogTag by remember { mutableStateOf<RunPerformanceTag?>(null) }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -74,80 +91,67 @@ fun RunDetailHeaderDataCard(
             Column(
                 modifier = Modifier.padding(RunDetailLayoutConstants.HeaderCardPadding.dp)
             ) {
-                // ========== Header 部分 ==========
-
-                // 第一行：日期时间
-                Text(
-                    text = formatHeaderStartEndTime(startTime, endTime),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // 第二行：距离（大字）
+                // ========== Header 部分（对标 iOS：距离 → 日期 → 设备）==========
                 Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Text(
-                        text = String.format("%.2f", distance),
-                        fontSize = RunDetailLayoutConstants.DistanceFontSize.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "km",
-                        fontSize = RunDetailLayoutConstants.DistanceUnitFontSize.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 第三行：时长 + 运动类型
-                Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = formatHeaderDuration(duration),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = " · ",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = if (isOutdoor) "户外跑" else "室内跑",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // 第四行：设备信息（可选）
-                deviceName?.let { device ->
-                    if (device.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                    // 左侧：距离 + 日期 + 设备
+                    Column(modifier = Modifier.weight(1f)) {
+                        // 第一行：距离（大字）
                         Row(
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.Bottom
                         ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Watch,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            Text(
+                                text = String.format("%.2f", distance),
+                                fontSize = RunDetailLayoutConstants.DistanceFontSize.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = device,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "km",
+                                fontSize = RunDetailLayoutConstants.DistanceUnitFontSize.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 6.dp)
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // 第二行：日期（含周几）+ 时间段
+                        Text(
+                            text = formatHeaderStartEndTime(startTime, endTime),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        // 第三行：设备信息（可选）
+                        deviceName?.let { device ->
+                            if (device.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Watch,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = device,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                     }
+
+                    // 右侧：头像（垂直居中于header三行）
+                    HeaderAvatarPlaceholder()
                 }
 
                 // ========== 分隔线 ==========
@@ -167,7 +171,11 @@ fun RunDetailHeaderDataCard(
                             rowMetrics.forEach { metric ->
                                 MergedMetricCell(
                                     metric = metric,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    onTagClick = { tag ->
+                                        dialogTag = tag
+                                        showTagDialog = true
+                                    }
                                 )
                             }
                             repeat(3 - rowMetrics.size) {
@@ -182,17 +190,17 @@ fun RunDetailHeaderDataCard(
             }
         }
 
-        // 头像（右上角，向上偏移露出一半）
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(
-                    x = (-RunDetailLayoutConstants.AvatarTrailingPadding).dp,
-                    y = RunDetailLayoutConstants.AvatarVerticalOffset.dp
-                )
-        ) {
-            HeaderAvatarPlaceholder()
-        }
+    }
+
+    // Tag 介绍 Dialog
+    if (showTagDialog && dialogTag != null) {
+        TagInfoDialog(
+            tag = dialogTag!!,
+            onDismiss = {
+                showTagDialog = false
+                dialogTag = null
+            }
+        )
     }
 }
 
@@ -202,27 +210,45 @@ fun RunDetailHeaderDataCard(
 @Composable
 private fun MergedMetricCell(
     metric: RunMetricItem,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onTagClick: (RunPerformanceTag) -> Unit = {}
 ) {
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.Start
     ) {
         Row(
             verticalAlignment = Alignment.Bottom
         ) {
-            Text(
-                text = metric.value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            if (metric.isVdot) {
+                Text(
+                    text = metric.value,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                Text(
+                    text = metric.value,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
             metric.unit?.let { unit ->
                 Text(
                     text = " $unit",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 2.dp)
+                )
+            }
+            // Tag 标签（紧跟在 value+unit 后面）
+            metric.tag?.let { tag ->
+                Spacer(modifier = Modifier.width(4.dp))
+                PerformanceTagChip(
+                    tag = tag,
+                    onClick = { onTagClick(tag) }
                 )
             }
         }
@@ -233,6 +259,122 @@ private fun MergedMetricCell(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+/**
+ * 性能 Tag 小圆角标签
+ */
+@Composable
+private fun PerformanceTagChip(
+    tag: RunPerformanceTag,
+    onClick: () -> Unit
+) {
+    val tagColor = Color(tag.tagColor)
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(tagColor.copy(alpha = 0.15f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 5.dp, vertical = 1.dp)
+    ) {
+        Text(
+            text = tag.tagName,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Medium,
+            color = tagColor,
+            lineHeight = 12.sp
+        )
+    }
+}
+
+/**
+ * Tag 介绍弹窗
+ */
+@Composable
+private fun TagInfoDialog(
+    tag: RunPerformanceTag,
+    onDismiss: () -> Unit
+) {
+    val title = when (tag.tagType) {
+        PerformTagType.STRIDE_RATIO -> "垂直步幅比"
+        PerformTagType.TRAINING_LOAD -> "运动负荷"
+    }
+
+    val description = when (tag.tagType) {
+        PerformTagType.STRIDE_RATIO ->
+            "垂直步幅比反映每一步中垂直方向位移占步幅的比例，比值越低说明跑步效率越高。"
+        PerformTagType.TRAINING_LOAD ->
+            "运动负荷综合评估本次运动对身体的影响程度，数值越高表示训练强度越大。"
+    }
+
+    data class LevelInfo(val range: String, val name: String, val color: Long)
+
+    val levels = when (tag.tagType) {
+        PerformTagType.STRIDE_RATIO -> listOf(
+            LevelInfo("<6%", "凌波鸭", 0xFF90CAF9),
+            LevelInfo("6%-8%", "踏浪鸭", 0xFF4CAF50),
+            LevelInfo("8%-10%", "轻羽鸭", 0xFFFFC107),
+            LevelInfo("10%-12%", "稳健鸭", 0xFFFF9800),
+            LevelInfo(">=12%", "蓄力鸭", 0xFFF44336)
+        )
+        PerformTagType.TRAINING_LOAD -> listOf(
+            LevelInfo("0-50", "很低", 0xFF90CAF9),
+            LevelInfo("50-120", "较低", 0xFF4CAF50),
+            LevelInfo("120-250", "中等", 0xFFFFC107),
+            LevelInfo("250-400", "高", 0xFFFF9800),
+            LevelInfo(">=400", "很高", 0xFFF44336)
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                levels.forEach { level ->
+                    val isCurrent = level.name == tag.tagName
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(Color(level.color))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = buildAnnotatedString {
+                                append("${level.range}  ${level.name}")
+                                if (isCurrent) {
+                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Color(level.color))) {
+                                        append("  <-- 当前")
+                                    }
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
 }
 
 /**
@@ -262,24 +404,16 @@ private fun HeaderAvatarPlaceholder() {
     }
 }
 
+/**
+ * 格式化日期时间: "12.28(六) 14:30-15:45"
+ */
 private fun formatHeaderStartEndTime(startTime: Long, endTime: Long): String {
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val dateFormat = SimpleDateFormat("MM.dd", Locale.getDefault())
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     val startDate = Date(startTime)
     val endDate = Date(endTime)
-    return "${dateFormat.format(startDate)} ${timeFormat.format(startDate)} - ${timeFormat.format(endDate)}"
+    val dayOfWeek = arrayOf("日", "一", "二", "三", "四", "五", "六")
+    val cal = Calendar.getInstance().apply { time = startDate }
+    val weekDay = dayOfWeek[cal.get(Calendar.DAY_OF_WEEK) - 1]
+    return "${dateFormat.format(startDate)}($weekDay) ${timeFormat.format(startDate)}-${timeFormat.format(endDate)}"
 }
-
-private fun formatHeaderDuration(durationMinutes: Double): String {
-    if (durationMinutes <= 0) return "-"
-    val totalSeconds = (durationMinutes * 60).toInt()
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
-    return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format("%d:%02d", minutes, seconds)
-    }
-}
-

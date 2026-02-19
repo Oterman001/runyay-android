@@ -260,9 +260,9 @@ fun RunDetailScreen(
                         }
 
                         // 间距
-                        item {
-                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                        }
+//                        item {
+//                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+//                        }
 
                         // ==================== 3. 训练效果卡片 ====================
                         if (record.trainingEffect > 0 || record.anaerobicTrainingEffect > 0) {
