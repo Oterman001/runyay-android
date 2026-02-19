@@ -81,7 +81,7 @@ data class AbilityZone(
     fun getFormattedSpeedRange(): String {
         if (zoneType != AbilityZoneType.SPEED) {
             // 心率区间显示心率范围
-            return if (minValue > 0 && maxValue > 0) {
+            return if (minValue > 0 && maxValue > 0 && maxValue < 999) {
                 "${minValue.toInt()}~${maxValue.toInt()}"
             } else if (minValue > 0) {
                 ">=${minValue.toInt()}"

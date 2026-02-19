@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -160,9 +161,10 @@ fun RunDetailMapSection(
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val mapHeight = screenHeight * RunDetailLayoutConstants.MapHeightRatio
 
-    // 地图风格状态
     var currentStyle by remember { mutableStateOf(RunMapPreferences.getMapStyle(context)) }
-    var showStyleSelector by remember { mutableStateOf(false) }
+    var showKmMarkers by remember { mutableStateOf(RunMapPreferences.getShowKmMarkers(context)) }
+    var kmMarkerInterval by remember { mutableIntStateOf(RunMapPreferences.getKmMarkerInterval(context)) }
+    var showSettingSheet by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -170,11 +172,12 @@ fun RunDetailMapSection(
             .height(mapHeight)
     ) {
         if (isOutdoor && trackPoints.isNotEmpty()) {
-            // 户外跑 - 显示地图
             MapViewComposable(
                 trackPoints = trackPoints,
                 context = context,
-                styleUri = currentStyle
+                styleUri = currentStyle,
+                showKmMarkers = showKmMarkers,
+                kmMarkerInterval = kmMarkerInterval
             )
 
             // 底部渐变遮罩
@@ -193,9 +196,8 @@ fun RunDetailMapSection(
                     )
             )
 
-            // 地图风格切换按钮 (小按钮，右下角，避开底部渐变)
             SmallFloatingActionButton(
-                onClick = { showStyleSelector = true },
+                onClick = { showSettingSheet = true },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 12.dp, bottom = 80.dp),
@@ -208,25 +210,32 @@ fun RunDetailMapSection(
             ) {
                 Icon(
                     imageVector = Icons.Default.Layers,
-                    contentDescription = "切换地图风格",
+                    contentDescription = "地图设置",
                     modifier = Modifier.size(18.dp)
                 )
             }
 
-            // 地图风格选择器
-            if (showStyleSelector) {
-                RunMapStyleBottomSheet(
+            if (showSettingSheet) {
+                RunMapSettingBottomSheet(
                     currentStyleUri = currentStyle,
+                    showKmMarkers = showKmMarkers,
+                    kmMarkerInterval = kmMarkerInterval,
                     onStyleSelected = { styleUri ->
                         currentStyle = styleUri
                         RunMapPreferences.saveMapStyle(context, styleUri)
-                        showStyleSelector = false
                     },
-                    onDismiss = { showStyleSelector = false }
+                    onKmMarkersToggled = { show ->
+                        showKmMarkers = show
+                        RunMapPreferences.saveShowKmMarkers(context, show)
+                    },
+                    onKmIntervalChanged = { interval ->
+                        kmMarkerInterval = interval
+                        RunMapPreferences.saveKmMarkerInterval(context, interval)
+                    },
+                    onDismiss = { showSettingSheet = false }
                 )
             }
         } else {
-            // 室内跑 - 显示占位符
             IndoorRunPlaceholder()
         }
     }
@@ -269,46 +278,40 @@ private fun IndoorRunPlaceholder() {
 private fun MapViewComposable(
     trackPoints: List<TrackPoint>,
     context: Context,
-    styleUri: String
+    styleUri: String,
+    showKmMarkers: Boolean,
+    kmMarkerInterval: Int
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val isDarkTheme = isSystemInDarkTheme()
 
-    // 使用rememberUpdatedState确保颜色始终最新
     val trackColors by rememberUpdatedState(getTrackColors())
 
-    // 创建MapView
     val mapView = remember {
         RLog.d(TAG, "创建MapView, 轨迹点数: ${trackPoints.size}")
         MapView(context).apply {
-            // 启用所有需要的手势
-            gestures.rotateEnabled = false       // 禁用旋转
-            gestures.pitchEnabled = false        // 禁用倾斜
-            gestures.scrollEnabled = true        // 启用平移
-            gestures.doubleTapToZoomInEnabled = true  // 启用双击缩放
-            gestures.pinchToZoomEnabled = true   // 启用捏合缩放
+            gestures.rotateEnabled = false
+            gestures.pitchEnabled = false
+            gestures.scrollEnabled = true
+            gestures.doubleTapToZoomInEnabled = true
+            gestures.pinchToZoomEnabled = true
 
-            // 隐藏比例尺
             scalebar.enabled = false
 
-            // 触摸时通知父容器不要拦截，让地图处理手势
             setOnTouchListener { view, event ->
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        // 触摸开始，告诉父容器不要拦截
                         (view.parent as? ViewGroup)?.requestDisallowInterceptTouchEvent(true)
                     }
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        // 触摸结束，恢复父容器拦截
                         (view.parent as? ViewGroup)?.requestDisallowInterceptTouchEvent(false)
                     }
                 }
-                false // 返回false让MapView继续处理触摸事件
+                false
             }
         }
     }
 
-    // 生命周期管理 - 使用标志防止重复销毁
     DisposableEffect(lifecycleOwner) {
         var isDestroyed = false
         RLog.d("RunDetailPerf", "MapView DisposableEffect setup")
@@ -341,7 +344,6 @@ private fun MapViewComposable(
             val startTime = System.currentTimeMillis()
             RLog.d("RunDetailPerf", "MapView onDispose START")
             lifecycleOwner.lifecycle.removeObserver(observer)
-            // 仅在生命周期观察者未触发销毁时（如配置更改）才在这里销毁
             if (!isDestroyed) {
                 isDestroyed = true
                 mapView.onDestroy()
@@ -351,7 +353,6 @@ private fun MapViewComposable(
         }
     }
 
-    // 当styleUri变化时重新加载地图
     AndroidView(
         factory = {
             mapView.apply {
@@ -360,7 +361,9 @@ private fun MapViewComposable(
                     if (trackPoints.isNotEmpty()) {
                         RLog.d(TAG, "添加轨迹到地图")
                         addTrackToMap(style, trackPoints, trackColors)
-                        addKilometerMarkers(style, trackPoints, trackColors)
+                        if (showKmMarkers) {
+                            addKilometerMarkers(style, trackPoints, trackColors, kmMarkerInterval)
+                        }
                         centerMapOnTrack(this, trackPoints)
                     } else {
                         RLog.w(TAG, "轨迹点为空")
@@ -369,11 +372,13 @@ private fun MapViewComposable(
             }
         },
         update = { view ->
-            RLog.d(TAG, "更新地图样式: $styleUri, isDark: $isDarkTheme")
+            RLog.d(TAG, "更新地图样式: $styleUri, isDark: $isDarkTheme, showKm: $showKmMarkers, kmInterval: $kmMarkerInterval")
             view.mapboxMap.loadStyle(styleUri) { style ->
                 if (trackPoints.isNotEmpty()) {
                     addTrackToMap(style, trackPoints, trackColors)
-                    addKilometerMarkers(style, trackPoints, trackColors)
+                    if (showKmMarkers) {
+                        addKilometerMarkers(style, trackPoints, trackColors, kmMarkerInterval)
+                    }
                     centerMapOnTrack(view, trackPoints)
                 }
             }
@@ -473,26 +478,25 @@ private fun addTrackToMap(
 private fun addKilometerMarkers(
     style: Style,
     trackPoints: List<TrackPoint>,
-    colors: TrackColorSet
+    colors: TrackColorSet,
+    interval: Int = 1
 ) {
     try {
-        val kmPositions = calculateKilometerPositions(trackPoints)
-        RLog.d(TAG, "公里标记点数: ${kmPositions.size}")
+        val kmPositions = calculateKilometerPositions(trackPoints, interval)
+        RLog.d(TAG, "公里标记点数: ${kmPositions.size}, 间隔: ${interval}km")
 
         kmPositions.forEachIndexed { index, point ->
-            val kmNumber = index + 1
+            val kmNumber = (index + 1) * interval
             val sourceId = "km-marker-source-$kmNumber"
             val bgLayerId = "km-marker-bg-layer-$kmNumber"
             val textLayerId = "km-marker-text-layer-$kmNumber"
 
-            // 添加公里标记数据源
             style.addSource(
                 geoJsonSource(sourceId) {
                     geometry(Point.fromLngLat(point.longitude, point.latitude))
                 }
             )
 
-            // 圆形背景
             style.addLayer(
                 circleLayer(bgLayerId, sourceId) {
                     circleRadius(MapTrackColors.KM_BADGE_RADIUS)
@@ -502,7 +506,6 @@ private fun addKilometerMarkers(
                 }
             )
 
-            // 公里数字文本
             style.addLayer(
                 symbolLayer(textLayerId, sourceId) {
                     textField("$kmNumber")
@@ -521,16 +524,20 @@ private fun addKilometerMarkers(
 }
 
 /**
- * 计算每公里位置点
- * 使用线性插值计算精确的公里位置
+ * 计算公里标记位置点
+ * @param interval 公里间隔（例如 2 表示每 2km 一个标记）
  */
-private fun calculateKilometerPositions(trackPoints: List<TrackPoint>): List<TrackPoint> {
+private fun calculateKilometerPositions(
+    trackPoints: List<TrackPoint>,
+    interval: Int = 1
+): List<TrackPoint> {
     val validPoints = trackPoints.filter { it.isValidCoordinate() }
     if (validPoints.size < 2) return emptyList()
 
+    val step = interval.coerceIn(1, 10).toDouble()
     val kmPositions = mutableListOf<TrackPoint>()
     var accumulatedDistance = 0.0
-    var nextKmThreshold = 1.0  // 第一个公里标记在1km处
+    var nextKmThreshold = step
 
     for (i in 1 until validPoints.size) {
         val prev = validPoints[i - 1]
@@ -544,19 +551,16 @@ private fun calculateKilometerPositions(trackPoints: List<TrackPoint>): List<Tra
         val prevAccumulated = accumulatedDistance
         accumulatedDistance += segmentDistance
 
-        // 检查是否跨过公里阈值
         while (accumulatedDistance >= nextKmThreshold && segmentDistance > 0) {
-            // 计算插值比例
             val distanceToThreshold = nextKmThreshold - prevAccumulated
             val ratio = distanceToThreshold / segmentDistance
 
-            // 线性插值计算精确位置
             val kmPoint = TrackPoint(
                 latitude = prev.latitude + ratio * (curr.latitude - prev.latitude),
                 longitude = prev.longitude + ratio * (curr.longitude - prev.longitude)
             )
             kmPositions.add(kmPoint)
-            nextKmThreshold += 1.0
+            nextKmThreshold += step
         }
     }
 
