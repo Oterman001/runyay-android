@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +44,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPrefe
 @Composable
 fun DebugScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToAllRunRecords: () -> Unit = {},
     viewModel: DebugViewModel = viewModel(
         factory = DebugViewModelFactory(LocalContext.current)
     )
@@ -102,6 +104,32 @@ fun DebugScreen(
                     )
                 }
             }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+
+            // 数据管理
+            item {
+                Text(
+                    text = "数据管理",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+            }
+
+            item {
+                SettingsCard {
+                    SettingsItem(
+                        icon = Icons.AutoMirrored.Outlined.List,
+                        title = "查看所有跑步记录",
+                        subtitle = "按数据源筛选、多选删除",
+                        showDivider = false,
+                        onClick = onNavigateToAllRunRecords
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
 
             // 地图设置
             item {

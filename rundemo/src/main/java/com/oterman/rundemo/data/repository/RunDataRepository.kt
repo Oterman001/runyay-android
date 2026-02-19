@@ -234,5 +234,15 @@ interface RunDataRepository {
      * 删除跑步记录及所有关联数据（级联删除）
      */
     suspend fun deleteRunRecord(workoutId: String)
+
+    /**
+     * 批量删除跑步记录及所有关联数据
+     */
+    suspend fun deleteRunRecords(workoutIds: List<String>)
+
+    /**
+     * 获取所有不同的数据源标识
+     */
+    suspend fun getAllDatasources(): List<String>
 }
 

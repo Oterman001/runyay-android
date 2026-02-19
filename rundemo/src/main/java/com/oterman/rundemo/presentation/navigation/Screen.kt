@@ -128,5 +128,11 @@ sealed class Screen(val route: String) {
      * 用于展示数据同步进度和导入记录
      */
     object DataSyncStatus : Screen("data_sync_status")
+
+    /**
+     * 所有跑步记录管理页面（调试用）
+     * 支持按数据源筛选、多选删除、全选删除
+     */
+    object AllRunRecords : Screen("all_run_records")
 }
 

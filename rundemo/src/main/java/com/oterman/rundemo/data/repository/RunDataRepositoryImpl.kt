@@ -323,9 +323,16 @@ class RunDataRepositoryImpl private constructor(
     // ==================== 删除操作 ====================
     
     override suspend fun deleteRunRecord(workoutId: String) {
-        // 由于设置了ForeignKey CASCADE，删除主记录会自动删除关联数据
-        // 注意：PB和VDOT不通过CASCADE删除（它们不是外键关联）
         runRecordDao.deleteByWorkoutId(workoutId)
+    }
+
+    override suspend fun deleteRunRecords(workoutIds: List<String>) {
+        if (workoutIds.isEmpty()) return
+        runRecordDao.deleteByWorkoutIds(workoutIds)
+    }
+
+    override suspend fun getAllDatasources(): List<String> {
+        return runRecordDao.getAllDatasources()
     }
     
     // ==================== 扩展函数 ====================

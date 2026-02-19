@@ -71,5 +71,17 @@ interface RunRecordDao {
      */
     @Query("SELECT * FROM run_record WHERE datasource = :datasource ORDER BY startTime DESC")
     suspend fun getByDatasource(datasource: String): List<RunRecordEntity>
+
+    /**
+     * 批量删除记录
+     */
+    @Query("DELETE FROM run_record WHERE workoutId IN (:workoutIds)")
+    suspend fun deleteByWorkoutIds(workoutIds: List<String>)
+
+    /**
+     * 获取所有不同的数据源
+     */
+    @Query("SELECT DISTINCT datasource FROM run_record WHERE datasource IS NOT NULL ORDER BY datasource")
+    suspend fun getAllDatasources(): List<String>
 }
 

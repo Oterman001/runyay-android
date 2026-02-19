@@ -39,6 +39,7 @@ import com.oterman.rundemo.presentation.feature.statistics.RunStatisticTab
 import com.oterman.rundemo.presentation.feature.statistics.RunStatisticsScreen
 import com.oterman.rundemo.presentation.feature.userprofile.UserProfileScreen
 import com.oterman.rundemo.presentation.feature.debug.DebugScreen
+import com.oterman.rundemo.presentation.feature.debug.allrecords.AllRunRecordsDebugScreen
 import com.oterman.rundemo.presentation.feature.syncstatus.DataSyncStatusScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 
@@ -391,6 +392,18 @@ fun AppNavGraph(
         // 调试页面
         composable(Screen.Debug.route) {
             DebugScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAllRunRecords = {
+                    navController.navigate(Screen.AllRunRecords.route)
+                }
+            )
+        }
+
+        // 所有跑步记录管理页面
+        composable(Screen.AllRunRecords.route) {
+            AllRunRecordsDebugScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
