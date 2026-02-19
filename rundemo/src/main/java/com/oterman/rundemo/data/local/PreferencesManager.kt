@@ -188,6 +188,8 @@ class PreferencesManager(context: Context) {
             remove(Constants.PreferenceKeys.KEY_EMAIL)
             remove(Constants.PreferenceKeys.KEY_IMAGE_URL)
             remove(Constants.PreferenceKeys.KEY_TOKEN_EXPIRE_DATE)
+            remove(Constants.PreferenceKeys.KEY_CACHED_AVATAR_URL)
+            remove(Constants.PreferenceKeys.KEY_CACHED_AVATAR_EXPIRATION)
             putBoolean(Constants.PreferenceKeys.KEY_IS_LOGGED_IN, false)
             apply()
         }
@@ -198,6 +200,28 @@ class PreferencesManager(context: Context) {
      */
     fun updateUserName(userName: String) {
         saveUserName(userName)
+    }
+
+    // ==================== Avatar Cache ====================
+
+    fun saveCachedAvatarUrl(url: String, expirationTime: Long) {
+        prefs.edit()
+            .putString(Constants.PreferenceKeys.KEY_CACHED_AVATAR_URL, url)
+            .putLong(Constants.PreferenceKeys.KEY_CACHED_AVATAR_EXPIRATION, expirationTime)
+            .apply()
+    }
+
+    fun getCachedAvatarUrl(): String? =
+        prefs.getString(Constants.PreferenceKeys.KEY_CACHED_AVATAR_URL, null)
+
+    fun getCachedAvatarExpiration(): Long =
+        prefs.getLong(Constants.PreferenceKeys.KEY_CACHED_AVATAR_EXPIRATION, 0L)
+
+    fun clearCachedAvatar() {
+        prefs.edit()
+            .remove(Constants.PreferenceKeys.KEY_CACHED_AVATAR_URL)
+            .remove(Constants.PreferenceKeys.KEY_CACHED_AVATAR_EXPIRATION)
+            .apply()
     }
 
     // ==================== Goal Settings ====================

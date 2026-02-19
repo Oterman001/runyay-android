@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -40,8 +42,10 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.SubcomposeAsyncImage
 import com.oterman.rundemo.presentation.feature.rundetail.PerformTagType
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
@@ -64,6 +68,8 @@ fun RunDetailHeaderDataCard(
     deviceName: String?,
     isOutdoor: Boolean,
     metrics: List<RunMetricItem>,
+    avatarUrl: String? = null,
+    isLoadingAvatar: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     // Tag dialog state
@@ -151,7 +157,10 @@ fun RunDetailHeaderDataCard(
                     }
 
                     // 右侧：头像（垂直居中于header三行）
-                    HeaderAvatarPlaceholder()
+                    HeaderAvatar(
+                        avatarUrl = avatarUrl,
+                        isLoading = isLoadingAvatar
+                    )
                 }
 
                 // ========== 分隔线 ==========
@@ -378,13 +387,19 @@ private fun TagInfoDialog(
 }
 
 /**
- * 头像占位符
+ * 头像组件：有URL时加载网络图片，否则显示"跑"占位符
  */
 @Composable
-private fun HeaderAvatarPlaceholder() {
+private fun HeaderAvatar(
+    avatarUrl: String?,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val size = RunDetailLayoutConstants.AvatarSize.dp
+
     Box(
-        modifier = Modifier
-            .size(RunDetailLayoutConstants.AvatarSize.dp)
+        modifier = modifier
+            .size(size)
             .shadow(4.dp, CircleShape)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.primaryContainer)
@@ -395,12 +410,54 @@ private fun HeaderAvatarPlaceholder() {
             ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "跑",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+        when {
+            isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(size * 0.4f),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            avatarUrl.isNullOrBlank() -> {
+                // 无头像URL - 显示"跑"占位符
+                Text(
+                    text = "跑",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            else -> {
+                SubcomposeAsyncImage(
+                    model = avatarUrl,
+                    contentDescription = "Avatar",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(size * 0.4f),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    error = {
+                        Text(
+                            text = "跑",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                )
+            }
+        }
     }
 }
 

@@ -39,6 +39,10 @@ data class RunDetailUiState(
     val mergedTrainingSegments: List<MergedRunSegment> = emptyList(),
     val expandedSegmentIds: Set<String> = emptySet(),
 
+    // 头像
+    val avatarUrl: String? = null,
+    val isLoadingAvatar: Boolean = false,
+
     // FIT下载状态
     val isDownloading: Boolean = false,
     val downloadedFitData: ByteArray? = null,
@@ -78,6 +82,8 @@ data class RunDetailUiState(
         if (trainingSegments != other.trainingSegments) return false
         if (mergedTrainingSegments != other.mergedTrainingSegments) return false
         if (expandedSegmentIds != other.expandedSegmentIds) return false
+        if (avatarUrl != other.avatarUrl) return false
+        if (isLoadingAvatar != other.isLoadingAvatar) return false
         if (isDownloading != other.isDownloading) return false
         if (downloadedFitData != null) {
             if (other.downloadedFitData == null) return false
@@ -111,6 +117,8 @@ data class RunDetailUiState(
         result = 31 * result + trainingSegments.hashCode()
         result = 31 * result + mergedTrainingSegments.hashCode()
         result = 31 * result + expandedSegmentIds.hashCode()
+        result = 31 * result + (avatarUrl?.hashCode() ?: 0)
+        result = 31 * result + isLoadingAvatar.hashCode()
         result = 31 * result + isDownloading.hashCode()
         result = 31 * result + (downloadedFitData?.contentHashCode() ?: 0)
         result = 31 * result + (downloadError?.hashCode() ?: 0)

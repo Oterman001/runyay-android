@@ -255,7 +255,9 @@ fun RunDetailScreen(
                                 duration = record.activeDuration,
                                 deviceName = record.deviceVersion,
                                 isOutdoor = uiState.isOutdoor,
-                                metrics = uiState.metrics
+                                metrics = uiState.metrics,
+                                avatarUrl = uiState.avatarUrl,
+                                isLoadingAvatar = uiState.isLoadingAvatar
                             )
                         }
 

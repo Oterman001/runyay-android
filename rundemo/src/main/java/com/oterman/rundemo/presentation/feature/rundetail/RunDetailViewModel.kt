@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.repository.AvatarManager
 import com.oterman.rundemo.data.repository.FitDownloadRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
+import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.domain.model.IntervalType
 import com.oterman.rundemo.domain.model.MergedRunSegment
 import com.oterman.rundemo.domain.model.RunSegment
@@ -27,8 +29,14 @@ import java.util.Locale
 class RunDetailViewModel(
     private val workoutId: String,
     private val repository: RunDataRepository,
-    private val fitDownloadRepository: FitDownloadRepository
+    private val fitDownloadRepository: FitDownloadRepository,
+    private val avatarManager: AvatarManager,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "RunDetailViewModel"
+    }
 
     private val _uiState = MutableStateFlow(RunDetailUiState())
     val uiState: StateFlow<RunDetailUiState> = _uiState.asStateFlow()
@@ -37,6 +45,7 @@ class RunDetailViewModel(
 
     init {
         loadData()
+        loadAvatar()
     }
 
     /**
@@ -112,6 +121,21 @@ class RunDetailViewModel(
                 )
             } catch (e: Exception) {
                 _uiState.value = RunDetailUiState(isLoading = false, error = e.message ?: "加载失败")
+            }
+        }
+    }
+
+    private fun loadAvatar() {
+        val userId = preferencesManager.getUserId() ?: return
+        if (!preferencesManager.isUserLoggedIn()) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingAvatar = true)
+            avatarManager.getAvatarUrl(userId).onSuccess { url ->
+                _uiState.value = _uiState.value.copy(avatarUrl = url, isLoadingAvatar = false)
+            }.onFailure {
+                RLog.e(TAG, "头像加载失败: ${it.message}")
+                _uiState.value = _uiState.value.copy(isLoadingAvatar = false)
             }
         }
     }
@@ -361,7 +385,8 @@ class RunDetailViewModel(
      * 格式化配速 (min/km -> 5'30")
      */
     private fun formatPace(paceMinPerKm: Double): String {
-        if (paceMinPerKm <= 0) return "-"
+        RLog.d(TAG, "formatPace 原始值: $paceMinPerKm")
+        if (paceMinPerKm <= 0 || paceMinPerKm > 30) return "-"
         val minutes = paceMinPerKm.toInt()
         val seconds = ((paceMinPerKm - minutes) * 60).toInt()
         return "${minutes}'${seconds.toString().padStart(2, '0')}\""
@@ -484,7 +509,8 @@ class RunDetailViewModelFactory(
             val repository = RunDataRepositoryImpl.getInstance(database)
             val preferencesManager = PreferencesManager(context)
             val fitDownloadRepository = FitDownloadRepository(preferencesManager)
-            return RunDetailViewModel(workoutId, repository, fitDownloadRepository) as T
+            val avatarManager = AvatarManager.getInstance(context)
+            return RunDetailViewModel(workoutId, repository, fitDownloadRepository, avatarManager, preferencesManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

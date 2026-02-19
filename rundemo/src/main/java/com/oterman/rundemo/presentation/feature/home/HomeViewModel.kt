@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.fit.FitImportService
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.repository.AvatarManager
 import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.service.sync.DataSyncForegroundService
 import com.oterman.rundemo.service.sync.SyncUiState
@@ -30,7 +31,8 @@ class HomeViewModel(
     private val preferencesManager: PreferencesManager = PreferencesManager(context),
     private val fitImportService: FitImportService = FitImportService(context),
     private val userRepository: UserRepository = UserRepository(context),
-    private val syncManager: UnifiedDataSyncManager = UnifiedDataSyncManager.getInstance(context)
+    private val syncManager: UnifiedDataSyncManager = UnifiedDataSyncManager.getInstance(context),
+    private val avatarManager: AvatarManager = AvatarManager.getInstance(context)
 ) : ViewModel() {
 
     companion object {
@@ -82,7 +84,7 @@ class HomeViewModel(
 
             RLog.d(TAG, "开始加载头像URL: userId=$userId")
 
-            val result = userRepository.getAvatarUrl(userId)
+            val result = avatarManager.getAvatarUrl(userId)
 
             result.onSuccess { url ->
                 RLog.d(TAG, "头像URL加载成功: $url")
