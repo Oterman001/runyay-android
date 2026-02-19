@@ -71,9 +71,15 @@ data class RunSegment(
      * 格式化配速显示
      */
     fun getFormattedSpeed(): String {
-        if (averageSpeed <= 0) return "-"
-        val minutes = averageSpeed.toInt()
-        val seconds = ((averageSpeed - minutes) * 60).toInt()
+        val pace = if (averageSpeed > 0) {
+            averageSpeed
+        } else if (distance > 0 && activeDuration > 0) {
+            activeDuration / distance  // min/km
+        } else {
+            return "-"
+        }
+        val minutes = pace.toInt()
+        val seconds = ((pace - minutes) * 60).toInt()
         return "${minutes}'${seconds.toString().padStart(2, '0')}\""
     }
 
