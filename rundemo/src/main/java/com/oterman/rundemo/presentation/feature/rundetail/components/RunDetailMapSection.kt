@@ -158,10 +158,11 @@ fun RunDetailMapSection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val isDarkTheme = isSystemInDarkTheme()
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val mapHeight = screenHeight * RunDetailLayoutConstants.MapHeightRatio
 
-    var currentStyle by remember { mutableStateOf(RunMapPreferences.getMapStyle(context)) }
+    var currentStyle by remember { mutableStateOf(RunMapPreferences.getMapStyle(context, isDarkTheme)) }
     var showKmMarkers by remember { mutableStateOf(RunMapPreferences.getShowKmMarkers(context)) }
     var kmMarkerInterval by remember { mutableIntStateOf(RunMapPreferences.getKmMarkerInterval(context)) }
     var showSettingSheet by remember { mutableStateOf(false) }

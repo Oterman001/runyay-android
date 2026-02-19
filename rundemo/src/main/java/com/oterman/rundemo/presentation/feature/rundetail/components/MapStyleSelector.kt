@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.mapbox.maps.Style
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * Mapbox地图风格数据模型
@@ -145,8 +146,12 @@ object RunMapPreferences {
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun getMapStyle(context: Context): String {
-        return prefs(context).getString(KEY_MAP_STYLE, Style.OUTDOORS) ?: Style.OUTDOORS
+    fun getMapStyle(context: Context, isDarkTheme: Boolean): String {
+        val p = prefs(context)
+        if (!p.contains(KEY_MAP_STYLE)) {
+            return if (isDarkTheme) Style.DARK else Style.STANDARD
+        }
+        return p.getString(KEY_MAP_STYLE, Style.STANDARD) ?: Style.STANDARD
     }
 
     fun saveMapStyle(context: Context, styleUri: String) {
@@ -167,6 +172,10 @@ object RunMapPreferences {
 
     fun saveKmMarkerInterval(context: Context, interval: Int) {
         prefs(context).edit().putInt(KEY_KM_MARKER_INTERVAL, interval.coerceIn(1, 10)).apply()
+    }
+
+    fun clearAll(context: Context) {
+        prefs(context).edit().clear().apply()
     }
 }
 
@@ -244,7 +253,7 @@ fun RunMapSettingBottomSheet(
                         onKmMarkersToggled(newValue)
                     },
                     colors = SwitchDefaults.colors(
-                        checkedTrackColor = MaterialTheme.colorScheme.primary
+                        checkedTrackColor = RunTheme.colorScheme.blue
                     )
                 )
             }
@@ -339,8 +348,9 @@ private fun MapStyleCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val blueColor = RunTheme.colorScheme.blue
     val borderStroke = if (isSelected) {
-        BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        BorderStroke(2.dp, blueColor)
     } else {
         null
     }
@@ -353,7 +363,7 @@ private fun MapStyleCard(
         border = borderStroke,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
+                blueColor.copy(alpha = 0.12f)
             } else {
                 MaterialTheme.colorScheme.surfaceVariant
             }
@@ -371,7 +381,7 @@ private fun MapStyleCard(
                 contentDescription = style.name,
                 modifier = Modifier.size(28.dp),
                 tint = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
+                    blueColor
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
@@ -383,7 +393,7 @@ private fun MapStyleCard(
                 text = style.name,
                 style = MaterialTheme.typography.labelSmall,
                 color = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
+                    blueColor
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }

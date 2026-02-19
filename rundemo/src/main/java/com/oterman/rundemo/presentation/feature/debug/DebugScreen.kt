@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
 import com.oterman.rundemo.presentation.components.settings.SettingsItem
+import com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences
 
 /**
  * 调试页面
@@ -97,6 +98,31 @@ fun DebugScreen(
                                     Toast.makeText(context, "缩略图缓存已清除", Toast.LENGTH_SHORT).show()
                                 }
                             }
+                        }
+                    )
+                }
+            }
+
+            // 地图设置
+            item {
+                Text(
+                    text = "地图设置",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+            }
+
+            item {
+                SettingsCard {
+                    SettingsItem(
+                        icon = Icons.Outlined.Delete,
+                        title = "清除地图样式与公里点设置",
+                        subtitle = "恢复地图风格、公里点开关及间隔为默认值",
+                        showDivider = false,
+                        onClick = {
+                            RunMapPreferences.clearAll(context)
+                            Toast.makeText(context, "地图设置已清除", Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
