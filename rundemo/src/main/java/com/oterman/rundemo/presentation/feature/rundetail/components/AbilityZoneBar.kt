@@ -118,7 +118,7 @@ private fun ZoneBarRow(
             horizontalAlignment = Alignment.End
         ) {
             Text(
-                text = zone.getFormattedPercentage(),
+                text = String.format("%.1f%%", percentage * 100),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
