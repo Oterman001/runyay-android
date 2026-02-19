@@ -182,7 +182,7 @@ private fun SegmentTableRow(
         // 步幅
         Text(
             text = if (segment.averageStrideLength > 0) {
-                String.format("%.2f", segment.averageStrideLength)
+                String.format("%.1f", segment.averageStrideLength)
             } else "-",
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,

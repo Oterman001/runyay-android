@@ -62,7 +62,7 @@ fun PeriodStatisticsCard(
         ) {
             Text(
                 text = title,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             )

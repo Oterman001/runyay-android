@@ -201,7 +201,7 @@ fun RunDetailMapSection(
                 onClick = { showSettingSheet = true },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 12.dp, bottom = 80.dp),
+                    .padding(end = 12.dp, bottom = 40.dp),
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 elevation = FloatingActionButtonDefaults.elevation(

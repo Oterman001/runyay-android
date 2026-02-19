@@ -38,7 +38,7 @@ fun WeekStatisticsCard(
         // Title
         Text(
             text = "本周",
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold
         )
