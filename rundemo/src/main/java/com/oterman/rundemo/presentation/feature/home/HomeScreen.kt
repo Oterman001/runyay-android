@@ -1,6 +1,7 @@
 package com.oterman.rundemo.presentation.feature.home
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -171,7 +172,7 @@ private fun HomeBottomNavigationBar(
     val tabColors = NavigationBarItemDefaults.colors(
         selectedIconColor = RunTheme.colorScheme.blue,
         selectedTextColor = RunTheme.colorScheme.blue,
-        indicatorColor = RunTheme.colorScheme.blue.copy(alpha = 0.1f),
+        indicatorColor = Color.Transparent,
         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
