@@ -654,9 +654,9 @@ private fun centerMapOnTrack(mapView: MapView, trackPoints: List<TrackPoint>) {
             Point.fromLngLat(maxLon, maxLat)
         )
 
-        // Padding: top=100 (for TopAppBar), bottom=80 (for gradient overlay),
+        // Padding: top=100 (for TopAppBar), bottom=130 (for gradient overlay + header card invasion),
         // left/right=40 (margin from edges)
-        val padding = EdgeInsets(100.0, 40.0, 80.0, 40.0)
+        val padding = EdgeInsets(100.0, 40.0, 130.0, 40.0)
 
         val cameraOptions = mapView.mapboxMap.cameraForCoordinateBounds(
             bounds,

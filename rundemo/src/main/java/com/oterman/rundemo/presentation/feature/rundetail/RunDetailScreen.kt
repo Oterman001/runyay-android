@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -266,7 +267,16 @@ fun RunDetailScreen(
                                 isOutdoor = uiState.isOutdoor,
                                 metrics = uiState.metrics,
                                 avatarUrl = uiState.avatarUrl,
-                                isLoadingAvatar = uiState.isLoadingAvatar
+                                isLoadingAvatar = uiState.isLoadingAvatar,
+                                modifier = Modifier
+                                    .layout { measurable, constraints ->
+                                        val placeable = measurable.measure(constraints)
+                                        val invasionPx = RunDetailLayoutConstants.HeaderInvasionOffset.dp
+                                            .roundToPx().let { kotlin.math.abs(it) }
+                                        layout(placeable.width, placeable.height - invasionPx) {
+                                            placeable.placeRelative(0, -invasionPx)
+                                        }
+                                    }
                             )
                         }
 

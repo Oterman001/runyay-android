@@ -58,8 +58,7 @@ fun RunDetailHeaderCard(
         // 主卡片
         Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .offset(y = RunDetailLayoutConstants.HeaderInvasionOffset.dp),
+                .fillMaxWidth(),
             shape = RoundedCornerShape(RunDetailLayoutConstants.HeaderCardRadius.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
