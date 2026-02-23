@@ -42,6 +42,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.mapbox.geojson.LineString
 import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.CoordinateBounds
 import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapView
@@ -156,7 +157,9 @@ fun getTrackColors(): TrackColorSet {
 fun RunDetailMapSection(
     trackPoints: List<TrackPoint>,
     isOutdoor: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    savedCameraOptions: CameraOptions? = null,
+    onCameraChanged: (CameraOptions) -> Unit = {}
 ) {
     val context = LocalContext.current
     val isDarkTheme = isSystemInDarkTheme()
@@ -179,7 +182,9 @@ fun RunDetailMapSection(
                 context = context,
                 styleUri = currentStyle,
                 showKmMarkers = showKmMarkers,
-                kmMarkerInterval = kmMarkerInterval
+                kmMarkerInterval = kmMarkerInterval,
+                savedCameraOptions = savedCameraOptions,
+                onCameraChanged = onCameraChanged
             )
 
             // 底部渐变遮罩
@@ -282,7 +287,9 @@ private fun MapViewComposable(
     context: Context,
     styleUri: String,
     showKmMarkers: Boolean,
-    kmMarkerInterval: Int
+    kmMarkerInterval: Int,
+    savedCameraOptions: CameraOptions? = null,
+    onCameraChanged: (CameraOptions) -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val isDarkTheme = isSystemInDarkTheme()
@@ -313,6 +320,11 @@ private fun MapViewComposable(
             }
         }
     }
+
+    // 追踪参数变化，避免滚动recomposition时无条件重置地图
+    var lastStyleUri by remember { mutableStateOf(styleUri) }
+    var lastShowKmMarkers by remember { mutableStateOf(showKmMarkers) }
+    var lastKmMarkerInterval by remember { mutableIntStateOf(kmMarkerInterval) }
 
     DisposableEffect(lifecycleOwner) {
         var isDestroyed = false
@@ -345,6 +357,21 @@ private fun MapViewComposable(
         onDispose {
             val startTime = System.currentTimeMillis()
             RLog.d("RunDetailPerf", "MapView onDispose START")
+            // 保存相机状态，以便地图重建时恢复
+            try {
+                val state = mapView.mapboxMap.cameraState
+                onCameraChanged(
+                    CameraOptions.Builder()
+                        .center(state.center)
+                        .zoom(state.zoom)
+                        .bearing(state.bearing)
+                        .pitch(state.pitch)
+                        .padding(state.padding)
+                        .build()
+                )
+            } catch (e: Exception) {
+                RLog.e("RunDetailPerf", "保存相机状态失败", e)
+            }
             lifecycleOwner.lifecycle.removeObserver(observer)
             if (!isDestroyed) {
                 isDestroyed = true
@@ -358,7 +385,7 @@ private fun MapViewComposable(
     AndroidView(
         factory = {
             mapView.apply {
-                RLog.d(TAG, "初始化地图样式: $styleUri")
+                RLog.d(TAG, "初始化地图样式: $styleUri, 有保存的相机状态: ${savedCameraOptions != null}")
                 mapboxMap.loadStyle(styleUri) { style ->
                     if (trackPoints.isNotEmpty()) {
                         RLog.d(TAG, "添加轨迹到地图")
@@ -366,7 +393,11 @@ private fun MapViewComposable(
                         if (showKmMarkers) {
                             addKilometerMarkers(style, trackPoints, trackColors, kmMarkerInterval)
                         }
-                        centerMapOnTrack(this, trackPoints)
+                        if (savedCameraOptions != null) {
+                            mapboxMap.setCamera(savedCameraOptions)
+                        } else {
+                            centerMapOnTrack(this, trackPoints)
+                        }
                     } else {
                         RLog.w(TAG, "轨迹点为空")
                     }
@@ -374,14 +405,23 @@ private fun MapViewComposable(
             }
         },
         update = { view ->
-            RLog.d(TAG, "更新地图样式: $styleUri, isDark: $isDarkTheme, showKm: $showKmMarkers, kmInterval: $kmMarkerInterval")
-            view.mapboxMap.loadStyle(styleUri) { style ->
-                if (trackPoints.isNotEmpty()) {
-                    addTrackToMap(style, trackPoints, trackColors)
-                    if (showKmMarkers) {
-                        addKilometerMarkers(style, trackPoints, trackColors, kmMarkerInterval)
+            val styleChanged = styleUri != lastStyleUri
+            val kmChanged = showKmMarkers != lastShowKmMarkers || kmMarkerInterval != lastKmMarkerInterval
+
+            if (styleChanged || kmChanged) {
+                RLog.d(TAG, "地图参数变化, styleChanged=$styleChanged, kmChanged=$kmChanged")
+                lastStyleUri = styleUri
+                lastShowKmMarkers = showKmMarkers
+                lastKmMarkerInterval = kmMarkerInterval
+
+                view.mapboxMap.loadStyle(styleUri) { style ->
+                    if (trackPoints.isNotEmpty()) {
+                        addTrackToMap(style, trackPoints, trackColors)
+                        if (showKmMarkers) {
+                            addKilometerMarkers(style, trackPoints, trackColors, kmMarkerInterval)
+                        }
+                        centerMapOnTrack(view, trackPoints)
                     }
-                    centerMapOnTrack(view, trackPoints)
                 }
             }
         },

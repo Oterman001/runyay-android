@@ -35,7 +35,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,6 +52,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.ContactTime
 import com.oterman.rundemo.presentation.feature.rundetail.components.HeartRateChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.PaceChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.PowerChartCard
+import com.mapbox.maps.CameraOptions
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailHeaderDataCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailMapSection
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailSegmentTable
@@ -221,6 +224,10 @@ fun RunDetailScreen(
                     // 成功状态 - 显示详情内容
                     val record = uiState.record!!
 
+                    // 保存地图相机状态，在 LazyColumn 外部 remember，
+                    // 避免地图 item 被 dispose 后相机状态丢失
+                    var savedCameraOptions by remember { mutableStateOf<CameraOptions?>(null) }
+
                     LazyColumn(
                         state = lazyListState,
                         modifier = Modifier.fillMaxSize()
@@ -230,7 +237,9 @@ fun RunDetailScreen(
                             Box {
                                 RunDetailMapSection(
                                     trackPoints = uiState.trackPoints,
-                                    isOutdoor = uiState.isOutdoor
+                                    isOutdoor = uiState.isOutdoor,
+                                    savedCameraOptions = savedCameraOptions,
+                                    onCameraChanged = { savedCameraOptions = it }
                                 )
 
                                 // 天气覆盖层（左下角）
