@@ -42,9 +42,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.mapbox.geojson.LineString
 import com.mapbox.geojson.Point
+import com.mapbox.maps.CoordinateBounds
+import com.mapbox.maps.EdgeInsets
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
-import com.mapbox.maps.dsl.cameraOptions
 import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.generated.circleLayer
 import com.mapbox.maps.extension.style.layers.generated.lineLayer
@@ -607,32 +608,24 @@ private fun centerMapOnTrack(mapView: MapView, trackPoints: List<TrackPoint>) {
             if (point.longitude > maxLon) maxLon = point.longitude
         }
 
-        // 计算中心点
-        val centerLat = (minLat + maxLat) / 2
-        val centerLon = (minLon + maxLon) / 2
+        // Use Mapbox's cameraForCoordinateBounds for precise fitting
+        val bounds = CoordinateBounds(
+            Point.fromLngLat(minLon, minLat),
+            Point.fromLngLat(maxLon, maxLat)
+        )
 
-        // 计算合适的缩放级别
-        val latDiff = maxLat - minLat
-        val lonDiff = maxLon - minLon
-        val maxDiff = maxOf(latDiff, lonDiff)
+        // Padding: top=100 (for TopAppBar), bottom=80 (for gradient overlay),
+        // left/right=40 (margin from edges)
+        val padding = EdgeInsets(100.0, 40.0, 80.0, 40.0)
 
-        // 根据跨度计算zoom level
-        val zoom = when {
-            maxDiff > 0.1 -> 11.0
-            maxDiff > 0.05 -> 12.0
-            maxDiff > 0.01 -> 13.0
-            maxDiff > 0.005 -> 14.0
-            else -> 15.0
-        }
+        val cameraOptions = mapView.mapboxMap.cameraForCoordinateBounds(
+            bounds,
+            padding,
+            null,  // bearing
+            0.0    // pitch (flat)
+        )
 
-        RLog.d(TAG, "居中地图: lat=$centerLat, lon=$centerLon, zoom=$zoom")
-
-        // 设置相机位置
-        val cameraOptions = cameraOptions {
-            center(Point.fromLngLat(centerLon, centerLat))
-            zoom(zoom)
-            pitch(0.0)
-        }
+        RLog.d(TAG, "居中地图: bounds=$bounds, padding=$padding")
 
         mapView.mapboxMap.setCamera(cameraOptions)
     } catch (e: Exception) {
