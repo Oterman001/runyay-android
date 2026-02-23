@@ -217,8 +217,8 @@ class FitFileParser(private val context: Context) {
                     totalTimerTime = mesg.totalTimerTime ?: 0f,
                     totalDistance = mesg.totalDistance ?: 0f,
                     totalCalories = mesg.totalCalories,
-                    avgSpeed = mesg.avgSpeed,
-                    maxSpeed = mesg.maxSpeed,
+                    avgSpeed = mesg.enhancedAvgSpeed ?: mesg.avgSpeed,
+                    maxSpeed = mesg.enhancedMaxSpeed ?: mesg.maxSpeed,
                     avgHeartRate = mesg.avgHeartRate?.toInt(),
                     maxHeartRate = mesg.maxHeartRate?.toInt(),
                     minHeartRate = mesg.minHeartRate?.toInt(),
@@ -237,7 +237,7 @@ class FitFileParser(private val context: Context) {
                     anaerobicTrainingEffect = mesg.totalAnaerobicTrainingEffect
                 )
             })
-            
+
             // 监听分段消息
             mesgBroadcaster.addListener(LapMesgListener { mesg ->
                 laps.add(FitLap(
@@ -245,8 +245,8 @@ class FitFileParser(private val context: Context) {
                     totalElapsedTime = mesg.totalElapsedTime ?: 0f,
                     totalTimerTime = mesg.totalTimerTime ?: 0f,
                     totalDistance = mesg.totalDistance ?: 0f,
-                    avgSpeed = mesg.avgSpeed,
-                    maxSpeed = mesg.maxSpeed,
+                    avgSpeed = mesg.enhancedAvgSpeed ?: mesg.avgSpeed,
+                    maxSpeed = mesg.enhancedMaxSpeed ?: mesg.maxSpeed,
                     avgHeartRate = mesg.avgHeartRate?.toInt(),
                     maxHeartRate = mesg.maxHeartRate?.toInt(),
                     avgCadence = mesg.avgCadence?.toInt(),
@@ -259,7 +259,7 @@ class FitFileParser(private val context: Context) {
                     wktStepIndex = mesg.wktStepIndex
                 ))
             })
-            
+
             // 监听记录消息（采样点）
             mesgBroadcaster.addListener(RecordMesgListener { mesg ->
                 records.add(FitRecord(
@@ -277,7 +277,7 @@ class FitFileParser(private val context: Context) {
                     stanceTime = mesg.stanceTime
                 ))
             })
-            
+
             // 监听事件消息
             mesgBroadcaster.addListener(EventMesgListener { mesg ->
                 events.add(FitEvent(
@@ -286,7 +286,7 @@ class FitFileParser(private val context: Context) {
                     eventType = mesg.eventType?.name
                 ))
             })
-            
+
             // 监听设备信息消息
             mesgBroadcaster.addListener(DeviceInfoMesgListener { mesg ->
                 if (deviceInfo == null) {
@@ -383,8 +383,8 @@ class FitFileParser(private val context: Context) {
                 totalTimerTime = mesg.totalTimerTime ?: 0f,
                 totalDistance = mesg.totalDistance ?: 0f,
                 totalCalories = mesg.totalCalories,
-                avgSpeed = mesg.avgSpeed,
-                maxSpeed = mesg.maxSpeed,
+                avgSpeed = mesg.enhancedAvgSpeed ?: mesg.avgSpeed,
+                maxSpeed = mesg.enhancedMaxSpeed ?: mesg.maxSpeed,
                 avgHeartRate = mesg.avgHeartRate?.toInt(),
                 maxHeartRate = mesg.maxHeartRate?.toInt(),
                 minHeartRate = mesg.minHeartRate?.toInt(),
@@ -403,7 +403,7 @@ class FitFileParser(private val context: Context) {
                 anaerobicTrainingEffect = mesg.totalAnaerobicTrainingEffect
             )
         })
-        
+
         // 监听分段消息
         mesgBroadcaster.addListener(LapMesgListener { mesg ->
             laps.add(FitLap(
@@ -411,8 +411,8 @@ class FitFileParser(private val context: Context) {
                 totalElapsedTime = mesg.totalElapsedTime ?: 0f,
                 totalTimerTime = mesg.totalTimerTime ?: 0f,
                 totalDistance = mesg.totalDistance ?: 0f,
-                avgSpeed = mesg.avgSpeed,
-                maxSpeed = mesg.maxSpeed,
+                avgSpeed = mesg.enhancedAvgSpeed ?: mesg.avgSpeed,
+                maxSpeed = mesg.enhancedMaxSpeed ?: mesg.maxSpeed,
                 avgHeartRate = mesg.avgHeartRate?.toInt(),
                 maxHeartRate = mesg.maxHeartRate?.toInt(),
                 avgCadence = mesg.avgCadence?.toInt(),

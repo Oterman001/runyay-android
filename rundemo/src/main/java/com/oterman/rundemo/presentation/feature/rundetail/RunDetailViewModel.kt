@@ -53,12 +53,12 @@ class RunDetailViewModel(
      */
     private fun loadData() {
         viewModelScope.launch {
-            _uiState.value = RunDetailUiState(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
                 val detailData = repository.getRunDetail(workoutId)
                 if (detailData == null) {
-                    _uiState.value = RunDetailUiState(isLoading = false, error = "未找到该跑步记录")
+                    _uiState.value = _uiState.value.copy(isLoading = false, error = "未找到该跑步记录")
                     return@launch
                 }
 
@@ -97,8 +97,9 @@ class RunDetailViewModel(
                 val heartRate5Zones = repository.getHeartRate5Zones(workoutId)
                 val speedZones = repository.getSpeedZones(workoutId)
 
-                _uiState.value = RunDetailUiState(
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    error = null,
                     record = record,
                     trackPoints = trackPoints,
                     segments = segments,
@@ -120,7 +121,7 @@ class RunDetailViewModel(
                     expandedSegmentIds = _expandedSegmentIds.toSet()
                 )
             } catch (e: Exception) {
-                _uiState.value = RunDetailUiState(isLoading = false, error = e.message ?: "加载失败")
+                _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "加载失败")
             }
         }
     }
@@ -255,10 +256,17 @@ class RunDetailViewModel(
             )
         )
 
-        // 3. 平均配速（始终显示）
+        // 3. 平均配速（始终显示，fallback从距离和时间计算）
+        val paceValue = if (record.averageSpeed > 0) {
+            record.averageSpeed
+        } else if (record.totalDistance > 0 && record.activeDuration > 0) {
+            record.activeDuration / record.totalDistance
+        } else {
+            0.0
+        }
         metrics.add(
             RunMetricItem(
-                value = formatPace(record.averageSpeed),
+                value = formatPace(paceValue),
                 label = "平均配速",
                 unit = "/km"
             )
