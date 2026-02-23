@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -33,6 +36,8 @@ import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecor
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecordListViewModel
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecordListViewModelFactory
 import com.oterman.rundemo.presentation.feature.home.HomeScreen
+import com.oterman.rundemo.presentation.feature.home.HomeViewModel
+import com.oterman.rundemo.presentation.feature.home.HomeViewModelFactory
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailDebugScreen
 import com.oterman.rundemo.presentation.feature.settings.goal.RunGoalSetPage
 import com.oterman.rundemo.presentation.feature.statistics.RunStatisticTab
@@ -91,8 +96,23 @@ fun AppNavGraph(
         }
         
         // 主页面（登录成功后的页面）
-        composable(Screen.Home.route) {
+        composable(Screen.Home.route) { backStackEntry ->
             val context = LocalContext.current
+            val homeViewModel: HomeViewModel = viewModel(
+                factory = HomeViewModelFactory(context)
+            )
+
+            // 监听从UserProfileScreen返回时的刷新信号
+            LaunchedEffect(Unit) {
+                backStackEntry.savedStateHandle.getStateFlow("profile_updated", false)
+                    .collect { updated ->
+                        if (updated) {
+                            homeViewModel.refreshProfileData()
+                            backStackEntry.savedStateHandle["profile_updated"] = false
+                        }
+                    }
+            }
+
             HomeScreen(
                 onNavigateToLogin = {
                     navController.navigate(Screen.Login.route)
@@ -125,12 +145,23 @@ fun AppNavGraph(
                 },
                 onNavigateToSyncStatus = {
                     navController.navigate(Screen.DataSyncStatus.route)
-                }
+                },
+                viewModel = homeViewModel
             )
         }
 
         // 用户信息页面
         composable(Screen.UserProfile.route) {
+            // 记录HomeScreen的BackStackEntry，用于在离开时通知刷新
+            val homeEntry = remember { navController.previousBackStackEntry }
+
+            // 无论通过返回按钮还是手势返回，离开时都通知HomeScreen刷新
+            DisposableEffect(Unit) {
+                onDispose {
+                    homeEntry?.savedStateHandle?.set("profile_updated", true)
+                }
+            }
+
             UserProfileScreen(
                 onNavigateBack = {
                     navController.popBackStack()

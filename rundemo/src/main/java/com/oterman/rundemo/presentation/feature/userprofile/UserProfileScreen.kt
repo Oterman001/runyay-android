@@ -356,7 +356,8 @@ private fun AvatarSection(
         Text(
             text = "点击更换头像",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.clickable(onClick = onClick)
         )
     }
 }

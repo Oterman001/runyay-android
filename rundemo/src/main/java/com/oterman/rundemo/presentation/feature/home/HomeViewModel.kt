@@ -164,6 +164,35 @@ class HomeViewModel(
     }
 
     /**
+     * 刷新个人资料数据（从UserProfileScreen返回时调用）
+     * 重新读取PreferencesManager中的用户名/手机号，并强制刷新头像URL
+     */
+    fun refreshProfileData() {
+        val currentUserName = preferencesManager.getUserName()
+        val currentPhoneNumber = preferencesManager.getPhoneNumber()
+        val userId = preferencesManager.getUserId()
+
+        _uiState.update { state ->
+            state.copy(
+                userName = currentUserName,
+                phoneNumber = currentPhoneNumber
+            )
+        }
+
+        // 强制刷新头像URL（绕过AvatarManager缓存）
+        if (userId != null) {
+            viewModelScope.launch {
+                val result = avatarManager.getAvatarUrl(userId, forceRefresh = true)
+                result.onSuccess { url ->
+                    _uiState.update { it.copy(avatarUrl = url) }
+                }.onFailure { e ->
+                    RLog.e(TAG, "头像刷新失败: ${e.message}")
+                }
+            }
+        }
+    }
+
+    /**
      * Switch selected tab
      */
     fun selectTab(tab: HomeTab) {
