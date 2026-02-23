@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import com.oterman.rundemo.presentation.components.AppCard
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,8 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -76,27 +74,13 @@ fun RunDetailHeaderDataCard(
     var showTagDialog by remember { mutableStateOf(false) }
     var dialogTag by remember { mutableStateOf<RunPerformanceTag?>(null) }
 
-    Box(
+    AppCard(
         modifier = modifier
-            .fillMaxWidth()
             .padding(horizontal = RunDetailLayoutConstants.HeaderCardMargin.dp)
     ) {
-        // 主卡片
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .offset(y = RunDetailLayoutConstants.HeaderInvasionOffset.dp),
-            shape = RoundedCornerShape(RunDetailLayoutConstants.HeaderCardRadius.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = RunDetailLayoutConstants.HeaderShadowElevation.dp
-            )
+        Column(
+            modifier = Modifier.padding(RunDetailLayoutConstants.HeaderCardPadding.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(RunDetailLayoutConstants.HeaderCardPadding.dp)
-            ) {
                 // ========== Header 部分（对标 iOS：距离 → 日期 → 设备）==========
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -198,8 +182,6 @@ fun RunDetailHeaderDataCard(
                 }
             }
         }
-
-    }
 
     // Tag 介绍 Dialog
     if (showTagDialog && dialogTag != null) {
