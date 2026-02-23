@@ -151,7 +151,14 @@ object RunMapPreferences {
         if (!p.contains(KEY_MAP_STYLE)) {
             return if (isDarkTheme) Style.DARK else Style.STANDARD
         }
-        return p.getString(KEY_MAP_STYLE, Style.STANDARD) ?: Style.STANDARD
+        val saved = p.getString(KEY_MAP_STYLE, Style.STANDARD) ?: Style.STANDARD
+        return if (isDarkTheme) {
+            if (saved in listOf(Style.DARK, Style.SATELLITE, Style.SATELLITE_STREETS)) saved
+            else Style.DARK
+        } else {
+            if (saved in listOf(Style.STANDARD, Style.OUTDOORS, Style.LIGHT)) saved
+            else Style.LIGHT
+        }
     }
 
     fun saveMapStyle(context: Context, styleUri: String) {
