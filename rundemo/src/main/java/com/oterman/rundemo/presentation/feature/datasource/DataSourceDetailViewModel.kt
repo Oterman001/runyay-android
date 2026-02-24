@@ -6,6 +6,7 @@ import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.domain.model.DataSourceInfo
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.ImportedRunSummary
+import com.oterman.rundemo.service.sync.SyncUiState
 import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.service.sync.model.SyncNotification
 import com.oterman.rundemo.util.RLog
@@ -34,6 +35,11 @@ class DataSourceDetailViewModel(
     
     init {
         loadDataSourceInfo()
+        observeSyncState()
+        // 若启动时已有同步在进行（用户返回详情页场景），恢复 isSyncing 状态
+        if (syncManager.isAnySyncing()) {
+            _uiState.update { it.copy(isSyncing = true) }
+        }
     }
     
     /**
@@ -51,6 +57,66 @@ class DataSourceDetailViewModel(
         }
     }
     
+    /**
+     * 观察全局同步状态和通知
+     * - syncUiState：驱动 isSyncing / isSyncFinished 状态（包括退出后返回的场景）
+     * - syncNotifications：过滤本平台通知，实时更新 importedRecords
+     */
+    private fun observeSyncState() {
+        // 观察全局同步UI状态
+        viewModelScope.launch {
+            syncManager.syncUiState.collect { state ->
+                when (state) {
+                    is SyncUiState.Syncing -> {
+                        _uiState.update { it.copy(isSyncing = true) }
+                    }
+                    is SyncUiState.Completed -> {
+                        val importedCount = state.result.totalImportedCount
+                        val message = if (importedCount > 0) {
+                            "同步完成，已导入 $importedCount 条记录"
+                        } else {
+                            "同步完成，没有新记录"
+                        }
+                        _uiState.update {
+                            it.copy(
+                                isSyncing = false,
+                                isSyncFinished = true,
+                                alertMessage = if (it.isSyncing) message else it.alertMessage
+                            )
+                        }
+                    }
+                    is SyncUiState.Idle -> {
+                        _uiState.update { it.copy(isSyncing = false) }
+                    }
+                }
+            }
+        }
+
+        // 观察同步通知，过滤本平台事件更新实时进度列表
+        viewModelScope.launch {
+            syncManager.syncNotifications.collect { notification ->
+                when (notification) {
+                    is SyncNotification.RecordImported -> {
+                        if (notification.platform == platform) {
+                            val newRecord = ImportedRunSummary(
+                                originId = notification.originId,
+                                platformCode = platform.code,
+                                runDate = Date(),
+                                distance = 0.0,
+                                displayText = notification.displayText
+                            )
+                            _uiState.update { state ->
+                                val newRecords = (listOf(newRecord) + state.importedRecords).take(50)
+                                state.copy(importedRecords = newRecords)
+                            }
+                        }
+                    }
+                    else -> { /* 其他通知类型由 syncUiState 驱动处理 */ }
+                }
+            }
+        }
+    }
+
     /**
      * 刷新授权状态
      */
@@ -231,16 +297,18 @@ class DataSourceDetailViewModel(
     }
     
     /**
-     * 手动同步（使用默认时间范围）
+     * 手动同步（通过前台服务启动，退出界面后同步继续在后台执行）
      */
     fun manualSync() {
-        // 检查是否正在同步
-        if (syncManager.isPlatformSyncing(platform)) {
+        // 全局防重复：任意平台在同步中都不允许再次触发
+        if (syncManager.isAnySyncing()) {
             _uiState.update { it.copy(alertMessage = "正在同步中，请勿重复操作") }
             return
         }
 
-        // 重置状态
+        RLog.i(TAG, "触发手动同步（前台服务模式）: ${platform.displayName}")
+
+        // 重置本次同步的进度数据
         _uiState.update {
             it.copy(
                 showSyncOptionsDialog = false,
@@ -250,87 +318,9 @@ class DataSourceDetailViewModel(
             )
         }
 
-        viewModelScope.launch {
-            RLog.i(TAG, "开始手动同步: ${platform.displayName}")
-            syncManager.triggerManualSync(platform).collect { notification ->
-                handleSyncNotification(notification)
-            }
-        }
-    }
-
-    /**
-     * 处理同步通知
-     */
-    private fun handleSyncNotification(notification: SyncNotification) {
-        when (notification) {
-            is SyncNotification.PlatformStarted -> {
-                RLog.d(TAG, "同步开始: ${notification.platform.displayName}")
-            }
-            is SyncNotification.PlatformProgress -> {
-                RLog.d(TAG, "同步进度: ${notification.current}/${notification.total} - ${notification.message}")
-            }
-            is SyncNotification.RecordImported -> {
-                RLog.d(TAG, "导入记录: ${notification.displayText}")
-                // 添加导入记录到列表（最新的在前，最多50条）
-                _uiState.update { state ->
-                    val newRecord = createImportedSummary(notification)
-                    val newRecords = (listOf(newRecord) + state.importedRecords).take(50)
-                    state.copy(importedRecords = newRecords)
-                }
-            }
-            is SyncNotification.PlatformCompleted -> {
-                RLog.i(TAG, "同步完成: ${notification.platform.displayName}, 导入: ${notification.result.importedCount}")
-                val message = if (notification.result.importedCount > 0) {
-                    "同步完成，已导入 ${notification.result.importedCount} 条记录"
-                } else {
-                    "同步完成，没有新记录"
-                }
-                _uiState.update {
-                    it.copy(
-                        isSyncing = false,
-                        isSyncFinished = true,
-                        alertMessage = message
-                    )
-                }
-            }
-            is SyncNotification.PlatformFailed -> {
-                RLog.e(TAG, "同步失败: ${notification.platform.displayName}, 错误: ${notification.error}")
-                _uiState.update {
-                    it.copy(
-                        isSyncing = false,
-                        isSyncFinished = true,
-                        alertMessage = "同步失败：${notification.error}"
-                    )
-                }
-            }
-            else -> {
-                // 忽略其他通知类型（UnifiedCompleted, UnifiedFailed等）
-                RLog.d(TAG, "忽略通知: $notification")
-            }
-        }
-    }
-
-    /**
-     * 从同步通知创建导入记录摘要
-     */
-    private fun createImportedSummary(notification: SyncNotification.RecordImported): ImportedRunSummary {
-        return ImportedRunSummary(
-            originId = notification.originId,
-            platformCode = platform.code,
-            runDate = Date(),
-            distance = 0.0,
-            displayText = notification.displayText
-        )
-    }
-    
-    /**
-     * 添加导入记录（用于实时显示）
-     */
-    fun addImportedRecord(record: ImportedRunSummary) {
-        _uiState.update { state ->
-            val newRecords = (state.importedRecords + record).takeLast(50)
-            state.copy(importedRecords = newRecords)
-        }
+        // 通过前台服务启动同步，即使退出界面同步也会持续执行
+        // 实际同步运行在 UnifiedDataSyncManager.scope（App级别），不受 ViewModel 生命周期约束
+        syncManager.startManualSyncViaService(platform)
     }
     
     /**

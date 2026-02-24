@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.oterman.rundemo.R
+import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,9 +28,10 @@ class DataSyncForegroundService : Service() {
         private const val TAG = "DataSyncForegroundService"
         private const val CHANNEL_ID = "data_sync_channel"
         private const val NOTIFICATION_ID = 10001
+        private const val EXTRA_PLATFORM = "extra_platform"
 
         /**
-         * 启动同步服务（如果当前未在同步中）
+         * 启动统一同步服务（所有已授权平台，如果当前未在同步中）
          */
         fun start(context: Context) {
             val manager = UnifiedDataSyncManager.getInstance(context)
@@ -39,6 +41,26 @@ class DataSyncForegroundService : Service() {
             }
 
             val intent = Intent(context, DataSyncForegroundService::class.java)
+            startServiceCompat(context, intent)
+        }
+
+        /**
+         * 启动单平台手动同步服务（如果当前未在同步中）
+         */
+        fun startForPlatform(context: Context, platform: DataSourcePlatform) {
+            val manager = UnifiedDataSyncManager.getInstance(context)
+            if (manager.isAnySyncing()) {
+                RLog.d(TAG, "已在同步中，不重复启动服务")
+                return
+            }
+
+            val intent = Intent(context, DataSyncForegroundService::class.java).apply {
+                putExtra(EXTRA_PLATFORM, platform.code)
+            }
+            startServiceCompat(context, intent)
+        }
+
+        private fun startServiceCompat(context: Context, intent: Intent) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
@@ -55,20 +77,26 @@ class DataSyncForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        RLog.i(TAG, "服务启动")
+        val platformCode = intent?.getStringExtra(EXTRA_PLATFORM)
+        val platform = platformCode?.let { DataSourcePlatform.fromCode(it) }
 
-        startForeground(NOTIFICATION_ID, createNotification())
+        RLog.i(TAG, "服务启动, platform=${platform?.displayName ?: "统一同步"}")
+
+        startForeground(NOTIFICATION_ID, createNotification(platform))
 
         val manager = UnifiedDataSyncManager.getInstance(applicationContext)
-        manager.launchUnifiedSync()
+        if (platform != null) {
+            manager.launchManualSync(platform)
+        } else {
+            manager.launchUnifiedSync()
+        }
 
         // 观察同步状态，同步结束后停止服务
         serviceScope.launch {
             manager.syncUiState.collect { state ->
                 when (state) {
                     is SyncUiState.Idle -> {
-                        // 如果从Syncing→Completed→Idle，说明同步已结束
-                        // 但初始也是Idle，所以只在已启动同步后才停止
+                        // 初始也是Idle，等待进入Syncing后再响应Completed
                     }
                     is SyncUiState.Syncing -> {
                         // 正在同步，保持服务运行
@@ -107,9 +135,14 @@ class DataSyncForegroundService : Service() {
         }
     }
 
-    private fun createNotification(): Notification {
+    private fun createNotification(platform: DataSourcePlatform? = null): Notification {
+        val title = if (platform != null) {
+            "正在同步 ${platform.displayName} 数据..."
+        } else {
+            "正在同步跑步数据..."
+        }
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("正在同步跑步数据...")
+            .setContentTitle(title)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .setSilent(true)

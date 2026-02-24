@@ -195,6 +195,62 @@ class UnifiedDataSyncManager private constructor(
     // ============ 统一同步 ============
 
     /**
+     * 启动单平台手动同步（fire-and-forget）
+     * 在manager自己的scope中执行，退出界面后仍持续运行
+     * 更新syncUiState供HomeViewModel的同步图标感知
+     * 如果已在同步中则忽略
+     */
+    fun launchManualSync(platform: DataSourcePlatform) {
+        if (isAnySyncing()) {
+            RLog.d(TAG, "launchManualSync: 已在同步中，忽略")
+            return
+        }
+
+        scope.launch {
+            _syncUiState.value = SyncUiState.Syncing()
+            try {
+                var syncResult: SyncResult? = null
+                triggerManualSync(platform).collect { notification ->
+                    _syncNotifications.tryEmit(notification)
+                    when (notification) {
+                        is SyncNotification.PlatformCompleted -> {
+                            syncResult = notification.result
+                        }
+                        is SyncNotification.PlatformFailed -> {
+                            syncResult = SyncResult(
+                                success = false,
+                                importedCount = 0,
+                                platform = platform,
+                                error = notification.error
+                            )
+                        }
+                        else -> { /* progress events */ }
+                    }
+                }
+                val result = syncResult
+                    ?.let { UnifiedSyncResult.fromSinglePlatform(it) }
+                    ?: UnifiedSyncResult.empty()
+                _syncUiState.value = SyncUiState.Completed(result)
+                delay(3000)
+                _syncUiState.value = SyncUiState.Idle
+            } catch (e: Exception) {
+                RLog.e(TAG, "launchManualSync异常", e)
+                _syncUiState.value = SyncUiState.Completed(UnifiedSyncResult.empty())
+                delay(3000)
+                _syncUiState.value = SyncUiState.Idle
+            }
+        }
+    }
+
+    /**
+     * 通过前台服务启动单平台手动同步
+     * ViewModel无Context，由manager代理启动Service
+     */
+    fun startManualSyncViaService(platform: DataSourcePlatform) {
+        DataSyncForegroundService.startForPlatform(context, platform)
+    }
+
+    /**
      * 启动统一同步（fire-and-forget）
      * 在manager自己的scope中执行，更新syncUiState供UI观察
      * 如果已在同步中则忽略
