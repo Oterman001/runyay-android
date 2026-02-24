@@ -3,6 +3,7 @@ package com.oterman.rundemo.data.fit
 import com.oterman.rundemo.data.local.entity.PBRecordEntity
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.local.entity.RunSegmentEntity
+import com.oterman.rundemo.domain.model.PBAbilityKey
 import com.oterman.rundemo.util.RLog
 import kotlin.math.abs
 
@@ -36,14 +37,14 @@ object PBCalculator {
         val result = mutableListOf<PBRecordEntity>()
 
         // Ability类PB：最长运动时间
-        result.add(createAbilityPB(runRecord, "MTime", runRecord.activeDuration))
+        result.add(createAbilityPB(runRecord, PBAbilityKey.MAX_DURATION.subType, runRecord.activeDuration))
 
         // Ability类PB：最远距离
-        result.add(createAbilityPB(runRecord, "MDistance", runRecord.totalDistance))
+        result.add(createAbilityPB(runRecord, PBAbilityKey.MAX_DISTANCE.subType, runRecord.totalDistance))
 
         // Ability类PB：最高VDOT
         if (runRecord.vdot > 0) {
-            result.add(createAbilityPB(runRecord, "MVdot", runRecord.vdot))
+            result.add(createAbilityPB(runRecord, PBAbilityKey.MAX_VDOT.subType, runRecord.vdot))
         }
 
         // Speed类PB：各距离最快用时

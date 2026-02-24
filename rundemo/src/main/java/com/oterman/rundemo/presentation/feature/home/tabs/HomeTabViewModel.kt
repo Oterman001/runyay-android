@@ -339,19 +339,27 @@ class HomeTabViewModel(
         abilityPBs: List<PBRecordEntity>,
         latestVdot: OverallVdotEntity?
     ): List<PBAbilityInfo> {
-        // 最大跑力：优先 overall_vdot 表，回退到 run_record 中最大 vdot
-        val vdotValue = latestVdot?.value
-            ?: allRecords.maxOfOrNull { maxOf(it.vdot, it.overallVdot) }
-                ?.takeIf { it > 0 }
-        val maxVdot = PBAbilityInfo(
-            itemKey = PBAbilityKey.MAX_VDOT,
-            itemMaxValue = vdotValue?.let { String.format("%.1f", it) },
-            itemDate = latestVdot?.let { formatDate(it.date) },
-            workoutId = latestVdot?.workoutId
-        )
+        // 最大跑力：优先 pb_record (subType=MVdot)，回退到 overall_vdot 表，再回退 run_record
+        val vdotPB = abilityPBs.find { it.subType == PBAbilityKey.MAX_VDOT.subType }
+        val maxVdot = if (vdotPB != null) {
+            PBAbilityInfo(
+                itemKey = PBAbilityKey.MAX_VDOT,
+                itemMaxValue = String.format("%.1f", vdotPB.value),
+                itemDate = formatDate(vdotPB.completeTime),
+                workoutId = vdotPB.workoutId
+            )
+        } else {
+            val vdotValue = allRecords.maxOfOrNull { maxOf(it.vdot, it.overallVdot) }?.takeIf { it > 0 }
+            PBAbilityInfo(
+                itemKey = PBAbilityKey.MAX_VDOT,
+                itemMaxValue = vdotValue?.let { String.format("%.1f", it) },
+                itemDate = latestVdot?.let { formatDate(it.date) },
+                workoutId = latestVdot?.workoutId
+            )
+        }
 
-        // 最远距离：优先 pb_record (type=Ability, subType=maxDistance)，回退到 run_record
-        val distancePB = abilityPBs.find { it.subType == "maxDistance" }
+        // 最远距离：优先 pb_record (subType=MDistance)，回退到 run_record
+        val distancePB = abilityPBs.find { it.subType == PBAbilityKey.MAX_DISTANCE.subType }
         val maxDistance = if (distancePB != null) {
             PBAbilityInfo(
                 itemKey = PBAbilityKey.MAX_DISTANCE,
@@ -373,8 +381,8 @@ class HomeTabViewModel(
             }
         }
 
-        // 最长时间：优先 pb_record (type=Ability, subType=maxDuration)，回退到 run_record
-        val durationPB = abilityPBs.find { it.subType == "maxDuration" }
+        // 最长时间：优先 pb_record (subType=MTime)，回退到 run_record
+        val durationPB = abilityPBs.find { it.subType == PBAbilityKey.MAX_DURATION.subType }
         val maxDuration = if (durationPB != null) {
             PBAbilityInfo(
                 itemKey = PBAbilityKey.MAX_DURATION,
@@ -404,17 +412,8 @@ class HomeTabViewModel(
      * subType 对应关系：1k / 3k / 5k / 10k / 21k / 42k
      */
     private fun calculatePBSpeedList(speedPBs: List<PBRecordEntity>): List<PBSpeedInfo> {
-        val subTypeMap = mapOf(
-            PBSpeedKey.KM_1 to "1k",
-            PBSpeedKey.KM_3 to "3k",
-            PBSpeedKey.KM_5 to "5k",
-            PBSpeedKey.KM_10 to "10k",
-            PBSpeedKey.KM_HALF_MARATHON to "21k",
-            PBSpeedKey.KM_MARATHON to "42k"
-        )
         return PBSpeedKey.entries.map { key ->
-            val subType = subTypeMap[key] ?: ""
-            val entity = speedPBs.find { it.subType == subType }
+            val entity = speedPBs.find { it.subType == key.subType }
             PBSpeedInfo(
                 pbKey = key,
                 pbTimeValue = entity?.let { formatDuration(it.value) },
