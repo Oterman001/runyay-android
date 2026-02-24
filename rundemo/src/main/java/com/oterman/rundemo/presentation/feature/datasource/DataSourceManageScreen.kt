@@ -51,6 +51,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.presentation.feature.datasource.components.DataSourceItem
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 /**
  * 数据源管理页面
@@ -66,6 +68,9 @@ fun DataSourceManageScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lazyListState = rememberLazyListState()
+    val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        viewModel.moveDataSource(from.index, to.index)
+    }
 
     // 每次屏幕显示时刷新数据源状态（处理从详情页授权返回的情况）
     LaunchedEffect(Unit) {
@@ -138,37 +143,44 @@ fun DataSourceManageScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // 数据源列表
-                    val displayList = if (uiState.isEditingOrder) {
-                        uiState.sortableDataSources
+                    if (uiState.isEditingOrder) {
+                        // 编辑模式：仅显示可排序数据源，包裹在 ReorderableItem 中支持拖拽
+                        itemsIndexed(
+                            items = uiState.sortableDataSources,
+                            key = { _, item -> item.platform.code }
+                        ) { _, dataSourceInfo ->
+                            ReorderableItem(reorderState, key = dataSourceInfo.platform.code) { isDragging ->
+                                DataSourceItem(
+                                    dataSourceInfo = dataSourceInfo,
+                                    isEditMode = true,
+                                    showPriority = true,
+                                    isDragging = isDragging,
+                                    dragHandleModifier = Modifier.draggableHandle()
+                                )
+                            }
+                        }
+
+                        item {
+                            PriorityExplanationCard()
+                        }
                     } else {
-                        uiState.displayDataSources
-                    }
-                    
-                    itemsIndexed(
-                        items = displayList,
-                        key = { _, item -> item.platform.code }
-                    ) { _, dataSourceInfo ->
-                        DataSourceItem(
-                            dataSourceInfo = dataSourceInfo,
-                            isEditMode = uiState.isEditingOrder,
-                            showPriority = dataSourceInfo.platform.supportsSorting,
-                            onClick = {
-                                if (!uiState.isEditingOrder) {
+                        // 正常模式：显示全部数据源
+                        itemsIndexed(
+                            items = uiState.displayDataSources,
+                            key = { _, item -> item.platform.code }
+                        ) { _, dataSourceInfo ->
+                            DataSourceItem(
+                                dataSourceInfo = dataSourceInfo,
+                                isEditMode = false,
+                                showPriority = dataSourceInfo.platform.supportsSorting,
+                                onClick = {
                                     if (viewModel.isComingSoonDataSource(dataSourceInfo.platform)) {
                                         viewModel.showComingSoonDialog()
                                     } else {
                                         onNavigateToDetail(dataSourceInfo.platform)
                                     }
                                 }
-                            }
-                        )
-                    }
-                    
-                    // 编辑模式说明
-                    if (uiState.isEditingOrder) {
-                        item {
-                            PriorityExplanationCard()
+                            )
                         }
                     }
                 }

@@ -18,3 +18,43 @@ UserProfileScreen中 当在头像更新后，返回到上一页ProfileTab时，U
 
 周、年、月、总下，心率区间、配速区间的bar里不需要展示具体的数值；
 
+
+是否纳入统计，逻辑完善，定义参考ios的如下类定义：
+enum RecordInClusiveLevel:Int{
+    case level_0 = 0 // 不统计不分析
+    case level_1 = 1 // 统计& 分析
+    case level_2 = 2 // 仅纳入跑量统计，不纳入跑步分析
+
+    // 每总类型对应的颜色
+    var color:Color{
+        switch self {
+        case .level_0:
+            return .gray
+        case .level_1:
+            return .green
+        case .level_2:
+            return .blue.opacity(0.6)
+        }
+    }
+
+    var desc:String{
+        switch self {
+        case .level_0:
+           return "不纳入跑量统计，也不纳入跑力分析和PB计算。"
+        case .level_1:
+            return "纳入跑量统计、跑力分析及PB计算。"
+        case .level_2:
+            return  "仅纳入跑量统计，不纳入跑力分析及PB计算。"
+        }
+    }
+}
+
+存:
+
+改：
+
+在数据源界面，完善数据源拖动排序功能
+
+
+
+

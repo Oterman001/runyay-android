@@ -205,8 +205,6 @@ class UnifiedDataSyncManager private constructor(
             return
         }
 
-        return
-
         scope.launch {
             _syncUiState.value = SyncUiState.Syncing()
             try {

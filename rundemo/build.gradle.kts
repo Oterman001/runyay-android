@@ -96,6 +96,9 @@ dependencies {
     // Vico Charts (Compose)
     implementation("com.patrykandpatrick.vico:compose-m3:2.1.0-beta.1")
 
+    // Reorderable LazyColumn (drag-and-drop sorting)
+    implementation("sh.calvin.reorderable:reorderable:2.4.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -44,18 +44,25 @@ fun DataSourceItem(
     isEditMode: Boolean = false,
     isLoading: Boolean = false,
     showPriority: Boolean = true,
+    isDragging: Boolean = false,
+    dragHandleModifier: Modifier = Modifier,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isEnabled = dataSourceInfo.platform.isEnabled
-    
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .clickable(enabled = !isLoading) { onClick() }
             .alpha(if (isEnabled) 1f else 0.6f),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = if (isDragging) {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        shadowElevation = if (isDragging) 8.dp else 0.dp,
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -113,12 +120,18 @@ fun DataSourceItem(
             
             // 右侧内容
             if (isEditMode) {
-                // 编辑模式：显示拖拽手柄
+                // 编辑模式：显示拖拽手柄，绑定拖拽手势
                 Icon(
                     imageVector = Icons.Default.DragHandle,
                     contentDescription = "拖拽排序",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
+                    tint = if (isDragging) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier
+                        .size(24.dp)
+                        .then(dragHandleModifier)
                 )
             } else {
                 // 正常模式：显示加载或箭头
