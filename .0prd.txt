@@ -13,7 +13,7 @@ UserProfileScreen中 当在头像更新后，返回到上一页ProfileTab时，U
 导入fit文件计算当条跑步记录的pb时，期望是每一条
 
 
-完善首页最大数据卡以及pb记录卡的逻辑，数据存储在pb_record表里；
+完善HomeTab首页最大数据卡(AllPBAbilityCard)以及pb记录卡(AllPBSpeedCard)的逻辑，真实数据存储在pb_record(PBRecordDao)表里；
 
 
 周、年、月、总下，心率区间、配速区间的bar里不需要展示具体的数值；

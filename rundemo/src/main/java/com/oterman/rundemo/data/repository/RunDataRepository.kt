@@ -214,7 +214,7 @@ interface RunDataRepository {
     suspend fun getAllAggregatedSpeedZones(): List<AbilityZone>
 
     // ==================== PB记录 ====================
-    
+
     /**
      * 获取某类型某子类型的当前最佳PB
      */

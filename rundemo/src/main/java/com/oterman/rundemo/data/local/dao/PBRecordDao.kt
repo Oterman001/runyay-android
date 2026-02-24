@@ -49,6 +49,13 @@ interface PBRecordDao {
     suspend fun deleteByTypeAndSubType(type: String, subType: String)
 
     /**
+     * 获取某类型某子类型的最佳Ability PB记录（值越大越好，仅纳入统计的）
+     * 用于 maxDistance / maxDuration 等 Ability 类型，与 getBestRecord（ASC）区分
+     */
+    @Query("SELECT * FROM pb_record WHERE type = :type AND subType = :subType AND inclusiveLevel > 0 ORDER BY value DESC LIMIT 1")
+    suspend fun getBestAbilityRecord(type: String, subType: String): PBRecordEntity?
+
+    /**
      * 更新PB记录（用新的值替换旧的）
      * 通过先删除再插入实现
      */

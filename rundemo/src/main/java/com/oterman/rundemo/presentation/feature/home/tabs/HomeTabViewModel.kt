@@ -16,8 +16,12 @@ import com.oterman.rundemo.domain.model.GoalSettings
 import com.oterman.rundemo.domain.model.GoalType
 import com.oterman.rundemo.domain.model.HomeTabUiState
 import com.oterman.rundemo.domain.model.LatestRunRecord
+import com.oterman.rundemo.data.local.entity.PBRecordEntity
+import com.oterman.rundemo.data.local.entity.OverallVdotEntity
 import com.oterman.rundemo.domain.model.PBAbilityInfo
 import com.oterman.rundemo.domain.model.PBAbilityKey
+import com.oterman.rundemo.domain.model.PBSpeedInfo
+import com.oterman.rundemo.domain.model.PBSpeedKey
 import com.oterman.rundemo.domain.model.PeriodStatistics
 import com.oterman.rundemo.domain.model.TotalRunStatistics
 import com.oterman.rundemo.domain.model.WeekStatistics
@@ -75,9 +79,15 @@ class HomeTabViewModel(
 
                     // New calculations for 5 cards
                     val latestRecord = calculateLatestRunRecord(allRecords)
-                    val pbAbilityList = calculatePBAbilityList(allRecords)
-                    val pbSpeedList = MockDataProvider.getMockPBSpeedList()  // Use mock for now
-                    val nextRace = MockDataProvider.getMockNextRace()        // Use mock for now
+
+                    // 从 pb_record 表读取真实 PB 数据
+                    val abilityPBs = repository.getAllPBByType("Ability")
+                    val speedPBs = repository.getAllPBByType("Speed")
+                    val latestVdot = repository.getLatestVdot()
+
+                    val pbAbilityList = calculatePBAbilityList(allRecords, abilityPBs, latestVdot)
+                    val pbSpeedList = calculatePBSpeedList(speedPBs)
+                    val nextRace = MockDataProvider.getMockNextRace()
                     val dailySentence = MockDataProvider.getRandomDailySentence()
 
                     _uiState.value = HomeTabUiState(
@@ -321,55 +331,97 @@ class HomeTabViewModel(
     }
 
     /**
-     * Calculate PB ability list (max VDOT, max distance, max duration)
-     * VDOT uses mock data, distance and duration use real data
+     * 计算最大数据列表（最大跑力、最远距离、最长时间）
+     * 优先从 pb_record / overall_vdot 表读取，无数据时回退到 run_record 计算
      */
-    private fun calculatePBAbilityList(allRecords: List<RunRecordEntity>): List<PBAbilityInfo> {
-        // Max VDOT - use mock since we may not have valid VDOT data
-        val mockVdot = PBAbilityInfo(
+    private fun calculatePBAbilityList(
+        allRecords: List<RunRecordEntity>,
+        abilityPBs: List<PBRecordEntity>,
+        latestVdot: OverallVdotEntity?
+    ): List<PBAbilityInfo> {
+        // 最大跑力：优先 overall_vdot 表，回退到 run_record 中最大 vdot
+        val vdotValue = latestVdot?.value
+            ?: allRecords.maxOfOrNull { maxOf(it.vdot, it.overallVdot) }
+                ?.takeIf { it > 0 }
+        val maxVdot = PBAbilityInfo(
             itemKey = PBAbilityKey.MAX_VDOT,
-            itemMaxValue = "52.5",
-            itemDate = "2024-10-15",
-            workoutId = null
+            itemMaxValue = vdotValue?.let { String.format("%.1f", it) },
+            itemDate = latestVdot?.let { formatDate(it.date) },
+            workoutId = latestVdot?.workoutId
         )
 
-        // Max Distance - use real data
-        val maxDistanceRecord = allRecords.maxByOrNull { it.totalDistance }
-        val maxDistance = if (maxDistanceRecord != null && maxDistanceRecord.totalDistance > 0) {
+        // 最远距离：优先 pb_record (type=Ability, subType=maxDistance)，回退到 run_record
+        val distancePB = abilityPBs.find { it.subType == "maxDistance" }
+        val maxDistance = if (distancePB != null) {
             PBAbilityInfo(
                 itemKey = PBAbilityKey.MAX_DISTANCE,
-                itemMaxValue = String.format("%.2f", maxDistanceRecord.totalDistance),
-                itemDate = formatDate(maxDistanceRecord.startTime),
-                workoutId = maxDistanceRecord.workoutId
+                itemMaxValue = String.format("%.2f", distancePB.value),
+                itemDate = formatDate(distancePB.completeTime),
+                workoutId = distancePB.workoutId
             )
         } else {
-            PBAbilityInfo(
-                itemKey = PBAbilityKey.MAX_DISTANCE,
-                itemMaxValue = "--",
-                itemDate = null,
-                workoutId = null
-            )
+            val fallback = allRecords.maxByOrNull { it.totalDistance }
+            if (fallback != null && fallback.totalDistance > 0) {
+                PBAbilityInfo(
+                    itemKey = PBAbilityKey.MAX_DISTANCE,
+                    itemMaxValue = String.format("%.2f", fallback.totalDistance),
+                    itemDate = formatDate(fallback.startTime),
+                    workoutId = fallback.workoutId
+                )
+            } else {
+                PBAbilityInfo(itemKey = PBAbilityKey.MAX_DISTANCE, itemMaxValue = null, itemDate = null)
+            }
         }
 
-        // Max Duration - use real data
-        val maxDurationRecord = allRecords.maxByOrNull { it.activeDuration }
-        val maxDuration = if (maxDurationRecord != null && maxDurationRecord.activeDuration > 0) {
+        // 最长时间：优先 pb_record (type=Ability, subType=maxDuration)，回退到 run_record
+        val durationPB = abilityPBs.find { it.subType == "maxDuration" }
+        val maxDuration = if (durationPB != null) {
             PBAbilityInfo(
                 itemKey = PBAbilityKey.MAX_DURATION,
-                itemMaxValue = formatDurationLong(maxDurationRecord.activeDuration),
-                itemDate = formatDate(maxDurationRecord.startTime),
-                workoutId = maxDurationRecord.workoutId
+                itemMaxValue = formatDurationLong(durationPB.value),
+                itemDate = formatDate(durationPB.completeTime),
+                workoutId = durationPB.workoutId
             )
         } else {
-            PBAbilityInfo(
-                itemKey = PBAbilityKey.MAX_DURATION,
-                itemMaxValue = "--",
-                itemDate = null,
-                workoutId = null
-            )
+            val fallback = allRecords.maxByOrNull { it.activeDuration }
+            if (fallback != null && fallback.activeDuration > 0) {
+                PBAbilityInfo(
+                    itemKey = PBAbilityKey.MAX_DURATION,
+                    itemMaxValue = formatDurationLong(fallback.activeDuration),
+                    itemDate = formatDate(fallback.startTime),
+                    workoutId = fallback.workoutId
+                )
+            } else {
+                PBAbilityInfo(itemKey = PBAbilityKey.MAX_DURATION, itemMaxValue = null, itemDate = null)
+            }
         }
 
-        return listOf(mockVdot, maxDistance, maxDuration)
+        return listOf(maxVdot, maxDistance, maxDuration)
+    }
+
+    /**
+     * 从 pb_record 表（type=Speed）读取各距离 PB 并映射到 PBSpeedInfo 列表
+     * subType 对应关系：1k / 3k / 5k / 10k / 21k / 42k
+     */
+    private fun calculatePBSpeedList(speedPBs: List<PBRecordEntity>): List<PBSpeedInfo> {
+        val subTypeMap = mapOf(
+            PBSpeedKey.KM_1 to "1k",
+            PBSpeedKey.KM_3 to "3k",
+            PBSpeedKey.KM_5 to "5k",
+            PBSpeedKey.KM_10 to "10k",
+            PBSpeedKey.KM_HALF_MARATHON to "21k",
+            PBSpeedKey.KM_MARATHON to "42k"
+        )
+        return PBSpeedKey.entries.map { key ->
+            val subType = subTypeMap[key] ?: ""
+            val entity = speedPBs.find { it.subType == subType }
+            PBSpeedInfo(
+                pbKey = key,
+                pbTimeValue = entity?.let { formatDuration(it.value) },
+                pbDate = entity?.let { formatDate(it.completeTime) },
+                workoutId = entity?.workoutId
+            )
+        }
     }
 
     /**

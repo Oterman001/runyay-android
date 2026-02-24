@@ -256,7 +256,9 @@ fun HomeTabContent(
                     pbList = uiState.pbSpeedList,
                     modifier = Modifier.padding(bottom = 10.dp),
                     onItemClick = { item ->
-                        /* Navigate to record detail if workoutId exists */
+                        item.workoutId?.let { workoutId ->
+                            onNavigateToRunDetail(workoutId)
+                        }
                     }
                 )
             }
