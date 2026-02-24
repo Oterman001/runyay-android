@@ -265,7 +265,54 @@ class RunDataRepositoryImpl private constructor(
     override suspend fun getSpeedZones(workoutId: String): List<AbilityZone> {
         return abilityZoneDao.getSpeedZones(workoutId).map { it.toAbilityZone() }
     }
-    
+
+    override suspend fun getAggregatedHeartRate7Zones(workoutIds: List<String>): List<AbilityZone> {
+        if (workoutIds.isEmpty()) return emptyList()
+        val entities = abilityZoneDao.getHeartRate7ZonesByWorkoutIds(workoutIds)
+        return aggregateZones(entities, AbilityZoneType.HEART_RATE_7)
+    }
+
+    override suspend fun getAggregatedHeartRate5Zones(workoutIds: List<String>): List<AbilityZone> {
+        if (workoutIds.isEmpty()) return emptyList()
+        val entities = abilityZoneDao.getHeartRate5ZonesByWorkoutIds(workoutIds)
+        return aggregateZones(entities, AbilityZoneType.HEART_RATE_5)
+    }
+
+    override suspend fun getAggregatedSpeedZones(workoutIds: List<String>): List<AbilityZone> {
+        if (workoutIds.isEmpty()) return emptyList()
+        val entities = abilityZoneDao.getSpeedZonesByWorkoutIds(workoutIds)
+        return aggregateZones(entities, AbilityZoneType.SPEED)
+    }
+
+    /**
+     * 汇总多条记录的区间数据：按zoneIndex分组，累加duration，计算percentage
+     * 对标iOS TotalHeartRateZone.getFromRecord / TotalSpeedZone.getFromRecord
+     */
+    private fun aggregateZones(
+        entities: List<RunAbilityZoneEntity>,
+        zoneType: AbilityZoneType
+    ): List<AbilityZone> {
+        if (entities.isEmpty()) return emptyList()
+
+        // 按zoneIndex分组，累加duration，取第一条的minValue/maxValue作为区间范围
+        val grouped = entities.groupBy { it.zoneIndex }
+        val totalDuration = entities.sumOf { it.duration }
+        if (totalDuration <= 0) return emptyList()
+
+        return grouped.map { (zoneIndex, zoneEntities) ->
+            val duration = zoneEntities.sumOf { it.duration }
+            val first = zoneEntities.first()
+            AbilityZone(
+                zoneType = zoneType,
+                zoneIndex = zoneIndex,
+                duration = duration,
+                minValue = first.minValue,
+                maxValue = first.maxValue,
+                percentage = duration / totalDuration
+            )
+        }.sortedBy { it.zoneIndex }
+    }
+
     // ==================== PB记录 ====================
     
     override suspend fun getBestPB(type: String, subType: String): PBRecordEntity? {

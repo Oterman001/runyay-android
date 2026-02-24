@@ -201,19 +201,32 @@ class WeekStatisticsViewModel(
                 // Calculate week statistics
                 val weekStats = calculateWeekStats(records, currentWeekStart.clone() as Calendar)
 
+                // Collect all workoutIds for zone queries
+                val allWorkoutIds = weekStats.dailyRecords.flatMap { it.workoutIds }
+
+                // Load zone distribution data
+                val hr7Zones = repository.getAggregatedHeartRate7Zones(allWorkoutIds)
+                val hr5Zones = repository.getAggregatedHeartRate5Zones(allWorkoutIds)
+                val speedZones = repository.getAggregatedSpeedZones(allWorkoutIds)
+
+                RLog.d(TAG, "Zone data loaded: hr7=${hr7Zones.size}, hr5=${hr5Zones.size}, speed=${speedZones.size}")
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         weekDateRange = dateRange,
                         weekStats = weekStats,
                         canGoNext = canGoNext,
-                        error = null
+                        error = null,
+                        heartRate7Zones = hr7Zones,
+                        heartRate5Zones = hr5Zones,
+                        speedZones = speedZones
                     )
                 }
 
                 // Load trajectories after data is ready (if in trajectory mode)
                 if (_showTrajectoryMode.value) {
-                    RLog.d(TAG, "loadWeekData completed: dateRange=$dateRange, workoutIds=${weekStats.dailyRecords.flatMap { it.workoutIds }}, calling preloadTrajectories")
+                    RLog.d(TAG, "loadWeekData completed: dateRange=$dateRange, workoutIds=$allWorkoutIds, calling preloadTrajectories")
                     preloadTrajectories()
                 }
             } catch (e: Exception) {

@@ -39,6 +39,24 @@ interface RunAbilityZoneDao {
     suspend fun getSpeedZones(workoutId: String): List<RunAbilityZoneEntity>
     
     /**
+     * 批量获取心率7区间（zoneType=1）
+     */
+    @Query("SELECT * FROM run_ability_zone WHERE workoutId IN (:workoutIds) AND zoneType = 1 ORDER BY zoneIndex")
+    suspend fun getHeartRate7ZonesByWorkoutIds(workoutIds: List<String>): List<RunAbilityZoneEntity>
+
+    /**
+     * 批量获取心率5区间（zoneType=2）
+     */
+    @Query("SELECT * FROM run_ability_zone WHERE workoutId IN (:workoutIds) AND zoneType = 2 ORDER BY zoneIndex")
+    suspend fun getHeartRate5ZonesByWorkoutIds(workoutIds: List<String>): List<RunAbilityZoneEntity>
+
+    /**
+     * 批量获取配速区间（zoneType=3）
+     */
+    @Query("SELECT * FROM run_ability_zone WHERE workoutId IN (:workoutIds) AND zoneType = 3 ORDER BY zoneIndex")
+    suspend fun getSpeedZonesByWorkoutIds(workoutIds: List<String>): List<RunAbilityZoneEntity>
+
+    /**
      * 删除指定workout的所有区间
      */
     @Query("DELETE FROM run_ability_zone WHERE workoutId = :workoutId")
