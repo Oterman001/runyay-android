@@ -115,10 +115,18 @@ class TotalStatisticsViewModel(
 
                 RLog.d(TAG, "Total stats loaded: $runCount runs, ${String.format("%.1f", totalDistance)} km, ${yearlyStats.size} years")
 
+                // Load zone distribution data (full table query, no workoutId filter)
+                val hr7Zones = repository.getAllAggregatedHeartRate7Zones()
+                val hr5Zones = repository.getAllAggregatedHeartRate5Zones()
+                val speedZones = repository.getAllAggregatedSpeedZones()
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         totalStats = totalStats,
+                        heartRate7Zones = hr7Zones,
+                        heartRate5Zones = hr5Zones,
+                        speedZones = speedZones,
                         error = null
                     )
                 }

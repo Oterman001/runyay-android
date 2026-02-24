@@ -35,8 +35,8 @@ import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.presentation.feature.home.components.DailySentenceCard
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
-import com.oterman.rundemo.presentation.feature.statistics.week.components.HeartRateZonePlaceholder
-import com.oterman.rundemo.presentation.feature.statistics.week.components.SpeedZonePlaceholder
+import com.oterman.rundemo.presentation.feature.statistics.week.components.HeartRateZoneCard
+import com.oterman.rundemo.presentation.feature.statistics.week.components.SpeedZoneCard
 import com.oterman.rundemo.presentation.feature.statistics.week.components.StatisticCardsGrid
 import com.oterman.rundemo.presentation.feature.statistics.year.components.TrajectorySettingsSheet
 import com.oterman.rundemo.presentation.feature.statistics.year.components.TrajectoryWallGrid
@@ -160,11 +160,18 @@ fun YearStatisticsContent(
             totalElevation = uiState.yearStats.totalElevation
         )
 
-        // 4. Heart rate zone placeholder (always visible)
-        HeartRateZonePlaceholder()
+        // 4. Heart rate zone distribution
+        if (uiState.heartRate7Zones.isNotEmpty() || uiState.heartRate5Zones.isNotEmpty()) {
+            HeartRateZoneCard(
+                heartRate7Zones = uiState.heartRate7Zones,
+                heartRate5Zones = uiState.heartRate5Zones
+            )
+        }
 
-        // 5. Speed zone placeholder (always visible)
-        SpeedZonePlaceholder()
+        // 5. Speed zone distribution
+        if (uiState.speedZones.isNotEmpty()) {
+            SpeedZoneCard(speedZones = uiState.speedZones)
+        }
 
         // 6. Year bar chart (only show if there's data)
         if (uiState.yearStats.totalDistance > 0) {

@@ -226,12 +226,21 @@ class MonthStatisticsViewModel(
                 // Calculate month statistics
                 val monthStats = calculateMonthStats(records, currentMonthStart.clone() as Calendar)
 
+                // Load zone distribution data
+                val allWorkoutIds = monthStats.dailyRecords.filter { !it.isPlaceholder }.flatMap { it.workoutIds }
+                val hr7Zones = repository.getAggregatedHeartRate7Zones(allWorkoutIds)
+                val hr5Zones = repository.getAggregatedHeartRate5Zones(allWorkoutIds)
+                val speedZones = repository.getAggregatedSpeedZones(allWorkoutIds)
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         monthYearDisplay = monthYearDisplay,
                         monthStats = monthStats,
                         canGoNext = canGoNext,
+                        heartRate7Zones = hr7Zones,
+                        heartRate5Zones = hr5Zones,
+                        speedZones = speedZones,
                         error = null
                     )
                 }

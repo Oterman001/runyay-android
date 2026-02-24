@@ -1,5 +1,6 @@
 package com.oterman.rundemo.presentation.feature.statistics.month
 
+import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.MonthStatistics
 
 /**
@@ -11,5 +12,9 @@ data class MonthViewUiState(
     val monthStats: MonthStatistics = MonthStatistics(),
     val canGoNext: Boolean = false,             // Whether can navigate to next month (disabled if current month)
     val dailySentence: String = "",
-    val error: String? = null
+    val error: String? = null,
+    // Zone distribution data
+    val heartRate7Zones: List<AbilityZone> = emptyList(),
+    val heartRate5Zones: List<AbilityZone> = emptyList(),
+    val speedZones: List<AbilityZone> = emptyList()
 )

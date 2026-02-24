@@ -252,12 +252,23 @@ class YearStatisticsViewModel(
                     maxMonthDistance = maxMonthDistance
                 )
 
+                // Load zone distribution data
+                val allWorkoutIds = monthRangeDataList.flatMap { month ->
+                    month.dailyRecords.filter { !it.isPlaceholder }.flatMap { it.workoutIds }
+                }
+                val hr7Zones = repository.getAggregatedHeartRate7Zones(allWorkoutIds)
+                val hr5Zones = repository.getAggregatedHeartRate5Zones(allWorkoutIds)
+                val speedZones = repository.getAggregatedSpeedZones(allWorkoutIds)
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         yearDisplay = "${currentYear}年",
                         yearStats = yearStats,
                         canGoNext = canGoNext,
+                        heartRate7Zones = hr7Zones,
+                        heartRate5Zones = hr5Zones,
+                        speedZones = speedZones,
                         error = null
                     )
                 }

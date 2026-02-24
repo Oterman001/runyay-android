@@ -198,6 +198,21 @@ interface RunDataRepository {
      */
     suspend fun getAggregatedSpeedZones(workoutIds: List<String>): List<AbilityZone>
 
+    /**
+     * 获取全部心率7区间并汇总（Total页面用）
+     */
+    suspend fun getAllAggregatedHeartRate7Zones(): List<AbilityZone>
+
+    /**
+     * 获取全部心率5区间并汇总（Total页面用）
+     */
+    suspend fun getAllAggregatedHeartRate5Zones(): List<AbilityZone>
+
+    /**
+     * 获取全部配速区间并汇总（Total页面用）
+     */
+    suspend fun getAllAggregatedSpeedZones(): List<AbilityZone>
+
     // ==================== PB记录 ====================
     
     /**

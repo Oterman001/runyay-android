@@ -284,6 +284,21 @@ class RunDataRepositoryImpl private constructor(
         return aggregateZones(entities, AbilityZoneType.SPEED)
     }
 
+    override suspend fun getAllAggregatedHeartRate7Zones(): List<AbilityZone> {
+        val entities = abilityZoneDao.getAllHeartRate7Zones()
+        return aggregateZones(entities, AbilityZoneType.HEART_RATE_7)
+    }
+
+    override suspend fun getAllAggregatedHeartRate5Zones(): List<AbilityZone> {
+        val entities = abilityZoneDao.getAllHeartRate5Zones()
+        return aggregateZones(entities, AbilityZoneType.HEART_RATE_5)
+    }
+
+    override suspend fun getAllAggregatedSpeedZones(): List<AbilityZone> {
+        val entities = abilityZoneDao.getAllSpeedZones()
+        return aggregateZones(entities, AbilityZoneType.SPEED)
+    }
+
     /**
      * 汇总多条记录的区间数据：按zoneIndex分组，累加duration，计算percentage
      * 对标iOS TotalHeartRateZone.getFromRecord / TotalSpeedZone.getFromRecord

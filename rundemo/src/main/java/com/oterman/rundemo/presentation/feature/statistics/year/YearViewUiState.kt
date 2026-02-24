@@ -1,5 +1,6 @@
 package com.oterman.rundemo.presentation.feature.statistics.year
 
+import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.YearStatistics
 
 /**
@@ -17,5 +18,9 @@ data class YearViewUiState(
     val trajectoryWorkoutIds: List<String> = emptyList(),
     val isLoadingTrajectory: Boolean = false,
     val itemsPerRow: Int = 6,
-    val showSettingsSheet: Boolean = false
+    val showSettingsSheet: Boolean = false,
+    // Zone distribution data
+    val heartRate7Zones: List<AbilityZone> = emptyList(),
+    val heartRate5Zones: List<AbilityZone> = emptyList(),
+    val speedZones: List<AbilityZone> = emptyList()
 )

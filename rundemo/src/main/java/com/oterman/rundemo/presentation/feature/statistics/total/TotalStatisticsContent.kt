@@ -15,8 +15,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.presentation.feature.home.components.DailySentenceCard
 import com.oterman.rundemo.presentation.feature.statistics.total.components.TotalYearBarChart
 import com.oterman.rundemo.presentation.feature.statistics.total.components.TotalYearDetailTable
-import com.oterman.rundemo.presentation.feature.statistics.week.components.HeartRateZonePlaceholder
-import com.oterman.rundemo.presentation.feature.statistics.week.components.SpeedZonePlaceholder
+import com.oterman.rundemo.presentation.feature.statistics.week.components.HeartRateZoneCard
+import com.oterman.rundemo.presentation.feature.statistics.week.components.SpeedZoneCard
 import com.oterman.rundemo.presentation.feature.statistics.week.components.StatisticCardsGrid
 
 /**
@@ -46,14 +46,21 @@ fun TotalStatisticsContent(
             )
         }
 
-        // 2. Heart rate zone placeholder
-        item {
-            HeartRateZonePlaceholder()
+        // 2. Heart rate zone distribution
+        if (uiState.heartRate7Zones.isNotEmpty() || uiState.heartRate5Zones.isNotEmpty()) {
+            item {
+                HeartRateZoneCard(
+                    heartRate7Zones = uiState.heartRate7Zones,
+                    heartRate5Zones = uiState.heartRate5Zones
+                )
+            }
         }
 
-        // 3. Speed zone placeholder
-        item {
-            SpeedZonePlaceholder()
+        // 3. Speed zone distribution
+        if (uiState.speedZones.isNotEmpty()) {
+            item {
+                SpeedZoneCard(speedZones = uiState.speedZones)
+            }
         }
 
         // 4. Year bar chart (only show if there's data)
