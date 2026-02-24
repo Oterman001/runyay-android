@@ -35,6 +35,9 @@ import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceDebug
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecordListScreen
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecordListViewModel
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecordListViewModelFactory
+import com.oterman.rundemo.presentation.feature.onboarding.BindingGuideScreen
+import com.oterman.rundemo.presentation.feature.onboarding.BindingGuideViewModel
+import com.oterman.rundemo.presentation.feature.onboarding.BindingGuideViewModelFactory
 import com.oterman.rundemo.presentation.feature.home.HomeScreen
 import com.oterman.rundemo.presentation.feature.home.HomeViewModel
 import com.oterman.rundemo.presentation.feature.home.HomeViewModelFactory
@@ -80,8 +83,8 @@ fun AppNavGraph(
                     navController.popBackStack()
                 },
                 onLoginSuccess = {
-                    // 登录成功后导航到主页面
-                    navController.navigate(Screen.Home.route) {
+                    // 登录成功后导航到绑定引导页
+                    navController.navigate(Screen.BindingGuide.route) {
                         // 清除欢迎页面和登录页面，防止返回
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
@@ -95,6 +98,37 @@ fun AppNavGraph(
             )
         }
         
+        // 绑定引导页面（登录/注册成功后）
+        composable(Screen.BindingGuide.route) {
+            val context = LocalContext.current
+            val viewModel: BindingGuideViewModel = viewModel(
+                factory = BindingGuideViewModelFactory(context)
+            )
+            BindingGuideScreen(
+                viewModel = viewModel,
+                onSkip = {
+                    viewModel.markGuideCompleted()
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.BindingGuide.route) { inclusive = true }
+                    }
+                },
+                onComplete = {
+                    viewModel.markGuideCompleted()
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.BindingGuide.route) { inclusive = true }
+                    }
+                },
+                onNavigateToDetail = { platform ->
+                    navController.navigate(Screen.DataSourceDetail.createRoute(platform.code))
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.BindingGuide.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         // 主页面（登录成功后的页面）
         composable(Screen.Home.route) { backStackEntry ->
             val context = LocalContext.current
@@ -182,8 +216,8 @@ fun AppNavGraph(
                     navController.popBackStack()
                 },
                 onRegisterSuccess = {
-                    // 注册成功后导航到主页面
-                    navController.navigate(Screen.Home.route) {
+                    // 注册成功后导航到绑定引导页
+                    navController.navigate(Screen.BindingGuide.route) {
                         // 清除欢迎页面和注册页面，防止返回
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }

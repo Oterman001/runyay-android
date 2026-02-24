@@ -26,6 +26,12 @@ sealed class Screen(val route: String) {
     object ForgotPassword : Screen("forgot_password")
     
     /**
+     * 绑定引导页面
+     * 登录/注册成功后引导用户绑定运动手表平台
+     */
+    object BindingGuide : Screen("binding_guide")
+
+    /**
      * 主页面（登录成功后跳转）
      */
     object Home : Screen("home")

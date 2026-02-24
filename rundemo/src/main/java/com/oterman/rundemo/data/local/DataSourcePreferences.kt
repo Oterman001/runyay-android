@@ -30,6 +30,9 @@ class DataSourcePreferences(context: Context) {
         @Deprecated("Use KEY_GARMIN_CHINA_LAST_SYNC_TIME instead")
         private const val KEY_GARMIN_LAST_SYNC_TIME = "garmin_last_sync_time"
 
+        // 绑定引导
+        private const val KEY_BINDING_GUIDE_COMPLETED = "binding_guide_completed"
+
         // 数据源优先级
         private const val KEY_DATA_SOURCE_ORDER = "data_source_order"
 
@@ -245,6 +248,14 @@ class DataSourcePreferences(context: Context) {
         }
     }
     
+    // ============ 绑定引导 ============
+
+    fun isBindingGuideCompleted(): Boolean = prefs.getBoolean(KEY_BINDING_GUIDE_COMPLETED, false)
+
+    fun setBindingGuideCompleted(completed: Boolean) {
+        prefs.edit().putBoolean(KEY_BINDING_GUIDE_COMPLETED, completed).apply()
+    }
+
     // ============ 数据源优先级 ============
     
     /**
