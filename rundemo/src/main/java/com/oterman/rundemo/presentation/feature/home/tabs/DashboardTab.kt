@@ -55,8 +55,8 @@ import com.oterman.rundemo.presentation.feature.home.components.WeekStatisticsCa
  * Corresponds to iOS Tab1Page
  */
 @Composable
-fun HomeTabContent(
-    viewModel: HomeTabViewModel = viewModel(
+fun DashboardTabContent(
+    viewModel: DashboardTabViewModel = viewModel(
         factory = HomeTabViewModelFactory(LocalContext.current)
     ),
     showSyncIcon: Boolean = false,
@@ -111,7 +111,7 @@ fun HomeTabContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "首页",
+                text = "仪表盘",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -151,7 +151,7 @@ fun HomeTabContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "首页",
+                    text = "仪表盘",
                     fontSize = 34.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -231,11 +231,11 @@ fun HomeTabContent(
             }
 
             // Card 3: Next Race
-            NextRaceCard(
-                race = uiState.nextRace,
-                modifier = Modifier.padding(bottom = 10.dp),
-                onClick = { /* Navigate to race list or add race */ }
-            )
+//            NextRaceCard(
+//                race = uiState.nextRace,
+//                modifier = Modifier.padding(bottom = 10.dp),
+//                onClick = { /* Navigate to race list or add race */ }
+//            )
 
             // Card 2: Max Data (PB Ability)
             if (uiState.pbAbilityList.isNotEmpty()) {

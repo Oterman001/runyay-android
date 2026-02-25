@@ -60,6 +60,7 @@ import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.DataTabDisplayMode
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryThumbnail
 import com.oterman.rundemo.presentation.feature.home.tabs.components.MonthSection
 import java.text.SimpleDateFormat
@@ -124,7 +125,7 @@ fun DataTabContent(
             ) {
                 // 折叠后的小标题（滚动时渐显）
                 Text(
-                    text = "数据",
+                    text = "跑步记录",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -161,7 +162,7 @@ fun DataTabContent(
                         }
                 ) {
                     Text(
-                        text = "数据",
+                        text = "跑步记录",
                         fontSize = 34.sp,  // iOS large title size
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -319,22 +320,23 @@ private fun EmptyStateView(onBindDevice: () -> Unit) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "绑定 Garmin、COROS 等设备自动同步跑步数据",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-            )
+//            Spacer(modifier = Modifier.height(8.dp))
+//            Text(
+//                text = "绑定 Garmin、COROS 等设备自动同步跑步数据",
+//                style = MaterialTheme.typography.bodyMedium,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+//            )
             Spacer(modifier = Modifier.height(24.dp))
 
             // 引导绑定按钮
+            AppCard {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(12.dp)
-                    )
+//                    .background(
+////                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+//                        shape = RoundedCornerShape(12.dp)
+//                    )
                     .clickable(onClick = onBindDevice)
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -375,6 +377,7 @@ private fun EmptyStateView(onBindDevice: () -> Unit) {
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp)
                 )
+            }
             }
         }
     }
@@ -586,9 +589,10 @@ private fun formatDuration(durationMinutes: Double): String {
  */
 private fun formatDatasource(source: String): String {
     return when (source.uppercase()) {
-        "GCN", "GARMIN" -> "Garmin"
-        "COROS" -> "COROS"
-        "GGB" -> "佳明国行"
+        "GCN"-> "佳明中国"
+        "GARMIN" -> "佳明中国"
+        "COROS" -> "高驰"
+        "GGB" -> "佳明国际"
         "FIT" -> "FIT文件"
         else -> source
     }

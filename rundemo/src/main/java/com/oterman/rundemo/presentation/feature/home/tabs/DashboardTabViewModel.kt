@@ -13,7 +13,6 @@ import com.oterman.rundemo.data.mock.MockDataProvider
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.DayRunRecordInfo
 import com.oterman.rundemo.domain.model.GoalSettings
-import com.oterman.rundemo.domain.model.GoalType
 import com.oterman.rundemo.domain.model.HomeTabUiState
 import com.oterman.rundemo.domain.model.LatestRunRecord
 import com.oterman.rundemo.data.local.entity.PBRecordEntity
@@ -39,7 +38,7 @@ import java.util.Date
  * HomeTab ViewModel
  * Manages running statistics state for the home tab
  */
-class HomeTabViewModel(
+class DashboardTabViewModel(
     private val repository: RunDataRepository,
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
@@ -452,13 +451,18 @@ class HomeTabViewModel(
     }
 
     /**
-     * Format duration in minutes to "45'30\"" format
+     * Format duration in minutes to "45'30\"" or "1h30'45\"" format
      */
     private fun formatDuration(minutes: Double): String {
         val totalSeconds = (minutes * 60).toInt()
-        val mins = totalSeconds / 60
+        val hours = totalSeconds / 3600
+        val mins = (totalSeconds % 3600) / 60
         val secs = totalSeconds % 60
-        return "${mins}'${String.format("%02d", secs)}\""
+        return if (hours > 0) {
+            "${hours}h${mins}'${String.format("%02d", secs)}\""
+        } else {
+            "${mins}'${String.format("%02d", secs)}\""
+        }
     }
 
     /**
@@ -513,11 +517,11 @@ class HomeTabViewModelFactory(
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(HomeTabViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(DashboardTabViewModel::class.java)) {
             val database = RunDatabase.getInstance(context)
             val repository = RunDataRepositoryImpl.getInstance(database)
             val preferencesManager = PreferencesManager(context)
-            return HomeTabViewModel(repository, preferencesManager) as T
+            return DashboardTabViewModel(repository, preferencesManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

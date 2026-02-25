@@ -140,6 +140,7 @@ fun DataSourceDetailScreen(
                             importedRecords = uiState.importedRecords
                         )
                     }
+                    item { Spacer(modifier = Modifier.height(60.dp)) }
                 }
                 
                 item { Spacer(modifier = Modifier.height(100.dp)) }
@@ -373,24 +374,24 @@ private fun SyncStatusSection(
             }
         }
         
-        Spacer(modifier = Modifier.height(8.dp))
+//        Spacer(modifier = Modifier.height(8.dp))
         
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(12.dp)
-            )
-            Text(
-                text = "实时显示最新导入的运动记录（最新50条）",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+//        Row(
+//            verticalAlignment = Alignment.CenterVertically,
+//            horizontalArrangement = Arrangement.spacedBy(4.dp)
+//        ) {
+//            Icon(
+//                imageVector = Icons.Default.Info,
+//                contentDescription = null,
+//                tint = MaterialTheme.colorScheme.primary,
+//                modifier = Modifier.size(12.dp)
+//            )
+//            Text(
+//                text = "实时显示最新导入的运动记录（最新50条）",
+//                style = MaterialTheme.typography.labelSmall,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant
+//            )
+//        }
     }
 }
 

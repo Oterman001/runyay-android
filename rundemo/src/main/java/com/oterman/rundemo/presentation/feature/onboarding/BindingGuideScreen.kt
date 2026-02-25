@@ -198,7 +198,7 @@ fun BindingGuideScreen(
 
             // 底部提示
             Text(
-                text = "你可以稍后在「数据源管理」中绑定",
+                text = "你也可以稍后在「我的」-「数据源管理」中绑定",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center,

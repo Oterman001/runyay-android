@@ -5,7 +5,7 @@ package com.oterman.rundemo.presentation.feature.home
  * Corresponds to iOS MainTabView tabs
  */
 enum class HomeTab(val index: Int) {
-    HOME(0),
+    DASHBOARD(0),
     DATA(1),
     PROFILE(2)
 }
@@ -25,7 +25,7 @@ sealed class FitImportResult {
  */
 data class HomeUiState(
     // Navigation state
-    val selectedTab: HomeTab = HomeTab.HOME,
+    val selectedTab: HomeTab = HomeTab.DASHBOARD,
 
     // Auth state (from PreferencesManager)
     val isLoggedIn: Boolean = false,

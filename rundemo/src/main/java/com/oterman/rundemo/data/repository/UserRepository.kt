@@ -1,6 +1,7 @@
 package com.oterman.rundemo.data.repository
 
 import android.content.Context
+import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.network.RequestBuilder
 import com.oterman.rundemo.data.network.RetrofitClient
@@ -37,7 +38,8 @@ import org.json.JSONObject
 class UserRepository(
     private val context: Context,
     private val userApi: UserApi = RetrofitClient.userApi,
-    private val preferencesManager: PreferencesManager = PreferencesManager(context)
+    private val preferencesManager: PreferencesManager = PreferencesManager(context),
+    private val dataSourcePreferences: DataSourcePreferences = DataSourcePreferences(context)
 ) {
     companion object {
         private const val TAG = "UserRepository"
@@ -178,6 +180,7 @@ class UserRepository(
      */
     fun logout() {
         preferencesManager.clearUserData()
+        dataSourcePreferences.clearAll()
     }
 
     /**
@@ -203,6 +206,7 @@ class UserRepository(
 
             // 无论服务端是否成功，都清除本地数据
             preferencesManager.clearUserData()
+            dataSourcePreferences.clearAll()
 
             if (response.isSuccess()) {
                 RLog.d(TAG, "服务端退出登录成功")
@@ -215,6 +219,7 @@ class UserRepository(
             RLog.e(TAG, "退出登录异常: ${e.message}")
             // 即使异常也清除本地数据
             preferencesManager.clearUserData()
+            dataSourcePreferences.clearAll()
             Result.success(true)
         }
     }
@@ -250,6 +255,7 @@ class UserRepository(
                 RLog.d(TAG, "注销账号成功")
                 // 清除所有本地数据
                 preferencesManager.clearUserData()
+                dataSourcePreferences.clearAll()
                 Result.success(true)
             } else {
                 RLog.e(TAG, "注销账号失败: ${response.msg}")

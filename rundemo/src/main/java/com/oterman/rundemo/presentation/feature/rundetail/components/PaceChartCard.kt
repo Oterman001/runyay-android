@@ -86,16 +86,16 @@ fun PaceChartCard(
                 chartHeight = 160
             )
 
-            Text(
-                text = "长按查看数值 · 双指缩放",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                textAlign = TextAlign.Center,
-                fontSize = 10.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp)
-            )
+//            Text(
+//                text = "长按查看数值 · 双指缩放",
+//                style = MaterialTheme.typography.labelSmall,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+//                textAlign = TextAlign.Center,
+//                fontSize = 10.sp,
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(top = 4.dp)
+//            )
 
             // ========== 分隔线 + 配速区间 ==========
             if (speedZones.isNotEmpty()) {

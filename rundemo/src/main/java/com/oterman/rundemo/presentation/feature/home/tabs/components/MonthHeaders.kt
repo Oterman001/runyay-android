@@ -113,7 +113,7 @@ fun SimpleMonthHeader(
             Text(
                 text = "${monthData.month}月",
                 fontSize = 22.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -136,7 +136,7 @@ fun SimpleMonthHeader(
                 Text(
                     text = monthData.getFormattedDistance(),
                     fontSize = 22.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.width(2.dp))

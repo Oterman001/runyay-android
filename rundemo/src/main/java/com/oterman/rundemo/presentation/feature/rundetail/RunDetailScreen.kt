@@ -478,9 +478,9 @@ private fun DataSourceLabel(
     modifier: Modifier = Modifier
 ) {
     val sourceText = when (datasource) {
-        "GCN" -> "数据来源: Garmin Connect"
-        "GGB" -> "数据来源: 佳明国行"
-        "COROS" -> "数据来源: COROS"
+        "GCN" -> "数据来源: 佳明中国®"
+        "GGB" -> "数据来源: 佳明国际"
+        "COROS" -> "数据来源: 高驰"
         "APPLE" -> "数据来源: Apple Watch"
         "SUUNTO" -> "数据来源: Suunto"
         "POLAR" -> "数据来源: Polar"

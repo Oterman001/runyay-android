@@ -40,7 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.presentation.feature.home.tabs.DataTabContent
-import com.oterman.rundemo.presentation.feature.home.tabs.HomeTabContent
+import com.oterman.rundemo.presentation.feature.home.tabs.DashboardTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.ProfileTabContent
 
 /**
@@ -110,7 +110,7 @@ fun HomeScreen(
                 .padding(paddingValues)
         ) {
             when (uiState.selectedTab) {
-                HomeTab.HOME -> HomeTabContent(
+                HomeTab.DASHBOARD -> DashboardTabContent(
                     showSyncIcon = uiState.showSyncIcon,
                     isSyncing = uiState.isSyncing,
                     onSyncIconClick = onNavigateToSyncStatus,
@@ -186,17 +186,17 @@ private fun HomeBottomNavigationBar(
             windowInsets = WindowInsets(0, 0, 0, 0)
         ) {
         NavigationBarItem(
-            selected = selectedTab == HomeTab.HOME,
-            onClick = { onTabSelected(HomeTab.HOME) },
+            selected = selectedTab == HomeTab.DASHBOARD,
+            onClick = { onTabSelected(HomeTab.DASHBOARD) },
             colors = tabColors,
             icon = {
                 Icon(
-                    imageVector = if (selectedTab == HomeTab.HOME) {
+                    imageVector = if (selectedTab == HomeTab.DASHBOARD) {
                         Icons.Filled.Home
                     } else {
                         Icons.Outlined.Home
                     },
-                    contentDescription = "首页"
+                    contentDescription = "仪表盘"
                 )
             }
         )
@@ -212,7 +212,7 @@ private fun HomeBottomNavigationBar(
                     } else {
                         Icons.Outlined.BarChart
                     },
-                    contentDescription = "数据"
+                    contentDescription = "跑步记录"
                 )
             }
         )

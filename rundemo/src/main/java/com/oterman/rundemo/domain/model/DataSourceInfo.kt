@@ -48,13 +48,13 @@ data class DataSourceInfo(
                         "3、数据拉取的速度依赖高驰服务器推送，触发数据同步后，尽量保持应用位于前台，避免同步异常"
                     )
                 ),
-                // 华为运动健康 (暂未支持)
-                DataSourceInfo(
-                    platform = DataSourcePlatform.HUAWEI,
-                    descriptions = listOf(
-                        "1、功能即将开放，敬请期待"
-                    )
-                )
+//                // 华为运动健康 (暂未支持)
+//                DataSourceInfo(
+//                    platform = DataSourcePlatform.HUAWEI,
+//                    descriptions = listOf(
+//                        "1、功能即将开放，敬请期待"
+//                    )
+//                )
             )
         }
 

@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.oterman.rundemo.BuildConfig
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
 import com.oterman.rundemo.presentation.components.settings.SettingsItem
 import com.oterman.rundemo.presentation.components.settings.UserProfileCard
@@ -177,16 +178,19 @@ fun ProfileTabContent(
                     SettingsItem(
                         icon = Icons.Outlined.Flag,
                         title = "跑步目标",
+                        iconTint = RunTheme.colorScheme.blue,
                         onClick = onRunGoalClick
                     )
                     SettingsItem(
                         icon = Icons.Outlined.FavoriteBorder,
                         title = "心率区间",
+                        iconTint = RunTheme.colorScheme.blue,
                         onClick = { /* TODO: Navigate to heart rate zone page */ }
                     )
                     SettingsItem(
                         icon = Icons.Outlined.Palette,
                         title = "外观设置",
+                        iconTint = RunTheme.colorScheme.blue,
                         showDivider = false,
                         onClick = { /* TODO: Navigate to appearance settings page */ }
                     )
@@ -202,12 +206,14 @@ fun ProfileTabContent(
                         icon = Icons.Outlined.Sync,
                         title = "数据源管理",
                         subtitle = "佳明、高驰等平台数据同步",
+                        iconTint = RunTheme.colorScheme.blue,
                         onClick = onDataSourceManageClick
                     )
                     SettingsItem(
                         icon = Icons.Outlined.FileUpload,
                         title = "导入FIT文件",
                         subtitle = if (isImportingFit) "导入中..." else "从本地导入运动数据",
+                        iconTint = RunTheme.colorScheme.blue,
                         showDivider = false,
                         onClick = {
                             if (!isImportingFit) {
@@ -227,16 +233,19 @@ fun ProfileTabContent(
                     SettingsItem(
                         icon = Icons.Outlined.Email,
                         title = "联系我们",
+                        iconTint = RunTheme.colorScheme.blue,
                         onClick = { /* TODO: Navigate to contact us page */ }
                     )
                     SettingsItem(
                         icon = Icons.AutoMirrored.Outlined.HelpOutline,
                         title = "帮助与反馈",
+                        iconTint = RunTheme.colorScheme.blue,
                         onClick = { /* TODO: Navigate to help page */ }
                     )
                     SettingsItem(
                         icon = Icons.Outlined.Star,
                         title = "给个好评",
+                        iconTint = RunTheme.colorScheme.blue,
                         showDivider = false,
                         onClick = { /* TODO: Open app store rating */ }
                     )
@@ -252,14 +261,14 @@ fun ProfileTabContent(
                         SettingsItem(
                             icon = Icons.Outlined.Flag,
                             title = "显示欢迎页",
-                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            iconTint = RunTheme.colorScheme.blue,
                             showDivider = true,
                             onClick = onShowWelcomeClick
                         )
                         SettingsItem(
                             icon = Icons.Outlined.Flag,
                             title = "重置首次启动",
-                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            iconTint = RunTheme.colorScheme.blue,
                             showDivider = true,
                             onClick = onResetFirstLaunchClick
                         )
@@ -267,7 +276,7 @@ fun ProfileTabContent(
                             icon = Icons.Outlined.Flag,
                             title = "调试工具",
                             subtitle = "缓存管理、开发调试",
-                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            iconTint = RunTheme.colorScheme.blue,
                             showDivider = false,
                             onClick = onDebugClick
                         )
@@ -278,27 +287,27 @@ fun ProfileTabContent(
             item { Spacer(modifier = Modifier.height(24.dp)) }
 
             // Logout button (only when logged in)
-            if (isLoggedIn) {
-                item {
-                    OutlinedButton(
-                        onClick = onLogoutClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Text(
-                            text = "退出登录",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                }
-
-                item { Spacer(modifier = Modifier.height(24.dp)) }
-            }
+//            if (isLoggedIn) {
+//                item {
+//                    OutlinedButton(
+//                        onClick = onLogoutClick,
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .height(48.dp),
+//                        shape = RoundedCornerShape(12.dp),
+//                        colors = ButtonDefaults.outlinedButtonColors(
+//                            contentColor = MaterialTheme.colorScheme.error
+//                        )
+//                    ) {
+//                        Text(
+//                            text = "退出登录",
+//                            style = MaterialTheme.typography.titleMedium
+//                        )
+//                    }
+//                }
+//
+//                item { Spacer(modifier = Modifier.height(24.dp)) }
+//            }
 
             // Footer
             item { Footer() }

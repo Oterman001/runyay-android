@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.DataSourceInfo
+import com.oterman.rundemo.presentation.components.AppCard
 
 /**
  * 数据源列表项组件
@@ -76,7 +77,7 @@ fun DataSourceItem(
                 PriorityBadge(priority = dataSourceInfo.priority)
                 Spacer(modifier = Modifier.width(12.dp))
             }
-            
+
             // 图标
             Image(
                 painter = painterResource(id = dataSourceInfo.platform.iconResId),
@@ -85,9 +86,9 @@ fun DataSourceItem(
                     .size(40.dp)
                     .clip(RoundedCornerShape(8.dp))
             )
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             // 标题和状态
             Column(
                 modifier = Modifier.weight(1f),
@@ -103,7 +104,7 @@ fun DataSourceItem(
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     }
                 )
-                
+
                 // 在编辑模式下也显示授权状态
                 if (!isEditMode || dataSourceInfo.platform.supportsSorting) {
                     Text(
@@ -117,7 +118,7 @@ fun DataSourceItem(
                     )
                 }
             }
-            
+
             // 右侧内容
             if (isEditMode) {
                 // 编辑模式：显示拖拽手柄，绑定拖拽手势
@@ -145,7 +146,7 @@ fun DataSourceItem(
                             strokeWidth = 2.dp
                         )
                     }
-                    
+
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = null,
@@ -171,14 +172,19 @@ private fun PriorityBadge(priority: Int) {
         1 -> Brush.linearGradient(
             colors = listOf(Color(0xFF2196F3), Color(0xFF00BCD4))
         )
+
         2 -> Brush.linearGradient(
             colors = listOf(Color(0xFF00BCD4), Color(0xFF2196F3).copy(alpha = 0.7f))
         )
+
         else -> Brush.linearGradient(
-            colors = listOf(Color(0xFF2196F3).copy(alpha = 0.7f), Color(0xFF2196F3).copy(alpha = 0.5f))
+            colors = listOf(
+                Color(0xFF2196F3).copy(alpha = 0.7f),
+                Color(0xFF2196F3).copy(alpha = 0.5f)
+            )
         )
     }
-    
+
     Box(
         modifier = Modifier
             .size(28.dp)
