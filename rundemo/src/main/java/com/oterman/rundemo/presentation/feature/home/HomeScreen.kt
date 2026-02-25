@@ -120,7 +120,8 @@ fun HomeScreen(
                 )
                 HomeTab.DATA -> DataTabContent(
                     onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },
-                    onRecordLongClick = { workoutId -> onNavigateToRunDetailDebug(workoutId) }
+                    onRecordLongClick = { workoutId -> onNavigateToRunDetailDebug(workoutId) },
+                    onNavigateToDataSourceManage = onNavigateToDataSourceManage
                 )
                 HomeTab.PROFILE -> ProfileTabContent(
                     isLoggedIn = uiState.isLoggedIn,
