@@ -290,7 +290,7 @@ abstract class BaseDataSyncService(
             if (!coroutineContext.isActive) break
 
             // 检查是否已存在
-            if (runRecordDao.getByOriginId(file.summaryId, file.platformCode) != null) {
+            if (runDataRepository.getByOriginId(file.summaryId, file.platformCode) != null) {
                 skippedCount++
                 RLog.d(logTag, "文件已存在，跳过: ${file.summaryId}")
                 continue

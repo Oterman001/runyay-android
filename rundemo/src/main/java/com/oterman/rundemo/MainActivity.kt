@@ -10,11 +10,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.network.RetrofitClient
+import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.presentation.navigation.AppNavGraph
 import com.oterman.rundemo.presentation.navigation.Screen
 import com.oterman.rundemo.ui.theme.ComopseDemoHubTheme
 import com.oterman.rundemo.util.RLog
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * 主Activity
@@ -42,7 +47,10 @@ class MainActivity : ComponentActivity() {
         RetrofitClient.setTokenProvider {
             preferencesManager.getUserToken()
         }
-        
+
+        // 初始化跑步数据仓库的userId
+        initRunDataUserId()
+
         enableEdgeToEdge()
         
         setContent {
@@ -66,6 +74,26 @@ class MainActivity : ComponentActivity() {
                         startDestination = startDestination
                     )
                 }
+            }
+        }
+    }
+
+    private fun initRunDataUserId() {
+        if (!preferencesManager.isUserLoggedIn()) return
+        val userId = preferencesManager.getUserId() ?: return
+
+        val database = RunDatabase.getInstance(this)
+        val repository = RunDataRepositoryImpl.getInstance(database)
+        repository.setCurrentUserId(userId)
+
+        // 一次性迁移旧数据（userId为空的记录归属到当前用户）
+        val migrationKey = "user_data_migrated_$userId"
+        val prefs = getSharedPreferences("run_data_migration", MODE_PRIVATE)
+        if (!prefs.getBoolean(migrationKey, false)) {
+            CoroutineScope(Dispatchers.IO).launch {
+                repository.migrateOrphanedRecords(userId)
+                prefs.edit().putBoolean(migrationKey, true).apply()
+                RLog.i(TAG, "旧数据迁移完成: userId=$userId")
             }
         }
     }

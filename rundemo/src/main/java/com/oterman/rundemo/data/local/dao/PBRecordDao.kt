@@ -61,5 +61,22 @@ interface PBRecordDao {
      */
     @Query("DELETE FROM pb_record WHERE type = :type AND subType = :subType AND inclusiveLevel > 0")
     suspend fun clearBestForTypeAndSubType(type: String, subType: String)
+
+    // ==================== userId 过滤查询 ====================
+
+    @Query("SELECT * FROM pb_record WHERE userId = :userId AND type = :type AND subType = :subType AND inclusiveLevel > 0 ORDER BY value ASC LIMIT 1")
+    suspend fun getBestRecordForUser(userId: String, type: String, subType: String): PBRecordEntity?
+
+    @Query("SELECT * FROM pb_record WHERE userId = :userId AND type = :type AND inclusiveLevel > 0")
+    suspend fun getAllByTypeForUser(userId: String, type: String): List<PBRecordEntity>
+
+    @Query("SELECT * FROM pb_record WHERE userId = :userId AND type = :type AND subType = :subType AND inclusiveLevel > 0 ORDER BY value DESC LIMIT 1")
+    suspend fun getBestAbilityRecordForUser(userId: String, type: String, subType: String): PBRecordEntity?
+
+    @Query("DELETE FROM pb_record WHERE userId = :userId AND type = :type AND subType = :subType AND inclusiveLevel > 0")
+    suspend fun clearBestForTypeAndSubTypeForUser(userId: String, type: String, subType: String)
+
+    @Query("UPDATE pb_record SET userId = :userId WHERE userId = ''")
+    suspend fun migrateOrphanedRecords(userId: String)
 }
 

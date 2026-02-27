@@ -29,7 +29,13 @@ data class RunDetailData(
  * 封装跑步数据的存储和读取操作
  */
 interface RunDataRepository {
-    
+
+    // ==================== 用户隔离 ====================
+
+    fun setCurrentUserId(userId: String?)
+
+    suspend fun migrateOrphanedRecords(userId: String)
+
     // ==================== 保存操作 ====================
     
     /**
@@ -274,5 +280,7 @@ interface RunDataRepository {
      * 获取所有不同的数据源标识
      */
     suspend fun getAllDatasources(): List<String>
+
+    suspend fun getByDatasource(datasource: String): List<RunRecordEntity>
 }
 

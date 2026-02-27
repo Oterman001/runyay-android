@@ -7,6 +7,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.ValidationUtils
@@ -339,6 +341,9 @@ class UserProfileViewModel(
             }
 
             RLog.i(TAG, "用户退出登录")
+
+            // Clear userId from repository
+            RunDataRepositoryImpl.getInstance(RunDatabase.getInstance(context)).setCurrentUserId(null)
 
             val result = userRepository.logoutFromServer()
 

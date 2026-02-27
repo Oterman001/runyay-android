@@ -3,7 +3,7 @@ package com.oterman.rundemo.presentation.feature.datasource.debug
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.DataSourcePreferences
-import com.oterman.rundemo.data.local.dao.RunRecordDao
+import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.util.TimestampUtils
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +18,7 @@ import java.util.Date
  */
 class DataSourceRecordListViewModel(
     private val platform: DataSourcePlatform,
-    private val runRecordDao: RunRecordDao,
+    private val runDataRepository: RunDataRepository,
     private val dataSourcePreferences: DataSourcePreferences
 ) : ViewModel() {
 
@@ -33,7 +33,7 @@ class DataSourceRecordListViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                val records = runRecordDao.getByDatasource(platform.code)
+                val records = runDataRepository.getByDatasource(platform.code)
                 _uiState.update { it.copy(records = records, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update {
@@ -84,21 +84,15 @@ class DataSourceRecordListViewModel(
                     return@launch
                 }
 
-                // 找到最早的startTime
                 val earliestStartTime = recordsToDelete.minOfOrNull { it.startTime }
 
-                // 删除记录
-                selectedIds.forEach { workoutId ->
-                    runRecordDao.deleteByWorkoutId(workoutId)
-                }
+                runDataRepository.deleteRunRecords(selectedIds.toList())
 
-                // 更新同步时间戳到最早删除记录的时间
                 if (earliestStartTime != null) {
                     val timestamp = TimestampUtils.formatFromDate(Date(earliestStartTime))
                     dataSourcePreferences.setLastSyncTime(platform, timestamp)
                 }
 
-                // 刷新列表
                 loadRecords()
                 _uiState.update {
                     it.copy(

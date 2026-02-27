@@ -83,5 +83,28 @@ interface RunRecordDao {
      */
     @Query("SELECT DISTINCT datasource FROM run_record WHERE datasource IS NOT NULL ORDER BY datasource")
     suspend fun getAllDatasources(): List<String>
+
+    // ==================== userId 过滤查询 ====================
+
+    @Query("SELECT * FROM run_record WHERE userId = :userId ORDER BY startTime DESC")
+    fun getAllByStartTimeDescForUser(userId: String): Flow<List<RunRecordEntity>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM run_record WHERE originId = :originId AND datasource = :datasource AND userId = :userId)")
+    suspend fun existsByOriginIdForUser(originId: String, datasource: String, userId: String): Boolean
+
+    @Query("SELECT * FROM run_record WHERE originId = :originId AND datasource = :datasource AND userId = :userId")
+    suspend fun getByOriginIdForUser(originId: String, datasource: String, userId: String): RunRecordEntity?
+
+    @Query("SELECT * FROM run_record WHERE userId = :userId AND startTime >= :startTime AND startTime <= :endTime ORDER BY startTime DESC")
+    suspend fun getByTimeRangeForUser(userId: String, startTime: Long, endTime: Long): List<RunRecordEntity>
+
+    @Query("SELECT DISTINCT datasource FROM run_record WHERE userId = :userId AND datasource IS NOT NULL ORDER BY datasource")
+    suspend fun getAllDatasourcesForUser(userId: String): List<String>
+
+    @Query("SELECT * FROM run_record WHERE userId = :userId AND datasource = :datasource ORDER BY startTime DESC")
+    suspend fun getByDatasourceForUser(userId: String, datasource: String): List<RunRecordEntity>
+
+    @Query("UPDATE run_record SET userId = :userId WHERE userId = ''")
+    suspend fun migrateOrphanedRecords(userId: String)
 }
 

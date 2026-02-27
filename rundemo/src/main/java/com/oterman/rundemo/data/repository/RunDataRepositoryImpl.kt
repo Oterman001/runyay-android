@@ -20,14 +20,18 @@ import com.oterman.rundemo.domain.model.IntervalType
 import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.domain.model.SegmentType
 import com.oterman.rundemo.domain.model.TrackPoint
+import android.util.Log
 import androidx.room.withTransaction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.Date
 
 /**
@@ -57,9 +61,45 @@ class RunDataRepositoryImpl private constructor(
     private val pbRecordDao: PBRecordDao = database.pbRecordDao()
     private val overallVdotDao: OverallVdotDao = database.overallVdotDao()
 
-    private val allRunRecords: StateFlow<List<RunRecordEntity>> =
-        runRecordDao.getAllByStartTimeDesc()
-            .stateIn(repositoryScope, SharingStarted.Eagerly, emptyList())
+    // ==================== 用户隔离状态 ====================
+
+    @Volatile
+    private var currentUserId: String? = null
+
+    private val _allRunRecords = MutableStateFlow<List<RunRecordEntity>>(emptyList())
+    private var recordsCollectJob: Job? = null
+
+    private fun requireUserId(): String {
+        return currentUserId ?: throw IllegalStateException("userId not set, call setCurrentUserId() first")
+    }
+
+    override fun setCurrentUserId(userId: String?) {
+        Log.i("RunDataRepository", "setCurrentUserId: $userId")
+        currentUserId = userId
+        rebuildRecordsFlow()
+    }
+
+    override suspend fun migrateOrphanedRecords(userId: String) {
+        Log.i("RunDataRepository", "migrateOrphanedRecords to userId=$userId")
+        runRecordDao.migrateOrphanedRecords(userId)
+        pbRecordDao.migrateOrphanedRecords(userId)
+        overallVdotDao.migrateOrphanedRecords(userId)
+        rebuildRecordsFlow()
+    }
+
+    private fun rebuildRecordsFlow() {
+        recordsCollectJob?.cancel()
+        val uid = currentUserId
+        if (uid == null) {
+            _allRunRecords.value = emptyList()
+            return
+        }
+        recordsCollectJob = repositoryScope.launch {
+            runRecordDao.getAllByStartTimeDescForUser(uid).collect { records ->
+                _allRunRecords.value = records
+            }
+        }
+    }
     
     // ==================== 保存操作 ====================
     
@@ -69,44 +109,37 @@ class RunDataRepositoryImpl private constructor(
         segments: List<RunSegmentEntity>,
         zones: List<RunAbilityZoneEntity>
     ) {
-        // 使用事务保存所有数据
+        val taggedRecord = record.copy(userId = requireUserId())
         database.withTransaction {
-            // 1. 保存主记录
-            runRecordDao.insert(record)
-            
-            // 2. 批量保存采样点
+            runRecordDao.insert(taggedRecord)
             if (samplePoints.isNotEmpty()) {
                 samplePointDao.insertAll(samplePoints)
             }
-            
-            // 3. 保存分段
             if (segments.isNotEmpty()) {
                 segmentDao.insertAll(segments)
             }
-            
-            // 4. 保存能力区间
             if (zones.isNotEmpty()) {
                 abilityZoneDao.insertAll(zones)
             }
         }
     }
-    
+
     override suspend fun saveRunRecord(record: RunRecordEntity) {
-        runRecordDao.insert(record)
+        runRecordDao.insert(record.copy(userId = requireUserId()))
     }
-    
+
     override suspend fun updateRunRecord(record: RunRecordEntity) {
-        runRecordDao.update(record)
+        runRecordDao.update(record.copy(userId = requireUserId()))
     }
     
     // ==================== 去重检查 ====================
     
     override suspend fun existsByOriginId(originId: String, datasource: String): Boolean {
-        return runRecordDao.existsByOriginId(originId, datasource)
+        return runRecordDao.existsByOriginIdForUser(originId, datasource, requireUserId())
     }
-    
+
     override suspend fun getByOriginId(originId: String, datasource: String): RunRecordEntity? {
-        return runRecordDao.getByOriginId(originId, datasource)
+        return runRecordDao.getByOriginIdForUser(originId, datasource, requireUserId())
     }
     
     // ==================== 查询操作 ====================
@@ -132,11 +165,11 @@ class RunDataRepositoryImpl private constructor(
     }
     
     override fun getAllRunRecords(): Flow<List<RunRecordEntity>> {
-        return allRunRecords
+        return _allRunRecords
     }
-    
+
     override suspend fun getRunRecordsByTimeRange(startTime: Long, endTime: Long): List<RunRecordEntity> {
-        return runRecordDao.getByTimeRange(startTime, endTime)
+        return runRecordDao.getByTimeRangeForUser(requireUserId(), startTime, endTime)
     }
     
     // ==================== GPS轨迹 ====================
@@ -285,17 +318,17 @@ class RunDataRepositoryImpl private constructor(
     }
 
     override suspend fun getAllAggregatedHeartRate7Zones(): List<AbilityZone> {
-        val entities = abilityZoneDao.getAllHeartRate7Zones()
+        val entities = abilityZoneDao.getAllHeartRate7ZonesForUser(requireUserId())
         return aggregateZones(entities, AbilityZoneType.HEART_RATE_7)
     }
 
     override suspend fun getAllAggregatedHeartRate5Zones(): List<AbilityZone> {
-        val entities = abilityZoneDao.getAllHeartRate5Zones()
+        val entities = abilityZoneDao.getAllHeartRate5ZonesForUser(requireUserId())
         return aggregateZones(entities, AbilityZoneType.HEART_RATE_5)
     }
 
     override suspend fun getAllAggregatedSpeedZones(): List<AbilityZone> {
-        val entities = abilityZoneDao.getAllSpeedZones()
+        val entities = abilityZoneDao.getAllSpeedZonesForUser(requireUserId())
         return aggregateZones(entities, AbilityZoneType.SPEED)
     }
 
@@ -331,14 +364,14 @@ class RunDataRepositoryImpl private constructor(
     // ==================== PB记录 ====================
     
     override suspend fun getBestPB(type: String, subType: String): PBRecordEntity? {
-        return pbRecordDao.getBestRecord(type, subType)
+        return pbRecordDao.getBestRecordForUser(requireUserId(), type, subType)
     }
-    
+
     override suspend fun savePBIfBetter(pbRecord: PBRecordEntity): Boolean {
-        val currentBest = pbRecordDao.getBestRecord(pbRecord.type, pbRecord.subType)
-        
-        // 对于Speed类型，值越小越好（用时更短）
-        // 对于Ability类型，值越大越好（距离更远/步频更高等）
+        val uid = requireUserId()
+        val taggedRecord = pbRecord.copy(userId = uid)
+        val currentBest = pbRecordDao.getBestRecordForUser(uid, pbRecord.type, pbRecord.subType)
+
         val isBetter = if (currentBest == null) {
             true
         } else if (pbRecord.type == "Speed") {
@@ -346,40 +379,40 @@ class RunDataRepositoryImpl private constructor(
         } else {
             pbRecord.value > currentBest.value
         }
-        
+
         if (isBetter) {
-            // 清除旧的PB，插入新的
-            pbRecordDao.clearBestForTypeAndSubType(pbRecord.type, pbRecord.subType)
-            pbRecordDao.insert(pbRecord)
+            pbRecordDao.clearBestForTypeAndSubTypeForUser(uid, pbRecord.type, pbRecord.subType)
+            pbRecordDao.insert(taggedRecord)
         }
-        
+
         return isBetter
     }
-    
+
     override suspend fun savePBRecords(records: List<PBRecordEntity>) {
-        pbRecordDao.insertAll(records)
+        val uid = requireUserId()
+        pbRecordDao.insertAll(records.map { it.copy(userId = uid) })
     }
-    
+
     override suspend fun getAllPBByType(type: String): List<PBRecordEntity> {
-        return pbRecordDao.getAllByType(type)
+        return pbRecordDao.getAllByTypeForUser(requireUserId(), type)
     }
     
     // ==================== VDOT ====================
     
     override suspend fun saveOverallVdot(vdot: OverallVdotEntity) {
-        overallVdotDao.insert(vdot)
+        overallVdotDao.insert(vdot.copy(userId = requireUserId()))
     }
-    
+
     override suspend fun getRecentVdots(limit: Int): List<OverallVdotEntity> {
-        return overallVdotDao.getRecentVdots(limit)
+        return overallVdotDao.getRecentVdotsForUser(requireUserId(), limit)
     }
-    
+
     override suspend fun getLatestVdot(): OverallVdotEntity? {
-        return overallVdotDao.getLatestVdot()
+        return overallVdotDao.getLatestVdotForUser(requireUserId())
     }
 
     override suspend fun getVdotsByDateRange(startDate: Long, endDate: Long): List<OverallVdotEntity> {
-        return overallVdotDao.getVdotsByDateRange(startDate, endDate)
+        return overallVdotDao.getVdotsByDateRangeForUser(requireUserId(), startDate, endDate)
     }
     
     // ==================== 删除操作 ====================
@@ -394,9 +427,13 @@ class RunDataRepositoryImpl private constructor(
     }
 
     override suspend fun getAllDatasources(): List<String> {
-        return runRecordDao.getAllDatasources()
+        return runRecordDao.getAllDatasourcesForUser(requireUserId())
     }
-    
+
+    override suspend fun getByDatasource(datasource: String): List<RunRecordEntity> {
+        return runRecordDao.getByDatasourceForUser(requireUserId(), datasource)
+    }
+
     // ==================== 扩展函数 ====================
     
     private fun RunSegmentEntity.toRunSegment(): RunSegment {

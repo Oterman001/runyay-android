@@ -54,5 +54,19 @@ interface OverallVdotDao {
      */
     @Query("DELETE FROM overall_vdot WHERE workoutId = :workoutId")
     suspend fun deleteByWorkoutId(workoutId: String)
+
+    // ==================== userId 过滤查询 ====================
+
+    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND inclusiveLevel > 0 ORDER BY date DESC LIMIT :limit")
+    suspend fun getRecentVdotsForUser(userId: String, limit: Int = 10): List<OverallVdotEntity>
+
+    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND inclusiveLevel > 0 ORDER BY date DESC LIMIT 1")
+    suspend fun getLatestVdotForUser(userId: String): OverallVdotEntity?
+
+    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND date >= :startDate AND date <= :endDate AND inclusiveLevel > 0 AND value > 0 ORDER BY date DESC")
+    suspend fun getVdotsByDateRangeForUser(userId: String, startDate: Long, endDate: Long): List<OverallVdotEntity>
+
+    @Query("UPDATE overall_vdot SET userId = :userId WHERE userId = ''")
+    suspend fun migrateOrphanedRecords(userId: String)
 }
 

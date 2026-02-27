@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 
 /**
@@ -19,9 +20,9 @@ class DataSourceRecordListViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(DataSourceRecordListViewModel::class.java)) {
             val dataSourcePreferences = DataSourcePreferences(context)
-            val runRecordDao = RunDatabase.getInstance(context).runRecordDao()
+            val repository = RunDataRepositoryImpl.getInstance(RunDatabase.getInstance(context))
 
-            return DataSourceRecordListViewModel(platform, runRecordDao, dataSourcePreferences) as T
+            return DataSourceRecordListViewModel(platform, repository, dataSourcePreferences) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

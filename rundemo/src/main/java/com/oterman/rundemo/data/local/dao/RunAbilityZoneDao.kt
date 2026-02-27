@@ -79,5 +79,16 @@ interface RunAbilityZoneDao {
      */
     @Query("DELETE FROM run_ability_zone WHERE workoutId = :workoutId")
     suspend fun deleteByWorkoutId(workoutId: String)
+
+    // ==================== userId 子查询方法 ====================
+
+    @Query("SELECT * FROM run_ability_zone WHERE workoutId IN (SELECT workoutId FROM run_record WHERE userId = :userId) AND zoneType = 1 ORDER BY zoneIndex")
+    suspend fun getAllHeartRate7ZonesForUser(userId: String): List<RunAbilityZoneEntity>
+
+    @Query("SELECT * FROM run_ability_zone WHERE workoutId IN (SELECT workoutId FROM run_record WHERE userId = :userId) AND zoneType = 2 ORDER BY zoneIndex")
+    suspend fun getAllHeartRate5ZonesForUser(userId: String): List<RunAbilityZoneEntity>
+
+    @Query("SELECT * FROM run_ability_zone WHERE workoutId IN (SELECT workoutId FROM run_record WHERE userId = :userId) AND zoneType = 3 ORDER BY zoneIndex")
+    suspend fun getAllSpeedZonesForUser(userId: String): List<RunAbilityZoneEntity>
 }
 

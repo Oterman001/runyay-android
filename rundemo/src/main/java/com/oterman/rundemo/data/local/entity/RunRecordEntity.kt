@@ -1,13 +1,17 @@
 package com.oterman.rundemo.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
  * 跑步记录主表Entity
  * 存储跑步活动的摘要信息
  */
-@Entity(tableName = "run_record")
+@Entity(
+    tableName = "run_record",
+    indices = [Index(value = ["userId"])]
+)
 data class RunRecordEntity(
     @PrimaryKey
     val workoutId: String,              // UUID字符串，主键
@@ -82,6 +86,9 @@ data class RunRecordEntity(
     // 关联ID
     val trainPlanId: String? = null,        // 关联训练计划
     val shoeId: String? = null,             // 关联跑鞋
-    val linkedRaceRecordId: String? = null  // 关联赛事记录
+    val linkedRaceRecordId: String? = null, // 关联赛事记录
+
+    // 用户隔离
+    val userId: String = ""                 // 所属用户ID
 )
 

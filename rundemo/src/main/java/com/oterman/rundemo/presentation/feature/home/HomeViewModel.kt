@@ -7,7 +7,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.fit.FitImportService
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.AvatarManager
+import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.service.sync.DataSyncForegroundService
 import com.oterman.rundemo.service.sync.SyncUiState
@@ -68,8 +70,9 @@ class HomeViewModel(
             )
         }
 
-        // 如果已登录，异步加载头像
+        // 如果已登录，设置 repository userId 并异步加载头像
         if (isLoggedIn && userId != null) {
+            RunDataRepositoryImpl.getInstance(RunDatabase.getInstance(context)).setCurrentUserId(userId)
             loadAvatarUrl(userId)
         }
     }
@@ -228,6 +231,9 @@ class HomeViewModel(
         viewModelScope.launch {
             RLog.i(TAG, "User logging out")
             _uiState.update { it.copy(isLoggingOut = true, showLogoutConfirmDialog = false) }
+
+            // Clear userId from repository
+            RunDataRepositoryImpl.getInstance(RunDatabase.getInstance(context)).setCurrentUserId(null)
 
             // Clear user data
             preferencesManager.clearUserData()

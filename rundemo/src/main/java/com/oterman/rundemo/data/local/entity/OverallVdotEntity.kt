@@ -15,7 +15,8 @@ import androidx.room.PrimaryKey
     tableName = "overall_vdot",
     indices = [
         Index(value = ["workoutId"]),
-        Index(value = ["date"])
+        Index(value = ["date"]),
+        Index(value = ["userId", "date"])
     ]
 )
 data class OverallVdotEntity(
@@ -26,6 +27,7 @@ data class OverallVdotEntity(
     val date: Long = 0L,                 // 记录日期时间戳(ms)
     val originValue: Double = 0.0,       // 原始VDOT值（未平滑）
     val value: Double = 0.0,             // 平滑后的VDOT值
-    val inclusiveLevel: Int = 1          // 0=不纳入统计，1+=纳入统计
+    val inclusiveLevel: Int = 1,          // 0=不纳入统计，1+=纳入统计
+    val userId: String = ""               // 所属用户ID
 )
 

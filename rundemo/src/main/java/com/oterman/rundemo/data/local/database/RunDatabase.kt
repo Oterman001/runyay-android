@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.oterman.rundemo.data.local.dao.DailyHealthDao
 import com.oterman.rundemo.data.local.dao.OverallVdotDao
 import com.oterman.rundemo.data.local.dao.PBRecordDao
@@ -39,7 +41,7 @@ import com.oterman.rundemo.data.local.entity.RunSegmentEntity
         OverallVdotEntity::class,
         DailyHealthEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -55,10 +57,26 @@ abstract class RunDatabase : RoomDatabase() {
     
     companion object {
         private const val DATABASE_NAME = "run_database"
-        
+
         @Volatile
         private var INSTANCE: RunDatabase? = null
-        
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // run_record: 添加 userId 字段 + 索引
+                db.execSQL("ALTER TABLE run_record ADD COLUMN userId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_run_record_userId ON run_record(userId)")
+
+                // pb_record: 添加 userId 字段 + 复合索引
+                db.execSQL("ALTER TABLE pb_record ADD COLUMN userId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_pb_record_userId_type_subType ON pb_record(userId, type, subType)")
+
+                // overall_vdot: 添加 userId 字段 + 复合索引
+                db.execSQL("ALTER TABLE overall_vdot ADD COLUMN userId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_overall_vdot_userId_date ON overall_vdot(userId, date)")
+            }
+        }
+
         /**
          * 获取数据库单例
          */
@@ -69,7 +87,8 @@ abstract class RunDatabase : RoomDatabase() {
                     RunDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .fallbackToDestructiveMigration() // 版本升级时如果没有Migration则销毁重建
+                    .addMigrations(MIGRATION_3_4)
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
