@@ -44,4 +44,16 @@ interface DailyHealthDao {
      */
     @Query("SELECT * FROM daily_health WHERE userId = :userId AND vo2Max IS NOT NULL ORDER BY calendarDate DESC LIMIT 2")
     suspend fun getLatestTwoVo2Max(userId: String): List<DailyHealthEntity>
+
+    /**
+     * 获取指定日期的最大VO2Max（跨平台取最大值）
+     */
+    @Query("SELECT MAX(vo2Max) FROM daily_health WHERE userId = :userId AND calendarDate = :calendarDate AND vo2Max IS NOT NULL")
+    suspend fun getVo2MaxForDate(userId: String, calendarDate: String): Double?
+
+    /**
+     * 获取指定日期之前最近的VO2Max记录（用于delta计算）
+     */
+    @Query("SELECT vo2Max FROM daily_health WHERE userId = :userId AND calendarDate < :beforeDate AND vo2Max IS NOT NULL ORDER BY calendarDate DESC LIMIT 1")
+    suspend fun getPreviousVo2Max(userId: String, beforeDate: String): Double?
 }

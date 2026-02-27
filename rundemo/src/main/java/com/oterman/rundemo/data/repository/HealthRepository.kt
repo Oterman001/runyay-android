@@ -101,4 +101,22 @@ class HealthRepository(
 
         return Pair(latest, delta)
     }
+
+    /**
+     * 获取指定日期的VO2Max（跨平台取最大值）
+     * @param calendarDateDash 日期，格式 "yyyy-MM-dd"
+     */
+    suspend fun getVo2MaxForDate(calendarDateDash: String): Double? {
+        val userId = preferencesManager.getUserId() ?: return null
+        return dailyHealthDao.getVo2MaxForDate(userId, calendarDateDash)
+    }
+
+    /**
+     * 获取指定日期之前最近的VO2Max（用于delta计算）
+     * @param calendarDateDash 日期，格式 "yyyy-MM-dd"
+     */
+    suspend fun getPreviousVo2Max(calendarDateDash: String): Double? {
+        val userId = preferencesManager.getUserId() ?: return null
+        return dailyHealthDao.getPreviousVo2Max(userId, calendarDateDash)
+    }
 }

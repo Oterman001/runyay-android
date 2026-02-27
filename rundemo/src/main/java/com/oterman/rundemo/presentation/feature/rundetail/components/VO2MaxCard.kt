@@ -2,7 +2,6 @@ package com.oterman.rundemo.presentation.feature.rundetail.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,25 +16,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+import kotlin.math.abs
 
 /**
- * VO2Max / VDOT 展示卡片
- * 对标iOS的VO2Max展示区域
+ * VO2Max 展示卡片
+ * 对标iOS VO2MaxCardView
+ * 左侧显示数值+等级tag，右侧显示与上次的变化量
  */
 @Composable
 fun VO2MaxCard(
-    vdot: Double,
-    overallVdot: Double,
+    vo2Max: Double,
+    previousVo2Max: Double?,
     modifier: Modifier = Modifier
 ) {
-    if (vdot <= 0 && overallVdot <= 0) return
+    if (vo2Max <= 0) return
 
     AppCard(
         modifier = modifier
@@ -46,144 +46,101 @@ fun VO2MaxCard(
                 .fillMaxWidth()
                 .padding(RunDetailLayoutConstants.HeaderCardPadding.dp)
         ) {
+            // 标题
             Text(
-                text = "VDOT",
+                text = "最大摄氧量",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
+            // 数据行：左侧数值+tag，右侧delta
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // 本次VDOT
-                if (vdot > 0) {
-                    VdotValueItem(
-                        label = "本次",
-                        value = vdot,
-                        modifier = Modifier.weight(1f)
+                // 左侧：数值 + 等级tag
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = String.format("%.1f", vo2Max),
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2196F3)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    val grade = getVo2MaxGrade(vo2Max)
+                    Text(
+                        text = grade.label,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(grade.color)
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
 
-                // Overall VDOT
-                if (overallVdot > 0) {
-                    VdotValueItem(
-                        label = "综合",
-                        value = overallVdot,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            // VDOT 等级指示条
-            if (vdot > 0) {
-                Spacer(modifier = Modifier.height(16.dp))
-                VdotLevelBar(vdot = vdot)
+                // 右侧：delta显示
+                DeltaDisplay(previousVo2Max = previousVo2Max, currentVo2Max = vo2Max)
             }
         }
     }
 }
 
+/**
+ * 变化量显示
+ */
 @Composable
-private fun VdotValueItem(
-    label: String,
-    value: Double,
-    modifier: Modifier = Modifier
+private fun DeltaDisplay(
+    previousVo2Max: Double?,
+    currentVo2Max: Double
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    if (previousVo2Max == null) {
         Text(
-            text = String.format("%.1f", value),
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
+            text = "首次记录",
+            fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else {
+        val change = currentVo2Max - previousVo2Max
+        val (arrow, color) = when {
+            change > 0 -> "↑" to Color(0xFF4CAF50)
+            change < 0 -> "↓" to Color(0xFFF44336)
+            else -> "→" to MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        val text = if (change == 0.0) {
+            "$arrow 无变化"
+        } else {
+            "$arrow ${String.format("%.2f", abs(change))}"
+        }
+
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = color
         )
     }
 }
 
 /**
- * VDOT等级指示条
- * 30-85的范围，显示当前值的位置
+ * VO2Max等级评价（简化版，男性30-39 ACSM标准）
  */
-@Composable
-private fun VdotLevelBar(
-    vdot: Double,
-    modifier: Modifier = Modifier
-) {
-    val minVdot = 30.0
-    val maxVdot = 85.0
-    val progress = ((vdot - minVdot) / (maxVdot - minVdot)).toFloat().coerceIn(0f, 1f)
+private data class Vo2MaxGrade(val label: String, val color: Color)
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        // 等级标签行
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "初级",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "优秀",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "精英",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // 渐变进度条
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFF66BB6A),
-                            Color(0xFF42A5F5),
-                            Color(0xFFAB47BC)
-                        )
-                    )
-                )
-        ) {
-            // 当前值指示器
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(progress)
-                    .height(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .width(3.dp)
-                        .height(12.dp)
-                        .background(
-                            Color.White,
-                            RoundedCornerShape(1.5.dp)
-                        )
-                )
-            }
-        }
+private fun getVo2MaxGrade(vo2Max: Double): Vo2MaxGrade {
+    return when {
+        vo2Max >= 52.0 -> Vo2MaxGrade("优秀", Color(0xFF4CAF50))
+        vo2Max >= 43.0 -> Vo2MaxGrade("良好", Color(0xFF2196F3))
+        vo2Max >= 34.0 -> Vo2MaxGrade("一般", Color(0xFFFF9800))
+        else -> Vo2MaxGrade("待提升", Color(0xFFF44336))
     }
 }
-

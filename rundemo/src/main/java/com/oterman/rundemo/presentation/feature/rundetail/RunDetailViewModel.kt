@@ -6,8 +6,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.repository.AvatarManager
+import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.data.repository.FitDownloadRepository
+import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.util.RLog
@@ -31,7 +34,8 @@ class RunDetailViewModel(
     private val repository: RunDataRepository,
     private val fitDownloadRepository: FitDownloadRepository,
     private val avatarManager: AvatarManager,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val healthRepository: HealthRepository
 ) : ViewModel() {
 
     companion object {
@@ -97,6 +101,14 @@ class RunDetailViewModel(
                 val heartRate5Zones = repository.getHeartRate5Zones(workoutId)
                 val speedZones = repository.getSpeedZones(workoutId)
 
+                // 从 daily_health 表获取当天 VO2Max
+                val runDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    .format(Date(record.startTime))
+                val vo2Max = healthRepository.getVo2MaxForDate(runDateStr)
+                val previousVo2Max = if (vo2Max != null) {
+                    healthRepository.getPreviousVo2Max(runDateStr)
+                } else null
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = null,
@@ -118,7 +130,9 @@ class RunDetailViewModel(
                     speedZones = speedZones,
                     trainingSegments = trainingSegments,
                     mergedTrainingSegments = mergedTrainingSegments,
-                    expandedSegmentIds = _expandedSegmentIds.toSet()
+                    expandedSegmentIds = _expandedSegmentIds.toSet(),
+                    vo2Max = vo2Max,
+                    previousVo2Max = previousVo2Max
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "加载失败")
@@ -518,7 +532,10 @@ class RunDetailViewModelFactory(
             val preferencesManager = PreferencesManager(context)
             val fitDownloadRepository = FitDownloadRepository(preferencesManager)
             val avatarManager = AvatarManager.getInstance(context)
-            return RunDetailViewModel(workoutId, repository, fitDownloadRepository, avatarManager, preferencesManager) as T
+            val dataSourcePreferences = DataSourcePreferences(context)
+            val dataSourceRepository = DataSourceRepository(dataSourcePreferences, preferencesManager)
+            val healthRepository = HealthRepository(database.dailyHealthDao(), dataSourceRepository, preferencesManager)
+            return RunDetailViewModel(workoutId, repository, fitDownloadRepository, avatarManager, preferencesManager, healthRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

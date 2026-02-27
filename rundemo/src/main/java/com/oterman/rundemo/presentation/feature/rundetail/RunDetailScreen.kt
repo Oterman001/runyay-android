@@ -71,8 +71,8 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.VerticalOsc
  * 页面内容顺序：
  * 1. 地图区域 + 天气覆盖层
  * 2. Header + DataGrid 合并卡片（含VDOT/跑力，最多12项指标）
- * 3. 训练效果卡片（条件显示）
- * 4. VO2Max 卡片（仅当VDOT=0但overallVdot有值时显示）
+ * 3. 最大摄氧量卡片（条件显示，来自daily_health表）
+ * 4. 训练效果卡片（条件显示）
  * 5. 公里分段表格
  * 6. 训练分段表格（条件显示）
  * 7. 心率图表 + 心率区间（单卡，5/7区间切换）
@@ -285,12 +285,13 @@ fun RunDetailScreen(
                             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
-                        // ==================== 3. 训练效果卡片 ====================
-                        if (record.trainingEffect > 0 || record.anaerobicTrainingEffect > 0) {
+                        // ==================== 3. 最大摄氧量卡片 ====================
+                        val vo2Max = uiState.vo2Max
+                        if (vo2Max != null && vo2Max > 0) {
                             item {
-                                TrainingEffectCard(
-                                    aerobicEffect = record.trainingEffect,
-                                    anaerobicEffect = record.anaerobicTrainingEffect
+                                VO2MaxCard(
+                                    vo2Max = vo2Max,
+                                    previousVo2Max = uiState.previousVo2Max
                                 )
                             }
                             item {
@@ -298,14 +299,12 @@ fun RunDetailScreen(
                             }
                         }
 
-                        // ==================== 4. VO2Max / VDOT 卡片 ====================
-                        // 仅当VDOT=0但overallVdot有值时显示独立VO2Max卡片
-                        // （当VDOT>0时，跑力已在Header DataGrid中展示）
-                        if (record.vdot <= 0 && record.overallVdot > 0) {
+                        // ==================== 4. 训练效果卡片 ====================
+                        if (record.trainingEffect > 0 || record.anaerobicTrainingEffect > 0) {
                             item {
-                                VO2MaxCard(
-                                    vdot = record.vdot,
-                                    overallVdot = record.overallVdot
+                                TrainingEffectCard(
+                                    aerobicEffect = record.trainingEffect,
+                                    anaerobicEffect = record.anaerobicTrainingEffect
                                 )
                             }
                             item {
