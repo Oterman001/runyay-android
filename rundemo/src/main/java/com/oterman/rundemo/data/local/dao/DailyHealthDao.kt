@@ -1,0 +1,47 @@
+package com.oterman.rundemo.data.local.dao
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import com.oterman.rundemo.data.local.entity.DailyHealthEntity
+
+/**
+ * 每日健康数据 DAO
+ */
+@Dao
+interface DailyHealthDao {
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrReplace(entity: DailyHealthEntity)
+
+    /**
+     * 检查缓存是否存在（cache-hit check before API call）
+     */
+    @Query("SELECT COUNT(*) > 0 FROM daily_health WHERE userId = :userId AND platformCode = :platformCode AND calendarDate = :calendarDate")
+    suspend fun exists(userId: String, platformCode: String, calendarDate: String): Boolean
+
+    /**
+     * 获取指定用户、平台、日期的健康数据
+     */
+    @Query("SELECT * FROM daily_health WHERE userId = :userId AND platformCode = :platformCode AND calendarDate = :calendarDate LIMIT 1")
+    suspend fun getByUserPlatformDate(userId: String, platformCode: String, calendarDate: String): DailyHealthEntity?
+
+    /**
+     * 获取指定用户某一天的最佳静息心率（跨平台取最小值，最接近生理真实值）
+     */
+    @Query("SELECT MIN(restingHeartRate) FROM daily_health WHERE userId = :userId AND calendarDate = :calendarDate AND restingHeartRate IS NOT NULL")
+    suspend fun getBestRestingHR(userId: String, calendarDate: String): Int?
+
+    /**
+     * 获取最新的VO2Max记录（用于详情页展示）
+     */
+    @Query("SELECT * FROM daily_health WHERE userId = :userId AND vo2Max IS NOT NULL ORDER BY calendarDate DESC LIMIT 1")
+    suspend fun getLatestVo2Max(userId: String): DailyHealthEntity?
+
+    /**
+     * 获取最新两条VO2Max记录（用于delta计算：current - previous）
+     */
+    @Query("SELECT * FROM daily_health WHERE userId = :userId AND vo2Max IS NOT NULL ORDER BY calendarDate DESC LIMIT 2")
+    suspend fun getLatestTwoVo2Max(userId: String): List<DailyHealthEntity>
+}

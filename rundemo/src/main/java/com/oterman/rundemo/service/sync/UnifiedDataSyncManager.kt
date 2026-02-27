@@ -8,6 +8,7 @@ import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.DataSourceRepository
+import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.domain.model.DataSourcePlatform
@@ -63,7 +64,8 @@ class UnifiedDataSyncManager private constructor(
     private val runRecordDao: RunRecordDao,
     private val samplePointDao: RunSamplePointDao,
     private val segmentDao: RunSegmentDao,
-    private val runDataRepository: RunDataRepository
+    private val runDataRepository: RunDataRepository,
+    private val healthRepository: HealthRepository? = null
 ) {
     companion object {
         private const val TAG = "UnifiedDataSyncManager"
@@ -92,6 +94,11 @@ class UnifiedDataSyncManager private constructor(
             val samplePointDao = database.runSamplePointDao()
             val segmentDao = database.runSegmentDao()
             val runDataRepository = RunDataRepositoryImpl.getInstance(database)
+            val healthRepository = HealthRepository(
+                dailyHealthDao = database.dailyHealthDao(),
+                dataSourceRepository = dataSourceRepository,
+                preferencesManager = preferencesManager
+            )
 
             return UnifiedDataSyncManager(
                 context = context,
@@ -100,7 +107,8 @@ class UnifiedDataSyncManager private constructor(
                 runRecordDao = runRecordDao,
                 samplePointDao = samplePointDao,
                 segmentDao = segmentDao,
-                runDataRepository = runDataRepository
+                runDataRepository = runDataRepository,
+                healthRepository = healthRepository
             )
         }
 
@@ -133,15 +141,15 @@ class UnifiedDataSyncManager private constructor(
 
     // 同步服务实例
     private val garminChinaSyncService: GarminChinaSyncService by lazy {
-        GarminChinaSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository)
+        GarminChinaSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository)
     }
 
     private val garminGlobalSyncService: GarminGlobalSyncService by lazy {
-        GarminGlobalSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository)
+        GarminGlobalSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository)
     }
 
     private val corosSyncService: CorosSyncService by lazy {
-        CorosSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository)
+        CorosSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository)
     }
 
     // 同步状态

@@ -118,5 +118,8 @@ object SyncConstants {
         const val COROS_FILE_LIST_REQUEST = "CorosFileListRequest"
         const val COROS_SPORT_DETAIL_REQUEST = "CorosSportDetailRequest"
         const val COROS_BACKFILL_REQUEST = "CorosBackfillRequest"
+
+        // 健康数据
+        const val HEALTH_QUERY_REQUEST = "GarminHealthQueryRequest"
     }
 }

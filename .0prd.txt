@@ -64,3 +64,6 @@ enum RecordInClusiveLevel:Int{
 
 
 
+获取跑步数据列表，可能包含已经解析好的基础数据信息，也可能没有；
+
+

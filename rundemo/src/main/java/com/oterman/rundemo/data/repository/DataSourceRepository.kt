@@ -10,11 +10,13 @@ import com.oterman.rundemo.data.network.dto.request.CorosCallbackRequest
 import com.oterman.rundemo.data.network.dto.request.FileDownloadRequest
 import com.oterman.rundemo.data.network.dto.request.FileListRequest
 import com.oterman.rundemo.data.network.dto.request.GarminCallbackRequest
+import com.oterman.rundemo.data.network.dto.request.HealthQueryRequest
 import com.oterman.rundemo.data.network.dto.request.PlatformBindRequest
 import com.oterman.rundemo.data.network.dto.request.PlatformStatusRequest
 import com.oterman.rundemo.data.network.dto.request.PlatformUnbindRequest
 import com.oterman.rundemo.service.sync.model.SyncConstants
 import com.oterman.rundemo.util.TimestampUtils
+import com.oterman.rundemo.data.network.dto.response.DailyHealthData
 import com.oterman.rundemo.data.network.dto.response.FileInfoDto
 import com.oterman.rundemo.data.network.dto.response.PlatformStatusResponse
 import com.oterman.rundemo.domain.model.DataSourceInfo
@@ -684,9 +686,54 @@ class DataSourceRepository(
         dataSourcePreferences.setCorosLastSyncTime(timestamp)
     }
     
+    // ============ 健康数据 ============
+
+    /**
+     * 查询健康数据（静息心率、VO2Max等）
+     * @param platform 数据源平台
+     * @param dateYYYYMMDD 日期，格式 "yyyyMMdd"
+     * @return 每日健康数据列表
+     */
+    suspend fun queryHealth(
+        platform: DataSourcePlatform,
+        dateYYYYMMDD: String
+    ): Result<List<DailyHealthData>> = withContext(Dispatchers.IO) {
+        try {
+            val userId = preferencesManager.getUserId()
+                ?: return@withContext Result.failure(Exception("用户未登录"))
+
+            RLog.d(TAG, "查询健康数据, platform=${platform.code}, date=$dateYYYYMMDD")
+
+            val request = createBaseRequest(
+                dtoName = SyncConstants.DtoNames.HEALTH_QUERY_REQUEST,
+                data = HealthQueryRequest(
+                    userId = userId,
+                    platformCode = platform.code,
+                    startDate = dateYYYYMMDD,
+                    endDate = dateYYYYMMDD
+                )
+            )
+
+            val response = api.queryHealth(request)
+
+            if (response.isSuccess()) {
+                val dailyData = response.data?.garminHealthQueryResponse
+                    ?.firstOrNull()?.dailyData ?: emptyList()
+                RLog.d(TAG, "健康数据查询成功, 记录数: ${dailyData.size}")
+                Result.success(dailyData)
+            } else {
+                RLog.w(TAG, "健康数据查询失败: ${response.msg}")
+                Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            RLog.e(TAG, "查询健康数据异常", e)
+            Result.failure(e)
+        }
+    }
+
     // ============ 辅助方法 ============
-    
-    private fun <T> createBaseRequest(dtoName: String, data: T) = 
+
+    private fun <T> createBaseRequest(dtoName: String, data: T) =
         RequestBuilder.createRequest(dtoName, data, preferencesManager)
     
     private fun FileInfoDto.toFileInfo(): FileInfo {

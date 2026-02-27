@@ -3,7 +3,9 @@ package com.oterman.rundemo.data.fit
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.presentation.feature.home.FitImportResult
@@ -11,6 +13,9 @@ import com.oterman.rundemo.util.FitDataConverter
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * FIT文件导入服务
@@ -29,8 +34,29 @@ class FitImportService(private val context: Context) {
     }
 
     private val parser = FitFileParser(context)
+    private val database: RunDatabase by lazy { RunDatabase.getInstance(context) }
     private val repository: RunDataRepository by lazy {
-        RunDataRepositoryImpl.getInstance(RunDatabase.getInstance(context))
+        RunDataRepositoryImpl.getInstance(database)
+    }
+
+    /** 健康数据仓库（用于获取真实静息心率） */
+    private val healthRepository: HealthRepository? by lazy {
+        try {
+            val preferencesManager = PreferencesManager(context)
+            val dataSourcePreferences = com.oterman.rundemo.data.local.DataSourcePreferences(context)
+            val dataSourceRepository = com.oterman.rundemo.data.repository.DataSourceRepository(
+                dataSourcePreferences = dataSourcePreferences,
+                preferencesManager = preferencesManager
+            )
+            HealthRepository(
+                dailyHealthDao = database.dailyHealthDao(),
+                dataSourceRepository = dataSourceRepository,
+                preferencesManager = preferencesManager
+            )
+        } catch (e: Exception) {
+            RLog.w(TAG, "初始化HealthRepository失败: ${e.message}")
+            null
+        }
     }
 
     /** FIT数据处理器 */
@@ -77,12 +103,8 @@ class FitImportService(private val context: Context) {
             }
 
             // 5. 使用 FitRecordProcessor 处理并保存
-            // TODO: 后续可从用户设置获取生理参数
-            val userConfig = UserPhysiologyConfig(
-                maxHR = 190.0,
-                restHR = 60.0,
-                isMale = true
-            )
+            // 尝试从健康数据获取真实静息心率
+            val userConfig = buildUserConfig(parseResult.session?.startTime)
 
             val importResult = fitRecordProcessor.processAndSave(
                 parseResult = parseResult,
@@ -107,6 +129,29 @@ class FitImportService(private val context: Context) {
             RLog.e(TAG, "导入失败", e)
             FitImportResult.Error("导入失败: ${e.message}")
         }
+    }
+
+    /**
+     * 构建用户生理参数配置
+     * 尝试从HealthRepository获取真实静息心率，失败则使用默认值
+     */
+    private suspend fun buildUserConfig(startTimeMs: Long?): UserPhysiologyConfig {
+        if (startTimeMs == null || startTimeMs <= 0) return UserPhysiologyConfig()
+
+        try {
+            val repo = healthRepository ?: return UserPhysiologyConfig()
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val calendarDate = dateFormat.format(Date(startTimeMs))
+            val restHR = repo.getRestingHRForDate(calendarDate)
+            if (restHR != null && restHR > 0) {
+                RLog.i(TAG, "使用真实静息心率: restHR=$restHR, date=$calendarDate")
+                return UserPhysiologyConfig(restHR = restHR.toDouble())
+            }
+        } catch (e: Exception) {
+            RLog.w(TAG, "获取静息心率失败（使用默认值）: ${e.message}")
+        }
+
+        return UserPhysiologyConfig()
     }
 
     /**

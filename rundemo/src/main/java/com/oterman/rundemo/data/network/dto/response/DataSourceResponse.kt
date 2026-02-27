@@ -41,7 +41,10 @@ data class DataSourceResponseData(
     val corosBackfillResponse: List<BackfillResponse>? = null,
 
     @SerializedName("FitFileDetailResponse")
-    val fitFileDetailResponse: List<FitFileDetailResponse>? = null
+    val fitFileDetailResponse: List<FitFileDetailResponse>? = null,
+
+    @SerializedName("GarminHealthQueryResponse")
+    val garminHealthQueryResponse: List<GarminHealthQueryResponse>? = null
 )
 
 /**
@@ -141,11 +144,33 @@ data class FileInfoDto(
 data class BackfillResponse(
     @SerializedName("success")
     val success: Boolean,
-    
+
     @SerializedName("message")
     val message: String,
-    
+
     @SerializedName("totalRequests")
     val totalRequests: Int
+)
+
+/**
+ * 健康数据查询响应
+ */
+data class GarminHealthQueryResponse(
+    @SerializedName("dailyData")
+    val dailyData: List<DailyHealthData>? = null
+)
+
+/**
+ * 每日健康数据
+ */
+data class DailyHealthData(
+    @SerializedName("calendarDate")
+    val calendarDate: String,
+
+    @SerializedName("restingHeartRateInBeatsPerMinute")
+    val restingHeartRateInBeatsPerMinute: Int?,
+
+    @SerializedName("vo2Max")
+    val vo2Max: Double?
 )
 

@@ -125,3 +125,21 @@ data class CorosSportDetailRequest(
     val platformCode: String
 )
 
+/**
+ * 健康数据查询请求
+ * 查询静息心率、VO2Max等健康数据
+ */
+data class HealthQueryRequest(
+    @SerializedName("userId")
+    val userId: String,
+
+    @SerializedName("platformCode")
+    val platformCode: String,
+
+    @SerializedName("startDate")
+    val startDate: String,   // "yyyyMMdd"
+
+    @SerializedName("endDate")
+    val endDate: String      // "yyyyMMdd", must == startDate for Garmin
+)
+

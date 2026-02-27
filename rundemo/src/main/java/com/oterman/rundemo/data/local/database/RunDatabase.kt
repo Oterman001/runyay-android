@@ -5,12 +5,14 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.oterman.rundemo.data.local.dao.DailyHealthDao
 import com.oterman.rundemo.data.local.dao.OverallVdotDao
 import com.oterman.rundemo.data.local.dao.PBRecordDao
 import com.oterman.rundemo.data.local.dao.RunAbilityZoneDao
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
+import com.oterman.rundemo.data.local.entity.DailyHealthEntity
 import com.oterman.rundemo.data.local.entity.OverallVdotEntity
 import com.oterman.rundemo.data.local.entity.PBRecordEntity
 import com.oterman.rundemo.data.local.entity.RunAbilityZoneEntity
@@ -34,9 +36,10 @@ import com.oterman.rundemo.data.local.entity.RunSegmentEntity
         RunSegmentEntity::class,
         RunAbilityZoneEntity::class,
         PBRecordEntity::class,
-        OverallVdotEntity::class
+        OverallVdotEntity::class,
+        DailyHealthEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -48,6 +51,7 @@ abstract class RunDatabase : RoomDatabase() {
     abstract fun runAbilityZoneDao(): RunAbilityZoneDao
     abstract fun pbRecordDao(): PBRecordDao
     abstract fun overallVdotDao(): OverallVdotDao
+    abstract fun dailyHealthDao(): DailyHealthDao
     
     companion object {
         private const val DATABASE_NAME = "run_database"

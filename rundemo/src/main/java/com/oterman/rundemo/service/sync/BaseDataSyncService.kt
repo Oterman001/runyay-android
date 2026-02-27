@@ -2,11 +2,13 @@ package com.oterman.rundemo.service.sync
 
 import com.oterman.rundemo.data.fit.FitFileParser
 import com.oterman.rundemo.data.fit.FitRecordProcessor
+import com.oterman.rundemo.data.fit.UserPhysiologyConfig
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
 import com.oterman.rundemo.data.repository.DataSourceRepository
+import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.FileInfo
@@ -41,7 +43,8 @@ abstract class BaseDataSyncService(
     protected val samplePointDao: RunSamplePointDao,
     protected val segmentDao: RunSegmentDao,
     protected val dataSourcePreferences: DataSourcePreferences,
-    protected val runDataRepository: RunDataRepository
+    protected val runDataRepository: RunDataRepository,
+    protected val healthRepository: HealthRepository? = null
 ) : DataSyncService {
 
     companion object {
@@ -364,6 +367,7 @@ abstract class BaseDataSyncService(
     /**
      * 将文件作为FIT文件处理
      * 使用 FitRecordProcessor 进行完整处理（包含心率区间、VDOT、PB计算）
+     * 如果 HealthRepository 可用，会先获取健康数据中的静息心率
      */
     protected suspend fun processAsFitFile(fileInfo: FileInfo, fileData: ByteArray): ImportedRunSummary? {
         // 解析FIT文件
@@ -375,13 +379,41 @@ abstract class BaseDataSyncService(
 
         RLog.d(logTag, "FIT文件解析成功: ${fileInfo.summaryId}")
 
+        // 从FIT session提取运动日期，尝试获取真实静息心率
+        val userConfig = buildUserConfig(parseResult.session?.startTime)
+
         // 使用 FitRecordProcessor 进行完整处理并保存
         return fitRecordProcessor.processAndSave(
             parseResult = parseResult,
             originId = fileInfo.summaryId,
             datasource = fileInfo.platformCode,
+            userConfig = userConfig,
             deviceInfo = fileInfo.deviceName
         )
+    }
+
+    /**
+     * 构建用户生理参数配置
+     * 尝试从HealthRepository获取真实静息心率，失败则使用默认值60.0
+     */
+    private suspend fun buildUserConfig(startTimeMs: Long?): UserPhysiologyConfig {
+        if (healthRepository == null || startTimeMs == null || startTimeMs <= 0) {
+            return UserPhysiologyConfig()
+        }
+
+        try {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val calendarDate = dateFormat.format(Date(startTimeMs))
+            val restHR = healthRepository.fetchAndGetRestingHR(platform, calendarDate)
+            if (restHR != null && restHR > 0) {
+                RLog.i(logTag, "使用真实静息心率: restHR=$restHR, date=$calendarDate")
+                return UserPhysiologyConfig(restHR = restHR.toDouble())
+            }
+        } catch (e: Exception) {
+            RLog.w(logTag, "获取静息心率失败（使用默认值）: ${e.message}")
+        }
+
+        return UserPhysiologyConfig()
     }
 
     /**

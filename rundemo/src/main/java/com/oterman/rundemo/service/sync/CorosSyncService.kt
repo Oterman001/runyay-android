@@ -5,6 +5,7 @@ import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
 import com.oterman.rundemo.data.repository.DataSourceRepository
+import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.FileInfo
@@ -25,8 +26,9 @@ class CorosSyncService(
     samplePointDao: RunSamplePointDao,
     segmentDao: RunSegmentDao,
     dataSourcePreferences: DataSourcePreferences,
-    runDataRepository: RunDataRepository
-) : BaseDataSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository) {
+    runDataRepository: RunDataRepository,
+    healthRepository: HealthRepository? = null
+) : BaseDataSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository) {
 
     override val platform: DataSourcePlatform = DataSourcePlatform.COROS
 

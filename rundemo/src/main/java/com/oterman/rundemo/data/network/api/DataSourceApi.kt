@@ -8,6 +8,7 @@ import com.oterman.rundemo.data.network.dto.request.FileDownloadRequest
 import com.oterman.rundemo.data.network.dto.request.FileListRequest
 import com.oterman.rundemo.data.network.dto.request.FitFileDetailRequest
 import com.oterman.rundemo.data.network.dto.request.GarminCallbackRequest
+import com.oterman.rundemo.data.network.dto.request.HealthQueryRequest
 import com.oterman.rundemo.data.network.dto.request.PlatformBindRequest
 import com.oterman.rundemo.data.network.dto.request.PlatformStatusRequest
 import com.oterman.rundemo.data.network.dto.request.PlatformUnbindRequest
@@ -175,6 +176,16 @@ interface DataSourceApi {
     @POST("api/fit/detail")
     suspend fun getFitFileDetail(
         @Body request: BaseRequest<FitFileDetailRequest>
+    ): BaseResponse<DataSourceResponseData>
+
+    // ============ 健康数据 ============
+
+    /**
+     * 查询健康数据（静息心率、VO2Max等）
+     */
+    @POST("health/query")
+    suspend fun queryHealth(
+        @Body request: BaseRequest<HealthQueryRequest>
     ): BaseResponse<DataSourceResponseData>
 }
 
