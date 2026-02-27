@@ -403,7 +403,7 @@ abstract class BaseDataSyncService(
 
         try {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val calendarDate = dateFormat.format(Date(startTimeMs))
+            val calendarDate = dateFormat.format(Date(FitFileParser.fitTimestampToMillis(startTimeMs)))
             val restHR = healthRepository.fetchAndGetRestingHR(platform, calendarDate)
             if (restHR != null && restHR > 0) {
                 RLog.i(logTag, "使用真实静息心率: restHR=$restHR, date=$calendarDate")

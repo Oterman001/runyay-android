@@ -141,7 +141,7 @@ class FitImportService(private val context: Context) {
         try {
             val repo = healthRepository ?: return UserPhysiologyConfig()
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val calendarDate = dateFormat.format(Date(startTimeMs))
+            val calendarDate = dateFormat.format(Date(FitFileParser.fitTimestampToMillis(startTimeMs)))
             val restHR = repo.getRestingHRForDate(calendarDate)
             if (restHR != null && restHR > 0) {
                 RLog.i(TAG, "使用真实静息心率: restHR=$restHR, date=$calendarDate")
