@@ -394,7 +394,8 @@ class RunDataRepositoryImpl private constructor(
     }
 
     override suspend fun getAllPBByType(type: String): List<PBRecordEntity> {
-        return pbRecordDao.getAllByTypeForUser(requireUserId(), type)
+        val uid = currentUserId ?: return emptyList()
+        return pbRecordDao.getAllByTypeForUser(uid, type)
     }
     
     // ==================== VDOT ====================
@@ -404,15 +405,18 @@ class RunDataRepositoryImpl private constructor(
     }
 
     override suspend fun getRecentVdots(limit: Int): List<OverallVdotEntity> {
-        return overallVdotDao.getRecentVdotsForUser(requireUserId(), limit)
+        val uid = currentUserId ?: return emptyList()
+        return overallVdotDao.getRecentVdotsForUser(uid, limit)
     }
 
     override suspend fun getLatestVdot(): OverallVdotEntity? {
-        return overallVdotDao.getLatestVdotForUser(requireUserId())
+        val uid = currentUserId ?: return null
+        return overallVdotDao.getLatestVdotForUser(uid)
     }
 
     override suspend fun getVdotsByDateRange(startDate: Long, endDate: Long): List<OverallVdotEntity> {
-        return overallVdotDao.getVdotsByDateRangeForUser(requireUserId(), startDate, endDate)
+        val uid = currentUserId ?: return emptyList()
+        return overallVdotDao.getVdotsByDateRangeForUser(uid, startDate, endDate)
     }
     
     // ==================== 删除操作 ====================

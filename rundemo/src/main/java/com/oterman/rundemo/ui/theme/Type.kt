@@ -2,9 +2,28 @@ package com.oterman.rundemo.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.oterman.rundemo.R
+
+val RunYayFontFamily = FontFamily(
+    Font(R.font.runyay01)
+)
+
+val RunYayFontFamily2 = FontFamily(
+    Font(R.font.run02)
+)
+
+val RunYayFontFamily3 = FontFamily(
+    Font(R.font.runyay03)
+)
+
+val RunYayFontFamily4 = FontFamily(
+    Font(R.font.run_ix)
+)
+
 
 // Set of Material typography styles to start with
 val Typography = Typography(

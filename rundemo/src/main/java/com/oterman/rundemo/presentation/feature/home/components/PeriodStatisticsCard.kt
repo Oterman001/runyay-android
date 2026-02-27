@@ -23,6 +23,10 @@ import com.oterman.rundemo.domain.model.GoalSettings
 import com.oterman.rundemo.domain.model.GoalType
 import com.oterman.rundemo.domain.model.PeriodStatistics
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.RunYayFontFamily
+import com.oterman.rundemo.ui.theme.RunYayFontFamily2
+import com.oterman.rundemo.ui.theme.RunYayFontFamily3
+import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -168,14 +172,15 @@ private fun DistanceRow(
     modifier: Modifier = Modifier
 ) {
     val textColor = if (isPrimary) RunTheme.colorScheme.blue else MaterialTheme.colorScheme.onSurface
-    val baseFontSize = if (isPrimary) 21.sp else 21.sp
+    val baseFontSize = fontSize
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val density = LocalDensity.current
         val maxWidthPx = constraints.maxWidth.toFloat()
 
         // Estimate text width to avoid line wrapping
-        val distanceText = String.format("%.1f", distance)
+
+        val distanceText = if (distance >= 100) String.format("%.0f", distance) else String.format("%.1f",distance)
         val goalText = if (showGoal && goal > 0) " / ${goal.toInt()}" else ""
         val unitText = "公里"
         val totalChars = distanceText.length + goalText.length + unitText.length
@@ -184,7 +189,8 @@ private fun DistanceRow(
         val adjustedFontSize = with(density) {
             val estimatedWidth = baseFontSize.toPx() * totalChars * 0.6f
             if (estimatedWidth > maxWidthPx * 0.95f) {
-                (baseFontSize.value * maxWidthPx * 0.95f / estimatedWidth).sp
+//                (baseFontSize.value * maxWidthPx * 0.95f / estimatedWidth).sp
+                baseFontSize
             } else {
                 baseFontSize
             }
@@ -196,7 +202,8 @@ private fun DistanceRow(
                 color = textColor,
                 fontSize = adjustedFontSize,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.alignByBaseline()
+                modifier = Modifier.alignByBaseline(),
+                fontFamily = RunYayFontFamily4
             )
 
             if (showGoal && goal > 0) {
@@ -211,7 +218,8 @@ private fun DistanceRow(
                     color = SecondaryTextColor,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.alignByBaseline()
+                    modifier = Modifier.alignByBaseline(),
+//                    fontFamily = RunYayFontFamily4
                 )
             }
 
@@ -227,6 +235,7 @@ private fun DistanceRow(
     }
 }
 
+val fontSize = 24.sp
 @Composable
 private fun DurationRow(
     duration: Double,
@@ -236,7 +245,7 @@ private fun DurationRow(
     modifier: Modifier = Modifier
 ) {
     val textColor = if (isPrimary) RunTheme.colorScheme.blue else MaterialTheme.colorScheme.onSurface
-    val baseFontSize = if (isPrimary) 24.sp else 24.sp
+    val baseFontSize = fontSize
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val density = LocalDensity.current
@@ -252,7 +261,8 @@ private fun DurationRow(
         val adjustedFontSize = with(density) {
             val estimatedWidth = baseFontSize.toPx() * totalChars * 0.6f
             if (estimatedWidth > maxWidthPx * 0.95f) {
-                (baseFontSize.value * maxWidthPx * 0.95f / estimatedWidth).sp
+//                (baseFontSize.value * maxWidthPx * 0.95f / estimatedWidth).sp
+                baseFontSize
             } else {
                 baseFontSize
             }
@@ -264,7 +274,8 @@ private fun DurationRow(
                 color = textColor,
                 fontSize = adjustedFontSize,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.alignByBaseline()
+                modifier = Modifier.alignByBaseline(),
+                fontFamily = RunYayFontFamily4
             )
 
             if (showGoal && goal > 0) {
@@ -279,7 +290,8 @@ private fun DurationRow(
                     color = SecondaryTextColor,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.alignByBaseline()
+                    modifier = Modifier.alignByBaseline(),
+//                    fontFamily = RunYayFontFamily4
                 )
             }
 

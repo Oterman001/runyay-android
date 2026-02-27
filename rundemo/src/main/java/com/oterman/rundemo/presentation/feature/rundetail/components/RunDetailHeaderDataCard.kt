@@ -48,6 +48,9 @@ import com.oterman.rundemo.presentation.feature.rundetail.PerformTagType
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
 import com.oterman.rundemo.presentation.feature.rundetail.RunPerformanceTag
+import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.RunYayFontFamily
+import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -96,7 +99,8 @@ fun RunDetailHeaderDataCard(
                                 text = String.format("%.2f", distance),
                                 fontSize = RunDetailLayoutConstants.DistanceFontSize.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontFamily = RunYayFontFamily
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
@@ -214,16 +218,18 @@ private fun MergedMetricCell(
             if (metric.isVdot) {
                 Text(
                     text = metric.value,
-                    fontSize = 24.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = RunTheme.colorScheme.blue,
+                    fontFamily = RunYayFontFamily
                 )
             } else {
                 Text(
                     text = metric.value,
-                    fontSize = 18.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontFamily = RunYayFontFamily4
                 )
             }
             metric.unit?.let { unit ->

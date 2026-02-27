@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.TotalRunStatistics
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.RunYayFontFamily
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -47,8 +48,9 @@ fun TotalRunVdotCard(
                     Text(
                         text = String.format("%.0f", stats.totalDistance),
                         color = RunTheme.colorScheme.blue,
-                        fontSize = 45.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = 55.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = RunYayFontFamily
                     )
                     Text(
                         text = "公里",
@@ -72,20 +74,21 @@ fun TotalRunVdotCard(
                     verticalAlignment = Alignment.Bottom
                 ) {
                     Text(
-                        text = String.format("%.0f", stats.overallVdot),
+                        text = String.format("%.1f", stats.overallVdot),
                         color = RunTheme.colorScheme.blue,
-                        fontSize = 45.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = 55.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = RunYayFontFamily
                     )
-                    Text(
-                        text = "跑力",
-                        color = SecondaryTextColor,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(bottom = 10.dp, start = 2.dp)
-                    )
+//                    Text(
+//                        text = "",
+//                        color = SecondaryTextColor,
+//                        fontSize = 12.sp,
+//                        modifier = Modifier.padding(bottom = 10.dp, start = 2.dp)
+//                    )
                 }
                 Text(
-                    text = "VDOT",
+                    text = "跑力",
                     color = SecondaryTextColor,
                     fontSize = 12.sp
                 )

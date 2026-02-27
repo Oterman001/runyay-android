@@ -56,6 +56,7 @@ import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.DataSourceInfo
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.presentation.components.GradientButton
+import com.oterman.rundemo.ui.theme.RunTheme
 import kotlinx.coroutines.delay
 
 /**
@@ -237,7 +238,10 @@ private fun IllustrationSection() {
         Image(
             painter = painterResource(id = R.drawable.run_duck),
             contentDescription = "App",
-            modifier = Modifier.size(64.dp)
+            modifier = Modifier
+                .size(64.dp)
+                .clip(RoundedCornerShape(13.dp))
+            ,
         )
 
         // 连接动画指示
@@ -264,8 +268,8 @@ private fun IllustrationSection() {
         Icon(
             imageVector = Icons.Outlined.Watch,
             contentDescription = "手表",
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
+            modifier = Modifier.size(60.dp),
+            tint = RunTheme.colorScheme.blue
         )
     }
 }
