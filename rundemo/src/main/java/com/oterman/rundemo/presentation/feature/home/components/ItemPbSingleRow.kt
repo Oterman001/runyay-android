@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -77,7 +78,8 @@ fun ItemPbSingleRow(
                 text = value,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                fontFamily = RunYayFontFamily4
             )
             if (date.isNotEmpty()) {
                 Text(
