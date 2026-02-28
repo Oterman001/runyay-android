@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -61,8 +59,10 @@ import com.oterman.rundemo.domain.model.DataTabDisplayMode
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.components.AppCard
-import com.oterman.rundemo.presentation.components.trajectory.TrajectoryThumbnail
+import com.oterman.rundemo.presentation.components.trajectory.BlendedTrajectoryThumbnail
 import com.oterman.rundemo.presentation.feature.home.tabs.components.MonthSection
+import com.oterman.rundemo.ui.theme.RunYayFontFamily
+import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -384,10 +384,11 @@ private fun EmptyStateView(onBindDevice: () -> Unit) {
 }
 
 /**
- * 跑步记录列表项
- * 参考iOS TrajectoryRunRecordView布局:
- * - 第一行: 日期时间 + 来源标签
- * - 第二行: 轨迹缩略图(80dp) + 数据区域
+ * 跑步记录列表项（Distance Hero + Blended Trajectory）
+ * - 距离放大显示在左侧作为视觉焦点
+ * - 轨迹缩略图透明背景融入卡片右侧
+ * - 顶行：日期时段 + 设备信息
+ * - 底行：时长 + 配速
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -398,7 +399,6 @@ private fun RunRecordItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit = {}
 ) {
-    // 判断是否为室外跑 (outdoor=0表示室外，outdoor=1表示室内)
     val isOutdoor = record.outdoor == 0
 
     Card(
@@ -418,118 +418,89 @@ private fun RunRecordItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(horizontal = 14.dp, vertical = 6.dp)
         ) {
-            // 第一行：日期时间 + 来源标签
+            // 第一行：日期时段 + 设备信息（独立占满宽度，不与轨迹图重叠）
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 日期时间（参考iOS: MM月dd日 HH:mm-HH:mm）
                 Text(
                     text = formatDateCompact(record.startTime, record.endTime),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                // 来源标识
-                record.datasource?.let { source ->
-                    if (source.isNotBlank()) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = MaterialTheme.colorScheme.secondaryContainer,
-                                    shape = RoundedCornerShape(6.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = formatDatasource(source),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                record.deviceInfo?.let { device ->
+                    if (device.isNotBlank()) {
+                        Text(
+                            text = device,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // 第二行：轨迹缩略图 + 数据区域
+            // 第二+三行区域：左侧文字 + 右侧轨迹缩略图（Row 水平布局，互不遮挡）
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 左侧：轨迹缩略图
-                TrajectoryThumbnail(
-                    workoutId = record.workoutId,
-                    trackPoints = trackPoints,
-                    isLoading = isTrackPointsLoading,
-                    isOutdoor = isOutdoor,
-                    size = 80.dp,
-                    cornerRadius = 8.dp
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // 右侧：数据区域
+                // 左侧：Hero 距离 + 时长配速
                 Column(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // 距离（大字）- 参考iOS 22号字体
-                    Row(
-                        verticalAlignment = Alignment.Bottom
-                    ) {
+                    Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = String.format("%.2f", record.totalDistance),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            fontSize = 33.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontFamily = RunYayFontFamily
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "公里",
-                            style = MaterialTheme.typography.bodySmall,
+                            fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 3.dp)
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // 时长 / 配速（参考iOS 13号字体）
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Text(
                             text = formatDuration(record.activeDuration),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = RunYayFontFamily4
                         )
                         Text(
                             text = formatPace(record.averageSpeed),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = RunYayFontFamily4
                         )
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // 设备来源
-                    record.deviceInfo?.let { device ->
-                        if (device.isNotBlank()) {
-                            Text(
-                                text = device,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
+                // 右侧：轨迹缩略图（透明融合，仅占第二三行高度）
+                if (isOutdoor) {
+                    BlendedTrajectoryThumbnail(
+                        trackPoints = trackPoints,
+                        isLoading = isTrackPointsLoading,
+                        isOutdoor = true,
+                        width = 75.dp,
+                        height = 75.dp
+                    )
+                } else {
+                    // todo 室内跑
                 }
             }
         }
@@ -581,20 +552,6 @@ private fun formatDuration(durationMinutes: Double): String {
         String.format("%d:%02d:%02d", hours, minutes, seconds)
     } else {
         String.format("%d:%02d", minutes, seconds)
-    }
-}
-
-/**
- * 格式化数据来源显示
- */
-private fun formatDatasource(source: String): String {
-    return when (source.uppercase()) {
-        "GCN"-> "佳明中国"
-        "GARMIN" -> "佳明中国"
-        "COROS" -> "高驰"
-        "GGB" -> "佳明国际"
-        "FIT" -> "FIT文件"
-        else -> source
     }
 }
 

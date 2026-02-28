@@ -33,9 +33,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import android.graphics.Bitmap
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.domain.trajectory.ThumbnailState
 import com.oterman.rundemo.domain.trajectory.TrajectoryThumbnailManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * 轨迹缩略图组件
@@ -149,6 +152,60 @@ fun TrajectoryThumbnail(
                     modifier = Modifier.matchParentSize()
                 )
             }
+        }
+    }
+}
+
+/**
+ * 融合式轨迹缩略图，透明背景，用于与卡片背景无缝融合。
+ * 轨迹以低透明度装饰性地绘制在卡片右侧区域。
+ */
+@Composable
+fun BlendedTrajectoryThumbnail(
+    trackPoints: List<TrackPoint>?,
+    isLoading: Boolean = false,
+    isOutdoor: Boolean,
+    modifier: Modifier = Modifier,
+    width: Dp = 100.dp,
+    height: Dp = 100.dp,
+    trackAlpha: Float = 0.9f,
+    markerAlpha: Float = 1.0f
+) {
+    val isDark = isSystemInDarkTheme()
+    val density = LocalDensity.current
+    val widthPx = with(density) { width.toPx().toInt() }
+    val heightPx = with(density) { height.toPx().toInt() }
+
+    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    LaunchedEffect(trackPoints, isLoading, isDark, widthPx, heightPx) {
+        if (!isOutdoor || isLoading || trackPoints.isNullOrEmpty()) {
+            bitmap = null
+            return@LaunchedEffect
+        }
+        bitmap = withContext(Dispatchers.Default) {
+            TrajectoryRenderer.renderBlended(
+                trackPoints = trackPoints,
+                width = widthPx,
+                height = heightPx,
+                isDark = isDark,
+                trackAlpha = trackAlpha,
+                markerAlpha = markerAlpha
+            )
+        }
+    }
+
+    Box(
+        modifier = modifier.size(width, height),
+        contentAlignment = Alignment.Center
+    ) {
+        bitmap?.let {
+            Image(
+                bitmap = it.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Fit
+            )
         }
     }
 }
