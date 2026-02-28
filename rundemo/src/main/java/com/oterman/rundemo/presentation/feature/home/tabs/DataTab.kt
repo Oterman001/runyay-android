@@ -60,6 +60,7 @@ import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.components.trajectory.BlendedTrajectoryThumbnail
+import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
 import com.oterman.rundemo.presentation.feature.home.tabs.components.MonthSection
 import com.oterman.rundemo.ui.theme.RunYayFontFamily
 import com.oterman.rundemo.ui.theme.RunYayFontFamily4
@@ -383,134 +384,12 @@ private fun EmptyStateView(onBindDevice: () -> Unit) {
     }
 }
 
-/**
- * 跑步记录列表项（Distance Hero + Blended Trajectory）
- * - 距离放大显示在左侧作为视觉焦点
- * - 轨迹缩略图透明背景融入卡片右侧
- * - 顶行：日期时段 + 设备信息
- * - 底行：时长 + 配速
- */
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun RunRecordItem(
-    record: RunRecordEntity,
-    trackPoints: List<TrackPoint>?,
-    isTrackPointsLoading: Boolean = false,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit = {}
-) {
-    val isOutdoor = record.outdoor == 0
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 6.dp)
-        ) {
-            // 第一行：日期时段 + 设备信息（独立占满宽度，不与轨迹图重叠）
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = formatDateCompact(record.startTime, record.endTime),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                record.deviceInfo?.let { device ->
-                    if (device.isNotBlank()) {
-                        Text(
-                            text = device,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // 第二+三行区域：左侧文字 + 右侧轨迹缩略图（Row 水平布局，互不遮挡）
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 左侧：Hero 距离 + 时长配速
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            text = String.format("%.2f", record.totalDistance),
-                            fontSize = 33.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontFamily = RunYayFontFamily
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "公里",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(
-                            text = formatDuration(record.activeDuration),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = RunYayFontFamily4
-                        )
-                        Text(
-                            text = formatPace(record.averageSpeed),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = RunYayFontFamily4
-                        )
-                    }
-                }
-
-                // 右侧：轨迹缩略图（透明融合，仅占第二三行高度）
-                if (isOutdoor) {
-                    BlendedTrajectoryThumbnail(
-                        trackPoints = trackPoints,
-                        isLoading = isTrackPointsLoading,
-                        isOutdoor = true,
-                        width = 75.dp,
-                        height = 75.dp
-                    )
-                } else {
-                    // todo 室内跑
-                }
-            }
-        }
-    }
-}
 
 /**
  * 格式化日期显示（完整格式）
  */
-private fun formatDate(timestamp: Long): String {
+fun formatDate(timestamp: Long): String {
     val date = Date(timestamp)
     val format = SimpleDateFormat("yyyy年M月d日 EEEE HH:mm", Locale.CHINESE)
     return format.format(date)
@@ -520,7 +399,7 @@ private fun formatDate(timestamp: Long): String {
  * 格式化日期显示（紧凑格式）
  * 参考iOS: MM月dd日 HH:mm-HH:mm
  */
-private fun formatDateCompact(startTime: Long, endTime: Long): String {
+fun formatDateCompact(startTime: Long, endTime: Long): String {
     val startDate = Date(startTime)
     val endDate = Date(endTime)
     val dateFormat = SimpleDateFormat("M月d日", Locale.CHINESE)
@@ -531,7 +410,7 @@ private fun formatDateCompact(startTime: Long, endTime: Long): String {
 /**
  * 格式化配速 (min/km -> 5'30")
  */
-private fun formatPace(paceMinPerKm: Double): String {
+fun formatPace(paceMinPerKm: Double): String {
     if (paceMinPerKm <= 0) return "-"
     val minutes = paceMinPerKm.toInt()
     val seconds = ((paceMinPerKm - minutes) * 60).toInt()
@@ -541,7 +420,7 @@ private fun formatPace(paceMinPerKm: Double): String {
 /**
  * 格式化时长 (分钟 -> 1:05:30)
  */
-private fun formatDuration(durationMinutes: Double): String {
+fun formatDuration(durationMinutes: Double): String {
     if (durationMinutes <= 0) return "-"
     val totalSeconds = (durationMinutes * 60).toInt()
     val hours = totalSeconds / 3600
