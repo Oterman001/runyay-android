@@ -1,5 +1,6 @@
 package com.oterman.rundemo.domain.model
 
+import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import java.util.Date
 
 /**
@@ -297,6 +298,7 @@ data class HomeTabUiState(
 
     // New fields for 5 cards
     val latestRunRecord: LatestRunRecord? = null,
+    val latestRunRecordEntity: RunRecordEntity? = null,
     val pbAbilityList: List<PBAbilityInfo> = emptyList(),
     val pbSpeedList: List<PBSpeedInfo> = emptyList(),
     val nextRace: NextRaceInfo? = null,

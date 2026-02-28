@@ -21,6 +21,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,8 +44,9 @@ import com.oterman.rundemo.presentation.feature.home.components.RotatingSyncIcon
 import com.oterman.rundemo.presentation.feature.home.components.AllPBSpeedCard
 import com.oterman.rundemo.presentation.feature.home.components.DailySentenceCard
 import com.oterman.rundemo.presentation.feature.home.components.DayRunRecordSelectDialog
-import com.oterman.rundemo.presentation.feature.home.components.LatestRunRecordCard
 import com.oterman.rundemo.presentation.feature.home.components.NextRaceCard
+import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.presentation.feature.home.components.PeriodStatisticsCard
 import com.oterman.rundemo.presentation.feature.home.components.TotalRunVdotCard
 import com.oterman.rundemo.presentation.feature.home.components.WeekStatisticsCard
@@ -80,6 +82,7 @@ fun DashboardTabContent(
     }
 
     val uiState by viewModel.uiState.collectAsState()
+    val trackPointsVersion by viewModel.trackPointsVersion.collectAsState()
     val scrollState = rememberScrollState()
     val backgroundColor = MaterialTheme.colorScheme.background
 
@@ -222,12 +225,19 @@ fun DashboardTabContent(
             )
 
             // Card 1: Latest Run Record
-            uiState.latestRunRecord?.let { record ->
-                LatestRunRecordCard(
-                    record = record,
-                    modifier = Modifier.padding(bottom = 10.dp),
-                    onClick = { onNavigateToRunDetail(record.workoutId) }
-                )
+            uiState.latestRunRecordEntity?.let { record ->
+                key(record.workoutId, trackPointsVersion) {
+                    val trackPoints = viewModel.getCachedTrackPoints(record.workoutId)
+                    val isLoading = viewModel.isTrackPointsLoading(record.workoutId)
+                    RunRecordItem(
+                        record = record,
+                        trackPoints = trackPoints,
+                        isTrackPointsLoading = isLoading,
+                        primaryColor = MaterialTheme.colorScheme.onSurface,
+                        onClick = { onNavigateToRunDetail(record.workoutId) },
+                        modifier = Modifier.padding(bottom = 10.dp)
+                    )
+                }
             }
 
             // Card 3: Next Race

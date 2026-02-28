@@ -32,6 +32,7 @@ import androidx.compose.material3.Icon
 import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.AbilityZoneBar
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -206,7 +207,7 @@ private fun ToggleChip(
         modifier = Modifier
             .clip(RoundedCornerShape(5.dp))
             .background(
-                if (selected) MaterialTheme.colorScheme.primary
+                if (selected) RunTheme.colorScheme.blue
                 else Color.Transparent
             )
             .clickable(onClick = onClick)

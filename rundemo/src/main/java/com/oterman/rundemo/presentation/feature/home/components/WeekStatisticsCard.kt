@@ -19,6 +19,9 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.WeekStatistics
 import com.oterman.rundemo.ui.theme.RunOrange
+import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.RunYayFontFamily
+import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -59,15 +62,17 @@ fun WeekStatisticsCard(
             ) {
                 Text(
                     text = String.format("%.1f", stats.totalDistance),
-                    color = RunOrange,
+                    color = RunTheme.colorScheme.orange ,
                     fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = RunYayFontFamily4,
+                    modifier = Modifier.alignByBaseline()
                 )
                 Text(
                     text = "公里",
                     color = SecondaryTextColor,
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(bottom = 2.dp, start = 2.dp)
+                    modifier = Modifier.alignByBaseline().padding(start = 2.dp)
                 )
             }
 
@@ -77,28 +82,31 @@ fun WeekStatisticsCard(
             ) {
                 Text(
                     text = "${stats.formattedHours}",
-                    color = RunOrange,
                     fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold
+                    color = RunTheme.colorScheme.orange,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = RunYayFontFamily4,
+                    modifier = Modifier.alignByBaseline()
                 )
                 Text(
                     text = "小时",
                     color = SecondaryTextColor,
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(bottom = 2.dp, start = 2.dp)
+                    modifier = Modifier.alignByBaseline().padding(start = 2.dp)
                 )
                 Text(
                     text = "${stats.formattedMinutes}",
-                    color = RunOrange,
                     fontSize = 22.sp,
+                    color = RunTheme.colorScheme.orange,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(start = 4.dp)
+                    fontFamily = RunYayFontFamily4,
+                    modifier = Modifier.alignByBaseline().padding(start = 4.dp)
                 )
                 Text(
                     text = "分钟",
                     color = SecondaryTextColor,
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(bottom = 2.dp, start = 2.dp)
+                    modifier = Modifier.alignByBaseline().padding(start = 2.dp)
                 )
             }
         }

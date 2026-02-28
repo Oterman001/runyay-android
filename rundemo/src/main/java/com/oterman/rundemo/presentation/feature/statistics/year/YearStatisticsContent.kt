@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Route
+import androidx.compose.material.icons.filled.RemoveRedEye
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +35,7 @@ import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.presentation.feature.home.components.DailySentenceCard
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.presentation.feature.statistics.week.components.HeartRateZoneCard
 import com.oterman.rundemo.presentation.feature.statistics.week.components.SpeedZoneCard
 import com.oterman.rundemo.presentation.feature.statistics.week.components.StatisticCardsGrid
@@ -106,7 +107,7 @@ fun YearStatisticsContent(
                             Icon(
                                 imageVector = Icons.Outlined.Settings,
                                 contentDescription = "轨迹墙设置",
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = RunTheme.colorScheme.blue,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -118,12 +119,11 @@ fun YearStatisticsContent(
                     ) {
                         Icon(
                             imageVector = if (uiState.showTrajectoryMode)
-                                Icons.Outlined.Visibility
+                                Icons.Default.RemoveRedEye
                             else
-                                Icons.Outlined.Route,
+                                Icons.Default.Timeline,
                             contentDescription = if (uiState.showTrajectoryMode) "切换到月份显示" else "切换到轨迹墙显示",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
+                            tint = RunTheme.colorScheme.blue
                         )
                     }
                 }

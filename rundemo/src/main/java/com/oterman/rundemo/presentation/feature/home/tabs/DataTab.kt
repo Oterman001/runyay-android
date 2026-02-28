@@ -257,7 +257,8 @@ fun DataTabContent(
                                             onLongClick = {
                                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 onRecordLongClick(record.workoutId)
-                                            }
+                                            },
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                                         )
                                     }
                                 }
@@ -405,6 +406,19 @@ fun formatDateCompact(startTime: Long, endTime: Long): String {
     val dateFormat = SimpleDateFormat("M月d日", Locale.CHINESE)
     val timeFormat = SimpleDateFormat("HH:mm", Locale.CHINESE)
     return "${dateFormat.format(startDate)} ${timeFormat.format(startDate)}-${timeFormat.format(endDate)}"
+}
+
+/**
+ * 格式化日期显示（带周几）
+ * 示例: 2月28日 08:30 周六
+ */
+fun formatDateWithWeekday(startTime: Long): String {
+    val date = Date(startTime)
+    val dateTimeFormat = SimpleDateFormat("M月d日 HH:mm", Locale.CHINESE)
+    val weekdayFormat = SimpleDateFormat("EEEE", Locale.CHINESE)
+    val weekdayFull = weekdayFormat.format(date) // e.g. 星期六
+    val weekdayShort = weekdayFull.replace("星期", "周") // e.g. 周六
+    return "${dateTimeFormat.format(date)} $weekdayShort"
 }
 
 /**

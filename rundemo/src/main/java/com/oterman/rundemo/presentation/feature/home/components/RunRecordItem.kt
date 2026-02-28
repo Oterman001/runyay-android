@@ -9,25 +9,31 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DirectionsRun
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.components.trajectory.BlendedTrajectoryThumbnail
-import com.oterman.rundemo.presentation.feature.home.tabs.formatDateCompact
+import com.oterman.rundemo.presentation.feature.home.tabs.formatDateWithWeekday
 import com.oterman.rundemo.presentation.feature.home.tabs.formatDuration
 import com.oterman.rundemo.presentation.feature.home.tabs.formatPace
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.RunYayFontFamily
 import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 
@@ -44,41 +50,46 @@ fun RunRecordItem(
     record: RunRecordEntity,
     trackPoints: List<TrackPoint>?,
     isTrackPointsLoading: Boolean = false,
+    primaryColor: Color = Color.Unspecified,
     onClick: () -> Unit,
-    onLongClick: () -> Unit = {}
+    onLongClick: () -> Unit = {},
+    modifier: Modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
 ) {
     val isOutdoor = record.outdoor == 0
+    val distanceColor = if (primaryColor == Color.Unspecified) MaterialTheme.colorScheme.onSurface else primaryColor
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 22.dp)
+    AppCard(
+        modifier = modifier
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
-            // 第一行：日期时段 + 设备信息（独立占满宽度，不与轨迹图重叠）
+            // 第一行：跑步图标 + 日期时间周几 + 设备信息
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = formatDateCompact(record.startTime, record.endTime),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.DirectionsRun,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = RunTheme.colorScheme.blue
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formatDateWithWeekday(record.startTime),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 record.deviceInfo?.let { device ->
                     if (device.isNotBlank()) {
                         Text(
@@ -109,7 +120,7 @@ fun RunRecordItem(
                             text = String.format("%.2f", record.totalDistance),
                             fontSize = 33.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = distanceColor,
                             fontFamily = RunYayFontFamily
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -121,20 +132,42 @@ fun RunRecordItem(
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(
-                            text = formatDuration(record.activeDuration),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = RunYayFontFamily4
-                        )
-                        Text(
-                            text = formatPace(record.averageSpeed),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = RunYayFontFamily4
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Timer,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = formatDuration(record.activeDuration),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontFamily = RunYayFontFamily4
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Speed,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = formatPace(record.averageSpeed),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontFamily = RunYayFontFamily4
+                            )
+                        }
                     }
                 }
 

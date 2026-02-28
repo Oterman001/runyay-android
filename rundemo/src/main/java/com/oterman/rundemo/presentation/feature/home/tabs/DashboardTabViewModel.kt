@@ -26,6 +26,7 @@ import com.oterman.rundemo.domain.model.TotalRunStatistics
 import com.oterman.rundemo.domain.model.WeekStatistics
 import java.text.SimpleDateFormat
 import java.util.Locale
+import com.oterman.rundemo.domain.model.TrackPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.Date
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * HomeTab ViewModel
@@ -45,6 +47,16 @@ class DashboardTabViewModel(
 
     private val _uiState = MutableStateFlow(HomeTabUiState())
     val uiState: StateFlow<HomeTabUiState> = _uiState.asStateFlow()
+
+    // 轨迹点版本号，用于触发UI重组
+    private val _trackPointsVersion = MutableStateFlow(0L)
+    val trackPointsVersion: StateFlow<Long> = _trackPointsVersion.asStateFlow()
+
+    // 轨迹点缓存 (workoutId -> TrackPoints)
+    private val trackPointsCache = ConcurrentHashMap<String, List<TrackPoint>>()
+
+    // 正在加载的轨迹点workoutId
+    private val loadingTrackPoints = ConcurrentHashMap.newKeySet<String>()
 
     private var latestRecords: List<RunRecordEntity> = emptyList()
 
@@ -71,7 +83,6 @@ class DashboardTabViewModel(
                     latestRecords = allRecords
                     val goalSettings = preferencesManager.getGoalSettings()
 
-                    val totalStats = calculateTotalStatistics(allRecords)
                     val yearStats = calculateYearStatistics(allRecords, goalSettings)
                     val monthStats = calculateMonthStatistics(allRecords, goalSettings)
                     val weekStats = calculateWeekStatistics(allRecords)
@@ -83,6 +94,8 @@ class DashboardTabViewModel(
                     val abilityPBs = repository.getAllPBByType("Ability")
                     val speedPBs = repository.getAllPBByType("Speed")
                     val latestVdot = repository.getLatestVdot()
+
+                    val totalStats = calculateTotalStatistics(allRecords, latestVdot)
 
                     val pbAbilityList = calculatePBAbilityList(allRecords, abilityPBs, latestVdot)
                     val pbSpeedList = calculatePBSpeedList(speedPBs)
@@ -97,6 +110,7 @@ class DashboardTabViewModel(
                         weekStats = weekStats,
                         goalSettings = goalSettings,
                         latestRunRecord = latestRecord,
+                        latestRunRecordEntity = allRecords.maxByOrNull { it.startTime },
                         pbAbilityList = pbAbilityList,
                         pbSpeedList = pbSpeedList,
                         nextRace = nextRace,
@@ -123,12 +137,56 @@ class DashboardTabViewModel(
         )
     }
 
-    private fun calculateTotalStatistics(allRecords: List<RunRecordEntity>): TotalRunStatistics {
+    /**
+     * 获取缓存的轨迹点
+     * 如果缓存中没有，返回null并异步加载
+     */
+    fun getCachedTrackPoints(workoutId: String): List<TrackPoint>? {
+        trackPointsCache[workoutId]?.let { return it }
+        if (loadingTrackPoints.contains(workoutId)) {
+            return null
+        }
+        loadTrackPoints(workoutId)
+        return null
+    }
+
+    /**
+     * 检查轨迹点是否正在加载
+     */
+    fun isTrackPointsLoading(workoutId: String): Boolean {
+        return loadingTrackPoints.contains(workoutId)
+    }
+
+    /**
+     * 异步加载轨迹点
+     */
+    private fun loadTrackPoints(workoutId: String) {
+        if (!loadingTrackPoints.add(workoutId)) {
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val trackPoints = repository.getTrackPoints(workoutId)
+                trackPointsCache[workoutId] = trackPoints
+                _trackPointsVersion.value++
+            } catch (e: Exception) {
+                trackPointsCache[workoutId] = emptyList()
+                _trackPointsVersion.value++
+            } finally {
+                loadingTrackPoints.remove(workoutId)
+            }
+        }
+    }
+
+    private fun calculateTotalStatistics(
+        allRecords: List<RunRecordEntity>,
+        latestVdot: OverallVdotEntity?
+    ): TotalRunStatistics {
         return TotalRunStatistics(
             totalDistance = allRecords.sumOf { it.totalDistance },
             totalDuration = allRecords.sumOf { it.activeDuration } / 60.0, // Convert to hours
             totalRuns = allRecords.size,
-            overallVdot = allRecords.maxOfOrNull { maxOf(it.vdot, it.overallVdot) } ?: 0.0
+            overallVdot = latestVdot?.value ?: 0.0
         )
     }
 
