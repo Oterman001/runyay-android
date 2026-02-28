@@ -404,7 +404,7 @@ private fun RunRecordItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
@@ -606,9 +606,10 @@ private fun AllRunItemView(
         ) {
             Text(
                 text = value,
-                fontSize = 28.sp,
+                fontSize = 34.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = RunTheme.colorScheme.blue
+                color = RunTheme.colorScheme.blue,
+                fontFamily = RunYayFontFamily
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(

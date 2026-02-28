@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.presentation.feature.statistics.year.components.MiniMonthHeatmapGrid
+import com.oterman.rundemo.ui.theme.RunYayFontFamily
+import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 
 /**
  * 热力图模式月份头部
@@ -49,9 +51,10 @@ fun HeatmapMonthHeader(
             ) {
                 Text(
                     text = monthData.getFormattedDistance(),
-                    fontSize = 28.sp,
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontFamily = RunYayFontFamily
                 )
                 Spacer(modifier = Modifier.width(2.dp))
                 Text(
@@ -68,7 +71,8 @@ fun HeatmapMonthHeader(
             Text(
                 text = "${monthData.year}.${String.format("%02d", monthData.month)}",
                 fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontFamily = RunYayFontFamily4
             )
         }
 
@@ -114,7 +118,8 @@ fun SimpleMonthHeader(
                 text = "${monthData.month}月",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                fontFamily = RunYayFontFamily4
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -135,9 +140,10 @@ fun SimpleMonthHeader(
             ) {
                 Text(
                     text = monthData.getFormattedDistance(),
-                    fontSize = 22.sp,
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontFamily = RunYayFontFamily
                 )
                 Spacer(modifier = Modifier.width(2.dp))
                 Text(
