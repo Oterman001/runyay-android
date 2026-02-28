@@ -1,6 +1,7 @@
 package com.oterman.rundemo.presentation.feature.welcome
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -17,11 +19,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.R
+import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunBlueGradient1
+import com.oterman.rundemo.ui.theme.RunBlueGradient2
 
-/**
- * 欢迎页面
- * 应用启动的第一个页面，包含Logo、标题、描述和注册/登录按钮
- */
+private val DeepNavy = Color(0xFF0A1628)
+private val MidNavy = Color(0xFF0F2440)
+
 @Composable
 fun WelcomeScreen(
     onNavigateToRegister: () -> Unit,
@@ -31,23 +35,69 @@ fun WelcomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFF4A90E2),
-                        Color(0xFF7B68EE)
+                brush = Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0.0f to DeepNavy,
+                        0.4f to MidNavy,
+                        1.0f to RunBlue
                     )
                 )
             )
     ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        RunBlueGradient1.copy(alpha = 0.18f),
+                        Color.Transparent
+                    ),
+                    center = Offset(w * 0.75f, h * 0.18f),
+                    radius = w * 0.55f
+                ),
+                radius = w * 0.55f,
+                center = Offset(w * 0.75f, h * 0.18f)
+            )
+
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        RunBlue.copy(alpha = 0.22f),
+                        Color.Transparent
+                    ),
+                    center = Offset(w * 0.15f, h * 0.55f),
+                    radius = w * 0.50f
+                ),
+                radius = w * 0.50f,
+                center = Offset(w * 0.15f, h * 0.55f)
+            )
+
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        RunBlueGradient2.copy(alpha = 0.12f),
+                        Color.Transparent
+                    ),
+                    center = Offset(w * 0.6f, h * 0.85f),
+                    radius = w * 0.40f
+                ),
+                radius = w * 0.40f,
+                center = Offset(w * 0.6f, h * 0.85f)
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(horizontal = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.weight(1f))
 
-            // Logo图片
             Image(
                 painter = painterResource(id = R.drawable.run_duck),
                 contentDescription = "Logo",
@@ -58,7 +108,6 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 标题
             Text(
                 text = "DemoRun",
                 style = MaterialTheme.typography.headlineLarge,
@@ -68,17 +117,15 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 副标题
             Text(
                 text = "一款简约而不简单的跑步数据分析应用。",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.9f),
+                color = Color.White.copy(alpha = 0.85f),
                 textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // 按钮区域
             ButtonSection(
                 onNavigateToRegister = onNavigateToRegister,
                 onNavigateToLogin = onNavigateToLogin
@@ -89,10 +136,6 @@ fun WelcomeScreen(
     }
 }
 
-/**
- * 按钮区域组件
- * 包含注册和登录按钮
- */
 @Composable
 private fun ButtonSection(
     onNavigateToRegister: () -> Unit,
@@ -102,14 +145,14 @@ private fun ButtonSection(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 注册按钮（填充背景）
         Button(
             onClick = onNavigateToRegister,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4A90E2)
+                containerColor = Color.White,
+                contentColor = RunBlue
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -120,13 +163,12 @@ private fun ButtonSection(
             )
         }
 
-        // 登录按钮（边框样式）
         OutlinedButton(
             onClick = onNavigateToLogin,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            border = BorderStroke(2.dp, Color(0xFF4A90E2)),
+            border = BorderStroke(1.5.dp, Color.White.copy(alpha = 0.5f)),
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(

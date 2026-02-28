@@ -45,7 +45,7 @@ class RunDataRemoteRepository(
                 ?: return@withContext Result.failure(Exception("用户未登录"))
 
             val request = createBaseRequest(
-                dtoName = "ActivityFileListRequestDto",
+                dtoName = "ActivityFileListRequest",
                 data = ActivityFileListRequest(
                     userId = userId,
                     platformCode = platformCode,

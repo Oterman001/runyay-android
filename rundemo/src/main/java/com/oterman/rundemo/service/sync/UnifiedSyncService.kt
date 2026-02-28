@@ -185,7 +185,7 @@ class UnifiedSyncService(
 
         // Step 6: 服务端无runSummary时异步上传
         if (serverRunSummary == null) {
-            asyncUploadRunData(finalRecord.workoutId, fileInfo.summaryId)
+            // asyncUploadRunData(finalRecord.workoutId, fileInfo.summaryId)
         }
 
         return ImportedRunSummary(

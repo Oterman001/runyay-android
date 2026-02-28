@@ -434,8 +434,8 @@ class UnifiedDataSyncManager private constructor(
         platform: DataSourcePlatform,
         timeRange: SyncTimeRange = SyncConstants.getDefaultTimeRange(platform)
     ): Flow<SyncNotification> = flow {
-        val service = getSyncService(platform)
-//        val service = getUnifiedSyncService(platform)
+//        val service = getSyncService(platform)
+        val service = getUnifiedSyncService(platform)
         if (service == null) {
             emit(SyncNotification.PlatformFailed(platform, "不支持的平台"))
             return@flow
