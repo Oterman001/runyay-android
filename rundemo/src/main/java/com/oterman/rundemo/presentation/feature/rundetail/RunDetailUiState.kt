@@ -172,7 +172,7 @@ object RunDetailLayoutConstants {
     val HeaderInvasionOffset = -25 // dp，卡片向上侵入地图的偏移
     val HeaderCardRadius = 16 // dp
     val HeaderCardPadding = 20 // dp
-    val HeaderCardMargin = 16 // dp
+    val HeaderCardMargin = 12 // dp
     val HeaderShadowElevation = 4 // dp
 
     // 头像

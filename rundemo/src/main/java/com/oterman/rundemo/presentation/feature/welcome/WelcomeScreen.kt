@@ -102,14 +102,14 @@ fun WelcomeScreen(
                 painter = painterResource(id = R.drawable.run_duck),
                 contentDescription = "Logo",
                 modifier = Modifier
-                    .size(150.dp)
+                    .size(120.dp)
                     .clip(RoundedCornerShape(12.dp))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "DemoRun",
+                text = "跑鸭·RunYay",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White

@@ -138,7 +138,7 @@ fun HeartRateZoneCard(
 
         // 区间条形图
         if (displayedZones.isNotEmpty()) {
-            AbilityZoneBar(zones = displayedZones)
+            AbilityZoneBar(zones = displayedZones, showValueRange = false)
         }
     }
 }
@@ -166,7 +166,7 @@ fun SpeedZoneCard(
         Spacer(modifier = Modifier.height(12.dp))
 
         // 区间条形图
-        AbilityZoneBar(zones = speedZones)
+        AbilityZoneBar(zones = speedZones, showValueRange = false)
     }
 }
 

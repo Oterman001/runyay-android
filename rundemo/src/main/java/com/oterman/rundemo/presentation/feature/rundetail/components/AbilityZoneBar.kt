@@ -36,7 +36,8 @@ import com.oterman.rundemo.domain.model.AbilityZoneType
 @Composable
 fun AbilityZoneBar(
     zones: List<AbilityZone>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showValueRange: Boolean = true
 ) {
     if (zones.isEmpty()) return
 
@@ -51,7 +52,8 @@ fun AbilityZoneBar(
             ZoneBarRow(
                 zone = zone,
                 percentage = percentage.toFloat(),
-                color = getZoneColor(zone)
+                color = getZoneColor(zone),
+                showValueRange = showValueRange
             )
             Spacer(modifier = Modifier.height(2.dp))
         }
@@ -62,7 +64,8 @@ fun AbilityZoneBar(
 private fun ZoneBarRow(
     zone: AbilityZone,
     percentage: Float,
-    color: Color
+    color: Color,
+    showValueRange: Boolean = true
 ) {
     Row(
         modifier = Modifier
@@ -82,13 +85,15 @@ private fun ZoneBarRow(
                 fontSize = 11.sp,
                 maxLines = 1
             )
-            Text(
-                text = zone.getFormattedSpeedRange(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 10.sp,
-                maxLines = 1
-            )
+            if (showValueRange) {
+                Text(
+                    text = zone.getFormattedSpeedRange(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    maxLines = 1
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(6.dp))
@@ -112,9 +117,9 @@ private fun ZoneBarRow(
 
         Spacer(modifier = Modifier.width(6.dp))
 
-        // Right: Percentage + duration (55dp fixed)
+        // Right: Percentage + duration (65dp fixed)
         Column(
-            modifier = Modifier.width(55.dp),
+            modifier = Modifier.width(65.dp),
             horizontalAlignment = Alignment.End
         ) {
             Text(

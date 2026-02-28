@@ -48,7 +48,7 @@ fun TermsCheckbox(
         // 使用AnnotatedString来实现部分文本可点击
         val annotatedText = buildAnnotatedString {
             withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
-                append("我已阅读并同意demorun的")
+                append("我已阅读并同意RunYay的")
             }
             
             pushStringAnnotation(tag = "user_terms", annotation = "user_terms")
@@ -122,7 +122,7 @@ fun SimpleTermsCheckbox(
         // 使用AnnotatedString来实现部分文本可点击
         val annotatedText = buildAnnotatedString {
             withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
-                append("我已阅读并同意demorun的")
+                append("我已阅读并同意RunYay的")
             }
             
             pushStringAnnotation(tag = "user_terms", annotation = "user_terms")

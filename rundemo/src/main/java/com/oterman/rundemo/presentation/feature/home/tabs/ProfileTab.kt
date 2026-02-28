@@ -327,7 +327,7 @@ private fun Footer() {
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = "DemoRun V1.0.0",
+            text = "RunYay V1.0.0",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

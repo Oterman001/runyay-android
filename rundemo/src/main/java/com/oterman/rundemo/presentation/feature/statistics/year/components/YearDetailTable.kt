@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.domain.model.YearStatistics
-import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
+import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
@@ -63,15 +63,15 @@ fun YearDetailTable(
         } else 0.0
     }
 
-    StatisticsCard(modifier = modifier) {
-        Column {
+    AppCard(modifier = modifier) {
+        Column(modifier = Modifier.padding(vertical = 12.dp)) {
             // Title
             Text(
                 text = "月份详情",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
             )
 
             // Table header
@@ -152,7 +152,7 @@ private fun TableRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(backgroundColor)
-            .padding(vertical = 10.dp, horizontal = 4.dp),
+            .padding(vertical = 6.dp, horizontal = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
