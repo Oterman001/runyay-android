@@ -106,5 +106,13 @@ interface RunRecordDao {
 
     @Query("UPDATE run_record SET userId = :userId WHERE userId = ''")
     suspend fun migrateOrphanedRecords(userId: String)
+
+    // ==================== 上传状态查询 ====================
+
+    @Query("SELECT * FROM run_record WHERE userId = :userId AND uploadStatus IN (0, 3)")
+    suspend fun getRecordsNeedingUploadForUser(userId: String): List<RunRecordEntity>
+
+    @Query("UPDATE run_record SET uploadStatus = :status WHERE workoutId = :workoutId")
+    suspend fun updateUploadStatus(workoutId: String, status: Int)
 }
 

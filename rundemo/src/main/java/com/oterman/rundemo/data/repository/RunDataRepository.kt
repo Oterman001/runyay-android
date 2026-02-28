@@ -282,5 +282,17 @@ interface RunDataRepository {
     suspend fun getAllDatasources(): List<String>
 
     suspend fun getByDatasource(datasource: String): List<RunRecordEntity>
+
+    // ==================== 上传状态 ====================
+
+    /**
+     * 获取需要上传的记录（uploadStatus为0或3）
+     */
+    suspend fun getRecordsNeedingUpload(): List<RunRecordEntity>
+
+    /**
+     * 更新上传状态
+     */
+    suspend fun updateUploadStatus(workoutId: String, status: Int)
 }
 

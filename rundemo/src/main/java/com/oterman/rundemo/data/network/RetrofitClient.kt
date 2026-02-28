@@ -1,6 +1,7 @@
 package com.oterman.rundemo.data.network
 
 import com.oterman.rundemo.data.network.api.DataSourceApi
+import com.oterman.rundemo.data.network.api.RunDataApi
 import com.oterman.rundemo.data.network.api.UserApi
 import com.oterman.rundemo.data.network.interceptor.AuthInterceptor
 import okhttp3.OkHttpClient
@@ -69,6 +70,13 @@ object RetrofitClient {
      */
     val dataSourceApi: DataSourceApi by lazy {
         retrofit.create(DataSourceApi::class.java)
+    }
+
+    /**
+     * 跑步数据API接口实例
+     */
+    val runDataApi: RunDataApi by lazy {
+        retrofit.create(RunDataApi::class.java)
     }
 }
 

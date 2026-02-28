@@ -7,8 +7,10 @@ import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
 import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.fit.RunSummaryMapper
 import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.data.repository.HealthRepository
+import com.oterman.rundemo.data.repository.RunDataRemoteRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.domain.model.DataSourcePlatform
@@ -139,6 +141,11 @@ class UnifiedDataSyncManager private constructor(
     // 协程作用域
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // 跑步数据远程仓库（lazy初始化）
+    private val runDataRemoteRepository: RunDataRemoteRepository by lazy {
+        RunDataRemoteRepository(PreferencesManager(context))
+    }
+
     // 同步服务实例
     private val garminChinaSyncService: GarminChinaSyncService by lazy {
         GarminChinaSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository)
@@ -150,6 +157,19 @@ class UnifiedDataSyncManager private constructor(
 
     private val corosSyncService: CorosSyncService by lazy {
         CorosSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository)
+    }
+
+    // 统一同步服务实例（每个平台一个）
+    private val unifiedGarminChinaSyncService: UnifiedSyncService by lazy {
+        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.GARMIN_CHINA)
+    }
+
+    private val unifiedGarminGlobalSyncService: UnifiedSyncService by lazy {
+        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.GARMIN_GLOBAL)
+    }
+
+    private val unifiedCorosSyncService: UnifiedSyncService by lazy {
+        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.COROS)
     }
 
     // 同步状态
@@ -415,6 +435,7 @@ class UnifiedDataSyncManager private constructor(
         timeRange: SyncTimeRange = SyncConstants.getDefaultTimeRange(platform)
     ): Flow<SyncNotification> = flow {
         val service = getSyncService(platform)
+//        val service = getUnifiedSyncService(platform)
         if (service == null) {
             emit(SyncNotification.PlatformFailed(platform, "不支持的平台"))
             return@flow
@@ -675,5 +696,121 @@ class UnifiedDataSyncManager private constructor(
      */
     fun getLastSyncTimestamp(platform: DataSourcePlatform): String {
         return dataSourcePreferences.getLastSyncTime(platform)
+    }
+
+    // ============ 统一同步服务 ============
+
+    /**
+     * 获取指定平台的统一同步服务
+     */
+    fun getUnifiedSyncService(platform: DataSourcePlatform): UnifiedSyncService? {
+        return when (platform) {
+            DataSourcePlatform.GARMIN_CHINA -> unifiedGarminChinaSyncService
+            DataSourcePlatform.GARMIN_GLOBAL -> unifiedGarminGlobalSyncService
+            DataSourcePlatform.COROS -> unifiedCorosSyncService
+            else -> null
+        }
+    }
+
+    // ============ 跑步数据管理 ============
+
+    /**
+     * 更新跑步摘要（note/feeling/shoe等）
+     */
+    suspend fun updateRunSummary(
+        summaryId: String,
+        activityName: String? = null,
+        note: String? = null,
+        feelingLevel: Int? = null,
+        shoeId: String? = null,
+        raceId: String? = null
+    ): Result<Boolean> {
+        return try {
+            val result = runDataRemoteRepository.updateRunSummary(
+                summaryId = summaryId,
+                activityName = activityName,
+                note = note,
+                feelingLevel = feelingLevel,
+                shoeId = shoeId,
+                raceId = raceId
+            )
+            result.map { it.success }
+        } catch (e: Exception) {
+            RLog.e(TAG, "更新跑步摘要失败", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 删除跑步记录
+     * 先调API删除服务端，成功后删本地
+     */
+    suspend fun deleteRunSummary(summaryId: String, workoutId: String): Result<Boolean> {
+        return try {
+            val result = runDataRemoteRepository.deleteRunSummary(summaryId)
+            result.fold(
+                onSuccess = { response ->
+                    if (response.success) {
+                        // 服务端删除成功，删除本地记录
+                        runDataRepository.deleteRunRecord(workoutId)
+                        RLog.i(TAG, "删除成功: summaryId=$summaryId, workoutId=$workoutId")
+                        Result.success(true)
+                    } else {
+                        Result.failure(Exception(response.message ?: "服务端删除失败"))
+                    }
+                },
+                onFailure = { Result.failure(it) }
+            )
+        } catch (e: Exception) {
+            RLog.e(TAG, "删除跑步记录失败", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 重试待上传的记录
+     * 查询uploadStatus=0/3的记录，批量上传
+     */
+    suspend fun retryPendingUploads(): Result<Int> {
+        return try {
+            val pendingRecords = runDataRepository.getRecordsNeedingUpload()
+            if (pendingRecords.isEmpty()) {
+                RLog.d(TAG, "没有待上传的记录")
+                return Result.success(0)
+            }
+
+            RLog.i(TAG, "发现${pendingRecords.size}条待上传记录")
+
+            // 标记为上传中
+            pendingRecords.forEach { record ->
+                runDataRepository.updateUploadStatus(record.workoutId, 1)
+            }
+
+            // 转换为上传DTO
+            val uploadDtos = pendingRecords.map { RunSummaryMapper.toUploadDto(it) }
+            val result = runDataRemoteRepository.uploadRunRecords(uploadDtos)
+
+            result.fold(
+                onSuccess = { response ->
+                    // 全部标记为成功
+                    pendingRecords.forEach { record ->
+                        runDataRepository.updateUploadStatus(record.workoutId, 2)
+                    }
+                    RLog.i(TAG, "批量上传成功: ${response.successCount}/${response.totalCount}")
+                    Result.success(response.successCount)
+                },
+                onFailure = { error ->
+                    // 全部标记为失败
+                    pendingRecords.forEach { record ->
+                        runDataRepository.updateUploadStatus(record.workoutId, 3)
+                    }
+                    RLog.w(TAG, "批量上传失败: ${error.message}")
+                    Result.failure(error)
+                }
+            )
+        } catch (e: Exception) {
+            RLog.e(TAG, "重试上传异常", e)
+            Result.failure(e)
+        }
     }
 }

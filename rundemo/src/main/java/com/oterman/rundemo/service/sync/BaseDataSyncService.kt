@@ -61,7 +61,7 @@ abstract class BaseDataSyncService(
     protected val timestampTracker = TimestampTracker()
 
     /** FIT数据处理器 */
-    private val fitRecordProcessor: FitRecordProcessor by lazy {
+    protected val fitRecordProcessor: FitRecordProcessor by lazy {
         FitRecordProcessor(runDataRepository)
     }
 
@@ -396,7 +396,7 @@ abstract class BaseDataSyncService(
      * 构建用户生理参数配置
      * 尝试从HealthRepository获取真实静息心率，失败则使用默认值60.0
      */
-    private suspend fun buildUserConfig(startTimeMs: Long?): UserPhysiologyConfig {
+    protected suspend fun buildUserConfig(startTimeMs: Long?): UserPhysiologyConfig {
         if (healthRepository == null || startTimeMs == null || startTimeMs <= 0) {
             return UserPhysiologyConfig()
         }

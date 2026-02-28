@@ -438,6 +438,16 @@ class RunDataRepositoryImpl private constructor(
         return runRecordDao.getByDatasourceForUser(requireUserId(), datasource)
     }
 
+    // ==================== 上传状态 ====================
+
+    override suspend fun getRecordsNeedingUpload(): List<RunRecordEntity> {
+        return runRecordDao.getRecordsNeedingUploadForUser(requireUserId())
+    }
+
+    override suspend fun updateUploadStatus(workoutId: String, status: Int) {
+        runRecordDao.updateUploadStatus(workoutId, status)
+    }
+
     // ==================== 扩展函数 ====================
     
     private fun RunSegmentEntity.toRunSegment(): RunSegment {
