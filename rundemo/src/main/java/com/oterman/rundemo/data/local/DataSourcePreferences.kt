@@ -21,10 +21,11 @@ class DataSourcePreferences(context: Context) {
         private const val KEY_GARMIN_GLOBAL_BOUND = "garmin_global_bound"
         private const val KEY_COROS_BOUND = "coros_bound"
 
-        // 同步时间戳（分开存储佳明中国和佳明国际）
+        // 同步时间戳（分开存储各平台）
         private const val KEY_GARMIN_CHINA_LAST_SYNC_TIME = "garmin_china_last_sync_time"
         private const val KEY_GARMIN_GLOBAL_LAST_SYNC_TIME = "garmin_global_last_sync_time"
         private const val KEY_COROS_LAST_SYNC_TIME = "coros_last_sync_time"
+        private const val KEY_APPLE_HEALTH_LAST_SYNC_TIME = "apple_health_last_sync_time"
 
         // 旧版时间戳key（用于迁移）
         @Deprecated("Use KEY_GARMIN_CHINA_LAST_SYNC_TIME instead")
@@ -64,8 +65,10 @@ class DataSourcePreferences(context: Context) {
     
     /**
      * 获取平台绑定状态
+     * 苹果健康（HK）无需绑定，始终返回 true
      */
     fun isPlatformBound(platform: DataSourcePlatform): Boolean {
+        if (platform == DataSourcePlatform.APPLE_HEALTH) return true
         val key = when (platform) {
             DataSourcePlatform.GARMIN_CHINA -> KEY_GARMIN_CHINA_BOUND
             DataSourcePlatform.GARMIN_GLOBAL -> KEY_GARMIN_GLOBAL_BOUND
@@ -213,6 +216,33 @@ class DataSourcePreferences(context: Context) {
     }
 
     /**
+     * 获取苹果健康上次同步时间戳（17位格式）
+     */
+    fun getAppleHealthLastSyncTime(): String {
+        val value = prefs.getString(KEY_APPLE_HEALTH_LAST_SYNC_TIME, null)
+        return if (value != null) {
+            TimestampUtils.normalizeTimestamp(value)
+        } else {
+            DEFAULT_SYNC_START_TIME
+        }
+    }
+
+    /**
+     * 设置苹果健康上次同步时间戳（17位格式）
+     */
+    fun setAppleHealthLastSyncTime(timestamp: String) {
+        val normalized = TimestampUtils.normalizeTimestamp(timestamp)
+        prefs.edit().putString(KEY_APPLE_HEALTH_LAST_SYNC_TIME, normalized).apply()
+    }
+
+    /**
+     * 清除苹果健康同步时间戳
+     */
+    fun clearAppleHealthSyncTime() {
+        prefs.edit().remove(KEY_APPLE_HEALTH_LAST_SYNC_TIME).apply()
+    }
+
+    /**
      * 获取指定平台的同步时间戳
      */
     fun getLastSyncTime(platform: DataSourcePlatform): String {
@@ -220,6 +250,7 @@ class DataSourcePreferences(context: Context) {
             DataSourcePlatform.GARMIN_CHINA -> getGarminChinaLastSyncTime()
             DataSourcePlatform.GARMIN_GLOBAL -> getGarminGlobalLastSyncTime()
             DataSourcePlatform.COROS -> getCorosLastSyncTime()
+            DataSourcePlatform.APPLE_HEALTH -> getAppleHealthLastSyncTime()
             else -> DEFAULT_SYNC_START_TIME
         }
     }
@@ -232,6 +263,7 @@ class DataSourcePreferences(context: Context) {
             DataSourcePlatform.GARMIN_CHINA -> setGarminChinaLastSyncTime(timestamp)
             DataSourcePlatform.GARMIN_GLOBAL -> setGarminGlobalLastSyncTime(timestamp)
             DataSourcePlatform.COROS -> setCorosLastSyncTime(timestamp)
+            DataSourcePlatform.APPLE_HEALTH -> setAppleHealthLastSyncTime(timestamp)
             else -> {}
         }
     }
@@ -244,6 +276,7 @@ class DataSourcePreferences(context: Context) {
             DataSourcePlatform.GARMIN_CHINA -> clearGarminChinaSyncTime()
             DataSourcePlatform.GARMIN_GLOBAL -> clearGarminGlobalSyncTime()
             DataSourcePlatform.COROS -> clearCorosSyncTime()
+            DataSourcePlatform.APPLE_HEALTH -> clearAppleHealthSyncTime()
             else -> {}
         }
     }

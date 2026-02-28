@@ -109,8 +109,9 @@ data class RunSummaryBasicInfoDto(
     @SerializedName("weatherHumidity")
     val weatherHumidity: Double? = null,
 
+    // 0户外 1室内
     @SerializedName("outdoor")
-    val outdoor: Boolean? = null,
+    val outdoor: Int? = null,
 
     // 设备信息
     @SerializedName("deviceInfo")

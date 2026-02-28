@@ -59,6 +59,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.service.sync.model.UnifiedSyncResult
@@ -173,10 +174,7 @@ private fun SyncStatusHeaderCard(syncStatus: SyncStatusType) {
 
 @Composable
 private fun KeepInForegroundBanner() {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = Color(0xFFFFF3E0) // orange.opacity(0.1) equivalent
-    ) {
+    AppCard {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

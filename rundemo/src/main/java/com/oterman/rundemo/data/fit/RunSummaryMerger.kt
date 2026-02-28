@@ -11,7 +11,9 @@ data class FieldDiff(
     val fieldName: String,
     val localValue: Any?,
     val serverValue: Any?,
-    val usedValue: Any?
+    val usedValue: Any?,
+    val serverRawFieldName: String? = null,
+    val serverRawValue: Any? = null
 )
 
 /**
@@ -49,10 +51,10 @@ object RunSummaryMerger {
         val merged = RunSummaryMapper.applyServerValues(local, server)
 
         // 记录差异
-        trackDiff(diffs, "startTime", local.startTime, merged.startTime, server.startTimeInSeconds?.let { it * 1000 })
-        trackDiff(diffs, "duration", local.duration, merged.duration, server.durationInSeconds?.let { it / 60.0 })
-        trackDiff(diffs, "activeDuration", local.activeDuration, merged.activeDuration, server.activeDuration?.let { it / 60.0 })
-        trackDiff(diffs, "totalDistance", local.totalDistance, merged.totalDistance, server.distanceInMeters?.let { it / 1000.0 })
+        trackDiff(diffs, "startTime", local.startTime, merged.startTime, server.startTimeInSeconds?.let { it * 1000 }, "startTimeInSeconds", server.startTimeInSeconds)
+        trackDiff(diffs, "duration", local.duration, merged.duration, server.durationInSeconds?.let { it / 60.0 }, "durationInSeconds", server.durationInSeconds)
+        trackDiff(diffs, "activeDuration", local.activeDuration, merged.activeDuration, server.activeDuration?.let { it / 60.0 }, "activeDuration(raw)", server.activeDuration)
+        trackDiff(diffs, "totalDistance", local.totalDistance, merged.totalDistance, server.distanceInMeters?.let { it / 1000.0 }, "distanceInMeters", server.distanceInMeters)
         trackDiff(diffs, "averageSpeed", local.averageSpeed, merged.averageSpeed, server.averagePace)
         trackDiff(diffs, "maxSpeed", local.maxSpeed, merged.maxSpeed, server.maxPace)
         trackDiff(diffs, "averageHeartRate", local.averageHeartRate, merged.averageHeartRate, server.averageHeartRate)
@@ -72,7 +74,7 @@ object RunSummaryMerger {
         trackDiff(diffs, "trainingEffect", local.trainingEffect, merged.trainingEffect, server.trainingEffect)
         trackDiff(diffs, "anaerobicTrainingEffect", local.anaerobicTrainingEffect, merged.anaerobicTrainingEffect, server.anaerobicTrainingEffect)
         trackDiff(diffs, "trainingLoad", local.trainingLoad, merged.trainingLoad, server.trainingLoad)
-        trackDiff(diffs, "outdoor", local.outdoor, merged.outdoor, server.outdoor?.let { if (it) 0 else 1 })
+        trackDiff(diffs, "outdoor", local.outdoor, merged.outdoor, server.outdoor)
         trackDiff(diffs, "note", local.note, merged.note, server.note)
         trackDiff(diffs, "feelingLevel", local.feelingLevel, merged.feelingLevel, server.feelingLevel)
 
@@ -80,7 +82,12 @@ object RunSummaryMerger {
         if (diffs.isNotEmpty()) {
             RLog.i(TAG, "合并 ${local.originId}: ${diffs.size}个字段有差异")
             for (diff in diffs) {
-                RLog.d(TAG, "  ${diff.fieldName}: 本地=${diff.localValue}, 服务端=${diff.serverValue}, 使用=${diff.usedValue}")
+                val serverPart = if (diff.serverRawValue != null) {
+                    "${diff.serverValue}(原始:${diff.serverRawFieldName}=${diff.serverRawValue})"
+                } else {
+                    "${diff.serverValue}"
+                }
+                RLog.d(TAG, "  ${diff.fieldName}: 本地=${diff.localValue}, 服务端=$serverPart, 使用=${diff.usedValue}")
             }
         } else {
             RLog.d(TAG, "合并 ${local.originId}: 无差异")
@@ -98,7 +105,9 @@ object RunSummaryMerger {
         fieldName: String,
         localValue: Any?,
         mergedValue: Any?,
-        serverConverted: Any?
+        serverConverted: Any?,
+        serverRawFieldName: String? = null,
+        serverRawValue: Any? = null
     ) {
         // 服务端无值，不算差异（保留了本地值）
         if (serverConverted == null) return
@@ -117,7 +126,7 @@ object RunSummaryMerger {
         }
 
         if (isDifferent) {
-            diffs.add(FieldDiff(fieldName, localValue, serverConverted, mergedValue))
+            diffs.add(FieldDiff(fieldName, localValue, serverConverted, mergedValue, serverRawFieldName, serverRawValue))
         }
     }
 }

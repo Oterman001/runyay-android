@@ -38,6 +38,14 @@ enum class DataSourcePlatform(
         isEnabled = true,
         supportsSorting = true
     ),
+    APPLE_HEALTH(
+        code = "HK",
+        displayName = "苹果健康",
+        appBrandName = "Apple Health",
+        iconResId = R.drawable.icon_huawei,
+        isEnabled = true,
+        supportsSorting = false
+    ),
     HUAWEI(
         code = "HUAWEI",
         displayName = "华为运动健康",

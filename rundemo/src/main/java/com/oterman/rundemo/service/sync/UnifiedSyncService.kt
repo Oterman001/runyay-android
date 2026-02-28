@@ -78,7 +78,6 @@ class UnifiedSyncService(
     }
 
     // ============ 抽象方法实现 ============
-
     override fun getLastSyncTimestamp(): String {
         val timestamp = dataSourcePreferences.getLastSyncTime(targetPlatform)
         return TimestampUtils.normalizeTimestamp(timestamp)

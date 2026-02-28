@@ -53,7 +53,7 @@ object RunSummaryMapper {
             trainingLoad = entity.trainingLoad.takeIf { it > 0 },
             weatherTemperature = entity.weatherTemperature.takeIf { it != 0.0 },
             weatherHumidity = entity.weatherHumidity.takeIf { it != 0.0 },
-            outdoor = entity.outdoor == 0, // 0=户外→true
+            outdoor = entity.outdoor, // 0=户外→true
             deviceInfo = entity.deviceInfo,
             deviceVersion = entity.deviceVersion,
             datasource = entity.datasource,
@@ -105,7 +105,7 @@ object RunSummaryMapper {
             trainingLoad = server.trainingLoad ?: local.trainingLoad,
             weatherTemperature = server.weatherTemperature ?: local.weatherTemperature,
             weatherHumidity = server.weatherHumidity ?: local.weatherHumidity,
-            outdoor = server.outdoor?.let { if (it) 0 else 1 } ?: local.outdoor,
+            outdoor = server.outdoor ?: local.outdoor,
             deviceInfo = server.deviceInfo ?: local.deviceInfo,
             deviceVersion = server.deviceVersion ?: local.deviceVersion,
             note = server.note ?: local.note,

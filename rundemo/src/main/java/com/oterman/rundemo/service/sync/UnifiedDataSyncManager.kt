@@ -172,6 +172,10 @@ class UnifiedDataSyncManager private constructor(
         UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.COROS)
     }
 
+    private val unifiedAppleHealthSyncService: UnifiedSyncService by lazy {
+        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.APPLE_HEALTH)
+    }
+
     // 同步状态
     private val isUnifiedSyncing = AtomicBoolean(false)
     private val platformSyncMutex = Mutex()
@@ -335,25 +339,19 @@ class UnifiedDataSyncManager private constructor(
         try {
            RLog.i(TAG, "开始统一同步, forceRefresh=$forceRefresh")
 
-            // 先从服务器刷新授权状态（对齐iOS行为，避免首次进入时本地缓存为空）
-            val refreshResult = refreshAuthorizationStatus()
-            if (refreshResult.isFailure) {
-                RLog.w(TAG, "刷新授权状态失败，使用本地缓存: ${refreshResult.exceptionOrNull()?.message}")
-            }
-
-            // 获取所有需要同步的平台
-            val platformsToSync = getAuthorizedPlatforms(forceRefresh)
+            // 固定同步顺序：苹果健康 → 佳明中国 → 佳明国际 → 高驰
+            // 不再判断平台授权状态，用户取消授权后云端可能仍有数据
+            val platformsToSync = listOf(
+                DataSourcePlatform.APPLE_HEALTH,
+                DataSourcePlatform.GARMIN_CHINA,
+                DataSourcePlatform.GARMIN_GLOBAL,
+                DataSourcePlatform.COROS
+            )
            RLog.i(TAG, "需要同步的平台: ${platformsToSync.map { it.displayName }}")
-
-            if (platformsToSync.isEmpty()) {
-               RLog.i(TAG, "没有已授权的平台需要同步")
-                emit(SyncNotification.UnifiedCompleted(UnifiedSyncResult.empty()))
-                return@flow
-            }
 
             // 按顺序同步每个平台
             for (platform in platformsToSync) {
-                val service = getSyncService(platform) ?: continue
+                val service = getUnifiedSyncService(platform) ?: continue
                 val timeRange = SyncConstants.getDefaultTimeRange(platform)
 
                RLog.i(TAG, "开始同步平台: ${platform.displayName}")
@@ -583,7 +581,8 @@ class UnifiedDataSyncManager private constructor(
         return isUnifiedSyncing.get() ||
                 garminChinaSyncService.isCurrentlySyncing() ||
                 garminGlobalSyncService.isCurrentlySyncing() ||
-                corosSyncService.isCurrentlySyncing()
+                corosSyncService.isCurrentlySyncing() ||
+                unifiedAppleHealthSyncService.isCurrentlySyncing()
     }
 
     /**
@@ -600,6 +599,7 @@ class UnifiedDataSyncManager private constructor(
         garminChinaSyncService.cancelSync()
         garminGlobalSyncService.cancelSync()
         corosSyncService.cancelSync()
+        unifiedAppleHealthSyncService.cancelSync()
         isUnifiedSyncing.set(false)
     }
 
@@ -689,6 +689,7 @@ class UnifiedDataSyncManager private constructor(
         garminChinaSyncService.clearSyncTimestamp()
         garminGlobalSyncService.clearSyncTimestamp()
         corosSyncService.clearSyncTimestamp()
+        unifiedAppleHealthSyncService.clearSyncTimestamp()
     }
 
     /**
@@ -705,6 +706,7 @@ class UnifiedDataSyncManager private constructor(
      */
     fun getUnifiedSyncService(platform: DataSourcePlatform): UnifiedSyncService? {
         return when (platform) {
+            DataSourcePlatform.APPLE_HEALTH -> unifiedAppleHealthSyncService
             DataSourcePlatform.GARMIN_CHINA -> unifiedGarminChinaSyncService
             DataSourcePlatform.GARMIN_GLOBAL -> unifiedGarminGlobalSyncService
             DataSourcePlatform.COROS -> unifiedCorosSyncService

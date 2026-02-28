@@ -46,7 +46,7 @@ fun TotalRunVdotCard(
                     verticalAlignment = Alignment.Bottom
                 ) {
                     Text(
-                        text = String.format("%.0f", stats.totalDistance),
+                        text =  if(stats.totalDistance >=1000) String.format("%.0f", stats.totalDistance) else String.format("%.1f", stats.totalDistance),
                         color = RunTheme.colorScheme.blue,
                         fontSize = 55.sp,
                         fontWeight = FontWeight.SemiBold,
