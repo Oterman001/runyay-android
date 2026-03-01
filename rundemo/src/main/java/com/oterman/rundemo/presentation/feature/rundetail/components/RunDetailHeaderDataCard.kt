@@ -2,7 +2,6 @@ package com.oterman.rundemo.presentation.feature.rundetail.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,11 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.components.InclusiveLevelIndicator
+import com.oterman.rundemo.presentation.components.MetricTagChip
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.AlertDialog
@@ -250,8 +249,9 @@ private fun MergedMetricCell(
             // Tag 标签（紧跟在 value+unit 后面）
             metric.tag?.let { tag ->
                 Spacer(modifier = Modifier.width(4.dp))
-                PerformanceTagChip(
-                    tag = tag,
+                MetricTagChip(
+                    text = tag.tagName,
+                    color = Color(tag.tagColor),
                     onClick = { onTagClick(tag) }
                 )
             }
@@ -261,32 +261,6 @@ private fun MergedMetricCell(
             text = metric.label,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-/**
- * 性能 Tag 小圆角标签
- */
-@Composable
-private fun PerformanceTagChip(
-    tag: RunPerformanceTag,
-    onClick: () -> Unit
-) {
-    val tagColor = Color(tag.tagColor)
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(tagColor.copy(alpha = 0.15f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 5.dp, vertical = 1.dp)
-    ) {
-        Text(
-            text = tag.tagName,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.Medium,
-            color = tagColor,
-            lineHeight = 12.sp
         )
     }
 }

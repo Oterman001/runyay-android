@@ -83,6 +83,8 @@ fun DashboardTabContent(
 
     val uiState by viewModel.uiState.collectAsState()
     val trackPointsVersion by viewModel.trackPointsVersion.collectAsState()
+    val showTrajectoryMode by viewModel.showTrajectoryMode.collectAsState()
+    val trajectoryDataMap by viewModel.trajectoryDataMap.collectAsState()
     val scrollState = rememberScrollState()
     val backgroundColor = MaterialTheme.colorScheme.background
 
@@ -207,6 +209,9 @@ fun DashboardTabContent(
             WeekStatisticsCard(
                 stats = uiState.weekStats,
                 modifier = Modifier.padding(bottom = 10.dp),
+                showTrajectoryMode = showTrajectoryMode,
+                trajectoryDataMap = trajectoryDataMap,
+                onToggleTrajectoryMode = { viewModel.toggleTrajectoryMode() },
                 onDayClick = { dayData ->
                     when {
                         dayData.runCount == 1 && dayData.workoutIds.isNotEmpty() -> {

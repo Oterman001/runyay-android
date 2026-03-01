@@ -52,6 +52,13 @@ class DashboardTabViewModel(
     private val _trackPointsVersion = MutableStateFlow(0L)
     val trackPointsVersion: StateFlow<Long> = _trackPointsVersion.asStateFlow()
 
+    // 首页周卡片轨迹模式
+    private val _showTrajectoryMode = MutableStateFlow(false)
+    val showTrajectoryMode: StateFlow<Boolean> = _showTrajectoryMode.asStateFlow()
+
+    private val _trajectoryDataMap = MutableStateFlow<Map<String, List<TrackPoint>>>(emptyMap())
+    val trajectoryDataMap: StateFlow<Map<String, List<TrackPoint>>> = _trajectoryDataMap.asStateFlow()
+
     // 轨迹点缓存 (workoutId -> TrackPoints)
     private val trackPointsCache = ConcurrentHashMap<String, List<TrackPoint>>()
 
@@ -139,6 +146,45 @@ class DashboardTabViewModel(
             yearStats = yearStats,
             monthStats = monthStats
         )
+    }
+
+    /**
+     * 切换首页周卡片的轨迹模式
+     */
+    fun toggleTrajectoryMode() {
+        val newMode = !_showTrajectoryMode.value
+        _showTrajectoryMode.value = newMode
+        if (newMode) {
+            preloadWeekTrajectories()
+        }
+    }
+
+    /**
+     * 预加载本周轨迹数据
+     */
+    private fun preloadWeekTrajectories() {
+        val weekStats = _uiState.value.weekStats
+        viewModelScope.launch {
+            val resultMap = mutableMapOf<String, List<TrackPoint>>()
+            weekStats.dailyRecords.forEach { dayData ->
+                if (dayData.isIndoor || dayData.workoutIds.isEmpty()) return@forEach
+                val workoutId = dayData.workoutIds.first()
+                // 优先使用已有缓存
+                val cached = trackPointsCache[workoutId]
+                if (cached != null) {
+                    resultMap[workoutId] = cached
+                } else {
+                    try {
+                        val trackPoints = repository.getTrackPoints(workoutId)
+                        resultMap[workoutId] = trackPoints
+                        trackPointsCache[workoutId] = trackPoints
+                    } catch (_: Exception) {
+                        resultMap[workoutId] = emptyList()
+                    }
+                }
+            }
+            _trajectoryDataMap.value = resultMap
+        }
     }
 
     /**

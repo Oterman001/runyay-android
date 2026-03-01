@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -121,7 +122,7 @@ fun YearStatisticsContent(
                             imageVector = if (uiState.showTrajectoryMode)
                                 Icons.Default.RemoveRedEye
                             else
-                                Icons.Default.Timeline,
+                                Icons.Outlined.Route,
                             contentDescription = if (uiState.showTrajectoryMode) "切换到月份显示" else "切换到轨迹墙显示",
                             tint = RunTheme.colorScheme.blue
                         )

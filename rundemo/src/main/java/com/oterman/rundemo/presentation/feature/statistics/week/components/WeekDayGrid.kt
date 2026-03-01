@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -93,7 +94,8 @@ fun WeekDayGrid(
                             DayTrajectoryCell(
                                 workoutId = workoutId,
                                 trackPoints = trackPoints,
-                                isFuture = dayData.isFuture
+                                isFuture = dayData.isFuture,
+                                isIndoor = dayData.isIndoor
                             )
                             // 周标识 - 统一使用 RunTheme.colorScheme.blue 表示 today
                             Text(
@@ -165,7 +167,7 @@ fun WeekSummaryAndGrid(
                         imageVector = if (showTrajectoryMode) {
                             Icons.Default.RemoveRedEye
                         } else {
-                            Icons.Default.Timeline
+                            Icons.Outlined.Route
                         },
                         contentDescription = if (showTrajectoryMode) {
                             "切换到距离显示"
@@ -206,7 +208,8 @@ fun WeekSummaryAndGrid(
                                 DayTrajectoryCell(
                                     workoutId = workoutId,
                                     trackPoints = trackPoints,
-                                    isFuture = dayData.isFuture
+                                    isFuture = dayData.isFuture,
+                                    isIndoor = dayData.isIndoor
                                 )
                                 // 周标识 - 统一使用 RunTheme.colorScheme.blue 表示 today
                                 Text(

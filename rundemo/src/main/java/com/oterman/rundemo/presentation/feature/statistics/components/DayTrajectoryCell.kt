@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,10 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DirectionsRun
-import androidx.compose.material.icons.filled.FiberManualRecord
-import androidx.compose.material.icons.filled.LocationOff
-import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -35,15 +30,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.trajectory.ThumbnailState
 import com.oterman.rundemo.domain.trajectory.TrajectoryThumbnailManager
 import com.oterman.rundemo.ui.theme.NoDataBg
@@ -73,6 +74,7 @@ fun DayTrajectoryCell(
     trackPoints: List<TrackPoint>?,
     size: Dp = 48.dp,
     isFuture: Boolean = false,
+    isIndoor: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -95,10 +97,15 @@ fun DayTrajectoryCell(
     )
     
     val cellShape = RoundedCornerShape(8.dp)
+    val futureBorderColor = RunTheme.colorScheme.blue.copy(alpha = 0.4f)
     val bgColor = if (isDark) NoDataBgDark else NoDataBg
     
     // 请求缩略图
-    LaunchedEffect(workoutId, trackPoints, isDark) {
+    LaunchedEffect(workoutId, trackPoints, isDark, isIndoor) {
+        if (isIndoor) {
+            thumbnailState = ThumbnailState.NoTrajectory
+            return@LaunchedEffect
+        }
         if (workoutId != null && trackPoints != null) {
             // 在后台线程请求缩略图
             thumbnailState = ThumbnailState.Generating
@@ -123,11 +130,22 @@ fun DayTrajectoryCell(
             .alpha(alpha)
             .then(
                 if (isFuture) {
-                    Modifier.border(
-                        width = 1.5.dp,
-                        color = RunTheme.colorScheme.blue.copy(alpha = 0.4f),
-                        shape = cellShape
-                    )
+                    Modifier.drawBehind {
+                        val strokeWidth = 1.5.dp.toPx()
+                        val dashLength = 4.dp.toPx()
+                        val gapLength = 3.dp.toPx()
+                        drawRoundRect(
+                            color = futureBorderColor,
+                            cornerRadius = CornerRadius(8.dp.toPx()),
+                            style = Stroke(
+                                width = strokeWidth,
+                                pathEffect = PathEffect.dashPathEffect(
+                                    floatArrayOf(dashLength, gapLength),
+                                    phase = 0f
+                                )
+                            )
+                        )
+                    }
                 } else {
                     Modifier
                 }
@@ -150,24 +168,13 @@ fun DayTrajectoryCell(
             }
             
             is ThumbnailState.NoTrajectory -> {
-                // 室内跑 - 紫色背景和图标
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DirectionsRun,
-                        contentDescription = "室内跑",
-                        tint = Color(0xFF8B5CF6),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "室内",
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF8B5CF6)
-                    )
-                }
+                // 室内跑/无轨迹 - 只显示跑步机图标，淡灰色
+                Icon(
+                    painter = painterResource(id = R.drawable.figure_run_treadmill),
+                    contentDescription = "室内跑",
+                    tint = Color.Gray.copy(alpha = 0.4f),
+                    modifier = Modifier.size(20.dp)
+                )
             }
             
             is ThumbnailState.Failed -> {
@@ -230,12 +237,8 @@ private fun getBackgroundColor(
 ): Color {
     return when (state) {
         is ThumbnailState.NoTrajectory -> {
-            // 室内跑 - 淡紫色背景
-            if (isDark) {
-                Color(0xFF4A148C).copy(alpha = 0.25f)
-            } else {
-                Color(0xFFEDE7F6)
-            }
+            // 室内跑/无轨迹 - 淡灰色背景
+            defaultBgColor.copy(alpha = 0.3f)
         }
         is ThumbnailState.Failed -> {
             // 失败 - 淡红色背景

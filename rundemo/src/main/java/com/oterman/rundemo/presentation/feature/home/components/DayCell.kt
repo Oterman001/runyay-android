@@ -1,7 +1,6 @@
 package com.oterman.rundemo.presentation.feature.home.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -18,7 +17,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -72,6 +75,7 @@ fun DayHeatmapBox(
 ) {
     val isDark = isSystemInDarkTheme()
     val cellShape = RoundedCornerShape(cornerRadius)
+    val futureBorderColor = RunTheme.colorScheme.dayCellActive.copy(alpha = 0.4f)
 
     // Unified color calculation - all use RunTheme.colorScheme.dayCellActive (RunTheme.colorScheme.blue), no indoor/outdoor distinction
     val backgroundColor = when {
@@ -110,11 +114,22 @@ fun DayHeatmapBox(
                 .background(backgroundColor)
                 .then(
                     if (dayData.isFuture) {
-                        Modifier.border(
-                            width = borderWidth,
-                            color = RunTheme.colorScheme.dayCellActive.copy(alpha = 0.4f),
-                            shape = cellShape
-                        )
+                        Modifier.drawBehind {
+                            val strokeWidth = borderWidth.toPx()
+                            val dashLength = 4.dp.toPx()
+                            val gapLength = 3.dp.toPx()
+                            drawRoundRect(
+                                color = futureBorderColor,
+                                cornerRadius = CornerRadius(cornerRadius.toPx()),
+                                style = Stroke(
+                                    width = strokeWidth,
+                                    pathEffect = PathEffect.dashPathEffect(
+                                        floatArrayOf(dashLength, gapLength),
+                                        phase = 0f
+                                    )
+                                )
+                            )
+                        }
                     } else {
                         Modifier
                     }

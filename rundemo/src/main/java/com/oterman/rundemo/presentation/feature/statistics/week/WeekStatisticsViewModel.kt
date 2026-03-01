@@ -317,7 +317,7 @@ class WeekStatisticsViewModel(
                     runCount = dayRecords.size,
                     isToday = isToday,
                     isFuture = isFuture,
-                    isIndoor = dayRecords.any { it.outdoor == 0 },
+                    isIndoor = dayRecords.any { it.outdoor == 1 },
                     workoutIds = dayRecords.map { it.workoutId },
                     recordInfos = recordInfos,
                     totalDurationMinutes = dayDuration,

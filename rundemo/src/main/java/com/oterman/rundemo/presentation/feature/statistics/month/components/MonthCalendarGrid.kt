@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -212,7 +213,8 @@ private fun MonthDayCell(
                         workoutId = workoutId,
                         trackPoints = trackPoints,
                         size = 32.dp,
-                        isFuture = dayData.isFuture
+                        isFuture = dayData.isFuture,
+                        isIndoor = dayData.isIndoor
                     )
                 } else {
                     // 距离模式：复用共享的 DayHeatmapBox 组件
@@ -286,7 +288,7 @@ fun MonthCalendarCard(
                         imageVector = if (showTrajectoryMode) {
                             Icons.Default.RemoveRedEye
                         } else {
-                            Icons.Default.Timeline
+                            Icons.Outlined.Route
                         },
                         contentDescription = if (showTrajectoryMode) {
                             "切换到距离显示"

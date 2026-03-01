@@ -128,14 +128,14 @@ fun SetGoalButton(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(RunTheme.colorScheme.blue.copy(alpha = 0.1f))
+            .background(RunTheme.colorScheme.orange.copy(alpha = 0.1f))
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = RunTheme.colorScheme.blue,
+            color = RunTheme.colorScheme.orange,
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium
         )

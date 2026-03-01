@@ -233,18 +233,18 @@ private fun TopIconsSection(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 跑鸭图标
+        // RunDemo图标
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
                 painter = painterResource(id = R.drawable.run_duck),
-                contentDescription = "跑鸭",
+                contentDescription = "RunDemo",
                 modifier = Modifier
                     .size(80.dp)
                     .clip(RoundedCornerShape(20.dp))
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "跑鸭",
+                text = "RunDemo",
                 style = MaterialTheme.typography.bodySmall
             )
         }

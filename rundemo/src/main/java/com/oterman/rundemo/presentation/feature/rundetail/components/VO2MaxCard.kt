@@ -1,6 +1,5 @@
 package com.oterman.rundemo.presentation.feature.rundetail.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,18 +8,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.presentation.components.AppCard
+import com.oterman.rundemo.presentation.components.MetricTagChip
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import kotlin.math.abs
 
@@ -76,15 +74,9 @@ fun VO2MaxCard(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     val grade = getVo2MaxGrade(vo2Max)
-                    Text(
+                    MetricTagChip(
                         text = grade.label,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(grade.color)
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                        color = grade.color
                     )
                 }
 
