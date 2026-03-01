@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * 地图左下角天气信息覆盖层
@@ -35,11 +36,10 @@ fun RunDetailWeatherOverlay(
     // 只有温度或湿度有效时才显示
     if (temperature == 0.0 && humidity == 0.0) return
 
-    Column(
+    Row(
         modifier = modifier
             .background(
-                color = Color.Black.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(8.dp)
+                color = Color.Transparent
             )
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
@@ -51,14 +51,14 @@ fun RunDetailWeatherOverlay(
                     imageVector = Icons.Outlined.Thermostat,
                     contentDescription = null,
                     modifier = Modifier.size(14.dp),
-                    tint = Color.White.copy(alpha = 0.9f)
+                    tint = RunTheme.colorScheme.orange
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "${temperature.toInt()}°C",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.9f)
+                    color =RunTheme.colorScheme.orange
                 )
             }
         }
@@ -71,14 +71,14 @@ fun RunDetailWeatherOverlay(
                     imageVector = Icons.Outlined.WaterDrop,
                     contentDescription = null,
                     modifier = Modifier.size(14.dp),
-                    tint = Color.White.copy(alpha = 0.9f)
+                    tint =  RunTheme.colorScheme.blue
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "${humidity.toInt()}%",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.9f)
+                    color = RunTheme.colorScheme.blue
                 )
             }
         }

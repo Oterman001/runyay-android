@@ -174,28 +174,28 @@ fun RunDetailScreen(
                 },
                 actions = {
                     // 分享按钮
-                    if (uiState.record != null && !uiState.isLoading) {
-                        IconButton(
-                            onClick = { viewModel.prepareShareData() },
-                            enabled = !uiState.isPreparingShare
-                        ) {
-                            if (uiState.isPreparingShare) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = if (scrollOffset < 0.5f) Color.White
-                                            else MaterialTheme.colorScheme.onSurface
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Share,
-                                    contentDescription = "分享",
-                                    tint = if (scrollOffset < 0.5f) Color.White
-                                           else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
+//                    if (uiState.record != null && !uiState.isLoading) {
+//                        IconButton(
+//                            onClick = { viewModel.prepareShareData() },
+//                            enabled = !uiState.isPreparingShare
+//                        ) {
+//                            if (uiState.isPreparingShare) {
+//                                CircularProgressIndicator(
+//                                    modifier = Modifier.size(20.dp),
+//                                    strokeWidth = 2.dp,
+//                                    color = if (scrollOffset < 0.5f) Color.White
+//                                            else MaterialTheme.colorScheme.onSurface
+//                                )
+//                            } else {
+//                                Icon(
+//                                    imageVector = Icons.Default.Share,
+//                                    contentDescription = "分享",
+//                                    tint = if (scrollOffset < 0.5f) Color.White
+//                                           else MaterialTheme.colorScheme.onSurface
+//                                )
+//                            }
+//                        }
+//                    }
                     // 下载按钮（仅当可以下载时显示）
                     if (uiState.canDownloadFit) {
                         IconButton(
@@ -287,7 +287,7 @@ fun RunDetailScreen(
                                         humidity = record.weatherHumidity,
                                         modifier = Modifier
                                             .align(Alignment.BottomStart)
-                                            .padding(start = 12.dp, bottom = 40.dp)
+                                            .padding(start = 12.dp, bottom = 25.dp)
                                     )
                                 }
                             }

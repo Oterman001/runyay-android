@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -57,8 +58,10 @@ import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.plugin.gestures.gestures
 import com.mapbox.maps.plugin.scalebar.scalebar
+import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.util.RLog
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -207,8 +210,8 @@ fun RunDetailMapSection(
                 onClick = { showSettingSheet = true },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 12.dp, bottom = 40.dp),
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
+                    .padding(end = 12.dp, bottom = 30.dp),
+//                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
                 contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 elevation = FloatingActionButtonDefaults.elevation(
                     defaultElevation = 2.dp,
@@ -218,7 +221,8 @@ fun RunDetailMapSection(
                 Icon(
                     imageVector = Icons.Default.Layers,
                     contentDescription = "地图设置",
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
+                    tint = RunTheme.colorScheme.blue
                 )
             }
 
@@ -263,9 +267,9 @@ private fun IndoorRunPlaceholder() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector = Icons.Outlined.DirectionsRun,
+               painter = painterResource(id = R.drawable.figure_run_treadmill),
                 contentDescription = null,
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
             Spacer(modifier = Modifier.height(16.dp))
