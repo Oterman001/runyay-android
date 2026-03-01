@@ -310,6 +310,7 @@ fun RunDetailScreen(
                                 metrics = uiState.metrics,
                                 avatarUrl = uiState.avatarUrl,
                                 isLoadingAvatar = uiState.isLoadingAvatar,
+                                inclusiveLevel = record.inclusiveLevel,
                                 modifier = Modifier
                                     .layout { measurable, constraints ->
                                         val placeable = measurable.measure(constraints)

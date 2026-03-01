@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import com.oterman.rundemo.presentation.components.AppCard
+import com.oterman.rundemo.presentation.components.InclusiveLevelIndicator
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -71,6 +72,7 @@ fun RunDetailHeaderDataCard(
     metrics: List<RunMetricItem>,
     avatarUrl: String? = null,
     isLoadingAvatar: Boolean = false,
+    inclusiveLevel: Int = 1,
     modifier: Modifier = Modifier
 ) {
     // Tag dialog state
@@ -108,6 +110,11 @@ fun RunDetailHeaderDataCard(
                                 fontSize = RunDetailLayoutConstants.DistanceUnitFontSize.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            InclusiveLevelIndicator(
+                                inclusiveLevel = inclusiveLevel,
+                                modifier = Modifier.padding(bottom = 10.dp)
                             )
                         }
 

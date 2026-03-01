@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.components.AppCard
+import com.oterman.rundemo.presentation.components.InclusiveLevelIndicator
 import com.oterman.rundemo.presentation.components.trajectory.BlendedTrajectoryThumbnail
 import com.oterman.rundemo.presentation.feature.home.tabs.formatDateWithWeekday
 import com.oterman.rundemo.presentation.feature.home.tabs.formatDuration
@@ -92,16 +93,22 @@ fun RunRecordItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                record.deviceInfo?.let { device ->
-                    if (device.isNotBlank()) {
-                        Text(
-                            text = device,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    record.deviceInfo?.let { device ->
+                        if (device.isNotBlank()) {
+                            Text(
+                                text = device,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
+                    InclusiveLevelIndicator(inclusiveLevel = record.inclusiveLevel)
                 }
             }
 

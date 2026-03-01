@@ -114,7 +114,8 @@ fun LongSharePreview(
                 duration = record.activeDuration,
                 deviceName = deviceName ?: record.deviceVersion,
                 isOutdoor = mapSnapshot != null,
-                metrics = metrics
+                metrics = metrics,
+                inclusiveLevel = record.inclusiveLevel
             )
             Spacer(modifier = Modifier.height(12.dp))
         }

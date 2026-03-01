@@ -83,9 +83,12 @@ class DashboardTabViewModel(
                     latestRecords = allRecords
                     val goalSettings = preferencesManager.getGoalSettings()
 
-                    val yearStats = calculateYearStatistics(allRecords, goalSettings)
-                    val monthStats = calculateMonthStatistics(allRecords, goalSettings)
-                    val weekStats = calculateWeekStatistics(allRecords)
+                    // 统计卡片过滤掉 inclusiveLevel == 0 的记录
+                    val statsRecords = allRecords.filter { it.inclusiveLevel != 0 }
+
+                    val yearStats = calculateYearStatistics(statsRecords, goalSettings)
+                    val monthStats = calculateMonthStatistics(statsRecords, goalSettings)
+                    val weekStats = calculateWeekStatistics(statsRecords)
 
                     // New calculations for 5 cards
                     val latestRecord = calculateLatestRunRecord(allRecords)
@@ -95,7 +98,7 @@ class DashboardTabViewModel(
                     val speedPBs = repository.getAllPBByType("Speed")
                     val latestVdot = repository.getLatestVdot()
 
-                    val totalStats = calculateTotalStatistics(allRecords, latestVdot)
+                    val totalStats = calculateTotalStatistics(statsRecords, latestVdot)
 
                     val pbAbilityList = calculatePBAbilityList(allRecords, abilityPBs, latestVdot)
                     val pbSpeedList = calculatePBSpeedList(speedPBs)
@@ -128,8 +131,9 @@ class DashboardTabViewModel(
     fun refreshGoalSettings() {
         if (latestRecords.isEmpty()) return
         val goalSettings = preferencesManager.getGoalSettings()
-        val yearStats = calculateYearStatistics(latestRecords, goalSettings)
-        val monthStats = calculateMonthStatistics(latestRecords, goalSettings)
+        val statsRecords = latestRecords.filter { it.inclusiveLevel != 0 }
+        val yearStats = calculateYearStatistics(statsRecords, goalSettings)
+        val monthStats = calculateMonthStatistics(statsRecords, goalSettings)
         _uiState.value = _uiState.value.copy(
             goalSettings = goalSettings,
             yearStats = yearStats,
