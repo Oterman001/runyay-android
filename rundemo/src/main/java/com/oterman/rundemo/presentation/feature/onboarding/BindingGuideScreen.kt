@@ -266,10 +266,11 @@ private fun IllustrationSection() {
 
         // 手表图标
         Icon(
-            imageVector = Icons.Outlined.Watch,
+            painter = painterResource(R.drawable.watch_analog),
+//            imageVector = Icons.Outlined.Watch,
             contentDescription = "手表",
-            modifier = Modifier.size(60.dp),
-            tint = RunTheme.colorScheme.blue
+            modifier = Modifier.size(60.dp)
+//            tint = RunTheme.colorScheme.blue
         )
     }
 }
