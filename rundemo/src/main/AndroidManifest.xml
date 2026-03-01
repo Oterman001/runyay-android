@@ -37,6 +37,13 @@
             android:theme="@style/Theme.ComopseDemoHub"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".presentation.feature.share.ShareActivity"
+            android:exported="false"
+            android:label="分享跑步"
+            android:theme="@style/Theme.ComopseDemoHub"
+            android:parentActivityName=".RunDetailActivity" />
+
         <!-- FileProvider for camera temp files -->
         <provider
             android:name="androidx.core.content.FileProvider"

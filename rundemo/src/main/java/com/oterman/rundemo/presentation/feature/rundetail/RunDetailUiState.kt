@@ -51,7 +51,11 @@ data class RunDetailUiState(
     val isDownloading: Boolean = false,
     val downloadedFitData: ByteArray? = null,
     val downloadError: String? = null,
-    val downloadSuccess: Boolean = false
+    val downloadSuccess: Boolean = false,
+
+    // 分享状态
+    val isPreparingShare: Boolean = false,
+    val shareDataReady: Boolean = false
 ) {
     /**
      * 是否可以下载FIT文件（需要有originId和datasource）
@@ -97,6 +101,8 @@ data class RunDetailUiState(
         } else if (other.downloadedFitData != null) return false
         if (downloadError != other.downloadError) return false
         if (downloadSuccess != other.downloadSuccess) return false
+        if (isPreparingShare != other.isPreparingShare) return false
+        if (shareDataReady != other.shareDataReady) return false
 
         return true
     }
@@ -131,6 +137,8 @@ data class RunDetailUiState(
         result = 31 * result + (downloadedFitData?.contentHashCode() ?: 0)
         result = 31 * result + (downloadError?.hashCode() ?: 0)
         result = 31 * result + downloadSuccess.hashCode()
+        result = 31 * result + isPreparingShare.hashCode()
+        result = 31 * result + shareDataReady.hashCode()
         return result
     }
 }

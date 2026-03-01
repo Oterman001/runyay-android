@@ -118,7 +118,7 @@ fun RunRecordItem(
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = String.format("%.2f", record.totalDistance),
-                            fontSize = 33.sp,
+                            fontSize = 26.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = distanceColor,
                             fontFamily = RunYayFontFamily
@@ -128,7 +128,9 @@ fun RunRecordItem(
                             text = "公里",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            modifier = Modifier
+                                .alignByBaseline()
+//                                .padding(bottom = 4.dp)
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {

@@ -1,5 +1,6 @@
 package com.oterman.rundemo.presentation.feature.rundetail
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +20,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -63,6 +65,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.StrideLengt
 import com.oterman.rundemo.presentation.feature.rundetail.components.TrainingEffectCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.VO2MaxCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.VerticalOscillationChartCard
+import com.oterman.rundemo.presentation.feature.share.ShareActivity
 
 /**
  * 跑步详情页面
@@ -118,6 +121,17 @@ fun RunDetailScreen(
         }
     }
 
+    // 分享准备完成后跳转 ShareActivity
+    LaunchedEffect(uiState.shareDataReady) {
+        if (uiState.shareDataReady) {
+            val record = uiState.record
+            if (record != null) {
+                context.startActivity(ShareActivity.createIntent(context, record.workoutId))
+            }
+            viewModel.clearShareState()
+        }
+    }
+
     // 显示错误消息
     LaunchedEffect(uiState.downloadError) {
         uiState.downloadError?.let { error ->
@@ -159,6 +173,29 @@ fun RunDetailScreen(
                     }
                 },
                 actions = {
+                    // 分享按钮
+                    if (uiState.record != null && !uiState.isLoading) {
+                        IconButton(
+                            onClick = { viewModel.prepareShareData() },
+                            enabled = !uiState.isPreparingShare
+                        ) {
+                            if (uiState.isPreparingShare) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = if (scrollOffset < 0.5f) Color.White
+                                            else MaterialTheme.colorScheme.onSurface
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "分享",
+                                    tint = if (scrollOffset < 0.5f) Color.White
+                                           else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
                     // 下载按钮（仅当可以下载时显示）
                     if (uiState.canDownloadFit) {
                         IconButton(
