@@ -95,7 +95,8 @@ fun WeekDayGrid(
                                 workoutId = workoutId,
                                 trackPoints = trackPoints,
                                 isFuture = dayData.isFuture,
-                                isIndoor = dayData.isIndoor
+                                isIndoor = dayData.isIndoor,
+                                totalDistanceKm = dayData.totalDistance
                             )
                             // 周标识 - 统一使用 RunTheme.colorScheme.blue 表示 today
                             Text(
@@ -209,7 +210,8 @@ fun WeekSummaryAndGrid(
                                     workoutId = workoutId,
                                     trackPoints = trackPoints,
                                     isFuture = dayData.isFuture,
-                                    isIndoor = dayData.isIndoor
+                                    isIndoor = dayData.isIndoor,
+                                    totalDistanceKm = dayData.totalDistance
                                 )
                                 // 周标识 - 统一使用 RunTheme.colorScheme.blue 表示 today
                                 Text(

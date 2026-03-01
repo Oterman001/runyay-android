@@ -41,6 +41,7 @@ import com.oterman.rundemo.domain.trajectory.TrajectoryThumbnailManager
 fun TrajectoryWallCell(
     workoutId: String,
     repository: RunDataRepository,
+    totalDistanceKm: Double = 0.0,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -63,7 +64,8 @@ fun TrajectoryWallCell(
                 workoutId = workoutId,
                 trackPoints = trackPoints,
                 sizePx = sizePx,
-                isDark = isDark
+                isDark = isDark,
+                totalDistanceKm = totalDistanceKm
             )
             bitmap = when (state) {
                 is com.oterman.rundemo.domain.trajectory.ThumbnailState.Cached -> state.bitmap

@@ -99,7 +99,7 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Image(
-                painter = painterResource(id = R.drawable.run_duck),
+                painter = painterResource(id = R.drawable.run_demo),
                 contentDescription = "Logo",
                 modifier = Modifier
                     .size(120.dp)

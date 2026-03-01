@@ -132,6 +132,7 @@ class YearStatisticsViewModel(
             _uiState.update { it.copy(isLoadingTrajectory = true) }
             try {
                 val workoutIds = mutableListOf<Pair<String, Long>>()
+                val distanceMap = mutableMapOf<String, Double>()
 
                 for (month in 1..12) {
                     val monthStart = getMonthStart(currentYear, month)
@@ -145,6 +146,7 @@ class YearStatisticsViewModel(
                             record.inclusiveLevel != 0
                         ) {
                             workoutIds.add(record.workoutId to record.startTime)
+                            distanceMap[record.workoutId] = record.totalDistance
                         }
                     }
                 }
@@ -155,6 +157,7 @@ class YearStatisticsViewModel(
                 _uiState.update {
                     it.copy(
                         trajectoryWorkoutIds = workoutIds.map { pair -> pair.first },
+                        trajectoryDistanceMap = distanceMap,
                         isLoadingTrajectory = false
                     )
                 }

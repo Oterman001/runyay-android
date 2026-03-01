@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import com.oterman.rundemo.data.trajectory.TrajectoryThumbnailCache
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryRenderer
+import com.oterman.rundemo.presentation.components.trajectory.getCacheKeySuffix
+import com.oterman.rundemo.presentation.components.trajectory.getTrackColor
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -65,7 +67,8 @@ class TrajectoryThumbnailManager private constructor(
         workoutId: String,
         trackPoints: List<TrackPoint>?,
         sizePx: Int,
-        isDark: Boolean
+        isDark: Boolean,
+        totalDistanceKm: Double = 0.0
     ): ThumbnailState {
         // 无轨迹数据
         if (trackPoints == null || trackPoints.isEmpty()) {
@@ -78,7 +81,9 @@ class TrajectoryThumbnailManager private constructor(
             return ThumbnailState.NoTrajectory
         }
 
-        val cacheKey = cache.getCacheKey(workoutId, sizePx, isDark)
+        val cacheKey = cache.getCacheKey(workoutId, sizePx, isDark) +
+            getCacheKeySuffix(totalDistanceKm)
+        val trackColorOverride = getTrackColor(totalDistanceKm, isDark)
 
         // 1. 检查缓存
         cache.get(cacheKey)?.let { bitmap ->
@@ -100,7 +105,7 @@ class TrajectoryThumbnailManager private constructor(
         }
 
         // 3. 启动新的生成任务
-        return generateThumbnail(cacheKey, validPoints, sizePx, isDark)
+        return generateThumbnail(cacheKey, validPoints, sizePx, isDark, trackColorOverride)
     }
 
     /**
@@ -110,7 +115,8 @@ class TrajectoryThumbnailManager private constructor(
         cacheKey: String,
         trackPoints: List<TrackPoint>,
         sizePx: Int,
-        isDark: Boolean
+        isDark: Boolean,
+        trackColorOverride: Int? = null
     ): ThumbnailState = coroutineScope {
         // 使用锁确保只有一个任务被创建
         val task = taskMutex.withLock {
@@ -120,7 +126,7 @@ class TrajectoryThumbnailManager private constructor(
             // 创建新任务
             val newTask = async(Dispatchers.Default) {
                 try {
-                    TrajectoryRenderer.render(trackPoints, sizePx, isDark)?.also { bitmap ->
+                    TrajectoryRenderer.render(trackPoints, sizePx, isDark, trackColorOverride)?.also { bitmap ->
                         // 保存到缓存
                         cache.put(cacheKey, bitmap)
                     }

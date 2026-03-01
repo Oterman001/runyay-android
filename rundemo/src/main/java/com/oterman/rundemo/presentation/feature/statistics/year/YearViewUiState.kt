@@ -16,6 +16,7 @@ data class YearViewUiState(
     // Trajectory wall mode
     val showTrajectoryMode: Boolean = false,
     val trajectoryWorkoutIds: List<String> = emptyList(),
+    val trajectoryDistanceMap: Map<String, Double> = emptyMap(),
     val isLoadingTrajectory: Boolean = false,
     val itemsPerRow: Int = 6,
     val showSettingsSheet: Boolean = false,

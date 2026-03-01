@@ -214,7 +214,8 @@ private fun MonthDayCell(
                         trackPoints = trackPoints,
                         size = 32.dp,
                         isFuture = dayData.isFuture,
-                        isIndoor = dayData.isIndoor
+                        isIndoor = dayData.isIndoor,
+                        totalDistanceKm = dayData.totalDistance
                     )
                 } else {
                     // 距离模式：复用共享的 DayHeatmapBox 组件

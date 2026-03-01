@@ -29,7 +29,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,7 +55,6 @@ import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.DataSourceInfo
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.presentation.components.GradientButton
-import com.oterman.rundemo.ui.theme.RunTheme
 import kotlinx.coroutines.delay
 
 /**
@@ -236,7 +234,7 @@ private fun IllustrationSection() {
     ) {
         // App图标
         Image(
-            painter = painterResource(id = R.drawable.run_duck),
+            painter = painterResource(id = R.drawable.run_demo),
             contentDescription = "App",
             modifier = Modifier
                 .size(64.dp)

@@ -171,7 +171,8 @@ fun WeekStatisticsCard(
                                 workoutId = workoutId,
                                 trackPoints = trackPoints,
                                 isFuture = dayData.isFuture,
-                                isIndoor = dayData.isIndoor
+                                isIndoor = dayData.isIndoor,
+                                totalDistanceKm = dayData.totalDistance
                             )
                             Text(
                                 text = dayData.dayOfWeek,

@@ -142,6 +142,7 @@ fun YearStatisticsContent(
                         itemsPerRow = uiState.itemsPerRow,
                         isLoading = uiState.isLoadingTrajectory,
                         repository = repository,
+                        distanceMap = uiState.trajectoryDistanceMap,
                         onWorkoutClick = onWorkoutClick
                     )
                 } else {

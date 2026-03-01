@@ -31,6 +31,7 @@ fun TrajectoryWallGrid(
     itemsPerRow: Int,
     isLoading: Boolean,
     repository: RunDataRepository,
+    distanceMap: Map<String, Double> = emptyMap(),
     onWorkoutClick: (workoutId: String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -94,6 +95,7 @@ fun TrajectoryWallGrid(
                             TrajectoryWallCell(
                                 workoutId = workoutId,
                                 repository = repository,
+                                totalDistanceKm = distanceMap[workoutId] ?: 0.0,
                                 onClick = { onWorkoutClick(workoutId) },
                                 modifier = Modifier.weight(1f)
                             )

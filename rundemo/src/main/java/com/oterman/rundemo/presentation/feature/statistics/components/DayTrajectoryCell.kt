@@ -75,6 +75,7 @@ fun DayTrajectoryCell(
     size: Dp = 48.dp,
     isFuture: Boolean = false,
     isIndoor: Boolean = false,
+    totalDistanceKm: Double = 0.0,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -115,7 +116,8 @@ fun DayTrajectoryCell(
                     workoutId = workoutId,
                     trackPoints = trackPoints,
                     sizePx = sizePx,
-                    isDark = isDark
+                    isDark = isDark,
+                    totalDistanceKm = totalDistanceKm
                 )
             }
             thumbnailState = result

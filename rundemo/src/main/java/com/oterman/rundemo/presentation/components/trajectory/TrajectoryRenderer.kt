@@ -58,7 +58,8 @@ object TrajectoryRenderer {
     fun render(
         trackPoints: List<TrackPoint>,
         size: Int,
-        isDark: Boolean
+        isDark: Boolean,
+        trackColorOverride: Int? = null
     ): Bitmap? {
         // 过滤有效坐标点
         val validPoints = trackPoints.filter { it.isValidCoordinate() }
@@ -104,7 +105,7 @@ object TrajectoryRenderer {
 
         // 3. 绘制轨迹线
         val trackPaint = Paint().apply {
-            color = colors.track
+            color = trackColorOverride ?: colors.track
             style = Paint.Style.STROKE
             strokeWidth = size * TRACK_WIDTH_RATIO
             strokeCap = Paint.Cap.ROUND
@@ -176,7 +177,8 @@ object TrajectoryRenderer {
         height: Int,
         isDark: Boolean,
         trackAlpha: Float = 0.45f,
-        markerAlpha: Float = 0.65f
+        markerAlpha: Float = 0.65f,
+        trackColorOverride: Int? = null
     ): Bitmap? {
         val validPoints = trackPoints.filter { it.isValidCoordinate() }
         if (validPoints.size < 2) return null
@@ -217,7 +219,7 @@ object TrajectoryRenderer {
         }
 
         val trackPaint = Paint().apply {
-            color = applyAlpha(colors.track, trackAlpha)
+            color = applyAlpha(trackColorOverride ?: colors.track, trackAlpha)
             style = Paint.Style.STROKE
             strokeWidth = minDim * TRACK_WIDTH_RATIO
             strokeCap = Paint.Cap.ROUND

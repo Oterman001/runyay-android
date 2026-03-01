@@ -42,7 +42,7 @@ fun AppBrandingSection(
     ) {
         // App 图标
         Image(
-            painter = painterResource(id = R.drawable.run_duck),
+            painter = painterResource(id = R.drawable.run_demo),
             contentDescription = "App Icon",
             modifier = Modifier
                 .size(36.dp)
