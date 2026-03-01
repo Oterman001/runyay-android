@@ -66,6 +66,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.TrainingEff
 import com.oterman.rundemo.presentation.feature.rundetail.components.VO2MaxCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.VerticalOscillationChartCard
 import com.oterman.rundemo.presentation.feature.share.ShareActivity
+import com.oterman.rundemo.util.AppleWatchDeviceUtils
 
 /**
  * 跑步详情页面
@@ -300,7 +301,11 @@ fun RunDetailScreen(
                                 startTime = record.startTime,
                                 endTime = record.endTime,
                                 duration = record.activeDuration,
-                                deviceName = record.deviceVersion,
+                                deviceName = if (record.datasource == "HK" && record.deviceInfo == "Apple Watch") {
+                                    AppleWatchDeviceUtils.getModelName(record.deviceVersion)
+                                } else {
+                                    record.deviceInfo
+                                },
                                 isOutdoor = uiState.isOutdoor,
                                 metrics = uiState.metrics,
                                 avatarUrl = uiState.avatarUrl,

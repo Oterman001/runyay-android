@@ -67,7 +67,7 @@ data class RunRecordEntity(
     val deviceVersion: String? = null,      // 设备型号
     
     // 数据来源
-    val datasource: String? = null,         // 平台编码(GCN/GGB/COROS等)
+    val datasource: String? = null,         // 平台编码(GCN/GGB/COROS/HK等)
     val originId: String? = null,           // 原始活动ID
     
     // 状态标记
