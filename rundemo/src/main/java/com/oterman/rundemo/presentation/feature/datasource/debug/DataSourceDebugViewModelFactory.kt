@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 
 /**
  * DataSourceDebugViewModel工厂类
@@ -20,8 +21,9 @@ class DataSourceDebugViewModelFactory(
         if (modelClass.isAssignableFrom(DataSourceDebugViewModel::class.java)) {
             val dataSourcePreferences = DataSourcePreferences(context)
             val runRecordDao = RunDatabase.getInstance(context).runRecordDao()
+            val syncManager = UnifiedDataSyncManager.getInstance(context)
 
-            return DataSourceDebugViewModel(platform, dataSourcePreferences, runRecordDao) as T
+            return DataSourceDebugViewModel(platform, dataSourcePreferences, runRecordDao, syncManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

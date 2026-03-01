@@ -3,6 +3,7 @@ package com.oterman.rundemo.service.sync
 import com.oterman.rundemo.data.fit.FitFileParser
 import com.oterman.rundemo.data.fit.RunSummaryMapper
 import com.oterman.rundemo.data.fit.RunSummaryMerger
+import com.oterman.rundemo.data.fit.UserPhysiologyConfig
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
@@ -14,6 +15,7 @@ import com.oterman.rundemo.data.repository.RunDataRemoteRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.FileInfo
+import com.oterman.rundemo.data.fit.FitParseResult
 import com.oterman.rundemo.domain.model.ImportedRunSummary
 import com.oterman.rundemo.domain.model.UnifiedFileInfo
 import com.oterman.rundemo.util.RLog
@@ -24,7 +26,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -149,8 +153,34 @@ class UnifiedSyncService(
             return null
         }
 
-        // Step 2: 构建用户生理参数
-        val userConfig = buildUserConfig(parseResult.session?.startTime)
+        // Step 2: 构建用户生理参数（优先使用runSummary中的数据）
+        val serverRunSummary = unifiedFileInfoCache[fileInfo.summaryId]?.runSummary
+        val summaryRestHR = serverRunSummary?.restingHeartRate
+        val summaryVo2Max = serverRunSummary?.vo2Max
+
+        val userConfig: UserPhysiologyConfig
+        val isHKPlatform = targetPlatform == DataSourcePlatform.APPLE_HEALTH
+
+        if (summaryRestHR != null && summaryRestHR > 0) {
+            // runSummary有有效静息心率 → 直接使用，存储到本地，跳过网络请求
+            userConfig = UserPhysiologyConfig(restHR = summaryRestHR.toDouble())
+            RLog.i(logTag, "使用runSummary中的静息心率: restHR=$summaryRestHR")
+
+            // 存储到本地DB
+            saveHealthDataFromSummary(parseResult, summaryRestHR, summaryVo2Max)
+        } else if (isHKPlatform) {
+            // HK平台 → 不触发网络请求，使用默认值
+            RLog.i(logTag, "HK平台跳过健康数据网络请求，使用默认值")
+            userConfig = UserPhysiologyConfig()
+        } else {
+            // 其他情况 → 走原有buildUserConfig流程（可能触发网络请求）
+            userConfig = buildUserConfig(parseResult.session?.startTime)
+        }
+
+        // 同时存储有效的vo2Max（即使restHR无效，vo2Max可能有效）
+        if (summaryVo2Max != null && summaryVo2Max > 0 && (summaryRestHR == null || summaryRestHR <= 0)) {
+            saveHealthDataFromSummary(parseResult, null, summaryVo2Max)
+        }
 
         // Step 3: 使用FitRecordProcessor处理
         val processResult = fitRecordProcessor.processFitData(
@@ -161,9 +191,7 @@ class UnifiedSyncService(
             deviceInfo = fileInfo.deviceName
         ) ?: return null
 
-        // Step 4: 查找缓存的runSummary
-        val unifiedFileInfo = unifiedFileInfoCache[fileInfo.summaryId]
-        val serverRunSummary = unifiedFileInfo?.runSummary
+        // Step 4: 合并或使用本地runSummary
 
         val finalRecord = if (serverRunSummary != null) {
             // 服务端有runSummary → 合并（服务端优先）
@@ -218,6 +246,26 @@ class UnifiedSyncService(
             RLog.e(logTag, "URL下载异常: $fileName", e)
             Result.failure(e)
         }
+    }
+
+    /**
+     * 将runSummary中的健康数据存储到本地DB
+     */
+    private suspend fun saveHealthDataFromSummary(
+        parseResult: FitParseResult,
+        restingHeartRate: Int?,
+        vo2Max: Double?
+    ) {
+        if (healthRepository == null) return
+        val startTimeMs = parseResult.session?.startTime ?: return
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val calendarDate = dateFormat.format(Date(FitFileParser.fitTimestampToMillis(startTimeMs)))
+        healthRepository.saveHealthDataFromSummary(
+            platformCode = targetPlatform.code,
+            calendarDate = calendarDate,
+            restingHeartRate = restingHeartRate,
+            vo2Max = vo2Max
+        )
     }
 
     /**

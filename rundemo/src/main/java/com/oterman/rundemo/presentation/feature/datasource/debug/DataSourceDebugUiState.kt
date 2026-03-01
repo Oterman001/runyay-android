@@ -10,5 +10,6 @@ data class DataSourceDebugUiState(
     val lastSyncTimestamp: String = "",
     val recordCount: Int = 0,
     val isLoading: Boolean = false,
+    val isSyncing: Boolean = false,
     val message: String? = null
 )

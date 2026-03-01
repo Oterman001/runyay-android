@@ -303,6 +303,11 @@ fun AppNavGraph(
                 },
                 onNavigateToLogin = {
                     navController.navigate(Screen.Login.route)
+                },
+                onNavigateToHkDebug = {
+                    navController.navigate(
+                        Screen.DataSourceDebug.createRoute(DataSourcePlatform.APPLE_HEALTH.code)
+                    )
                 }
             )
         }

@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.service.sync.SyncUiState
+import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,14 +20,20 @@ import kotlinx.coroutines.launch
 class DataSourceDebugViewModel(
     private val platform: DataSourcePlatform,
     private val dataSourcePreferences: DataSourcePreferences,
-    private val runRecordDao: RunRecordDao
+    private val runRecordDao: RunRecordDao,
+    private val syncManager: UnifiedDataSyncManager
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "DataSourceDebugVM"
+    }
 
     private val _uiState = MutableStateFlow(DataSourceDebugUiState(platform = platform))
     val uiState: StateFlow<DataSourceDebugUiState> = _uiState.asStateFlow()
 
     init {
         loadData()
+        observeSyncState()
     }
 
     private fun loadData() {
@@ -49,6 +58,41 @@ class DataSourceDebugViewModel(
                 }
             }
         }
+    }
+
+    private fun observeSyncState() {
+        viewModelScope.launch {
+            syncManager.syncUiState.collect { state ->
+                when (state) {
+                    is SyncUiState.Syncing -> {
+                        _uiState.update { it.copy(isSyncing = true) }
+                    }
+                    is SyncUiState.Completed -> {
+                        val importedCount = state.result.totalImportedCount
+                        val message = if (importedCount > 0) {
+                            "同步完成，已导入 $importedCount 条记录"
+                        } else {
+                            "同步完成，没有新记录"
+                        }
+                        _uiState.update { it.copy(isSyncing = false, message = message) }
+                        loadData()
+                    }
+                    is SyncUiState.Idle -> {
+                        _uiState.update { it.copy(isSyncing = false) }
+                    }
+                }
+            }
+        }
+    }
+
+    fun manualSync() {
+        if (syncManager.isAnySyncing()) {
+            _uiState.update { it.copy(message = "正在同步中，请勿重复操作") }
+            return
+        }
+        RLog.i(TAG, "触发手动同步: ${platform.displayName}")
+        _uiState.update { it.copy(isSyncing = true) }
+        syncManager.startManualSyncViaService(platform)
     }
 
     fun clearSyncTimestamp() {

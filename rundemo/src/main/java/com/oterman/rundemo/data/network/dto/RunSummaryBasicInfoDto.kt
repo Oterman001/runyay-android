@@ -55,6 +55,13 @@ data class RunSummaryBasicInfoDto(
     @SerializedName("minHeartRate")
     val minHeartRate: Double? = null,
 
+    // 生理指标（来自服务端runSummary）
+    @SerializedName("vo2Max")
+    val vo2Max: Double? = null,
+
+    @SerializedName("restingHeartRate")
+    val restingHeartRate: Int? = null,
+
     // 功率
     @SerializedName("averagePower")
     val averagePower: Double? = null,

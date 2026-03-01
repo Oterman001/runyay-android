@@ -85,6 +85,28 @@ class HealthRepository(
     }
 
     /**
+     * 从runSummary中直接存储健康数据到本地DB（不触发网络请求）
+     * 用于同步流程中，服务端runSummary已包含健康数据的场景
+     */
+    suspend fun saveHealthDataFromSummary(
+        platformCode: String,
+        calendarDate: String,
+        restingHeartRate: Int?,
+        vo2Max: Double?
+    ) {
+        val userId = preferencesManager.getUserId() ?: return
+        val entity = DailyHealthEntity(
+            userId = userId,
+            platformCode = platformCode,
+            calendarDate = calendarDate,
+            restingHeartRate = restingHeartRate,
+            vo2Max = vo2Max
+        )
+        dailyHealthDao.insertOrReplace(entity)
+        RLog.d(TAG, "从runSummary缓存健康数据: platform=$platformCode, date=$calendarDate, restHR=$restingHeartRate, vo2Max=$vo2Max")
+    }
+
+    /**
      * 获取最新VO2Max及变化量（用于详情页展示）
      * @return Pair(latestVo2Max, delta) delta为当前-上一次，无上一次时为null
      */

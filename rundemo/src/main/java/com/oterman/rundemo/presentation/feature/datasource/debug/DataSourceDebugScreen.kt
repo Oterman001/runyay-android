@@ -1,6 +1,7 @@
 package com.oterman.rundemo.presentation.feature.datasource.debug
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,15 +9,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,9 +36,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.domain.model.DataSourcePlatform
 
 /**
  * 数据源调试界面
@@ -102,6 +108,12 @@ fun DataSourceDebugScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Apple Health 专属信息
+            if (uiState.platform == DataSourcePlatform.APPLE_HEALTH) {
+                InfoCard(label = "数据源类型", value = "Apple Health（iOS 平台）")
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             InfoCard(
                 label = "同步时间戳",
                 value = if (uiState.lastSyncTimestamp.isEmpty()) "未同步" else uiState.lastSyncTimestamp
@@ -112,6 +124,35 @@ fun DataSourceDebugScreen(
             InfoCard(label = "记录数量", value = "${uiState.recordCount} 条")
 
             Spacer(modifier = Modifier.height(32.dp))
+
+            // 手动同步按钮
+            Button(
+                onClick = { viewModel.manualSync() },
+                enabled = !uiState.isSyncing,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                if (uiState.isSyncing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("同步中...")
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Sync,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("手动同步")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // 操作按钮
             Button(
