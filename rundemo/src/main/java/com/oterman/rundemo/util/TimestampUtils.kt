@@ -78,6 +78,16 @@ object TimestampUtils {
     }
 
     /**
+     * 将时间戳转换为8位日期格式（yyyyMMdd），用于高驰回填请求
+     * @param timestamp 任意长度时间戳
+     * @return 8位日期格式
+     */
+    fun toDateFormat(timestamp: String): String {
+        val normalized = normalizeTimestamp(timestamp)
+        return normalized.take(8)
+    }
+
+    /**
      * 将14位服务器返回的dataDate规范化为17位存储格式
      * @param dataDate 服务器返回的14位dataDate
      * @return 17位标准格式时间戳

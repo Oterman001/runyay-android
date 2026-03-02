@@ -586,8 +586,8 @@ class DataSourceRepository(
 
     /**
      * 触发数据回填（高驰）
-     * @param startTime 开始时间（14位格式 yyyyMMddHHmmss）
-     * @param endTime 结束时间（14位格式 yyyyMMddHHmmss）
+     * @param startTime 开始时间（8位格式 yyyyMMdd）
+     * @param endTime 结束时间（8位格式 yyyyMMdd）
      */
     suspend fun triggerCorosBackfill(
         startTime: String,
@@ -597,9 +597,9 @@ class DataSourceRepository(
             val userId = preferencesManager.getUserId()
                 ?: return@withContext Result.failure(Exception("用户未登录"))
 
-            // 确保使用14位格式
-            val apiStartTime = TimestampUtils.toApiFormat(startTime)
-            val apiEndTime = TimestampUtils.toApiFormat(endTime)
+            // 确保使用8位日期格式（高驰要求yyyyMMdd）
+            val apiStartTime = TimestampUtils.toDateFormat(startTime)
+            val apiEndTime = TimestampUtils.toDateFormat(endTime)
 
             RLog.i(TAG, "触发高驰回填, startTime=$apiStartTime, endTime=$apiEndTime")
 
