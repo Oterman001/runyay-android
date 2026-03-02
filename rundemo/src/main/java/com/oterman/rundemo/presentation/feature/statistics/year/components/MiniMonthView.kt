@@ -2,7 +2,6 @@ package com.oterman.rundemo.presentation.feature.statistics.year.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -127,7 +126,7 @@ internal fun MiniDayCell(
     cellSize: Dp,
     cellRadius: Dp
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val fullColorThreshold = 5.0
 
     val backgroundColor = when {

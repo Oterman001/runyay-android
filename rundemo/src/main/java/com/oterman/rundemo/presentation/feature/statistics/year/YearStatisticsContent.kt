@@ -1,6 +1,5 @@
 package com.oterman.rundemo.presentation.feature.statistics.year
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -66,7 +65,7 @@ fun YearStatisticsContent(
         RunDataRepositoryImpl.getInstance(RunDatabase.getInstance(context))
     }
 
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val dividerColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
 
     Column(

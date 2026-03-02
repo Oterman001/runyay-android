@@ -10,7 +10,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.oterman.rundemo.ui.theme.RunTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -183,7 +183,7 @@ private fun ModeCard(
 
 @Composable
 private fun ColorSwatchHeader() {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
 
@@ -263,7 +263,7 @@ private fun ColorSwatchRow(
     label: String,
     rangeText: String? = null
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
 
     Row(
         verticalAlignment = Alignment.CenterVertically,

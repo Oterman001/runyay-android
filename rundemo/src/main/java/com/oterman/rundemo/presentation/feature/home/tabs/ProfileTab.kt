@@ -50,6 +50,7 @@ import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryColorMode
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
 import com.oterman.rundemo.presentation.components.settings.SettingsItem
 import com.oterman.rundemo.presentation.components.settings.UserProfileCard
@@ -75,16 +76,22 @@ fun ProfileTabContent(
     onImportFitFile: (Uri) -> Unit = {},
     onDataSourceManageClick: () -> Unit = {},
     onRunGoalClick: () -> Unit = {},
-    onDebugClick: () -> Unit = {}
+    onDebugClick: () -> Unit = {},
+    onThemeModeChanged: (ThemeMode) -> Unit = {}
 ) {
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
 
+    val preferencesManager = remember { PreferencesManager(context) }
+
     // Trajectory color mode state
     var showTrajectoryColorSheet by remember { mutableStateOf(false) }
-    val preferencesManager = remember { PreferencesManager(context) }
     var currentColorMode by remember { mutableStateOf(preferencesManager.getTrajectoryColorMode()) }
+
+    // Appearance mode state
+    var showAppearanceSheet by remember { mutableStateOf(false) }
+    var currentThemeMode by remember { mutableStateOf(preferencesManager.getThemeMode()) }
     val currentColorModeLabel = when (currentColorMode) {
         TrajectoryColorMode.FIXED -> "固定配色"
         TrajectoryColorMode.DISTANCE_BASED -> "距离分色"
@@ -206,9 +213,14 @@ fun ProfileTabContent(
                     SettingsItem(
                         icon = Icons.Outlined.Palette,
                         title = "外观设置",
+                        subtitle = when (currentThemeMode) {
+                            ThemeMode.AUTO -> "自动"
+                            ThemeMode.LIGHT -> "亮色"
+                            ThemeMode.DARK -> "暗色"
+                        },
                         iconTint = RunTheme.colorScheme.blue,
                         showDivider = true,
-                        onClick = { /* TODO: Navigate to appearance settings page */ }
+                        onClick = { showAppearanceSheet = true }
                     )
                     SettingsItem(
                         icon = Icons.Outlined.Route,
@@ -348,6 +360,19 @@ fun ProfileTabContent(
                     preferencesManager.saveTrajectoryColorMode(mode)
                 },
                 onDismiss = { showTrajectoryColorSheet = false }
+            )
+        }
+
+        // Appearance mode bottom sheet
+        if (showAppearanceSheet) {
+            AppearanceModeSheet(
+                currentMode = currentThemeMode,
+                onModeSelected = { mode ->
+                    currentThemeMode = mode
+                    preferencesManager.saveThemeMode(mode)
+                    onThemeModeChanged(mode)
+                },
+                onDismiss = { showAppearanceSheet = false }
             )
         }
     }

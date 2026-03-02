@@ -48,6 +48,9 @@ object Constants {
         const val KEY_TRAJECTORY_ITEMS_PER_ROW = "trajectory_items_per_row"
         const val KEY_TRAJECTORY_COLOR_MODE = "trajectory_color_mode"
 
+        // Theme mode
+        const val KEY_THEME_MODE = "theme_mode"
+
         // Avatar cache
         const val KEY_CACHED_AVATAR_URL = "cached_avatar_url"
         const val KEY_CACHED_AVATAR_EXPIRATION = "cached_avatar_expiration"

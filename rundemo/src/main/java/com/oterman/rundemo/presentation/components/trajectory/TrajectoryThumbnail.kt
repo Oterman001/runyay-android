@@ -8,7 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.oterman.rundemo.ui.theme.RunTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,7 +70,7 @@ fun TrajectoryThumbnail(
     cornerRadius: Dp = 8.dp
 ) {
     val context = LocalContext.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val density = LocalDensity.current
 
     // 将dp转换为px
@@ -174,7 +174,7 @@ fun BlendedTrajectoryThumbnail(
     trackAlpha: Float = 0.9f,
     markerAlpha: Float = 1.0f
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val density = LocalDensity.current
     val widthPx = with(density) { width.toPx().toInt() }
     val heightPx = with(density) { height.toPx().toInt() }

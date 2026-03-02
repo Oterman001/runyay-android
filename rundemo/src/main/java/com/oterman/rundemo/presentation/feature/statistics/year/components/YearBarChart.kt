@@ -1,7 +1,6 @@
 package com.oterman.rundemo.presentation.feature.statistics.year.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,7 +40,7 @@ fun YearBarChart(
     avgMonthDistance: Double,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val textMeasurer = rememberTextMeasurer()
 
     // Ensure max distance is at least 1 to avoid division by zero

@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.presentation.feature.home.tabs.DataTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.DashboardTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.ProfileTabContent
@@ -61,6 +62,7 @@ fun HomeScreen(
     onNavigateToRunStatistics: (tab: String) -> Unit = {},
     onNavigateToDebug: () -> Unit = {},
     onNavigateToSyncStatus: () -> Unit = {},
+    onThemeModeChanged: (ThemeMode) -> Unit = {},
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(LocalContext.current)
     )
@@ -140,7 +142,8 @@ fun HomeScreen(
                     onImportFitFile = viewModel::importFitFile,
                     onDataSourceManageClick = onNavigateToDataSourceManage,
                     onRunGoalClick = onNavigateToRunGoalSet,
-                    onDebugClick = onNavigateToDebug
+                    onDebugClick = onNavigateToDebug,
+                    onThemeModeChanged = onThemeModeChanged
                 )
             }
         }

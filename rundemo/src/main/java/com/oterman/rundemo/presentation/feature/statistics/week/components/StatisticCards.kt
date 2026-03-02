@@ -1,6 +1,5 @@
 package com.oterman.rundemo.presentation.feature.statistics.week.components
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -100,7 +99,7 @@ private fun SimpleStatCard(
     unit: String,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
 
     StatisticsCard(modifier = modifier) {
         Column(

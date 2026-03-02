@@ -4,9 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.oterman.rundemo.data.local.PreferencesManager
@@ -16,6 +21,7 @@ import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.presentation.navigation.AppNavGraph
 import com.oterman.rundemo.presentation.navigation.Screen
 import com.oterman.rundemo.ui.theme.ComopseDemoHubTheme
+import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,24 +60,32 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         setContent {
-            ComopseDemoHubTheme {
+            var themeMode by remember { mutableStateOf(preferencesManager.getThemeMode()) }
+            val darkTheme = when (themeMode) {
+                ThemeMode.DARK -> true
+                ThemeMode.LIGHT -> false
+                ThemeMode.AUTO -> isSystemInDarkTheme()
+            }
+
+            ComopseDemoHubTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    
+
                     // 根据登录状态决定起始页面
                     val startDestination = if (preferencesManager.isUserLoggedIn()) {
                         Screen.Home.route
                     } else {
                         Screen.Welcome.route
                     }
-                    
+
                     // 设置应用导航图
                     AppNavGraph(
                         navController = navController,
-                        startDestination = startDestination
+                        startDestination = startDestination,
+                        onThemeModeChanged = { themeMode = it }
                     )
                 }
             }

@@ -6,12 +6,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailScreen
 import com.oterman.rundemo.ui.theme.ComopseDemoHubTheme
+import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.util.RLog
 
 /**
@@ -50,7 +53,14 @@ class RunDetailActivity : ComponentActivity() {
         }
 
         setContent {
-            ComopseDemoHubTheme {
+            val preferencesManager = PreferencesManager(this)
+            val darkTheme = when (preferencesManager.getThemeMode()) {
+                ThemeMode.DARK -> true
+                ThemeMode.LIGHT -> false
+                ThemeMode.AUTO -> isSystemInDarkTheme()
+            }
+
+            ComopseDemoHubTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

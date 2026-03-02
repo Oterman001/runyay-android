@@ -4,7 +4,6 @@ import android.content.Context
 import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -128,7 +127,7 @@ data class TrackColorSet(
  */
 @Composable
 fun getTrackColors(): TrackColorSet {
-    val isDarkTheme = isSystemInDarkTheme()
+    val isDarkTheme = RunTheme.isDark
     return if (isDarkTheme) {
         TrackColorSet(
             track = MapTrackColors.Dark.TRACK,
@@ -165,7 +164,7 @@ fun RunDetailMapSection(
     onCameraChanged: (CameraOptions) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val isDarkTheme = isSystemInDarkTheme()
+    val isDarkTheme = RunTheme.isDark
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val mapHeight = screenHeight * RunDetailLayoutConstants.MapHeightRatio
 
@@ -296,7 +295,7 @@ private fun MapViewComposable(
     onCameraChanged: (CameraOptions) -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val isDarkTheme = isSystemInDarkTheme()
+    val isDarkTheme = RunTheme.isDark
 
     val trackColors by rememberUpdatedState(getTrackColors())
 

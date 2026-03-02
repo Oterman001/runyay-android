@@ -3,7 +3,6 @@ package com.oterman.rundemo.presentation.feature.statistics.total.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,7 +49,7 @@ fun TotalYearBarChart(
     onToggleDisplayMode: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val textMeasurer = rememberTextMeasurer()
 
     // Calculate max value based on display mode

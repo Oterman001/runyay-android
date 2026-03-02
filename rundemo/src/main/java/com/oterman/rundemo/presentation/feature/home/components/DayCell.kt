@@ -2,7 +2,6 @@ package com.oterman.rundemo.presentation.feature.home.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
@@ -73,7 +72,7 @@ fun DayHeatmapBox(
     badgeOffsetX: Dp = 4.dp,
     badgeOffsetY: Dp = (-4).dp
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val cellShape = RoundedCornerShape(cornerRadius)
     val futureBorderColor = RunTheme.colorScheme.dayCellActive.copy(alpha = 0.4f)
 

@@ -1,7 +1,6 @@
 package com.oterman.rundemo.presentation.feature.statistics.month.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,7 +38,7 @@ fun MonthBarChart(
     dailyRecords: List<DayRunData>,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val textMeasurer = rememberTextMeasurer()
 
     // Filter out placeholder cells and get actual day data

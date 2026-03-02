@@ -10,7 +10,10 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
+
+val LocalIsDarkTheme = staticCompositionLocalOf { false }
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -29,6 +32,11 @@ object RunTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalRunColorScheme.current
+
+    val isDark: Boolean
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalIsDarkTheme.current
 }
 
 @Composable
@@ -49,7 +57,10 @@ fun ComopseDemoHubTheme(
 
     val runColorScheme = if (darkTheme) DarkRunColorScheme else LightRunColorScheme
 
-    CompositionLocalProvider(LocalRunColorScheme provides runColorScheme) {
+    CompositionLocalProvider(
+        LocalIsDarkTheme provides darkTheme,
+        LocalRunColorScheme provides runColorScheme
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,

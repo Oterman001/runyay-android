@@ -1,7 +1,6 @@
 package com.oterman.rundemo.presentation.feature.statistics.month.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,7 +37,7 @@ fun MonthDetailTable(
     monthStats: MonthStatistics,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val alternateRowColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF5F5F7)
     val headerBgColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
 

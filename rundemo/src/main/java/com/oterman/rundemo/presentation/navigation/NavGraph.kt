@@ -50,6 +50,7 @@ import com.oterman.rundemo.presentation.feature.debug.DebugScreen
 import com.oterman.rundemo.presentation.feature.debug.allrecords.AllRunRecordsDebugScreen
 import com.oterman.rundemo.presentation.feature.syncstatus.DataSyncStatusScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
+import com.oterman.rundemo.ui.theme.ThemeMode
 
 /**
  * 应用导航图
@@ -58,7 +59,8 @@ import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
-    startDestination: String = Screen.Welcome.route
+    startDestination: String = Screen.Welcome.route,
+    onThemeModeChanged: (ThemeMode) -> Unit = {}
 ) {
     NavHost(
         navController = navController,
@@ -180,6 +182,7 @@ fun AppNavGraph(
                 onNavigateToSyncStatus = {
                     navController.navigate(Screen.DataSyncStatus.route)
                 },
+                onThemeModeChanged = onThemeModeChanged,
                 viewModel = homeViewModel
             )
         }

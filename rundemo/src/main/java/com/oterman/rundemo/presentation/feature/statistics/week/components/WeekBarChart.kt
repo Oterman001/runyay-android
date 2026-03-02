@@ -1,7 +1,6 @@
 package com.oterman.rundemo.presentation.feature.statistics.week.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,7 +38,7 @@ fun WeekBarChart(
     dailyRecords: List<DayRunData>,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val textMeasurer = rememberTextMeasurer()
 
     // Calculate max distance for Y-axis scaling

@@ -1,6 +1,6 @@
 package com.oterman.rundemo.presentation.components
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.oterman.rundemo.ui.theme.RunTheme
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -30,7 +30,7 @@ fun AppCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val cardShape = RoundedCornerShape(10.dp)
 
     Card(

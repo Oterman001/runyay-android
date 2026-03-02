@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.oterman.rundemo.ui.theme.RunTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -47,7 +47,7 @@ fun TrajectoryWallCell(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = RunTheme.isDark
     val thumbnailManager = remember { TrajectoryThumbnailManager.getInstance(context) }
     val colorMode = remember { PreferencesManager(context).getTrajectoryColorMode() }
 
