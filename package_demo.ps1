@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 $ProjectDir  = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ProjectName = "DemoHub"
-$Date        = Get-Date -Format "yyyyMMdd"
+$Date        = Get-Date -Format "yyyyMMddHHmm"
 $CopyName    = "${ProjectName}_${Date}"
 $ParentDir   = Split-Path -Parent $ProjectDir
 $CopyDir     = Join-Path $ParentDir $CopyName

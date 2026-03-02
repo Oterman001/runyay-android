@@ -7,7 +7,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$SCRIPT_DIR"
 PROJECT_NAME="DemoHub"
-DATE=$(date +"%Y%m%d")
+DATE=$(date +"%Y%m%d%H%M")
 COPY_NAME="${PROJECT_NAME}_${DATE}"
 PARENT_DIR="$(dirname "$PROJECT_DIR")"
 COPY_DIR="${PARENT_DIR}/${COPY_NAME}"
