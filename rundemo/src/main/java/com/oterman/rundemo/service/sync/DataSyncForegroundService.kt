@@ -88,7 +88,7 @@ class DataSyncForegroundService : Service() {
         if (platform != null) {
             manager.launchManualSync(platform)
         } else {
-            manager.launchUnifiedSync()
+//            manager.launchUnifiedSync()
         }
 
         // 观察同步状态，同步结束后停止服务

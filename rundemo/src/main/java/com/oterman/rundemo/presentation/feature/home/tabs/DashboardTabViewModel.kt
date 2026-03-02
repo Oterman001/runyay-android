@@ -10,6 +10,7 @@ import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.mock.MockDataProvider
+import com.oterman.rundemo.domain.model.DashboardCardItem
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.DayRunRecordInfo
 import com.oterman.rundemo.domain.model.GoalSettings
@@ -58,6 +59,10 @@ class DashboardTabViewModel(
 
     private val _trajectoryDataMap = MutableStateFlow<Map<String, List<TrackPoint>>>(emptyMap())
     val trajectoryDataMap: StateFlow<Map<String, List<TrackPoint>>> = _trajectoryDataMap.asStateFlow()
+
+    // 仪表盘卡片配置
+    private val _dashboardCards = MutableStateFlow(preferencesManager.getDashboardCardConfig())
+    val dashboardCards: StateFlow<List<DashboardCardItem>> = _dashboardCards.asStateFlow()
 
     // 轨迹点缓存 (workoutId -> TrackPoints)
     private val trackPointsCache = ConcurrentHashMap<String, List<TrackPoint>>()
@@ -157,6 +162,14 @@ class DashboardTabViewModel(
         if (newMode) {
             preloadWeekTrajectories()
         }
+    }
+
+    /**
+     * 保存仪表盘卡片配置
+     */
+    fun saveDashboardCards(cards: List<DashboardCardItem>) {
+        preferencesManager.saveDashboardCardConfig(cards)
+        _dashboardCards.value = cards
     }
 
     /**

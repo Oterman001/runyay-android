@@ -2,6 +2,8 @@ package com.oterman.rundemo.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.oterman.rundemo.domain.model.DashboardCardId
+import com.oterman.rundemo.domain.model.DashboardCardItem
 import com.oterman.rundemo.domain.model.GoalSettings
 import com.oterman.rundemo.domain.model.GoalType
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryColorMode
@@ -340,6 +342,35 @@ class PreferencesManager(context: Context) {
         } catch (e: Exception) {
             TrajectoryColorMode.DISTANCE_BASED
         }
+    }
+
+    // ==================== Dashboard Card Config ====================
+
+    fun saveDashboardCardConfig(cards: List<DashboardCardItem>) {
+        val value = cards.joinToString(",") { "${it.id.name}:${it.visible}" }
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_DASHBOARD_CARD_CONFIG, value).apply()
+    }
+
+    fun getDashboardCardConfig(): List<DashboardCardItem> {
+        val saved = prefs.getString(Constants.PreferenceKeys.KEY_DASHBOARD_CARD_CONFIG, null)
+            ?: return DashboardCardId.entries.map { DashboardCardItem(it) }
+        val savedItems = saved.split(",").mapNotNull { entry ->
+            val parts = entry.split(":")
+            if (parts.size == 2) {
+                try {
+                    val id = DashboardCardId.valueOf(parts[0])
+                    val visible = parts[1].toBoolean()
+                    DashboardCardItem(id, visible)
+                } catch (_: Exception) {
+                    null
+                }
+            } else null
+        }
+        val savedIds = savedItems.map { it.id }.toSet()
+        val newCards = DashboardCardId.entries
+            .filter { it !in savedIds }
+            .map { DashboardCardItem(it) }
+        return savedItems + newCards
     }
 
     // ==================== Theme Mode ====================

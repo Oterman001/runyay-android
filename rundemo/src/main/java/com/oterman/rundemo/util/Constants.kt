@@ -51,6 +51,9 @@ object Constants {
         // Theme mode
         const val KEY_THEME_MODE = "theme_mode"
 
+        // Dashboard card config
+        const val KEY_DASHBOARD_CARD_CONFIG = "dashboard_card_config"
+
         // Avatar cache
         const val KEY_CACHED_AVATAR_URL = "cached_avatar_url"
         const val KEY_CACHED_AVATAR_EXPIRATION = "cached_avatar_expiration"
