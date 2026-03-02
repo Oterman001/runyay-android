@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.oterman.rundemo.domain.model.GoalSettings
 import com.oterman.rundemo.domain.model.GoalType
+import com.oterman.rundemo.presentation.components.trajectory.TrajectoryColorMode
 import com.oterman.rundemo.util.Constants
 import java.util.Calendar
 
@@ -320,6 +321,24 @@ class PreferencesManager(context: Context) {
     fun getTrajectoryItemsPerRow(): Int {
         val saved = prefs.getInt(Constants.PreferenceKeys.KEY_TRAJECTORY_ITEMS_PER_ROW, 6)
         return if (saved in 3..10) saved else 6
+    }
+
+    // ==================== Trajectory Color Mode ====================
+
+    fun saveTrajectoryColorMode(mode: TrajectoryColorMode) {
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_TRAJECTORY_COLOR_MODE, mode.name).apply()
+    }
+
+    fun getTrajectoryColorMode(): TrajectoryColorMode {
+        val saved = prefs.getString(
+            Constants.PreferenceKeys.KEY_TRAJECTORY_COLOR_MODE,
+            TrajectoryColorMode.DISTANCE_BASED.name
+        )
+        return try {
+            TrajectoryColorMode.valueOf(saved ?: TrajectoryColorMode.DISTANCE_BASED.name)
+        } catch (e: Exception) {
+            TrajectoryColorMode.DISTANCE_BASED
+        }
     }
 }
 

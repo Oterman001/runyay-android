@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import android.graphics.Bitmap
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.domain.trajectory.ThumbnailState
 import com.oterman.rundemo.domain.trajectory.TrajectoryThumbnailManager
@@ -82,9 +83,10 @@ fun TrajectoryThumbnail(
 
     // 获取缩略图管理器
     val thumbnailManager = remember { TrajectoryThumbnailManager.getInstance(context) }
+    val colorMode = remember { PreferencesManager(context).getTrajectoryColorMode() }
 
     // 加载缩略图
-    LaunchedEffect(workoutId, trackPoints, isLoading, isDark, sizePx) {
+    LaunchedEffect(workoutId, trackPoints, isLoading, isDark, sizePx, colorMode) {
         if (!isOutdoor) {
             thumbnailState = ThumbnailState.NoTrajectory
             return@LaunchedEffect
@@ -102,7 +104,8 @@ fun TrajectoryThumbnail(
             workoutId = workoutId,
             trackPoints = trackPoints,
             sizePx = sizePx,
-            isDark = isDark
+            isDark = isDark,
+            colorMode = colorMode
         )
     }
 

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.ButtonDefaults
@@ -32,17 +33,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.oterman.rundemo.BuildConfig
+import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.presentation.components.trajectory.TrajectoryColorMode
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
 import com.oterman.rundemo.presentation.components.settings.SettingsItem
@@ -71,9 +77,19 @@ fun ProfileTabContent(
     onRunGoalClick: () -> Unit = {},
     onDebugClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
-    
+
+    // Trajectory color mode state
+    var showTrajectoryColorSheet by remember { mutableStateOf(false) }
+    val preferencesManager = remember { PreferencesManager(context) }
+    var currentColorMode by remember { mutableStateOf(preferencesManager.getTrajectoryColorMode()) }
+    val currentColorModeLabel = when (currentColorMode) {
+        TrajectoryColorMode.FIXED -> "固定配色"
+        TrajectoryColorMode.DISTANCE_BASED -> "距离分色"
+    }
+
     // FIT文件选择器
     val fitFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -191,8 +207,16 @@ fun ProfileTabContent(
                         icon = Icons.Outlined.Palette,
                         title = "外观设置",
                         iconTint = RunTheme.colorScheme.blue,
-                        showDivider = false,
+                        showDivider = true,
                         onClick = { /* TODO: Navigate to appearance settings page */ }
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.Route,
+                        title = "轨迹配色",
+                        subtitle = currentColorModeLabel,
+                        iconTint = RunTheme.colorScheme.blue,
+                        showDivider = false,
+                        onClick = { showTrajectoryColorSheet = true }
                     )
                 }
             }
@@ -313,6 +337,18 @@ fun ProfileTabContent(
             item { Footer() }
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
+        }
+
+        // Trajectory color mode bottom sheet
+        if (showTrajectoryColorSheet) {
+            TrajectoryColorModeSheet(
+                currentMode = currentColorMode,
+                onModeSelected = { mode ->
+                    currentColorMode = mode
+                    preferencesManager.saveTrajectoryColorMode(mode)
+                },
+                onDismiss = { showTrajectoryColorSheet = false }
+            )
         }
     }
 }

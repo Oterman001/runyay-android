@@ -8,9 +8,6 @@ enum class TrajectoryColorMode {
     DISTANCE_BASED  // 基于距离分色
 }
 
-/** 编译期开关 — 切换此值即可全局切换轨迹着色策略 */
-val CURRENT_TRAJECTORY_COLOR_MODE = TrajectoryColorMode.DISTANCE_BASED
-
 /**
  * 距离档位（5 档 × 2 主题）
  *
@@ -72,8 +69,12 @@ fun getDistanceTier(distanceKm: Double): DistanceTier {
  * 获取轨迹线颜色覆盖值
  * @return DISTANCE_BASED 模式返回 Android Color int，FIXED 模式返回 null（走原逻辑）
  */
-fun getTrackColor(distanceKm: Double, isDark: Boolean): Int? {
-    if (CURRENT_TRAJECTORY_COLOR_MODE != TrajectoryColorMode.DISTANCE_BASED) return null
+fun getTrackColor(
+    distanceKm: Double,
+    isDark: Boolean,
+    mode: TrajectoryColorMode = TrajectoryColorMode.DISTANCE_BASED
+): Int? {
+    if (mode != TrajectoryColorMode.DISTANCE_BASED) return null
     return getDistanceTier(distanceKm).trackColor(isDark)
 }
 
@@ -81,7 +82,10 @@ fun getTrackColor(distanceKm: Double, isDark: Boolean): Int? {
  * 获取缓存 key 后缀
  * DISTANCE_BASED 返回 "_t1"~"_t5"，FIXED 返回 ""
  */
-fun getCacheKeySuffix(distanceKm: Double): String {
-    if (CURRENT_TRAJECTORY_COLOR_MODE != TrajectoryColorMode.DISTANCE_BASED) return ""
+fun getCacheKeySuffix(
+    distanceKm: Double,
+    mode: TrajectoryColorMode = TrajectoryColorMode.DISTANCE_BASED
+): String {
+    if (mode != TrajectoryColorMode.DISTANCE_BASED) return ""
     return getDistanceTier(distanceKm).suffix
 }

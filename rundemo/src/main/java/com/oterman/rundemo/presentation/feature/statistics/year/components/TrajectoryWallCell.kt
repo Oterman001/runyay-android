@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.trajectory.TrajectoryThumbnailManager
 
@@ -48,6 +49,7 @@ fun TrajectoryWallCell(
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
     val thumbnailManager = remember { TrajectoryThumbnailManager.getInstance(context) }
+    val colorMode = remember { PreferencesManager(context).getTrajectoryColorMode() }
 
     var bitmap by remember(workoutId, isDark) { mutableStateOf<Bitmap?>(null) }
     var isLoading by remember(workoutId) { mutableStateOf(true) }
@@ -55,7 +57,7 @@ fun TrajectoryWallCell(
 
     val borderColor = MaterialTheme.colorScheme.outlineVariant
 
-    LaunchedEffect(workoutId, isDark, sizePx) {
+    LaunchedEffect(workoutId, isDark, sizePx, colorMode) {
         if (sizePx <= 0) return@LaunchedEffect
         isLoading = true
         try {
@@ -65,7 +67,8 @@ fun TrajectoryWallCell(
                 trackPoints = trackPoints,
                 sizePx = sizePx,
                 isDark = isDark,
-                totalDistanceKm = totalDistanceKm
+                totalDistanceKm = totalDistanceKm,
+                colorMode = colorMode
             )
             bitmap = when (state) {
                 is com.oterman.rundemo.domain.trajectory.ThumbnailState.Cached -> state.bitmap

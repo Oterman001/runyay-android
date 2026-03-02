@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.R
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.domain.trajectory.ThumbnailState
 import com.oterman.rundemo.domain.trajectory.TrajectoryThumbnailManager
 import com.oterman.rundemo.ui.theme.NoDataBg
@@ -100,9 +101,10 @@ fun DayTrajectoryCell(
     val cellShape = RoundedCornerShape(8.dp)
     val futureBorderColor = RunTheme.colorScheme.blue.copy(alpha = 0.4f)
     val bgColor = if (isDark) NoDataBgDark else NoDataBg
-    
+    val colorMode = remember { PreferencesManager(context).getTrajectoryColorMode() }
+
     // 请求缩略图
-    LaunchedEffect(workoutId, trackPoints, isDark, isIndoor) {
+    LaunchedEffect(workoutId, trackPoints, isDark, isIndoor, colorMode) {
         if (isIndoor) {
             thumbnailState = ThumbnailState.NoTrajectory
             return@LaunchedEffect
@@ -117,7 +119,8 @@ fun DayTrajectoryCell(
                     trackPoints = trackPoints,
                     sizePx = sizePx,
                     isDark = isDark,
-                    totalDistanceKm = totalDistanceKm
+                    totalDistanceKm = totalDistanceKm,
+                    colorMode = colorMode
                 )
             }
             thumbnailState = result

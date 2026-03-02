@@ -10,6 +10,18 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
+ * FIXED 模式下的轨迹颜色常量，供 TrajectoryColorModeSheet 展示色块预览
+ */
+object FixedTrackColors {
+    val LIGHT_TRACK = androidx.compose.ui.graphics.Color(0xFFFB7B26)
+    val LIGHT_START = androidx.compose.ui.graphics.Color(0xFF008F00)
+    val LIGHT_END   = androidx.compose.ui.graphics.Color(0xFF941652)
+    val DARK_TRACK  = androidx.compose.ui.graphics.Color(0xFFDDFF04)
+    val DARK_START  = androidx.compose.ui.graphics.Color(0xFF73FA79)
+    val DARK_END    = androidx.compose.ui.graphics.Color(0xFFFF2F92)
+}
+
+/**
  * 轨迹缩略图渲染器
  * 将GPS轨迹点渲染为Bitmap
  * 参考iOS TrajectoryDisplayManager的渲染逻辑

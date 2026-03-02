@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.oterman.rundemo.data.trajectory.TrajectoryThumbnailCache
 import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.presentation.components.trajectory.TrajectoryColorMode
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryRenderer
 import com.oterman.rundemo.presentation.components.trajectory.getCacheKeySuffix
 import com.oterman.rundemo.presentation.components.trajectory.getTrackColor
@@ -68,7 +69,8 @@ class TrajectoryThumbnailManager private constructor(
         trackPoints: List<TrackPoint>?,
         sizePx: Int,
         isDark: Boolean,
-        totalDistanceKm: Double = 0.0
+        totalDistanceKm: Double = 0.0,
+        colorMode: TrajectoryColorMode = TrajectoryColorMode.DISTANCE_BASED
     ): ThumbnailState {
         // 无轨迹数据
         if (trackPoints == null || trackPoints.isEmpty()) {
@@ -82,8 +84,8 @@ class TrajectoryThumbnailManager private constructor(
         }
 
         val cacheKey = cache.getCacheKey(workoutId, sizePx, isDark) +
-            getCacheKeySuffix(totalDistanceKm)
-        val trackColorOverride = getTrackColor(totalDistanceKm, isDark)
+            getCacheKeySuffix(totalDistanceKm, colorMode)
+        val trackColorOverride = getTrackColor(totalDistanceKm, isDark, colorMode)
 
         // 1. 检查缓存
         cache.get(cacheKey)?.let { bitmap ->
