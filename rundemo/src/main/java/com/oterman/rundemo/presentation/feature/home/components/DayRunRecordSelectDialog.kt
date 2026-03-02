@@ -8,13 +8,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -157,14 +163,42 @@ private fun RecordSelectItem(
                 )
             }
 
+            Spacer(modifier = Modifier.width(12.dp))
+
+//            // Duration with icon
+//            Icon(
+//                imageVector = Icons.Outlined.Schedule,
+//                contentDescription = null,
+//                modifier = Modifier.size(14.dp),
+//                tint = SecondaryTextColor
+//            )
+//            Spacer(modifier = Modifier.width(2.dp))
+//            Text(
+//                text = record.duration,
+//                fontSize = 13.sp,
+//                color = SecondaryTextColor
+//            )
+
             Spacer(modifier = Modifier.weight(1f))
 
-            // Duration
-            Text(
-                text = record.duration,
-                fontSize = 14.sp,
-                color = SecondaryTextColor
-            )
+            // Device info with icon
+            if (!record.deviceInfo.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.width(10.dp))
+//                Icon(
+//                    imageVector = Icons.Outlined.Watch,
+//                    contentDescription = null,
+//                    modifier = Modifier.size(14.dp),
+//                    tint = SecondaryTextColor
+//                )
+//                Spacer(modifier = Modifier.width(2.dp))
+                Text(
+                    text = record.deviceInfo,
+                    fontSize = 12.sp,
+                    color = SecondaryTextColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

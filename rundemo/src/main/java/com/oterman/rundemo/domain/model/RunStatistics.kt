@@ -103,7 +103,8 @@ data class DayRunRecordInfo(
     val workoutId: String,
     val distance: Double,           // km
     val duration: String,           // formatted like "45'30\""
-    val startTime: String           // formatted like "06:30"
+    val startTime: String,          // formatted like "06:30"
+    val deviceInfo: String? = null   // device name
 )
 
 /**

@@ -342,7 +342,8 @@ class DashboardTabViewModel(
                     workoutId = record.workoutId,
                     distance = record.totalDistance,
                     duration = formatDuration(record.activeDuration),
-                    startTime = formatTime(record.startTime)
+                    startTime = formatTime(record.startTime),
+                    deviceInfo = record.deviceInfo
                 )
             }
 
