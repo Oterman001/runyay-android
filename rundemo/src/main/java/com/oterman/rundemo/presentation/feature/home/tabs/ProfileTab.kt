@@ -388,7 +388,7 @@ private fun Footer() {
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = "RunDemo·RunYay V1.0.0",
+            text = "RunYay V${BuildConfig.VERSION_NAME}_${BuildConfig.GIT_HASH}_${BuildConfig.BUILD_DATE}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

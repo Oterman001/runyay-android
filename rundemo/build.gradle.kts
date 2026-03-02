@@ -1,3 +1,6 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -17,6 +20,16 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val gitHash = try {
+            val process = Runtime.getRuntime().exec(arrayOf("git", "rev-parse", "--short=6", "HEAD"))
+            process.inputStream.bufferedReader().readLine()?.trim() ?: "unknown"
+        } catch (e: Exception) { "unknown" }
+
+        val buildDate = SimpleDateFormat("yyMMdd").format(Date())
+
+        buildConfigField("String", "GIT_HASH", "\"$gitHash\"")
+        buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
     }
 
     buildTypes {

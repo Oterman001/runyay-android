@@ -2,6 +2,7 @@ package com.oterman.rundemo.util
 
 import android.content.Context
 import android.util.Log
+import com.oterman.rundemo.BuildConfig
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -54,6 +55,8 @@ object RLog {
     private var logDir: File? = null
     private var currentLogFile: File? = null
     private var tagPrefix: String = ""
+    private val versionSuffix: String =
+        "[v${BuildConfig.VERSION_NAME}_${BuildConfig.GIT_HASH}]"
 
     private const val MAX_FILE_SIZE = 5 * 1024 * 1024L // 5MB
     private const val MAX_FILE_COUNT = 5
@@ -114,7 +117,7 @@ object RLog {
      */
     private fun log(priority: Int, tag: String, message: String, throwable: Throwable? = null) {
         val location = getLocation()
-        val fullMessage = "$message $location"
+        val fullMessage = "$message $location $versionSuffix"
         val fullTag = formatTag(tag)
 
         // 输出到 logcat
