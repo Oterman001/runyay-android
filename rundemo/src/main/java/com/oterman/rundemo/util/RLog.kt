@@ -131,7 +131,7 @@ object RLog {
 
         // 写入文件
         if (enableFileLogging) {
-            writeToFile(priorityToString(priority), fullTag, message, location, throwable)
+            writeToFile(priorityToString(priority), fullTag, "$message $versionSuffix", location, throwable)
         }
     }
 
@@ -191,7 +191,7 @@ object RLog {
 
             val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
                 .format(Date())
-            var logEntry = "$timestamp | $level | $tag | $message | $location\n"
+            var logEntry = "$timestamp | $level | $tag | $message \n"
 
             // 如果有异常，追加异常堆栈信息
             if (throwable != null) {
@@ -275,6 +275,16 @@ object RLog {
         Log.WARN -> "W"
         Log.ERROR -> "E"
         else -> "?"
+    }
+
+    /**
+     * 仅写文件，不输出到 logcat
+     * 专为 OkHttp 等第三方日志回调设计，避免重复打印到控制台
+     */
+    fun writeFileOnly(tag: String, message: String) {
+        if (enableFileLogging) {
+            writeToFile("D", formatTag(tag), message, "", null)
+        }
     }
 
     /**

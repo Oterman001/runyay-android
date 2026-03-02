@@ -470,6 +470,9 @@ fun AppNavGraph(
                 },
                 onNavigateToAllRunRecords = {
                     navController.navigate(Screen.AllRunRecords.route)
+                },
+                onNavigateToDataSourceDebug = { platformCode ->
+                    navController.navigate(Screen.DataSourceDebug.createRoute(platformCode))
                 }
             )
         }

@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,8 +34,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,8 +50,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import android.content.Intent
 import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.util.LogExportHelper
+import kotlinx.coroutines.launch
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryColorMode
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.ThemeMode
@@ -82,8 +89,11 @@ fun ProfileTabContent(
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
+    val scope = rememberCoroutineScope()
 
     val preferencesManager = remember { PreferencesManager(context) }
+
+    var isExportingLogs by remember { mutableStateOf(false) }
 
     // Trajectory color mode state
     var showTrajectoryColorSheet by remember { mutableStateOf(false) }
@@ -268,9 +278,21 @@ fun ProfileTabContent(
                 SettingsCard {
                     SettingsItem(
                         icon = Icons.Outlined.Email,
-                        title = "联系我们",
+                        title = "发送日志",
+                        subtitle = if (isExportingLogs) "日志导出中..." else null,
                         iconTint = RunTheme.colorScheme.blue,
-                        onClick = { /* TODO: Navigate to contact us page */ }
+                        onClick = {
+                            if (!isExportingLogs) {
+                                isExportingLogs = true
+                                scope.launch {
+                                    val intent = LogExportHelper.exportLogs(context)
+                                    isExportingLogs = false
+                                    intent?.let {
+                                        context.startActivity(Intent.createChooser(it, "分享日志"))
+                                    }
+                                }
+                            }
+                        }
                     )
                     SettingsItem(
                         icon = Icons.AutoMirrored.Outlined.HelpOutline,
@@ -346,7 +368,7 @@ fun ProfileTabContent(
 //            }
 
             // Footer
-            item { Footer() }
+            item { Footer(onDebugClick = onDebugClick) }
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
@@ -379,19 +401,33 @@ fun ProfileTabContent(
 }
 
 /**
- * Footer section with app version and tagline
+ * Footer section with app version and tagline.
+ * Tapping the version text 5 times in quick succession (within 2s) opens the debug screen.
  */
 @Composable
-private fun Footer() {
+private fun Footer(onDebugClick: () -> Unit = {}) {
+    var clickCount by remember { mutableIntStateOf(0) }
+    var lastClickTime by remember { mutableLongStateOf(0L) }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = "RunYay V${BuildConfig.VERSION_NAME}_${BuildConfig.GIT_HASH}_${BuildConfig.BUILD_DATE}",
+            text = "RunYay v${BuildConfig.VERSION_NAME}_${BuildConfig.GIT_HASH}_${BuildConfig.BUILD_DATE}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.clickable {
+                val now = System.currentTimeMillis()
+                if (now - lastClickTime > 2000L) clickCount = 0
+                lastClickTime = now
+                clickCount++
+                if (clickCount >= 5) {
+                    clickCount = 0
+                    onDebugClick()
+                }
+            }
         )
     }
 }

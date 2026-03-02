@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.InsertDriveFile
@@ -45,6 +46,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
 import com.oterman.rundemo.presentation.components.settings.SettingsItem
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences
@@ -58,6 +60,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPrefe
 fun DebugScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAllRunRecords: () -> Unit = {},
+    onNavigateToDataSourceDebug: (platformCode: String) -> Unit = {},
     viewModel: DebugViewModel = viewModel(
         factory = DebugViewModelFactory(LocalContext.current)
     )
@@ -183,8 +186,8 @@ fun DebugScreen(
                 }
             }
 
-            // 文件导出
-            if (uiState.assetFiles.isNotEmpty()) {
+            // 文件导出（仅 Debug 构建可见）
+            if (BuildConfig.DEBUG && uiState.assetFiles.isNotEmpty()) {
                 item { Spacer(modifier = Modifier.height(16.dp)) }
 
                 item {
@@ -206,6 +209,47 @@ fun DebugScreen(
                             onClick = { showAssetFileDialog = true }
                         )
                     }
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+
+            // 数据源平台调试
+            item {
+                Text(
+                    text = "数据源调试",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+            }
+
+            item {
+                SettingsCard {
+                    SettingsItem(
+                        icon = Icons.Outlined.BugReport,
+                        title = "佳明(中国)",
+                        showDivider = true,
+                        onClick = { onNavigateToDataSourceDebug("GCN") }
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.BugReport,
+                        title = "佳明(国际)",
+                        showDivider = true,
+                        onClick = { onNavigateToDataSourceDebug("GGB") }
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.BugReport,
+                        title = "COROS 高驰",
+                        showDivider = true,
+                        onClick = { onNavigateToDataSourceDebug("COROS") }
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.BugReport,
+                        title = "苹果健康",
+                        showDivider = false,
+                        onClick = { onNavigateToDataSourceDebug("HK") }
+                    )
                 }
             }
 

@@ -113,6 +113,9 @@ dependencies {
     // Reorderable LazyColumn (drag-and-drop sorting)
     implementation("sh.calvin.reorderable:reorderable:2.4.0")
 
+    // ZIP with password encryption for log export
+    implementation("net.lingala.zip4j:zip4j:2.11.5")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
