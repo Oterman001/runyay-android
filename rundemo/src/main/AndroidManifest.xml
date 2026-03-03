@@ -21,6 +21,7 @@
     <!-- APK 安装权限 -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+
     <!-- 应用市场包名查询（Android 11+ Package Visibility） -->
     <queries>
         <package android:name="com.heytap.market" />

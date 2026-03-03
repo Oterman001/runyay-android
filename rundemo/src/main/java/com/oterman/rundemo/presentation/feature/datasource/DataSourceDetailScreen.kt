@@ -326,14 +326,14 @@ private fun TopIconsSection(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
                 painter = painterResource(id = R.drawable.run_demo),
-                contentDescription = "RunDemo",
+                contentDescription = "跑鸭",
                 modifier = Modifier
                     .size(80.dp)
                     .clip(RoundedCornerShape(20.dp))
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "RunDemo",
+                text = "跑鸭",
                 style = MaterialTheme.typography.bodySmall
             )
         }

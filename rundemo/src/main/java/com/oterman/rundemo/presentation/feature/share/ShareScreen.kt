@@ -195,7 +195,7 @@ fun ShareScreen(
                                 )
                                 Spacer(modifier = Modifier.height(20.dp))
                                 Text(
-                                    text = "想要什么形式的分享，快来加微信 yayarunya 告诉鸭鸭。",
+                                    text = "想要什么形式的分享，快来加微信 yayarunya 或者 yayarun02 告诉鸭鸭。",
                                     style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant

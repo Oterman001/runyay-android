@@ -20,8 +20,8 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.oterman.rundemo"
-        minSdk = 33
+        applicationId = "cn.yayrun.android"
+        minSdk = 29
         targetSdk = 36
         versionCode = 10002  // 00-00-00
         versionName = "1.0.2"
@@ -46,6 +46,7 @@ android {
 
     buildTypes {
         debug {
+            applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("release")
         }
         release {
