@@ -50,5 +50,8 @@ data class HomeUiState(
     // 数据同步状态
     val isSyncing: Boolean = false,
     val showSyncIcon: Boolean = false,
-    val syncSuccessMessage: String? = null
+    val syncSuccessMessage: String? = null,
+
+    // 通知权限引导
+    val needsNotificationPermission: Boolean = false
 )

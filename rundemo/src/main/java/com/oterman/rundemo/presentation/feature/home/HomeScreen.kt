@@ -33,6 +33,10 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -72,6 +76,14 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // 通知权限请求 launcher
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        // 无论结果如何，同步已在进行，关闭弹窗
+        viewModel.dismissNotificationPermissionRequest()
+    }
 
     // 进入首页时自动触发同步
     LaunchedEffect(Unit) {
@@ -168,6 +180,19 @@ fun HomeScreen(
         FitImportResultDialog(
             result = uiState.fitImportResult,
             onDismiss = viewModel::dismissImportResultDialog
+        )
+    }
+
+    // 通知权限引导弹窗
+    if (uiState.needsNotificationPermission) {
+        NotificationPermissionDialog(
+            onConfirm = {
+                viewModel.dismissNotificationPermissionRequest()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+            onDismiss = viewModel::dismissNotificationPermissionRequest
         )
     }
 }
@@ -301,6 +326,31 @@ private fun FitImportResultDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text("确定")
+            }
+        }
+    )
+}
+
+/**
+ * 通知权限引导弹窗
+ */
+@Composable
+private fun NotificationPermissionDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("开启通知权限") },
+        text = { Text("数据同步时需要在通知栏显示同步进度，帮助您了解同步状态。请开启通知权限以获得更好的体验。") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("去开启")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("暂不开启")
             }
         }
     )

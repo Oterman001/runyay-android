@@ -1,7 +1,11 @@
 package com.oterman.rundemo.presentation.feature.home
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -142,14 +146,35 @@ class HomeViewModel(
 
     /**
      * 启动同步（通过ForegroundService）
+     * Android 13+ 无通知权限时仍正常同步，但会设置标志触发权限引导弹窗
      */
     fun startSyncIfNeeded() {
         if (_uiState.value.isSyncing) {
             RLog.d(TAG, "已在同步中，跳过")
             return
         }
+
+        // 检查通知权限（API 33+）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                RLog.i(TAG, "通知权限未授予，设置权限引导标志")
+                _uiState.update { it.copy(needsNotificationPermission = true) }
+            }
+        }
+
+        // 无论权限状态如何，都正常启动同步
         RLog.i(TAG, "首页触发自动同步")
         DataSyncForegroundService.start(context)
+    }
+
+    /**
+     * 关闭通知权限引导弹窗
+     */
+    fun dismissNotificationPermissionRequest() {
+        _uiState.update { it.copy(needsNotificationPermission = false) }
     }
 
     /**

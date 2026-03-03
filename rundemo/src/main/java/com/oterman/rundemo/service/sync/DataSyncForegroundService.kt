@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.SyncTimeRange
+import com.oterman.rundemo.service.sync.model.SyncNotification
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -73,6 +74,8 @@ class DataSyncForegroundService : Service() {
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var lastNotificationUpdateTime = 0L
+    private val notificationUpdateMinInterval = 500L // 最小更新间隔，避免频繁刷新
 
     override fun onCreate() {
         super.onCreate()
@@ -115,6 +118,24 @@ class DataSyncForegroundService : Service() {
             }
         }
 
+        // 观察同步通知，动态更新通知内容
+        serviceScope.launch {
+            manager.syncNotifications.collect { notification ->
+                when (notification) {
+                    is SyncNotification.RecordImported -> {
+                        updateNotificationContent("${notification.displayText}")
+                    }
+                    is SyncNotification.PlatformProgress -> {
+                        updateNotificationContent("${notification.platform.displayName}: ${notification.current}/${notification.total}")
+                    }
+                    is SyncNotification.PlatformStarted -> {
+                        updateNotificationContent("正在同步 ${notification.platform.displayName}...")
+                    }
+                    else -> { /* 不处理其他通知类型 */ }
+                }
+            }
+        }
+
         return START_NOT_STICKY
     }
 
@@ -124,6 +145,29 @@ class DataSyncForegroundService : Service() {
         super.onDestroy()
         serviceScope.cancel()
         RLog.i(TAG, "服务销毁")
+    }
+
+    /**
+     * 动态更新前台通知内容（带节流）
+     */
+    private fun updateNotificationContent(contentText: String) {
+        val now = System.currentTimeMillis()
+        if (now - lastNotificationUpdateTime < notificationUpdateMinInterval) {
+            return
+        }
+        lastNotificationUpdateTime = now
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("正在同步跑步数据...")
+            .setContentText(contentText)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setOngoing(true)
+            .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     private fun createNotificationChannel() {
