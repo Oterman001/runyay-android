@@ -1,21 +1,62 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Keep public API for VDOT calculators
+-keep class com.oterman.rundemo.data.fit.VdotCalculator {
+    public static double calculateFromDistanceAndTime(double, double, double, java.lang.Double, double, double);
+    public static *** calculateFromSegments(...);
+    public static *** calculateOverallVdot(...);
+    public static double getVDot(double, double);
+}
+-keep class com.oterman.rundemo.data.fit.VdotSpeedCalculator { public *; }
+-keep class com.oterman.rundemo.data.fit.AbilityZoneCalculator { public *; }
+-keep class com.oterman.rundemo.data.fit.AbilityZoneCalculator$* { *; }
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Aggressive obfuscation for internal implementation
+-repackageclasses 'o'
+-allowaccessmodification
+-overloadaggressively
+-optimizationpasses 5
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Remove logging in release builds
+-assumenosideeffects class com.oterman.rundemo.util.RLog {
+    public static void v(...);
+    public static void d(...);
+    public static void i(...);
+    public static void w(...);
+}
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Room entities
+-keep class com.oterman.rundemo.data.local.entity.** { *; }
+
+# Keep Retrofit interfaces
+-keep,allowobfuscation interface com.oterman.rundemo.data.network.api.** { *; }
+
+# Keep data classes used in API requests/responses
+-keep class com.oterman.rundemo.data.network.dto.** { *; }
+
+# Keep FitRecord and related data classes used by FitRecordProcessor
+-keep class com.oterman.rundemo.data.fit.FitRecord { *; }
+-keep class com.oterman.rundemo.data.fit.FitEventConverter$PauseEvent { *; }
+-keep class com.oterman.rundemo.data.fit.FitFileParser { *; }
+-keep class com.oterman.rundemo.data.fit.FitRecordProcessor { public *; }
+
+# Standard Android / Kotlin rules
+-dontwarn kotlin.**
+-dontwarn kotlinx.**
+-keep class kotlin.Metadata { *; }
+-keepclassmembers class kotlin.Metadata {
+    public <methods>;
+}
+
+# Garmin FIT SDK
+-keep class com.garmin.fit.** { *; }
+
+# Gson / Retrofit
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.google.gson.** { *; }
+-keepclassmembers,allowobfuscation class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Mapbox
+-keep class com.mapbox.** { *; }
+-dontwarn com.mapbox.**
