@@ -6,6 +6,7 @@ import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.domain.model.DataSourceInfo
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.ImportedRunSummary
+import com.oterman.rundemo.domain.model.SyncTimeRange
 import com.oterman.rundemo.service.sync.SyncUiState
 import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.service.sync.model.SyncNotification
@@ -75,7 +76,7 @@ class DataSourceDetailViewModel(
                         val message = if (importedCount > 0) {
                             "同步完成，已导入 $importedCount 条记录"
                         } else {
-                            "同步完成，没有新记录"
+                            null  // 导入0条时不弹窗
                         }
                         _uiState.update {
                             it.copy(
@@ -109,6 +110,12 @@ class DataSourceDetailViewModel(
                                 val newRecords = (listOf(newRecord) + state.importedRecords).take(50)
                                 state.copy(importedRecords = newRecords)
                             }
+                        }
+                    }
+                    is SyncNotification.BackfillCompleted -> {
+                        if (notification.platform == platform &&
+                            (platform == DataSourcePlatform.GARMIN_CHINA || platform == DataSourcePlatform.COROS)) {
+                            _uiState.update { it.copy(showBackfillSuccessDialog = true) }
                         }
                     }
                     else -> { /* 其他通知类型由 syncUiState 驱动处理 */ }
@@ -298,6 +305,7 @@ class DataSourceDetailViewModel(
     
     /**
      * 手动同步（通过前台服务启动，退出界面后同步继续在后台执行）
+     * 佳明中国/高驰弹出时间范围选择弹窗，其他平台直接同步
      */
     fun manualSync() {
         // 全局防重复：任意平台在同步中都不允许再次触发
@@ -306,7 +314,23 @@ class DataSourceDetailViewModel(
             return
         }
 
-        RLog.i(TAG, "触发手动同步（前台服务模式）: ${platform.displayName}")
+        when (platform) {
+            DataSourcePlatform.GARMIN_CHINA, DataSourcePlatform.COROS -> {
+                // 佳明中国/高驰弹出时间范围选择弹窗
+                showSyncOptions()
+            }
+            else -> {
+                // 其他平台直接开始同步
+                startSyncWithTimeRange(null)
+            }
+        }
+    }
+
+    /**
+     * 选择时间范围后开始同步
+     */
+    fun startSyncWithTimeRange(timeRange: SyncTimeRange?) {
+        RLog.i(TAG, "触发手动同步（前台服务模式）: ${platform.displayName}, timeRange=${timeRange?.displayName}")
 
         // 重置本次同步的进度数据
         _uiState.update {
@@ -320,9 +344,16 @@ class DataSourceDetailViewModel(
 
         // 通过前台服务启动同步，即使退出界面同步也会持续执行
         // 实际同步运行在 UnifiedDataSyncManager.scope（App级别），不受 ViewModel 生命周期约束
-        syncManager.startManualSyncViaService(platform)
+        syncManager.startManualSyncViaService(platform, timeRange)
     }
     
+    /**
+     * 关闭回填成功弹窗
+     */
+    fun dismissBackfillSuccessDialog() {
+        _uiState.update { it.copy(showBackfillSuccessDialog = false) }
+    }
+
     /**
      * 清除提示消息
      */

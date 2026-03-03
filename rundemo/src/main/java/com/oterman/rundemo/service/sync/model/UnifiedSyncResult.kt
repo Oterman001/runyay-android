@@ -144,6 +144,9 @@ sealed class SyncNotification {
         val error: String
     ) : SyncNotification()
 
+    /** 回填请求成功 */
+    data class BackfillCompleted(val platform: DataSourcePlatform) : SyncNotification()
+
     /** 统一同步完成 */
     data class UnifiedCompleted(val result: UnifiedSyncResult) : SyncNotification()
 

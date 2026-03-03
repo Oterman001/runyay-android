@@ -93,9 +93,9 @@ object SyncConstants {
      */
     fun getMaxDays(platform: DataSourcePlatform): Int {
         return when (platform) {
-            DataSourcePlatform.GARMIN_CHINA -> 365
+            DataSourcePlatform.GARMIN_CHINA -> 3650
             DataSourcePlatform.GARMIN_GLOBAL -> 30  // 国际版限制30天
-            DataSourcePlatform.COROS -> 365
+            DataSourcePlatform.COROS -> 3650
             else -> 30
         }
     }

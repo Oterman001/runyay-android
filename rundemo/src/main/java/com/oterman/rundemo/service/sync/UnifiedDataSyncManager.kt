@@ -232,7 +232,7 @@ class UnifiedDataSyncManager private constructor(
      * 更新syncUiState供HomeViewModel的同步图标感知
      * 如果已在同步中则忽略
      */
-    fun launchManualSync(platform: DataSourcePlatform) {
+    fun launchManualSync(platform: DataSourcePlatform, timeRange: SyncTimeRange? = null) {
         if (isAnySyncing()) {
             RLog.d(TAG, "launchManualSync: 已在同步中，忽略")
             return
@@ -242,7 +242,8 @@ class UnifiedDataSyncManager private constructor(
             _syncUiState.value = SyncUiState.Syncing()
             try {
                 var syncResult: SyncResult? = null
-                triggerManualSync(platform).collect { notification ->
+                val effectiveTimeRange = timeRange ?: SyncConstants.getDefaultTimeRange(platform)
+                triggerManualSync(platform, effectiveTimeRange).collect { notification ->
                     _syncNotifications.tryEmit(notification)
                     when (notification) {
                         is SyncNotification.PlatformCompleted -> {
@@ -278,8 +279,8 @@ class UnifiedDataSyncManager private constructor(
      * 通过前台服务启动单平台手动同步
      * ViewModel无Context，由manager代理启动Service
      */
-    fun startManualSyncViaService(platform: DataSourcePlatform) {
-        DataSyncForegroundService.startForPlatform(context, platform)
+    fun startManualSyncViaService(platform: DataSourcePlatform, timeRange: SyncTimeRange? = null) {
+        DataSyncForegroundService.startForPlatform(context, platform, timeRange)
     }
 
     /**
@@ -517,6 +518,7 @@ class UnifiedDataSyncManager private constructor(
             // 回填失败不影响同步，继续执行
         } else {
            RLog.i(TAG, "回填请求成功，${SyncConstants.BACKFILL_DELAY_MS}ms后开始同步")
+            emit(SyncNotification.BackfillCompleted(platform))
             // 延迟等待回填数据
             delay(SyncConstants.BACKFILL_DELAY_MS)
         }

@@ -21,6 +21,7 @@ data class DataSourceDetailUiState(
     val showUnbindConfirmDialog: Boolean = false,
     val showSyncOptionsDialog: Boolean = false,
     val importedRecords: List<ImportedRunSummary> = emptyList(),
-    val isSyncFinished: Boolean = false
+    val isSyncFinished: Boolean = false,
+    val showBackfillSuccessDialog: Boolean = false
 )
 

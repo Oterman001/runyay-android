@@ -48,7 +48,8 @@ enum class SyncTimeRange(
     TWO_MONTHS("近2月", 60),
     THREE_MONTHS("近3月", 90),
     SIX_MONTHS("近半年", 180),
-    ONE_YEAR("近1年", 365);
+    ONE_YEAR("近1年", 365),
+    ALL("所有数据", 3650);
 
     companion object {
         val allOptions: List<SyncTimeRange> = entries
@@ -70,6 +71,8 @@ enum class SyncTimeRange(
          */
         fun getOptionsForPlatform(platform: DataSourcePlatform): List<SyncTimeRange> {
             return when (platform) {
+                DataSourcePlatform.GARMIN_CHINA -> listOf(ONE_MONTH, THREE_MONTHS, ONE_YEAR, ALL)
+                DataSourcePlatform.COROS -> listOf(ONE_MONTH, THREE_MONTHS, ONE_YEAR, ALL)
                 DataSourcePlatform.GARMIN_GLOBAL -> listOf(ONE_WEEK, ONE_MONTH)  // 国际版限制
                 else -> allOptions
             }

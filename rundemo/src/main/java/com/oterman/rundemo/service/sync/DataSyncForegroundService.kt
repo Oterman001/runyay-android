@@ -11,6 +11,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.domain.model.SyncTimeRange
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,7 @@ class DataSyncForegroundService : Service() {
         private const val CHANNEL_ID = "data_sync_channel"
         private const val NOTIFICATION_ID = 10001
         private const val EXTRA_PLATFORM = "extra_platform"
+        private const val EXTRA_TIME_RANGE = "extra_time_range"
 
         /**
          * 启动统一同步服务（所有已授权平台，如果当前未在同步中）
@@ -47,7 +49,7 @@ class DataSyncForegroundService : Service() {
         /**
          * 启动单平台手动同步服务（如果当前未在同步中）
          */
-        fun startForPlatform(context: Context, platform: DataSourcePlatform) {
+        fun startForPlatform(context: Context, platform: DataSourcePlatform, timeRange: SyncTimeRange? = null) {
             val manager = UnifiedDataSyncManager.getInstance(context)
             if (manager.isAnySyncing()) {
                 RLog.d(TAG, "已在同步中，不重复启动服务")
@@ -56,6 +58,7 @@ class DataSyncForegroundService : Service() {
 
             val intent = Intent(context, DataSyncForegroundService::class.java).apply {
                 putExtra(EXTRA_PLATFORM, platform.code)
+                timeRange?.let { putExtra(EXTRA_TIME_RANGE, it.name) }
             }
             startServiceCompat(context, intent)
         }
@@ -79,14 +82,17 @@ class DataSyncForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val platformCode = intent?.getStringExtra(EXTRA_PLATFORM)
         val platform = platformCode?.let { DataSourcePlatform.fromCode(it) }
+        val timeRange = intent?.getStringExtra(EXTRA_TIME_RANGE)?.let {
+            try { SyncTimeRange.valueOf(it) } catch (_: Exception) { null }
+        }
 
-        RLog.i(TAG, "服务启动, platform=${platform?.displayName ?: "统一同步"}")
+        RLog.i(TAG, "服务启动, platform=${platform?.displayName ?: "统一同步"}, timeRange=${timeRange?.displayName}")
 
         startForeground(NOTIFICATION_ID, createNotification(platform))
 
         val manager = UnifiedDataSyncManager.getInstance(applicationContext)
         if (platform != null) {
-            manager.launchManualSync(platform)
+            manager.launchManualSync(platform, timeRange)
         } else {
 //            manager.launchUnifiedSync()
         }

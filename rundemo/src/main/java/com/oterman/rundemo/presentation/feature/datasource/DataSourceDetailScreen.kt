@@ -50,6 +50,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.R
+import com.oterman.rundemo.domain.model.SyncTimeRange
 
 /**
  * 数据源详情页面
@@ -192,6 +193,29 @@ fun DataSourceDetailScreen(
             text = { Text(message) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearAlertMessage() }) {
+                    Text("确定")
+                }
+            }
+        )
+    }
+
+    // 同步时间范围选择弹窗（佳明中国/高驰）
+    if (uiState.showSyncOptionsDialog) {
+        SyncTimeRangeDialog(
+            platform = uiState.platform,
+            onSelect = { timeRange -> viewModel.startSyncWithTimeRange(timeRange) },
+            onDismiss = { viewModel.dismissSyncOptions() }
+        )
+    }
+
+    // 回填成功提示弹窗
+    if (uiState.showBackfillSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissBackfillSuccessDialog() },
+            title = { Text("提示") },
+            text = { Text("数据请求同步已成功，数据会逐步同步下来，请耐心等待") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissBackfillSuccessDialog() }) {
                     Text("确定")
                 }
             }
@@ -471,5 +495,44 @@ private fun BottomButtonsSection(
             }
         }
     }
+}
+
+/**
+ * 同步时间范围选择弹窗
+ */
+@Composable
+private fun SyncTimeRangeDialog(
+    platform: com.oterman.rundemo.domain.model.DataSourcePlatform,
+    onSelect: (SyncTimeRange) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val options = SyncTimeRange.getOptionsForPlatform(platform)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择同步时间范围") },
+        text = {
+            Column {
+                options.forEach { timeRange ->
+                    TextButton(
+                        onClick = { onSelect(timeRange) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = timeRange.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
 
