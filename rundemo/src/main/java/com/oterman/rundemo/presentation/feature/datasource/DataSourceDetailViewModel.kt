@@ -76,7 +76,11 @@ class DataSourceDetailViewModel(
                         val message = if (importedCount > 0) {
                             "同步完成，已导入 $importedCount 条记录"
                         } else {
-                            null  // 导入0条时不弹窗
+                            if (platform == DataSourcePlatform.GARMIN_GLOBAL) {
+                                "发起请求完成，数据会陆续同步下来哦"
+                            } else {
+                                null
+                            }
                         }
                         _uiState.update {
                             it.copy(

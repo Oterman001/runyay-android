@@ -28,6 +28,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -37,6 +38,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -75,10 +78,13 @@ fun HomeScreen(
         viewModel.startSyncIfNeeded()
     }
 
-    // 同步成功消息 Snackbar
+    // 同步成功消息 Snackbar（展示 1 秒后自动关闭）
     LaunchedEffect(uiState.syncSuccessMessage) {
         uiState.syncSuccessMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
+            val job = launch { snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short) }
+            delay(2000L)
+            job.cancel()
+            snackbarHostState.currentSnackbarData?.dismiss()
             viewModel.dismissSyncSuccess()
         }
     }
