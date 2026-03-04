@@ -81,19 +81,19 @@ object MapTrackColors {
     const val TRACK_WIDTH = 4.0
 
     // 起点/终点标记大小
-    const val START_RADIUS = 8.0
-    const val END_RADIUS = 8.0
-    const val MARKER_STROKE_WIDTH = 2.0
+    const val START_RADIUS = 5.0
+    const val END_RADIUS = 5.0
+    const val MARKER_STROKE_WIDTH = 1.5
 
     // 公里标记大小
-    const val KM_BADGE_RADIUS = 12.0
-    const val KM_BADGE_STROKE_WIDTH = 1.5
+    const val KM_BADGE_RADIUS = 8.0
+    const val KM_BADGE_STROKE_WIDTH = 1.0
 
     // 亮色主题颜色 (匹配iOS)
     object Light {
         const val TRACK = "#FB7B26"           // 橙色轨迹
-        const val START = "#008F00"           // 绿色起点
-        const val END = "#941652"             // 深红色终点
+        const val START = "#34A853"           // 绿色起点
+        const val END = "#EA4335"             // 红色终点
         const val MARKER_STROKE = "#FFFFFF"   // 白色边框
         const val KM_BADGE_BG = "#222638"     // 深蓝灰色背景
         const val KM_BADGE_TEXT = "#FFFFFF"   // 白色文字
@@ -102,8 +102,8 @@ object MapTrackColors {
     // 暗色主题颜色 (匹配iOS)
     object Dark {
         const val TRACK = "#DDFF04"           // 黄绿色轨迹
-        const val START = "#73FA79"           // 亮绿色起点
-        const val END = "#FF2F92"             // 洋红色终点
+        const val START = "#4CAF50"           // 绿色起点
+        const val END = "#F44336"             // 红色终点
         const val MARKER_STROKE = "#FFFFFF"   // 白色边框
         const val KM_BADGE_BG = "#222638"     // 深蓝灰色背景
         const val KM_BADGE_TEXT = "#FFFFFF"   // 白色文字
@@ -554,7 +554,7 @@ private fun addKilometerMarkers(
             style.addLayer(
                 symbolLayer(textLayerId, sourceId) {
                     textField("$kmNumber")
-                    textSize(11.0)
+                    textSize(9.0)
                     textColor(colors.kmBadgeText)
                     textAllowOverlap(true)
                     textIgnorePlacement(true)
