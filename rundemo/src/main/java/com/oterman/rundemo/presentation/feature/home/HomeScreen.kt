@@ -68,6 +68,7 @@ fun HomeScreen(
     onNavigateToRunGoalSet: () -> Unit = {},
     onNavigateToRunStatistics: (tab: String) -> Unit = {},
     onNavigateToDebug: () -> Unit = {},
+    onNavigateToContactUs: () -> Unit = {},
     onNavigateToSyncStatus: () -> Unit = {},
     onThemeModeChanged: (ThemeMode) -> Unit = {},
     viewModel: HomeViewModel = viewModel(
@@ -161,6 +162,7 @@ fun HomeScreen(
                     onDataSourceManageClick = onNavigateToDataSourceManage,
                     onRunGoalClick = onNavigateToRunGoalSet,
                     onDebugClick = onNavigateToDebug,
+                    onContactUsClick = onNavigateToContactUs,
                     onThemeModeChanged = onThemeModeChanged
                 )
             }

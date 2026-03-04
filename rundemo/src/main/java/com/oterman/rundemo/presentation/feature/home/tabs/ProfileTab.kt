@@ -38,7 +38,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,11 +49,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import android.content.Intent
 import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.data.local.PreferencesManager
-import com.oterman.rundemo.util.LogExportHelper
-import kotlinx.coroutines.launch
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryColorMode
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.ThemeMode
@@ -84,16 +80,14 @@ fun ProfileTabContent(
     onDataSourceManageClick: () -> Unit = {},
     onRunGoalClick: () -> Unit = {},
     onDebugClick: () -> Unit = {},
+    onContactUsClick: () -> Unit = {},
     onThemeModeChanged: (ThemeMode) -> Unit = {}
 ) {
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
-    val scope = rememberCoroutineScope()
 
     val preferencesManager = remember { PreferencesManager(context) }
-
-    var isExportingLogs by remember { mutableStateOf(false) }
 
     // Trajectory color mode state
     var showTrajectoryColorSheet by remember { mutableStateOf(false) }
@@ -205,46 +199,6 @@ fun ProfileTabContent(
 
             item { Spacer(modifier = Modifier.height(20.dp)) }
 
-            // Settings Group 1: Training Settings
-            item {
-                SettingsCard {
-                    SettingsItem(
-                        icon = Icons.Outlined.Flag,
-                        title = "跑步目标",
-                        iconTint = RunTheme.colorScheme.blue,
-                        onClick = onRunGoalClick
-                    )
-                    SettingsItem(
-                        icon = Icons.Outlined.FavoriteBorder,
-                        title = "心率区间",
-                        iconTint = RunTheme.colorScheme.blue,
-                        onClick = { /* TODO: Navigate to heart rate zone page */ }
-                    )
-                    SettingsItem(
-                        icon = Icons.Outlined.Palette,
-                        title = "外观设置",
-                        subtitle = when (currentThemeMode) {
-                            ThemeMode.AUTO -> "自动"
-                            ThemeMode.LIGHT -> "亮色"
-                            ThemeMode.DARK -> "暗色"
-                        },
-                        iconTint = RunTheme.colorScheme.blue,
-                        showDivider = true,
-                        onClick = { showAppearanceSheet = true }
-                    )
-                    SettingsItem(
-                        icon = Icons.Outlined.Route,
-                        title = "轨迹配色",
-                        subtitle = currentColorModeLabel,
-                        iconTint = RunTheme.colorScheme.blue,
-                        showDivider = false,
-                        onClick = { showTrajectoryColorSheet = true }
-                    )
-                }
-            }
-
-            item { Spacer(modifier = Modifier.height(20.dp)) }
-            
             // Settings Group: Data Import & Sync
             item {
                 SettingsCard {
@@ -273,26 +227,54 @@ fun ProfileTabContent(
 
             item { Spacer(modifier = Modifier.height(20.dp)) }
 
+            // Settings Group 1: Training Settings
+            item {
+                SettingsCard {
+                    SettingsItem(
+                        icon = Icons.Outlined.Flag,
+                        title = "跑步目标",
+                        iconTint = RunTheme.colorScheme.blue,
+                        onClick = onRunGoalClick
+                    )
+//                    SettingsItem(
+//                        icon = Icons.Outlined.FavoriteBorder,
+//                        title = "心率区间",
+//                        iconTint = RunTheme.colorScheme.blue,
+//                        onClick = { /* TODO: Navigate to heart rate zone page */ }
+//                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.Palette,
+                        title = "外观设置",
+                        subtitle = when (currentThemeMode) {
+                            ThemeMode.AUTO -> "自动"
+                            ThemeMode.LIGHT -> "亮色"
+                            ThemeMode.DARK -> "暗色"
+                        },
+                        iconTint = RunTheme.colorScheme.blue,
+                        showDivider = true,
+                        onClick = { showAppearanceSheet = true }
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.Route,
+                        title = "轨迹配色",
+                        subtitle = currentColorModeLabel,
+                        iconTint = RunTheme.colorScheme.blue,
+                        showDivider = false,
+                        onClick = { showTrajectoryColorSheet = true }
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(20.dp)) }
+
             // Settings Group 2: Support
             item {
                 SettingsCard {
                     SettingsItem(
                         icon = Icons.Outlined.Email,
-                        title = "发送日志",
-                        subtitle = if (isExportingLogs) "日志导出中..." else null,
+                        title = "联系我们",
                         iconTint = RunTheme.colorScheme.blue,
-                        onClick = {
-                            if (!isExportingLogs) {
-                                isExportingLogs = true
-                                scope.launch {
-                                    val intent = LogExportHelper.exportLogs(context)
-                                    isExportingLogs = false
-                                    intent?.let {
-                                        context.startActivity(Intent.createChooser(it, "分享日志"))
-                                    }
-                                }
-                            }
-                        }
+                        onClick = onContactUsClick
                     )
                     SettingsItem(
                         icon = Icons.AutoMirrored.Outlined.HelpOutline,

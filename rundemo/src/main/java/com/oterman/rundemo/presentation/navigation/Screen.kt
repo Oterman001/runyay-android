@@ -140,5 +140,17 @@ sealed class Screen(val route: String) {
      * 支持按数据源筛选、多选删除、全选删除
      */
     object AllRunRecords : Screen("all_run_records")
+
+    /**
+     * 联系我们页面
+     * 提供微信、小红书、发送日志等联系方式
+     */
+    object ContactUs : Screen("contact_us")
+
+    /**
+     * 微信公众号二维码页面
+     * 展示公众号二维码，支持一键复制并打开微信
+     */
+    object WeChatQrCode : Screen("wechat_qr_code")
 }
 

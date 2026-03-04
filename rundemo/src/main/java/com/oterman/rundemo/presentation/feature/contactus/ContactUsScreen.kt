@@ -1,0 +1,120 @@
+package com.oterman.rundemo.presentation.feature.contactus
+
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Forum
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.presentation.components.settings.SettingsCard
+import com.oterman.rundemo.presentation.components.settings.SettingsItem
+import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.util.LogExportHelper
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ContactUsScreen(
+    onNavigateBack: () -> Unit = {},
+    onNavigateToWeChat: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isExportingLogs by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "联系我们",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors()
+            )
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+        ) {
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            item {
+                SettingsCard {
+                    SettingsItem(
+                        icon = Icons.Outlined.Forum,
+                        title = "微信",
+                        iconTint = RunTheme.colorScheme.blue,
+                        onClick = onNavigateToWeChat
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.Language,
+                        title = "小红书",
+                        iconTint = RunTheme.colorScheme.blue,
+                        onClick = {
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://www.xiaohongshu.com/user/profile/621b81e5000000001000e9cd")
+                            )
+                            context.startActivity(intent)
+                        }
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.Email,
+                        title = "发送日志",
+                        subtitle = if (isExportingLogs) "日志导出中..." else null,
+                        iconTint = RunTheme.colorScheme.blue,
+                        showDivider = false,
+                        onClick = {
+                            if (!isExportingLogs) {
+                                isExportingLogs = true
+                                scope.launch {
+                                    val intent = LogExportHelper.exportLogs(context)
+                                    isExportingLogs = false
+                                    intent?.let {
+                                        context.startActivity(Intent.createChooser(it, "分享日志"))
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}

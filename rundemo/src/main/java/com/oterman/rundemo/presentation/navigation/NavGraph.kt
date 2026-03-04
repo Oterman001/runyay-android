@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import com.oterman.rundemo.RunDetailActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.presentation.feature.contactus.ContactUsScreen
+import com.oterman.rundemo.presentation.feature.contactus.WeChatQrCodeScreen
 import com.oterman.rundemo.presentation.feature.auth.forgotpassword.ForgotPasswordScreen
 import com.oterman.rundemo.presentation.feature.auth.login.LoginScreen
 import com.oterman.rundemo.presentation.feature.auth.register.RegisterScreen
@@ -178,6 +180,9 @@ fun AppNavGraph(
                 },
                 onNavigateToDebug = {
                     navController.navigate(Screen.Debug.route)
+                },
+                onNavigateToContactUs = {
+                    navController.navigate(Screen.ContactUs.route)
                 },
                 onNavigateToSyncStatus = {
                     navController.navigate(Screen.DataSyncStatus.route)
@@ -489,6 +494,27 @@ fun AppNavGraph(
         // 数据同步状态页面
         composable(Screen.DataSyncStatus.route) {
             DataSyncStatusScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // 联系我们页面
+        composable(Screen.ContactUs.route) {
+            ContactUsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToWeChat = {
+                    navController.navigate(Screen.WeChatQrCode.route)
+                }
+            )
+        }
+
+        // 微信公众号二维码页面
+        composable(Screen.WeChatQrCode.route) {
+            WeChatQrCodeScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
