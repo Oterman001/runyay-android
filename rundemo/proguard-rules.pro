@@ -9,11 +9,12 @@
 -keep class com.oterman.rundemo.data.fit.AbilityZoneCalculator { public *; }
 -keep class com.oterman.rundemo.data.fit.AbilityZoneCalculator$* { *; }
 
-# Aggressive obfuscation for internal implementation
--repackageclasses 'o'
+# Obfuscation settings
+# Note: -repackageclasses and -overloadaggressively removed because they break
+# Retrofit's reflection-based generic type resolution in R8 full mode.
+# R8 repackages library classes (e.g. kotlin.coroutines.Continuation) but fails
+# to update Signature attributes on kept interfaces, causing ClassCastException.
 -allowaccessmodification
--overloadaggressively
--optimizationpasses 5
 
 # Remove logging in release builds
 -assumenosideeffects class com.oterman.rundemo.util.RLog {
