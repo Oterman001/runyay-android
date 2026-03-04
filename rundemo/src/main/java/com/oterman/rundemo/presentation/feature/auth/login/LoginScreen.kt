@@ -56,6 +56,7 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
     onNavigateToForgotPassword: () -> Unit = {},
+    onNavigateToContactUs: () -> Unit = {},
     viewModel: LoginViewModel = viewModel(
         factory = LoginViewModelFactory(LocalContext.current)
     )
@@ -94,6 +95,9 @@ fun LoginScreen(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
+        },
+        bottomBar = {
+            ContactUsPrompt(onNavigateToContactUs = onNavigateToContactUs)
         }
     ) { paddingValues ->
         Column(
@@ -158,9 +162,6 @@ fun LoginScreen(
                 }
             }
 
-            // 与忘记密码保持一定间距
-            Spacer(modifier = Modifier.height(40.dp))
-
             // 注册提示
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -193,6 +194,32 @@ fun LoginScreen(
                 onNavigateToForgotPassword()
             }
         )
+    }
+}
+
+/**
+ * 联系我们提示
+ */
+@Composable
+private fun ContactUsPrompt(
+    onNavigateToContactUs: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "碰到问题？",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        TextButton(onClick = onNavigateToContactUs) {
+            Text(
+                text = "联系我们",
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
     }
 }
 

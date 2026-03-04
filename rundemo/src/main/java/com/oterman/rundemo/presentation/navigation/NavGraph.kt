@@ -98,6 +98,9 @@ fun AppNavGraph(
                 },
                 onNavigateToForgotPassword = {
                     navController.navigate(Screen.ForgotPassword.route)
+                },
+                onNavigateToContactUs = {
+                    navController.navigate(Screen.ContactUs.route)
                 }
             )
         }
@@ -241,6 +244,9 @@ fun AppNavGraph(
                 },
                 onNavigateToPrivacyPolicy = {
                     navController.navigate(Screen.PrivacyPolicy.route)
+                },
+                onNavigateToContactUs = {
+                    navController.navigate(Screen.ContactUs.route)
                 }
             )
         }

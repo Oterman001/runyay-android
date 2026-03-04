@@ -48,6 +48,7 @@ fun RegisterScreen(
     onNavigateToLogin: (String?) -> Unit = {},
     onNavigateToUserTerms: () -> Unit = {},
     onNavigateToPrivacyPolicy: () -> Unit = {},
+    onNavigateToContactUs: () -> Unit = {},
     viewModel: RegisterViewModel = viewModel(
         factory = RegisterViewModelFactory(LocalContext.current)
     )
@@ -86,7 +87,7 @@ fun RegisterScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: 帮助页面 */ }) {
+                    IconButton(onClick = onNavigateToContactUs) {
                         Icon(
                             imageVector = Icons.Default.Help,
                             contentDescription = "帮助"
@@ -100,6 +101,11 @@ fun RegisterScreen(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
+        },
+        bottomBar = {
+            if (uiState.currentStep == RegistrationStep.PHONE_NUMBER) {
+                ContactUsPrompt(onNavigateToContactUs = onNavigateToContactUs)
+            }
         }
     ) { paddingValues ->
         Column(
@@ -209,6 +215,34 @@ private fun LoginPrompt(
         TextButton(onClick = onNavigateToLogin) {
             Text(
                 text = "立即登录",
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+/**
+ * 联系我们提示
+ */
+@Composable
+private fun ContactUsPrompt(
+    onNavigateToContactUs: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "碰到问题？",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        TextButton(onClick = onNavigateToContactUs) {
+            Text(
+                text = "联系我们",
                 color = MaterialTheme.colorScheme.primary
             )
         }
