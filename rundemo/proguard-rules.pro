@@ -27,7 +27,7 @@
 -keep class com.oterman.rundemo.data.local.entity.** { *; }
 
 # Keep Retrofit interfaces
--keep,allowobfuscation interface com.oterman.rundemo.data.network.api.** { *; }
+-keep interface com.oterman.rundemo.data.network.api.** { *; }
 
 # Keep data classes used in API requests/responses
 -keep class com.oterman.rundemo.data.network.dto.** { *; }
@@ -50,7 +50,7 @@
 -keep class com.garmin.fit.** { *; }
 
 # Gson / Retrofit
--keepattributes Signature
+-keepattributes Signature,InnerClasses,EnclosingMethod
 -keepattributes *Annotation*
 -keep class com.google.gson.** { *; }
 -keepclassmembers,allowobfuscation class * {
