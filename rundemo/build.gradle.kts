@@ -40,6 +40,17 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+    flavorDimensions += "channel"
+    productFlavors {
+        create("internal") {
+            dimension = "channel"
+            buildConfigField("String", "UMENG_CHANNEL", "\"dev-internal\"")
+        }
+        create("fir") {
+            dimension = "channel"
+            buildConfigField("String", "UMENG_CHANNEL", "\"fir\"")
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -119,6 +130,13 @@ dependencies {
 
     // ZIP with password encryption for log export
     implementation("net.lingala.zip4j:zip4j:2.11.5")
+
+    // umeng
+//    implementation("com.umeng.umsdk:common:+")
+//    implementation("com.umeng.umsdk:asms:+")
+    implementation("com.umeng.umsdk:common:9.4.7")
+    implementation("com.umeng.umsdk:asms:1.4.0")
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -38,8 +38,7 @@ pluginManagement {
                 password = "swdp"
             }
         }
-
-
+        maven { url = uri("https://repo1.maven.org/maven2/")  }
     }
 }
 
@@ -94,7 +93,7 @@ dependencyResolutionManagement {
                 create<BasicAuthentication>("basic")
             }
         }
-
+        maven { url = uri("https://repo1.maven.org/maven2/")  }
     }
 }
 
