@@ -48,7 +48,7 @@ dependencyResolutionManagement {
 
         google()
         mavenCentral()
-
+        maven { url = uri("https://repo1.maven.org/maven2/")  }
 
         maven {
             //允许使用不安全的maven，gradle7要求必须使用https，内网maven评估不使用https
@@ -93,7 +93,7 @@ dependencyResolutionManagement {
                 create<BasicAuthentication>("basic")
             }
         }
-        maven { url = uri("https://repo1.maven.org/maven2/")  }
+
     }
 }
 
