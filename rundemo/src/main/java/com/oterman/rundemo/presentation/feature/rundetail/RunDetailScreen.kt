@@ -56,6 +56,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.HeartRateCh
 import com.oterman.rundemo.presentation.feature.rundetail.components.PaceChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.PowerChartCard
 import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.MapView
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailHeaderDataCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailMapSection
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailSegmentTable
@@ -66,6 +67,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.TrainingEff
 import com.oterman.rundemo.presentation.feature.rundetail.components.VO2MaxCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.VerticalOscillationChartCard
 import com.oterman.rundemo.presentation.feature.share.ShareActivity
+import com.oterman.rundemo.presentation.feature.share.ShareDataCache
 import com.oterman.rundemo.util.AppleWatchDeviceUtils
 
 /**
@@ -102,6 +104,9 @@ fun RunDetailScreen(
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // 持有 MapView 引用用于分享时截图
+    var mapViewRef by remember { mutableStateOf<MapView?>(null) }
 
     // SAF文件选择器 - 使用 */* 确保文件名后缀被保留
     val createDocumentLauncher = rememberLauncherForActivityResult(
@@ -175,28 +180,39 @@ fun RunDetailScreen(
                 },
                 actions = {
                     // 分享按钮
-//                    if (uiState.record != null && !uiState.isLoading) {
-//                        IconButton(
-//                            onClick = { viewModel.prepareShareData() },
-//                            enabled = !uiState.isPreparingShare
-//                        ) {
-//                            if (uiState.isPreparingShare) {
-//                                CircularProgressIndicator(
-//                                    modifier = Modifier.size(20.dp),
-//                                    strokeWidth = 2.dp,
-//                                    color = if (scrollOffset < 0.5f) Color.White
-//                                            else MaterialTheme.colorScheme.onSurface
-//                                )
-//                            } else {
-//                                Icon(
-//                                    imageVector = Icons.Default.Share,
-//                                    contentDescription = "分享",
-//                                    tint = if (scrollOffset < 0.5f) Color.White
-//                                           else MaterialTheme.colorScheme.onSurface
-//                                )
-//                            }
-//                        }
-//                    }
+                    if (uiState.record != null && !uiState.isLoading) {
+                        IconButton(
+                            onClick = {
+                                val mv = mapViewRef
+                                if (mv != null && uiState.isOutdoor) {
+                                    viewModel.setPreparingShare(true)
+                                    mv.snapshot { bitmap ->
+                                        bitmap?.let { ShareDataCache.putMapSnapshot(it) }
+                                        viewModel.prepareShareData()
+                                    }
+                                } else {
+                                    viewModel.prepareShareData()
+                                }
+                            },
+                            enabled = !uiState.isPreparingShare
+                        ) {
+                            if (uiState.isPreparingShare) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = if (scrollOffset < 0.5f) Color.White
+                                            else MaterialTheme.colorScheme.onSurface
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "分享",
+                                    tint = if (scrollOffset < 0.5f) Color.White
+                                           else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
                     // 下载按钮（仅当可以下载时显示）
                     if (uiState.canDownloadFit) {
                         IconButton(
@@ -278,7 +294,8 @@ fun RunDetailScreen(
                                     trackPoints = uiState.trackPoints,
                                     isOutdoor = uiState.isOutdoor,
                                     savedCameraOptions = savedCameraOptions,
-                                    onCameraChanged = { savedCameraOptions = it }
+                                    onCameraChanged = { savedCameraOptions = it },
+                                    onMapViewReady = { mapViewRef = it }
                                 )
 
                                 // 天气覆盖层（左下角）

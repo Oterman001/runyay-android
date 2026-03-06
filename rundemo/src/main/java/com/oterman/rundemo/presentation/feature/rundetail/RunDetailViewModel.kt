@@ -441,14 +441,17 @@ class RunDetailViewModel(
     }
 
     /**
+     * 设置分享准备中状态（截图进行时由 Screen 调用）
+     */
+    fun setPreparingShare(preparing: Boolean) {
+        _uiState.value = _uiState.value.copy(isPreparingShare = preparing)
+    }
+
+    /**
      * 准备分享数据
-     * 设置 shareDataReady 标志，由 Screen 层监听后跳转 ShareActivity
+     * 地图截图由 Screen 层在调用前完成并存入 ShareDataCache
      */
     fun prepareShareData() {
-        _uiState.value = _uiState.value.copy(isPreparingShare = true)
-
-        // 暂不做地图截图（Mapbox Snapshotter 需要额外配置）
-        // 直接标记准备完成，ShareActivity 会从 Room 重新加载数据
         _uiState.value = _uiState.value.copy(
             isPreparingShare = false,
             shareDataReady = true

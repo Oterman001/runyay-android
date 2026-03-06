@@ -161,7 +161,8 @@ fun RunDetailMapSection(
     isOutdoor: Boolean,
     modifier: Modifier = Modifier,
     savedCameraOptions: CameraOptions? = null,
-    onCameraChanged: (CameraOptions) -> Unit = {}
+    onCameraChanged: (CameraOptions) -> Unit = {},
+    onMapViewReady: (MapView) -> Unit = {}
 ) {
     val context = LocalContext.current
     val isDarkTheme = RunTheme.isDark
@@ -186,7 +187,8 @@ fun RunDetailMapSection(
                 showKmMarkers = showKmMarkers,
                 kmMarkerInterval = kmMarkerInterval,
                 savedCameraOptions = savedCameraOptions,
-                onCameraChanged = onCameraChanged
+                onCameraChanged = onCameraChanged,
+                onMapViewReady = onMapViewReady
             )
 
             // 底部渐变遮罩
@@ -292,7 +294,8 @@ private fun MapViewComposable(
     showKmMarkers: Boolean,
     kmMarkerInterval: Int,
     savedCameraOptions: CameraOptions? = null,
-    onCameraChanged: (CameraOptions) -> Unit = {}
+    onCameraChanged: (CameraOptions) -> Unit = {},
+    onMapViewReady: (MapView) -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val isDarkTheme = RunTheme.isDark
@@ -323,6 +326,9 @@ private fun MapViewComposable(
             }
         }
     }
+
+    // 将 MapView 引用传递给调用方
+    onMapViewReady(mapView)
 
     // 追踪参数变化，避免滚动recomposition时无条件重置地图
     var lastStyleUri by remember { mutableStateOf(styleUri) }

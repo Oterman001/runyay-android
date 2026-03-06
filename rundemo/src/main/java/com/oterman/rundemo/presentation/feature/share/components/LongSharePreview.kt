@@ -28,6 +28,7 @@ import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.ChartDataPoint
 import com.oterman.rundemo.domain.model.MergedRunSegment
 import com.oterman.rundemo.domain.model.RunSegment
+import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
 import com.oterman.rundemo.presentation.feature.rundetail.components.AltitudeChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.CadenceChartCard
@@ -73,6 +74,7 @@ fun LongSharePreview(
     showDate: Boolean,
     deviceName: String?,
     brandText: String,
+    avatarUrl: String? = null,
     modifier: Modifier = Modifier
 ) {
     fun isCardEnabled(type: ShareCardType): Boolean = enabledCards[type] != false
@@ -115,15 +117,16 @@ fun LongSharePreview(
                 deviceName = deviceName ?: record.deviceVersion,
                 isOutdoor = mapSnapshot != null,
                 metrics = metrics,
+                avatarUrl = avatarUrl,
                 inclusiveLevel = record.inclusiveLevel
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 3. VO2Max
         if (isCardEnabled(ShareCardType.VO2MAX) && vo2Max != null && vo2Max > 0) {
             VO2MaxCard(vo2Max = vo2Max, previousVo2Max = previousVo2Max)
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 4. 训练效果
@@ -133,13 +136,13 @@ fun LongSharePreview(
                 aerobicEffect = record.trainingEffect,
                 anaerobicEffect = record.anaerobicTrainingEffect
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 5. 公里分段
         if (isCardEnabled(ShareCardType.KM_SEGMENTS) && segments.isNotEmpty()) {
             RunDetailSegmentTable(segments = segments)
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 6. 训练分段
@@ -150,7 +153,7 @@ fun LongSharePreview(
                 expandedSegmentIds = emptySet(),
                 onToggleExpansion = {}
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 7. 心率图表
@@ -163,7 +166,7 @@ fun LongSharePreview(
                 maxHeartRate = record.maxHeartRate,
                 minHeartRate = record.minHeartRate
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 8. 配速图表
@@ -174,7 +177,7 @@ fun LongSharePreview(
                 avgSpeed = record.averageSpeed,
                 maxSpeed = record.maxSpeed
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 9. 海拔图表
@@ -183,7 +186,7 @@ fun LongSharePreview(
                 altitudeSeries = altitudeSeries,
                 elevationAscended = record.elevationAscended
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 10. 步幅图表
@@ -192,7 +195,7 @@ fun LongSharePreview(
                 strideLengthSeries = strideLengthSeries,
                 avgStrideLength = record.averageStrideLength
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 11. 步频图表
@@ -201,7 +204,7 @@ fun LongSharePreview(
                 cadenceSeries = cadenceSeries,
                 avgCadence = record.averageCadence
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 12. 触地时间图表
@@ -210,7 +213,7 @@ fun LongSharePreview(
                 contactTimeSeries = contactTimeSeries,
                 avgContactTime = record.averageContactTime
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 13. 垂直振幅图表
@@ -219,7 +222,7 @@ fun LongSharePreview(
                 verticalOscillationSeries = verticalOscillationSeries,
                 avgVerticalOscillation = record.averageVerticalOscillation
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 14. 功率图表
@@ -228,7 +231,7 @@ fun LongSharePreview(
                 powerSeries = powerSeries,
                 avgPower = record.averagePower
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
         // 底部分隔线 + 品牌区

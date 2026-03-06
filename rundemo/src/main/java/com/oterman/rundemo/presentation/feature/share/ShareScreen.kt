@@ -67,7 +67,16 @@ fun ShareScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("分享跑步") },
+                title = {
+                    if (uiState.record != null) {
+                        ShareModeSelector(
+                            currentMode = uiState.shareMode,
+                            onModeSelected = { viewModel.setShareMode(it) }
+                        )
+                    } else {
+                        Text("分享跑步")
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -116,18 +125,12 @@ fun ShareScreen(
 
                 uiState.record != null -> {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        // 模式切换
-                        ShareModeSelector(
-                            currentMode = uiState.shareMode,
-                            onModeSelected = { viewModel.setShareMode(it) }
-                        )
-
                         // 预览区域（可滚动）
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .padding(vertical = 8.dp)
                         ) {
                             when (uiState.shareMode) {
                                 ShareMode.SHORT -> {
@@ -138,7 +141,8 @@ fun ShareScreen(
                                         showDate = uiState.showDate,
                                         deviceName = uiState.customDeviceName
                                             ?: uiState.record!!.deviceVersion,
-                                        brandText = uiState.brandText
+                                        brandText = uiState.brandText,
+                                        avatarUrl = uiState.avatarUrl
                                     )
                                 }
 
@@ -167,7 +171,8 @@ fun ShareScreen(
                                         showDate = uiState.showDate,
                                         deviceName = uiState.customDeviceName
                                             ?: uiState.record!!.deviceVersion,
-                                        brandText = uiState.brandText
+                                        brandText = uiState.brandText,
+                                        avatarUrl = uiState.avatarUrl
                                     )
                                 }
                             }
@@ -217,7 +222,7 @@ fun ShareScreen(
 }
 
 /**
- * 模式选择器（短图/长图切换）
+ * 模式选择器（短图/长图切换），用于 TopAppBar title 区域
  */
 @Composable
 private fun ShareModeSelector(
@@ -226,10 +231,8 @@ private fun ShareModeSelector(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.Center
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Start
     ) {
         ShareMode.entries.forEach { mode ->
             FilterChip(

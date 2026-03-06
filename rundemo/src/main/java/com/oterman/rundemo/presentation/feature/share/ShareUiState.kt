@@ -99,6 +99,9 @@ data class ShareUiState(
     // 地图截图
     val mapSnapshot: Bitmap? = null,
 
+    // 头像
+    val avatarUrl: String? = null,
+
     // 短图编辑设置
     val selectedMetrics: List<ShareMetricType> = defaultShortMetrics,
     val availableMetrics: List<ShareMetricType> = emptyList(),

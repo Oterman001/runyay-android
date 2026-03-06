@@ -1,29 +1,46 @@
 package com.oterman.rundemo.presentation.feature.share
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.graphics.Bitmap
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.FileProvider
 import com.oterman.rundemo.ui.theme.ComopseDemoHubTheme
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * Compose 离屏渲染为 Bitmap + 系统分享调用
  */
 object ShareImageGenerator {
 
+    private const val TAG = "ShareImageGenerator"
+
+    private fun unwrapActivity(context: Context): Activity {
+        var ctx = context
+        while (ctx is ContextWrapper) {
+            if (ctx is Activity) return ctx
+            ctx = ctx.baseContext
+        }
+        throw IllegalArgumentException("Context must be backed by an Activity")
+    }
+
     /**
      * 将 Composable 内容离屏渲染为 Bitmap
      *
-     * @param context Activity context
+     * 通过将 ComposeView 临时附加到 Activity 窗口获取 WindowRecomposer，
+     * 完成 Composition、measure、layout、draw 后移除并返回 Bitmap。
+     *
+     * @param context Activity context（或其 ContextWrapper）
      * @param widthPx 渲染宽度（像素）
      * @param content 要渲染的 Composable
      * @return 渲染后的 Bitmap
@@ -33,43 +50,74 @@ object ShareImageGenerator {
         widthPx: Int,
         content: @Composable () -> Unit
     ): Bitmap = suspendCancellableCoroutine { cont ->
-        val composeView = ComposeView(context).apply {
-            setContent {
-                ComopseDemoHubTheme(darkTheme = false, dynamicColor = false) {
-                    content()
+        try {
+            val activity = unwrapActivity(context)
+            val rootView = activity.window.decorView
+                .findViewById<ViewGroup>(android.R.id.content)
+
+            val composeView = ComposeView(activity).apply {
+                setContent {
+                    ComopseDemoHubTheme(darkTheme = false, dynamicColor = false) {
+                        content()
+                    }
                 }
             }
+
+            // 临时添加到窗口（零尺寸，不影响现有布局），让 Compose 获取 Recomposer
+            rootView.addView(
+                composeView,
+                ViewGroup.LayoutParams(0, 0)
+            )
+
+            cont.invokeOnCancellation {
+                rootView.removeView(composeView)
+            }
+
+            composeView.post {
+                try {
+                    val widthSpec = View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY)
+                    val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                    composeView.measure(widthSpec, heightSpec)
+                    composeView.layout(0, 0, composeView.measuredWidth, composeView.measuredHeight)
+
+                    // 延迟等待 Composition 完成渲染
+                    composeView.postDelayed({
+                        try {
+                            val w = composeView.measuredWidth
+                            val h = composeView.measuredHeight
+                            if (w <= 0 || h <= 0) {
+                                rootView.removeView(composeView)
+                                if (cont.isActive) {
+                                    cont.resumeWithException(
+                                        IllegalStateException("ComposeView measured to ${w}x${h}")
+                                    )
+                                }
+                                return@postDelayed
+                            }
+
+                            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                            val canvas = android.graphics.Canvas(bitmap)
+                            composeView.draw(canvas)
+
+                            rootView.removeView(composeView)
+
+                            if (cont.isActive) {
+                                cont.resume(bitmap)
+                            }
+                        } catch (e: Exception) {
+                            rootView.removeView(composeView)
+                            if (cont.isActive) cont.resumeWithException(e)
+                        }
+                    }, 300)
+                } catch (e: Exception) {
+                    rootView.removeView(composeView)
+                    if (cont.isActive) cont.resumeWithException(e)
+                }
+            }
+        } catch (e: Exception) {
+            RLog.e(TAG, "renderToBitmap failed", e)
+            if (cont.isActive) cont.resumeWithException(e)
         }
-
-        // 使用固定宽度、wrap_content 高度进行 measure
-        val widthSpec = View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY)
-        val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-
-        composeView.measure(widthSpec, heightSpec)
-        composeView.layout(0, 0, composeView.measuredWidth, composeView.measuredHeight)
-
-        // 等待 Compose 绘制完成
-        composeView.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
-            override fun onPreDraw(): Boolean {
-                composeView.viewTreeObserver.removeOnPreDrawListener(this)
-
-                val bitmap = Bitmap.createBitmap(
-                    composeView.measuredWidth,
-                    composeView.measuredHeight,
-                    Bitmap.Config.ARGB_8888
-                )
-                val canvas = android.graphics.Canvas(bitmap)
-                composeView.draw(canvas)
-
-                if (cont.isActive) {
-                    cont.resume(bitmap)
-                }
-                return true
-            }
-        })
-
-        // 触发一次绘制
-        composeView.invalidate()
     }
 
     /**

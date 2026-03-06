@@ -37,7 +37,9 @@ class ShareViewModel(
     private val workoutId: String,
     private val repository: RunDataRepository,
     private val sharePreferences: SharePreferences,
-    private val healthRepository: HealthRepository
+    private val healthRepository: HealthRepository,
+    private val avatarManager: com.oterman.rundemo.data.repository.AvatarManager,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
     companion object {
@@ -50,6 +52,20 @@ class ShareViewModel(
     init {
         loadSavedPreferences()
         loadData()
+        loadAvatar()
+    }
+
+    private fun loadAvatar() {
+        val userId = preferencesManager.getUserId() ?: return
+        if (!preferencesManager.isUserLoggedIn()) return
+
+        viewModelScope.launch {
+            avatarManager.getAvatarUrl(userId).onSuccess { url ->
+                _uiState.value = _uiState.value.copy(avatarUrl = url)
+            }.onFailure {
+                RLog.e(TAG, "头像加载失败: ${it.message}")
+            }
+        }
     }
 
     /**
@@ -251,7 +267,8 @@ class ShareViewModel(
                                 selectedMetrics = state.selectedMetrics,
                                 showDate = state.showDate,
                                 deviceName = state.customDeviceName ?: record.deviceVersion,
-                                brandText = state.brandText
+                                brandText = state.brandText,
+                                avatarUrl = state.avatarUrl
                             )
                         }
                         ShareMode.LONG -> ShareImageGenerator.renderToBitmap(context, widthPx) {
@@ -278,7 +295,8 @@ class ShareViewModel(
                                 previousVo2Max = state.previousVo2Max,
                                 showDate = state.showDate,
                                 deviceName = state.customDeviceName ?: record.deviceVersion,
-                                brandText = state.brandText
+                                brandText = state.brandText,
+                                avatarUrl = state.avatarUrl
                             )
                         }
                     }
@@ -482,7 +500,8 @@ class ShareViewModelFactory(
             val dataSourcePreferences = DataSourcePreferences(context)
             val dataSourceRepository = DataSourceRepository(dataSourcePreferences, preferencesManager)
             val healthRepository = HealthRepository(database.dailyHealthDao(), dataSourceRepository, preferencesManager)
-            return ShareViewModel(workoutId, repository, sharePreferences, healthRepository) as T
+            val avatarManager = com.oterman.rundemo.data.repository.AvatarManager.getInstance(context)
+            return ShareViewModel(workoutId, repository, sharePreferences, healthRepository, avatarManager, preferencesManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
