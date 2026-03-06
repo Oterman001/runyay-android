@@ -33,6 +33,12 @@ data class UserProfileUiState(
     val confirmPassword: String = "",
     val passwordError: String? = null,
 
+    // 生理参数
+    val isMale: Boolean = true,
+    val birthdayMillis: Long = 0L,
+    val showGenderPicker: Boolean = false,
+    val showBirthdayPicker: Boolean = false,
+
     // 导航事件
     val navigateToLogin: Boolean = false,
 

@@ -51,7 +51,13 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.app.DatePickerDialog
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -214,7 +220,11 @@ fun UserProfileScreen(
             UserInfoCard(
                 userName = uiState.userName,
                 phoneNumber = uiState.maskedPhoneNumber,
-                onNicknameClick = viewModel::showNicknameEditor
+                isMale = uiState.isMale,
+                birthdayMillis = uiState.birthdayMillis,
+                onNicknameClick = viewModel::showNicknameEditor,
+                onGenderClick = viewModel::showGenderPicker,
+                onBirthdayClick = viewModel::showBirthdayPicker
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -270,6 +280,20 @@ fun UserProfileScreen(
         DeactivateConfirmDialog(
             onDismiss = viewModel::dismissDeactivateConfirm,
             onConfirm = viewModel::proceedToPasswordConfirm
+        )
+    }
+
+    // 性别选择对话框
+    if (uiState.showGenderPicker) {
+        GenderPickerDialog(onSelect = viewModel::saveGender, onDismiss = viewModel::dismissGenderPicker)
+    }
+
+    // 出生年月选择对话框
+    if (uiState.showBirthdayPicker) {
+        BirthdayPickerDialog(
+            currentMillis = uiState.birthdayMillis,
+            onSelect = viewModel::saveBirthday,
+            onDismiss = viewModel::dismissBirthdayPicker
         )
     }
 
@@ -369,8 +393,16 @@ private fun AvatarSection(
 private fun UserInfoCard(
     userName: String,
     phoneNumber: String,
-    onNicknameClick: () -> Unit
+    isMale: Boolean,
+    birthdayMillis: Long,
+    onNicknameClick: () -> Unit,
+    onGenderClick: () -> Unit,
+    onBirthdayClick: () -> Unit
 ) {
+    val birthdayText = if (birthdayMillis > 0L)
+        SimpleDateFormat("yyyy年M月", Locale.CHINA).format(Date(birthdayMillis))
+    else "未设置"
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -384,6 +416,32 @@ private fun UserInfoCard(
             value = userName.ifEmpty { "未设置" },
             showArrow = true,
             onClick = onNicknameClick
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+
+        // 性别行
+        InfoRow(
+            label = "性别",
+            value = if (isMale) "男" else "女",
+            showArrow = true,
+            onClick = onGenderClick
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+
+        // 出生年月行
+        InfoRow(
+            label = "出生年月",
+            value = birthdayText,
+            showArrow = true,
+            onClick = onBirthdayClick
         )
 
         HorizontalDivider(
@@ -567,6 +625,48 @@ private fun AvatarPickerOption(
             text = text,
             style = MaterialTheme.typography.bodyLarge
         )
+    }
+}
+
+/**
+ * 性别选择对话框
+ */
+@Composable
+private fun GenderPickerDialog(onSelect: (Boolean) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择性别") },
+        text = {
+            Column {
+                TextButton(onClick = { onSelect(true) }, modifier = Modifier.fillMaxWidth()) { Text("男") }
+                TextButton(onClick = { onSelect(false) }, modifier = Modifier.fillMaxWidth()) { Text("女") }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+    )
+}
+
+/**
+ * 出生年月选择对话框
+ */
+@Composable
+private fun BirthdayPickerDialog(currentMillis: Long, onSelect: (Long) -> Unit, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val cal = Calendar.getInstance().apply {
+            if (currentMillis > 0L) timeInMillis = currentMillis
+        }
+        val dialog = DatePickerDialog(context, { _, year, month, _ ->
+            val result = Calendar.getInstance().apply {
+                set(year, month, 1, 0, 0, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            onSelect(result.timeInMillis)
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), 1)
+        dialog.setOnCancelListener { onDismiss() }
+        dialog.show()
+        onDispose { dialog.dismiss() }
     }
 }
 

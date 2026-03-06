@@ -19,13 +19,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Sync
@@ -53,9 +51,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.data.local.PreferencesManager
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryColorMode
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.ThemeMode
@@ -85,7 +80,6 @@ fun ProfileTabContent(
     onDataSourceManageClick: () -> Unit = {},
     onRunGoalClick: () -> Unit = {},
     onHearRateZoneClick: () -> Unit = {},
-    onPhysioSetupClick: () -> Unit = {},
     onDebugClick: () -> Unit = {},
     onContactUsClick: () -> Unit = {},
     onThemeModeChanged: (ThemeMode) -> Unit = {}
@@ -95,9 +89,6 @@ fun ProfileTabContent(
     val backgroundColor = MaterialTheme.colorScheme.background
 
     val preferencesManager = remember { PreferencesManager(context) }
-
-    // Physio settings state
-    var physioSettings by remember { mutableStateOf(preferencesManager.getHearRateZoneSettings()) }
 
     // Trajectory color mode state
     var showTrajectoryColorSheet by remember { mutableStateOf(false) }
@@ -231,34 +222,6 @@ fun ProfileTabContent(
                                 fitFileLauncher.launch(arrayOf("*/*"))
                             }
                         }
-                    )
-                }
-            }
-
-            item { Spacer(modifier = Modifier.height(20.dp)) }
-
-            // Settings Group: Physio parameters
-            item {
-                SettingsCard {
-                    val genderText = if (physioSettings.isMale) "男" else "女"
-                    val birthdayText = if (physioSettings.birthdayMillis > 0L) {
-                        SimpleDateFormat("yyyy年M月", Locale.CHINA).format(Date(physioSettings.birthdayMillis))
-                    } else "未设置"
-                    SettingsItem(
-                        icon = Icons.Outlined.Person,
-                        title = "性别",
-                        subtitle = genderText,
-                        iconTint = RunTheme.colorScheme.blue,
-                        showDivider = true,
-                        onClick = onPhysioSetupClick
-                    )
-                    SettingsItem(
-                        icon = Icons.Outlined.DateRange,
-                        title = "出生年月",
-                        subtitle = birthdayText,
-                        iconTint = RunTheme.colorScheme.blue,
-                        showDivider = false,
-                        onClick = onPhysioSetupClick
                     )
                 }
             }

@@ -53,11 +53,14 @@ class UserProfileViewModel(
 
         RLog.d(TAG, "加载用户信息: userId=$userId, userName=$userName")
 
+        val physio = preferencesManager.getHearRateZoneSettings()
         _uiState.update { state ->
             state.copy(
                 userId = userId,
                 userName = userName,
-                phoneNumber = phoneNumber
+                phoneNumber = phoneNumber,
+                isMale = physio.isMale,
+                birthdayMillis = physio.birthdayMillis
             )
         }
 
@@ -310,6 +313,24 @@ class UserProfileViewModel(
                 }
             }
         }
+    }
+
+    // ==================== 性别 / 出生年月 ====================
+
+    fun showGenderPicker() = _uiState.update { it.copy(showGenderPicker = true) }
+    fun dismissGenderPicker() = _uiState.update { it.copy(showGenderPicker = false) }
+    fun saveGender(isMale: Boolean) {
+        val updated = preferencesManager.getHearRateZoneSettings().copy(isMale = isMale)
+        preferencesManager.saveHearRateZoneSettings(updated)
+        _uiState.update { it.copy(isMale = isMale, showGenderPicker = false) }
+    }
+
+    fun showBirthdayPicker() = _uiState.update { it.copy(showBirthdayPicker = true) }
+    fun dismissBirthdayPicker() = _uiState.update { it.copy(showBirthdayPicker = false) }
+    fun saveBirthday(millis: Long) {
+        val updated = preferencesManager.getHearRateZoneSettings().copy(birthdayMillis = millis)
+        preferencesManager.saveHearRateZoneSettings(updated)
+        _uiState.update { it.copy(birthdayMillis = millis, showBirthdayPicker = false) }
     }
 
     // ==================== 退出登录 ====================
