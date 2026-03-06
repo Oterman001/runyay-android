@@ -122,6 +122,12 @@ sealed class Screen(val route: String) {
     object HearRateZoneSet : Screen("hear_rate_zone_set")
 
     /**
+     * 生理参数初始化引导页面
+     * 新用户注册完成或存量用户首次登录时引导设置生理参数
+     */
+    object PhysioSetup : Screen("physio_setup")
+
+    /**
      * 跑步统计页面
      * 用于展示年/月/周/总统计数据
      */

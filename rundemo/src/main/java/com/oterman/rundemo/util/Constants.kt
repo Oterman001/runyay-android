@@ -65,6 +65,8 @@ object Constants {
         const val KEY_HR_BIRTHDAY_MILLIS = "hr_birthday_millis"
         const val KEY_HR_AUTO_SYNC_ENABLED = "hr_auto_sync_enabled"
         const val KEY_HR_PREFERRED_PLATFORM = "hr_preferred_platform"
+        const val KEY_HR_GENDER = "hr_gender"
+        const val KEY_PHYSIO_SETUP_COMPLETED = "physio_setup_completed"
     }
     
     /**

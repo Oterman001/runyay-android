@@ -40,6 +40,9 @@ import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecor
 import com.oterman.rundemo.presentation.feature.onboarding.BindingGuideScreen
 import com.oterman.rundemo.presentation.feature.onboarding.BindingGuideViewModel
 import com.oterman.rundemo.presentation.feature.onboarding.BindingGuideViewModelFactory
+import com.oterman.rundemo.presentation.feature.onboarding.physio.PhysioSetupScreen
+import com.oterman.rundemo.presentation.feature.onboarding.physio.PhysioSetupViewModel
+import com.oterman.rundemo.presentation.feature.onboarding.physio.PhysioSetupViewModelFactory
 import com.oterman.rundemo.presentation.feature.home.HomeScreen
 import com.oterman.rundemo.presentation.feature.home.HomeViewModel
 import com.oterman.rundemo.presentation.feature.home.HomeViewModelFactory
@@ -112,28 +115,20 @@ fun AppNavGraph(
             val viewModel: BindingGuideViewModel = viewModel(
                 factory = BindingGuideViewModelFactory(context)
             )
+            val navigateAfterBinding = {
+                viewModel.markGuideCompleted()
+                navController.navigate(Screen.PhysioSetup.route) {
+                    popUpTo(Screen.BindingGuide.route) { inclusive = true }
+                }
+            }
             BindingGuideScreen(
                 viewModel = viewModel,
-                onSkip = {
-                    viewModel.markGuideCompleted()
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.BindingGuide.route) { inclusive = true }
-                    }
-                },
-                onComplete = {
-                    viewModel.markGuideCompleted()
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.BindingGuide.route) { inclusive = true }
-                    }
-                },
+                onSkip = navigateAfterBinding,
+                onComplete = navigateAfterBinding,
                 onNavigateToDetail = { platform ->
                     navController.navigate(Screen.DataSourceDetail.createRoute(platform.code))
                 },
-                onNavigateToHome = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.BindingGuide.route) { inclusive = true }
-                    }
-                }
+                onNavigateToHome = navigateAfterBinding
             )
         }
 
@@ -451,6 +446,22 @@ fun AppNavGraph(
             RunGoalSetPage(
                 onNavigateBack = {
                     navController.popBackStack()
+                }
+            )
+        }
+
+        // 生理参数初始化引导页面
+        composable(Screen.PhysioSetup.route) {
+            val context = LocalContext.current
+            val physioViewModel = viewModel<PhysioSetupViewModel>(
+                factory = PhysioSetupViewModelFactory(context)
+            )
+            PhysioSetupScreen(
+                viewModel = physioViewModel,
+                onComplete = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.PhysioSetup.route) { inclusive = true }
+                    }
                 }
             )
         }

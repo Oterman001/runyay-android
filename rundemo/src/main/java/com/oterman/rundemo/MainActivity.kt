@@ -75,10 +75,10 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
 
                     // 根据登录状态决定起始页面
-                    val startDestination = if (preferencesManager.isUserLoggedIn()) {
-                        Screen.Home.route
-                    } else {
-                        Screen.Welcome.route
+                    val startDestination = when {
+                        !preferencesManager.isUserLoggedIn() -> Screen.Welcome.route
+                        !preferencesManager.isPhysioSetupCompleted() -> Screen.PhysioSetup.route
+                        else -> Screen.Home.route
                     }
 
                     // 设置应用导航图
