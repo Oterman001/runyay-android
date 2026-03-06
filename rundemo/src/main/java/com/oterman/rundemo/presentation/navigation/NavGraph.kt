@@ -177,6 +177,9 @@ fun AppNavGraph(
                 onNavigateToHearRateZoneSet = {
                     navController.navigate(Screen.HearRateZoneSet.route)
                 },
+                onNavigateToPhysioSetup = {
+                    navController.navigate(Screen.PhysioSetup.createRoute("home"))
+                },
                 onNavigateToRunStatistics = { tab ->
                     navController.navigate(Screen.RunStatistics.createRoute(tab))
                 },
@@ -470,8 +473,12 @@ fun AppNavGraph(
                             popUpTo(Screen.PhysioSetup.route) { inclusive = true }
                         }
                     } else {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.PhysioSetup.route) { inclusive = true }
+                        if (navController.previousBackStackEntry != null) {
+                            navController.popBackStack()
+                        } else {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.PhysioSetup.route) { inclusive = true }
+                            }
                         }
                     }
                 }

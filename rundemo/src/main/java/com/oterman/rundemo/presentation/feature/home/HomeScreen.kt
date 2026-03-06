@@ -67,6 +67,7 @@ fun HomeScreen(
     onNavigateToUserProfile: () -> Unit = {},
     onNavigateToRunGoalSet: () -> Unit = {},
     onNavigateToHearRateZoneSet: () -> Unit = {},
+    onNavigateToPhysioSetup: () -> Unit = {},
     onNavigateToRunStatistics: (tab: String) -> Unit = {},
     onNavigateToDebug: () -> Unit = {},
     onNavigateToContactUs: () -> Unit = {},
@@ -163,6 +164,7 @@ fun HomeScreen(
                     onDataSourceManageClick = onNavigateToDataSourceManage,
                     onRunGoalClick = onNavigateToRunGoalSet,
                     onHearRateZoneClick = onNavigateToHearRateZoneSet,
+                    onPhysioSetupClick = onNavigateToPhysioSetup,
                     onDebugClick = onNavigateToDebug,
                     onContactUsClick = onNavigateToContactUs,
                     onThemeModeChanged = onThemeModeChanged
