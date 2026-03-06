@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -34,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -62,23 +62,18 @@ import java.util.Date
 import java.util.Locale
 
 private val zoneNames = listOf(
-    "恢复热身",
-    "轻松跑",
-    "马拉松配速",
-    "乳酸阈",
-    "无氧耐力",
-    "最大摄氧量训练",
-    "力量训练"
+    "恢复/热身", "轻松跑(E)", "马拉松配速(M)",
+    "乳酸阈值(T)", "无氧耐力(A)", "最大摄氧(I)", "爆发力训练(R)"
+)
+
+private val zonePercentDesc = listOf(
+    "<59%", "59%~74%", "74%~84%",
+    "84%~88%", "88%~95%", "95%~100%", ">100%"
 )
 
 private val zoneColors = listOf(
-    Color(0xFF9E9E9E),
-    Color(0xFF4CAF50),
-    Color(0xFF2196F3),
-    Color(0xFFFF9800),
-    Color(0xFFF44336),
-    Color(0xFF9C27B0),
-    Color(0xFF212121)
+    Color(0xFF90CAF9), Color(0xFF64B5F6), Color(0xFF4CAF50),
+    Color(0xFFFFC107), Color(0xFFFF9800), Color(0xFFFF5722), Color(0xFFF44336)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -180,7 +175,12 @@ fun HearRateZoneScreen(
                         }
                         Switch(
                             checked = settings.isAutoSyncEnabled,
-                            onCheckedChange = viewModel::onAutoSyncToggled
+                            onCheckedChange = viewModel::onAutoSyncToggled,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = RunTheme.colorScheme.blue,
+                                checkedBorderColor = RunTheme.colorScheme.blue
+                            )
                         )
                     }
 
@@ -288,24 +288,32 @@ fun HearRateZoneScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 6.dp),
+                                .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(12.dp)
-                                    .clip(CircleShape)
+                                    .width(6.dp)
+                                    .height(72.dp)
+                                    .clip(RoundedCornerShape(3.dp))
                                     .background(zoneColors.getOrElse(index) { Color.Gray })
                             )
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                text = "Z$zoneNum $name",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(1f)
-                            )
+                            Spacer(Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Z$zoneNum ${zoneNames.getOrElse(index) { name }}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = zonePercentDesc.getOrElse(index) { "" },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                             Text(
                                 text = rangeText,
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
