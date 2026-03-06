@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
@@ -60,6 +61,7 @@ fun PhysioSetupScreen(
     val settings by viewModel.settings.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }
     var showExplanation by remember { mutableStateOf(true) }
+    var showSkipDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -69,10 +71,7 @@ fun PhysioSetupScreen(
                     .padding(top = 48.dp, end = 16.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
-                TextButton(onClick = {
-                    viewModel.skipSetup()
-                    onComplete()
-                }) {
+                TextButton(onClick = { showSkipDialog = true }) {
                     Text("跳过", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -266,6 +265,29 @@ fun PhysioSetupScreen(
 
             item { Spacer(Modifier.height(32.dp)) }
         }
+    }
+
+    // 跳过挽留弹窗
+    if (showSkipDialog) {
+        AlertDialog(
+            onDismissRequest = { showSkipDialog = false },
+            title = { Text("确定跳过？") },
+            text = { Text("准确的生理参数让心率区间和训练分析更有意义，建议完成设置。跳过后也可在「我的」→「心率区间设置」中随时修改。") },
+            confirmButton = {
+                TextButton(onClick = { showSkipDialog = false }) {
+                    Text("继续设置", color = RunTheme.colorScheme.blue)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showSkipDialog = false
+                    viewModel.skipSetup()
+                    onComplete()
+                }) {
+                    Text("跳过")
+                }
+            }
+        )
     }
 
     // 日期选择器

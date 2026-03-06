@@ -117,7 +117,7 @@ fun AppNavGraph(
             )
             val navigateAfterBinding = {
                 viewModel.markGuideCompleted()
-                navController.navigate(Screen.PhysioSetup.route) {
+                navController.navigate(Screen.Home.route) {
                     popUpTo(Screen.BindingGuide.route) { inclusive = true }
                 }
             }
@@ -226,9 +226,8 @@ fun AppNavGraph(
                     navController.popBackStack()
                 },
                 onRegisterSuccess = {
-                    // 注册成功后导航到绑定引导页
-                    navController.navigate(Screen.BindingGuide.route) {
-                        // 清除欢迎页面和注册页面，防止返回
+                    // 注册成功后先引导设置生理参数，再进入绑定引导
+                    navController.navigate(Screen.PhysioSetup.createRoute("binding_guide")) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
                 },
@@ -451,7 +450,14 @@ fun AppNavGraph(
         }
 
         // 生理参数初始化引导页面
-        composable(Screen.PhysioSetup.route) {
+        composable(
+            route = Screen.PhysioSetup.route,
+            arguments = listOf(navArgument("nextDest") {
+                type = NavType.StringType
+                defaultValue = "home"
+            })
+        ) { backStackEntry ->
+            val nextDest = backStackEntry.arguments?.getString("nextDest") ?: "home"
             val context = LocalContext.current
             val physioViewModel = viewModel<PhysioSetupViewModel>(
                 factory = PhysioSetupViewModelFactory(context)
@@ -459,8 +465,14 @@ fun AppNavGraph(
             PhysioSetupScreen(
                 viewModel = physioViewModel,
                 onComplete = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.PhysioSetup.route) { inclusive = true }
+                    if (nextDest == "binding_guide") {
+                        navController.navigate(Screen.BindingGuide.route) {
+                            popUpTo(Screen.PhysioSetup.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.PhysioSetup.route) { inclusive = true }
+                        }
                     }
                 }
             )

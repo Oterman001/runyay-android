@@ -125,7 +125,9 @@ sealed class Screen(val route: String) {
      * 生理参数初始化引导页面
      * 新用户注册完成或存量用户首次登录时引导设置生理参数
      */
-    object PhysioSetup : Screen("physio_setup")
+    object PhysioSetup : Screen("physio_setup?nextDest={nextDest}") {
+        fun createRoute(nextDest: String = "home") = "physio_setup?nextDest=$nextDest"
+    }
 
     /**
      * 跑步统计页面

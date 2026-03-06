@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
                     // 根据登录状态决定起始页面
                     val startDestination = when {
                         !preferencesManager.isUserLoggedIn() -> Screen.Welcome.route
-                        !preferencesManager.isPhysioSetupCompleted() -> Screen.PhysioSetup.route
+                        !preferencesManager.isPhysioSetupCompleted() -> Screen.PhysioSetup.createRoute("home")
                         else -> Screen.Home.route
                     }
 
