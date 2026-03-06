@@ -107,6 +107,22 @@ class HealthRepository(
     }
 
     /**
+     * 获取最近一次静息心率（从DB取，不触发网络请求）
+     */
+    suspend fun getLatestRestingHR(): Int? {
+        val userId = preferencesManager.getUserId() ?: return null
+        return dailyHealthDao.getLatestRestingHR(userId)
+    }
+
+    /**
+     * 获取指定日期、指定平台的静息心率
+     */
+    suspend fun getRestingHRForDateByPlatform(platform: DataSourcePlatform, calendarDateDash: String): Int? {
+        val userId = preferencesManager.getUserId() ?: return null
+        return dailyHealthDao.getByUserPlatformDate(userId, platform.code, calendarDateDash)?.restingHeartRate
+    }
+
+    /**
      * 获取最新VO2Max及变化量（用于详情页展示）
      * @return Pair(latestVo2Max, delta) delta为当前-上一次，无上一次时为null
      */

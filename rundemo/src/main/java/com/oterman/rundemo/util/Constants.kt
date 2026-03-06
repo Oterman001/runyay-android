@@ -57,6 +57,14 @@ object Constants {
         // Avatar cache
         const val KEY_CACHED_AVATAR_URL = "cached_avatar_url"
         const val KEY_CACHED_AVATAR_EXPIRATION = "cached_avatar_expiration"
+
+        // Heart rate zone settings
+        const val KEY_HR_MANUAL_ENABLED = "hr_manual_enabled"
+        const val KEY_HR_MAX_HEART_RATE = "hr_max_heart_rate"
+        const val KEY_HR_RESTING_HEART_RATE = "hr_resting_heart_rate"
+        const val KEY_HR_BIRTHDAY_MILLIS = "hr_birthday_millis"
+        const val KEY_HR_AUTO_SYNC_ENABLED = "hr_auto_sync_enabled"
+        const val KEY_HR_PREFERRED_PLATFORM = "hr_preferred_platform"
     }
     
     /**

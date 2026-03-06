@@ -373,6 +373,35 @@ class PreferencesManager(context: Context) {
         return savedItems + newCards
     }
 
+    // ==================== Heart Rate Zone Settings ====================
+
+    fun getHearRateZoneSettings(): HearRateZoneSettings {
+        return HearRateZoneSettings(
+            isManualEnabled = prefs.getBoolean(Constants.PreferenceKeys.KEY_HR_MANUAL_ENABLED, false),
+            maxHeartRate = prefs.getInt(Constants.PreferenceKeys.KEY_HR_MAX_HEART_RATE, 190),
+            restingHeartRate = prefs.getInt(Constants.PreferenceKeys.KEY_HR_RESTING_HEART_RATE, 60),
+            birthdayMillis = prefs.getLong(Constants.PreferenceKeys.KEY_HR_BIRTHDAY_MILLIS, 0L),
+            isAutoSyncEnabled = prefs.getBoolean(Constants.PreferenceKeys.KEY_HR_AUTO_SYNC_ENABLED, true),
+            preferredPlatform = prefs.getString(Constants.PreferenceKeys.KEY_HR_PREFERRED_PLATFORM, null)
+        )
+    }
+
+    fun saveHearRateZoneSettings(settings: HearRateZoneSettings) {
+        prefs.edit().apply {
+            putBoolean(Constants.PreferenceKeys.KEY_HR_MANUAL_ENABLED, settings.isManualEnabled)
+            putInt(Constants.PreferenceKeys.KEY_HR_MAX_HEART_RATE, settings.maxHeartRate)
+            putInt(Constants.PreferenceKeys.KEY_HR_RESTING_HEART_RATE, settings.restingHeartRate)
+            putLong(Constants.PreferenceKeys.KEY_HR_BIRTHDAY_MILLIS, settings.birthdayMillis)
+            putBoolean(Constants.PreferenceKeys.KEY_HR_AUTO_SYNC_ENABLED, settings.isAutoSyncEnabled)
+            if (settings.preferredPlatform != null) {
+                putString(Constants.PreferenceKeys.KEY_HR_PREFERRED_PLATFORM, settings.preferredPlatform)
+            } else {
+                remove(Constants.PreferenceKeys.KEY_HR_PREFERRED_PLATFORM)
+            }
+            apply()
+        }
+    }
+
     // ==================== Theme Mode ====================
 
     fun saveThemeMode(mode: ThemeMode) {

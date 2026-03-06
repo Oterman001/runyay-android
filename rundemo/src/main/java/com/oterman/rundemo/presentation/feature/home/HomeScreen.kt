@@ -66,6 +66,7 @@ fun HomeScreen(
     onNavigateToDataSourceManage: () -> Unit = {},
     onNavigateToUserProfile: () -> Unit = {},
     onNavigateToRunGoalSet: () -> Unit = {},
+    onNavigateToHearRateZoneSet: () -> Unit = {},
     onNavigateToRunStatistics: (tab: String) -> Unit = {},
     onNavigateToDebug: () -> Unit = {},
     onNavigateToContactUs: () -> Unit = {},
@@ -161,6 +162,7 @@ fun HomeScreen(
                     onImportFitFile = viewModel::importFitFile,
                     onDataSourceManageClick = onNavigateToDataSourceManage,
                     onRunGoalClick = onNavigateToRunGoalSet,
+                    onHearRateZoneClick = onNavigateToHearRateZoneSet,
                     onDebugClick = onNavigateToDebug,
                     onContactUsClick = onNavigateToContactUs,
                     onThemeModeChanged = onThemeModeChanged

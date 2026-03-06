@@ -79,6 +79,7 @@ fun ProfileTabContent(
     onImportFitFile: (Uri) -> Unit = {},
     onDataSourceManageClick: () -> Unit = {},
     onRunGoalClick: () -> Unit = {},
+    onHearRateZoneClick: () -> Unit = {},
     onDebugClick: () -> Unit = {},
     onContactUsClick: () -> Unit = {},
     onThemeModeChanged: (ThemeMode) -> Unit = {}
@@ -236,12 +237,12 @@ fun ProfileTabContent(
                         iconTint = RunTheme.colorScheme.blue,
                         onClick = onRunGoalClick
                     )
-//                    SettingsItem(
-//                        icon = Icons.Outlined.FavoriteBorder,
-//                        title = "心率区间",
-//                        iconTint = RunTheme.colorScheme.blue,
-//                        onClick = { /* TODO: Navigate to heart rate zone page */ }
-//                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.FavoriteBorder,
+                        title = "心率区间",
+                        iconTint = RunTheme.colorScheme.blue,
+                        onClick = onHearRateZoneClick
+                    )
                     SettingsItem(
                         icon = Icons.Outlined.Palette,
                         title = "外观设置",

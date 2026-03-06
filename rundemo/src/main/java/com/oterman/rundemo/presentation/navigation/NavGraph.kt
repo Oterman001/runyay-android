@@ -45,6 +45,7 @@ import com.oterman.rundemo.presentation.feature.home.HomeViewModel
 import com.oterman.rundemo.presentation.feature.home.HomeViewModelFactory
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailDebugScreen
 import com.oterman.rundemo.presentation.feature.settings.goal.RunGoalSetPage
+import com.oterman.rundemo.presentation.feature.settings.heartrate.HearRateZoneScreen
 import com.oterman.rundemo.presentation.feature.statistics.RunStatisticTab
 import com.oterman.rundemo.presentation.feature.statistics.RunStatisticsScreen
 import com.oterman.rundemo.presentation.feature.userprofile.UserProfileScreen
@@ -177,6 +178,9 @@ fun AppNavGraph(
                 },
                 onNavigateToRunGoalSet = {
                     navController.navigate(Screen.RunGoalSet.route)
+                },
+                onNavigateToHearRateZoneSet = {
+                    navController.navigate(Screen.HearRateZoneSet.route)
                 },
                 onNavigateToRunStatistics = { tab ->
                     navController.navigate(Screen.RunStatistics.createRoute(tab))
@@ -445,6 +449,15 @@ fun AppNavGraph(
         // 跑步目标设置页面
         composable(Screen.RunGoalSet.route) {
             RunGoalSetPage(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // 心率区间设置页面
+        composable(Screen.HearRateZoneSet.route) {
+            HearRateZoneScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

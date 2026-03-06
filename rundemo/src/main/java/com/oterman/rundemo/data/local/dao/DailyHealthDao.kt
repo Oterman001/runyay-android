@@ -34,6 +34,12 @@ interface DailyHealthDao {
     suspend fun getBestRestingHR(userId: String, calendarDate: String): Int?
 
     /**
+     * 获取最近一次静息心率（不限日期，取最新日期中跨平台最小值）
+     */
+    @Query("SELECT MIN(restingHeartRate) FROM daily_health WHERE userId = :userId AND restingHeartRate IS NOT NULL AND calendarDate = (SELECT MAX(calendarDate) FROM daily_health WHERE userId = :userId AND restingHeartRate IS NOT NULL)")
+    suspend fun getLatestRestingHR(userId: String): Int?
+
+    /**
      * 获取最新的VO2Max记录（用于详情页展示）
      */
     @Query("SELECT * FROM daily_health WHERE userId = :userId AND vo2Max IS NOT NULL ORDER BY calendarDate DESC LIMIT 1")

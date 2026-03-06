@@ -116,6 +116,12 @@ sealed class Screen(val route: String) {
     object RunGoalSet : Screen("run_goal_set")
 
     /**
+     * 心率区间设置页面
+     * 用于手动配置最大心率、静息心率及查看7区间结果
+     */
+    object HearRateZoneSet : Screen("hear_rate_zone_set")
+
+    /**
      * 跑步统计页面
      * 用于展示年/月/周/总统计数据
      */
