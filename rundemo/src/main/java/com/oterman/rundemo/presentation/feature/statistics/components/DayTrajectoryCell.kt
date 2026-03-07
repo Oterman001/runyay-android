@@ -265,8 +265,7 @@ private fun getBackgroundColor(
             }
         }
         is ThumbnailState.Cached -> {
-            // 有缩略图 - 不显示背景
-            Color.Transparent
+            defaultBgColor.copy(alpha = 0.3f)
         }
     }
 }

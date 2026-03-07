@@ -18,6 +18,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * 用户信息页面ViewModel
@@ -323,6 +326,12 @@ class UserProfileViewModel(
         val updated = preferencesManager.getHearRateZoneSettings().copy(isMale = isMale)
         preferencesManager.saveHearRateZoneSettings(updated)
         _uiState.update { it.copy(isMale = isMale, showGenderPicker = false) }
+        viewModelScope.launch {
+            userRepository.updateBasicInfo(gender = if (isMale) "M" else "F").onFailure { e ->
+                RLog.e(TAG, "同步性别到服务端失败: ${e.message}")
+                _uiState.update { it.copy(errorMessage = "操作失败，请稍后重试") }
+            }
+        }
     }
 
     fun showBirthdayPicker() = _uiState.update { it.copy(showBirthdayPicker = true) }
@@ -331,6 +340,13 @@ class UserProfileViewModel(
         val updated = preferencesManager.getHearRateZoneSettings().copy(birthdayMillis = millis)
         preferencesManager.saveHearRateZoneSettings(updated)
         _uiState.update { it.copy(birthdayMillis = millis, showBirthdayPicker = false) }
+        viewModelScope.launch {
+            val birthDate = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(millis))
+            userRepository.updateBasicInfo(birthDate = birthDate).onFailure { e ->
+                RLog.e(TAG, "同步生日到服务端失败: ${e.message}")
+                _uiState.update { it.copy(errorMessage = "操作失败，请稍后重试") }
+            }
+        }
     }
 
     // ==================== 退出登录 ====================

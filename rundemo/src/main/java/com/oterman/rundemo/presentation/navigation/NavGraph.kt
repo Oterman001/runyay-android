@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -58,6 +59,11 @@ import com.oterman.rundemo.presentation.feature.syncstatus.DataSyncStatusScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.repository.UserRepository
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * 应用导航图
@@ -88,22 +94,37 @@ fun AppNavGraph(
         // 登录页面
         composable(Screen.Login.route) {
             val context = LocalContext.current
+            val scope = rememberCoroutineScope()
             LoginScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
                 onLoginSuccess = {
-                    // TODO: 预留服务器接口，待服务端接口就绪后，在此处同步查询服务器端生理参数设置状态
-                    val prefsManager = PreferencesManager(context)
-                    if (!prefsManager.isPhysioSetupCompleted()) {
-                        // 未设置过生理参数，先引导设置
-                        navController.navigate(Screen.PhysioSetup.createRoute("binding_guide")) {
-                            popUpTo(Screen.Welcome.route) { inclusive = true }
-                        }
-                    } else {
-                        // 已设置，直接进入绑定引导
-                        navController.navigate(Screen.BindingGuide.route) {
-                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                    scope.launch {
+                        val prefsManager = PreferencesManager(context)
+                        val userRepo = UserRepository(context)
+                        val result = userRepo.queryBasicInfo()
+                        val serverInfo = result.getOrNull()
+                        if (serverInfo != null) {
+                            // 服务端有数据 → 同步到本地并标记已完成
+                            val cur = prefsManager.getHearRateZoneSettings()
+                            prefsManager.saveHearRateZoneSettings(cur.copy(
+                                isMale = serverInfo.gender != "F",
+                                birthdayMillis = serverInfo.birthDate?.let {
+                                    SimpleDateFormat("yyyyMMdd", Locale.US).parse(it)?.time ?: cur.birthdayMillis
+                                } ?: cur.birthdayMillis,
+                                maxHeartRate = serverInfo.maxHeartRate ?: cur.maxHeartRate,
+                                restingHeartRate = serverInfo.manualRestingHeartRate ?: cur.restingHeartRate
+                            ))
+                            prefsManager.markPhysioSetupCompleted()
+                            navController.navigate(Screen.BindingGuide.route) {
+                                popUpTo(Screen.Welcome.route) { inclusive = true }
+                            }
+                        } else {
+                            // 服务端无数据 → 引导设置
+                            navController.navigate(Screen.PhysioSetup.createRoute("binding_guide")) {
+                                popUpTo(Screen.Welcome.route) { inclusive = true }
+                            }
                         }
                     }
                 },

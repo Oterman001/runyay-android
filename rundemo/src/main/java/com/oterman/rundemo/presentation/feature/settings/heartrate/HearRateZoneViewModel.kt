@@ -6,20 +6,29 @@ import com.oterman.rundemo.data.fit.AbilityZoneCalculator
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.HearRateZoneSettings
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 
 class HearRateZoneViewModel(
     private val preferencesManager: PreferencesManager,
-    private val dataSourcePreferences: DataSourcePreferences
+    private val dataSourcePreferences: DataSourcePreferences,
+    private val userRepository: UserRepository
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "HearRateZoneViewModel"
+    }
 
     val settings: MutableStateFlow<HearRateZoneSettings> =
         MutableStateFlow(preferencesManager.getHearRateZoneSettings())
@@ -34,6 +43,8 @@ class HearRateZoneViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     val saveSuccess: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val serverError: MutableStateFlow<String?> = MutableStateFlow(null)
+    fun clearServerError() { serverError.value = null }
 
     val boundPlatforms: List<DataSourcePlatform> = DataSourcePlatform.getEnabledPlatforms()
         .filter { dataSourcePreferences.isPlatformBound(it) }
@@ -65,8 +76,22 @@ class HearRateZoneViewModel(
 
     fun save() {
         viewModelScope.launch {
-            preferencesManager.saveHearRateZoneSettings(settings.value)
+            val current = settings.value
+            preferencesManager.saveHearRateZoneSettings(current)
             saveSuccess.value = true
+            val birthDate = if (current.birthdayMillis > 0L) {
+                SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(current.birthdayMillis))
+            } else null
+            userRepository.updateBasicInfo(
+                gender = if (current.isMale) "M" else "F",
+                birthDate = birthDate,
+                maxHR = current.maxHeartRate,
+                restHR = current.restingHeartRate
+
+            ).onFailure { e ->
+                RLog.e(TAG, "同步心率区间设置到服务端失败: ${e.message}")
+                serverError.value = "保存数据到服务器失败，请稍后重试"
+            }
         }
     }
 

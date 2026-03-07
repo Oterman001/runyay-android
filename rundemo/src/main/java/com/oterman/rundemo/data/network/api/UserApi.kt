@@ -6,6 +6,7 @@ import com.oterman.rundemo.data.network.dto.request.ResetPasswordRequest
 import com.oterman.rundemo.data.network.dto.request.SendVerificationCodeRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordAndNameRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordRequest
+import com.oterman.rundemo.data.network.dto.request.SaveUserBasicInfoRequest
 import com.oterman.rundemo.data.network.dto.request.UpdateNicknameRequest
 import com.oterman.rundemo.data.network.dto.request.UserDeactivateRequest
 import com.oterman.rundemo.data.network.dto.request.UserLoginRequest
@@ -19,6 +20,7 @@ import com.oterman.rundemo.data.network.dto.response.SendVerificationCodeRespons
 import com.oterman.rundemo.data.network.dto.response.SetPasswordResponse
 import com.oterman.rundemo.data.network.dto.response.UpdateAvatarResponseData
 import com.oterman.rundemo.data.network.dto.response.UpdateNicknameResponseData
+import com.oterman.rundemo.data.network.dto.response.UserBasicInfoResponseData
 import com.oterman.rundemo.data.network.dto.response.UserLoginResponse
 import com.oterman.rundemo.data.network.dto.response.UserRegisterResponse
 import okhttp3.MultipartBody
@@ -141,5 +143,23 @@ interface UserApi {
     suspend fun updateNickname(
         @Body request: BaseRequest<UpdateNicknameRequest>
     ): BaseResponse<UpdateNicknameResponseData>
+
+    /**
+     * 查询用户基础生理参数
+     */
+    @POST("api/user/basic-info/query")
+    suspend fun queryBasicInfo(@Body request: BaseRequest<Unit>): BaseResponse<UserBasicInfoResponseData>
+
+    /**
+     * 新增/Upsert 用户基础生理参数
+     */
+    @POST("api/user/basic-info/save")
+    suspend fun saveBasicInfo(@Body request: BaseRequest<SaveUserBasicInfoRequest>): BaseResponse<UserBasicInfoResponseData>
+
+    /**
+     * 部分更新用户基础生理参数
+     */
+    @POST("api/user/basic-info/update")
+    suspend fun updateBasicInfo(@Body request: BaseRequest<SaveUserBasicInfoRequest>): BaseResponse<UserBasicInfoResponseData>
 }
 

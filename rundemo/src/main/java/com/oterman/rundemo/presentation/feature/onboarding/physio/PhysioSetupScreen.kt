@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,9 +61,17 @@ fun PhysioSetupScreen(
     onComplete: () -> Unit
 ) {
     val settings by viewModel.settings.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val serverError by viewModel.serverError.collectAsState()
+    val setupComplete by viewModel.setupComplete.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }
     var showExplanation by remember { mutableStateOf(true) }
     var showSkipDialog by remember { mutableStateOf(false) }
+    var showBirthdayRequiredDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(setupComplete) {
+        if (setupComplete) onComplete()
+    }
 
     Scaffold(
         topBar = {
@@ -248,9 +258,13 @@ fun PhysioSetupScreen(
             item {
                 Button(
                     onClick = {
-                        viewModel.completeSetup()
-                        onComplete()
+                        if (settings.birthdayMillis <= 0L) {
+                            showBirthdayRequiredDialog = true
+                        } else {
+                            viewModel.completeSetup()
+                        }
                     },
+                    enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -259,12 +273,49 @@ fun PhysioSetupScreen(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("完成", style = MaterialTheme.typography.titleMedium)
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = androidx.compose.ui.graphics.Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("完成", style = MaterialTheme.typography.titleMedium)
+                    }
                 }
             }
 
             item { Spacer(Modifier.height(32.dp)) }
         }
+    }
+
+    // 生日必填校验弹窗
+    if (showBirthdayRequiredDialog) {
+        AlertDialog(
+            onDismissRequest = { showBirthdayRequiredDialog = false },
+            title = { Text("请设置出生年月") },
+            text = { Text("出生年月用于计算最大心率，请先完成设置。") },
+            confirmButton = {
+                TextButton(onClick = { showBirthdayRequiredDialog = false }) {
+                    Text("好的")
+                }
+            }
+        )
+    }
+
+    // 服务端失败弹窗
+    if (serverError != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.skipServerSync() },
+            title = { Text("同步失败") },
+            text = { Text("生理参数已保存到本地，但同步到服务器失败，可稍后重试。") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.retryServerSync() }) { Text("重试") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.skipServerSync() }) { Text("跳过，继续") }
+            }
+        )
     }
 
     // 跳过挽留弹窗

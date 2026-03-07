@@ -6,8 +6,12 @@ import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.network.RequestBuilder
 import com.oterman.rundemo.data.network.RetrofitClient
 import com.oterman.rundemo.data.network.api.UserApi
+import com.oterman.rundemo.data.local.HearRateZoneSettings
+import com.oterman.rundemo.data.network.dto.request.BaseRequest
 import com.oterman.rundemo.data.network.dto.request.GetAvatarUrlRequest
+import com.oterman.rundemo.data.network.dto.request.RequestHead
 import com.oterman.rundemo.data.network.dto.request.ResetPasswordRequest
+import com.oterman.rundemo.data.network.dto.request.SaveUserBasicInfoRequest
 import com.oterman.rundemo.data.network.dto.request.SendVerificationCodeRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordAndNameRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordRequest
@@ -18,8 +22,12 @@ import com.oterman.rundemo.data.network.dto.request.UserLogoutRequest
 import com.oterman.rundemo.data.network.dto.request.UserRegisterRequest
 import com.oterman.rundemo.data.network.dto.response.ResetPasswordResponse
 import com.oterman.rundemo.data.network.dto.response.SendVerificationCodeResponse
+import com.oterman.rundemo.data.network.dto.response.UserBasicInfoResponse
 import com.oterman.rundemo.data.network.dto.response.UserLoginResponse
 import com.oterman.rundemo.data.network.dto.response.UserRegisterResponse
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.oterman.rundemo.domain.model.UserInfo
 import com.oterman.rundemo.util.Constants
 import com.oterman.rundemo.util.RLog
@@ -359,6 +367,109 @@ class UserRepository(
      */
     fun getUserToken(): String? {
         return preferencesManager.getUserToken()
+    }
+
+    // ==================== 用户基础生理参数 ====================
+
+    /**
+     * 查询服务端用户基础生理参数
+     * code=1120 表示数据不存在，返回 Result.success(null)
+     */
+    suspend fun queryBasicInfo(): Result<UserBasicInfoResponse?> {
+        return try {
+            val timestamp = SecurityUtils.getTimestamp()
+            val sign = SecurityUtils.generateSign(emptyMap(), timestamp, Constants.Network.APP_KEY)
+            val request = BaseRequest<Unit>(
+                head = RequestHead(
+                    appKey = Constants.Network.APP_KEY,
+                    timestamp = timestamp,
+                    sign = sign,
+                    token = preferencesManager.getUserToken() ?: "",
+                    userId = preferencesManager.getUserId() ?: ""
+                ),
+                body = emptyMap()
+            )
+            val response = userApi.queryBasicInfo(request)
+            when {
+                response.isSuccess() -> {
+                    val data = response.data?.userBasicInfoResponseDto?.firstOrNull()
+                    Result.success(data)
+                }
+                response.code == "1120" -> Result.success(null)
+                else -> Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            RLog.e(TAG, "查询生理参数异常: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 新增/Upsert 用户基础生理参数
+     */
+    suspend fun saveBasicInfo(settings: HearRateZoneSettings): Result<Boolean> {
+        return try {
+            val birthDate = if (settings.birthdayMillis > 0L) {
+                SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(settings.birthdayMillis))
+            } else null
+            val requestDto = SaveUserBasicInfoRequest(
+                manualRestingHeartRate = settings.restingHeartRate,
+                maxHeartRate = settings.maxHeartRate,
+                birthDate = birthDate,
+                gender = if (settings.isMale) "M" else "F"
+            )
+            val request = RequestBuilder.createRequest(
+                dtoName = "SaveUserBasicInfoRequestDto",
+                data = requestDto,
+                preferencesManager = preferencesManager
+            )
+            val response = userApi.saveBasicInfo(request)
+            if (response.isSuccess()) {
+                RLog.d(TAG, "保存生理参数成功")
+                Result.success(true)
+            } else {
+                RLog.e(TAG, "保存生理参数失败: ${response.msg}")
+                Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            RLog.e(TAG, "保存生理参数异常: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 部分更新用户基础生理参数，仅传非 null 的字段
+     */
+    suspend fun updateBasicInfo(
+        gender: String? = null,
+        birthDate: String? = null,
+        maxHR: Int? = null,
+        restHR: Int? = null
+    ): Result<Boolean> {
+        return try {
+            val requestDto = SaveUserBasicInfoRequest(
+                gender = gender,
+                birthDate = birthDate,
+                maxHeartRate = maxHR,
+                manualRestingHeartRate = restHR
+            )
+            val request = RequestBuilder.createRequest(
+                dtoName = "SaveUserBasicInfoRequestDto",
+                data = requestDto,
+                preferencesManager = preferencesManager
+            )
+            val response = userApi.updateBasicInfo(request)
+            if (response.isSuccess()) {
+                RLog.d(TAG, "更新生理参数成功")
+                Result.success(true)
+            } else {
+                RLog.e(TAG, "更新生理参数失败: ${response.msg}")
+                Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            RLog.e(TAG, "更新生理参数异常: ${e.message}")
+            Result.failure(e)
+        }
     }
     
     // ==================== 注册相关方法 ====================

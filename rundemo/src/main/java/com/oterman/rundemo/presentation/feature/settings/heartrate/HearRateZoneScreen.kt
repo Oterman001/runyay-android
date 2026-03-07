@@ -87,6 +87,7 @@ fun HearRateZoneScreen(
     val settings by viewModel.settings.collectAsState()
     val zoneRanges by viewModel.zoneRanges.collectAsState()
     val saveSuccess by viewModel.saveSuccess.collectAsState()
+    val serverError by viewModel.serverError.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showHrInfoDialog by remember { mutableStateOf(false) }
@@ -98,6 +99,13 @@ fun HearRateZoneScreen(
         if (saveSuccess) {
             snackbarHostState.showSnackbar("已保存")
             viewModel.clearSaveSuccess()
+        }
+    }
+
+    LaunchedEffect(serverError) {
+        serverError?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearServerError()
         }
     }
 
