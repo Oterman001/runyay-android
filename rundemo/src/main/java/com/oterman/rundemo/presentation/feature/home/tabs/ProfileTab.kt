@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,10 +28,13 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -101,6 +105,9 @@ fun ProfileTabContent(
         TrajectoryColorMode.FIXED -> "固定配色"
         TrajectoryColorMode.DISTANCE_BASED -> "距离分色"
     }
+
+    // FIT import disclaimer dialog state
+    var showFitImportDisclaimer by remember { mutableStateOf(false) }
 
     // FIT文件选择器
     val fitFileLauncher = rememberLauncherForActivityResult(
@@ -218,8 +225,11 @@ fun ProfileTabContent(
                         showDivider = false,
                         onClick = {
                             if (!isImportingFit) {
-                                // 启动文件选择器，FIT文件没有标准MIME类型，使用*/*
-                                fitFileLauncher.launch(arrayOf("*/*"))
+                                if (preferencesManager.getFitImportDisclaimerDismissed()) {
+                                    fitFileLauncher.launch(arrayOf("*/*"))
+                                } else {
+                                    showFitImportDisclaimer = true
+                                }
                             }
                         }
                     )
@@ -380,7 +390,51 @@ fun ProfileTabContent(
                 onDismiss = { showAppearanceSheet = false }
             )
         }
+
+        if (showFitImportDisclaimer) {
+            FitImportDisclaimerDialog(
+                onConfirm = { dontShowAgain ->
+                    if (dontShowAgain) {
+                        preferencesManager.saveFitImportDisclaimerDismissed(true)
+                    }
+                    showFitImportDisclaimer = false
+                    fitFileLauncher.launch(arrayOf("*/*"))
+                },
+                onDismiss = { showFitImportDisclaimer = false }
+            )
+        }
     }
+}
+
+@Composable
+private fun FitImportDisclaimerDialog(
+    onConfirm: (dontShowAgain: Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var dontShowAgain by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("实验功能提示") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("FIT 文件导入为实验测试功能，数据仅保存在本地设备。\n\n卸载重装后，已导入的数据将会丢失。后续版本会支持云端同步，敬请期待。")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { dontShowAgain = !dontShowAgain }
+                ) {
+                    Checkbox(checked = dontShowAgain, onCheckedChange = { dontShowAgain = it })
+                    Text("不再提醒", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(dontShowAgain) }) { Text("继续导入") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
 }
 
 /**

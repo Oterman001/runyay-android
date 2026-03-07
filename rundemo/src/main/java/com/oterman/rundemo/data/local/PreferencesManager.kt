@@ -411,6 +411,16 @@ class PreferencesManager(context: Context) {
     fun markPhysioSetupCompleted() =
         prefs.edit().putBoolean(Constants.PreferenceKeys.KEY_PHYSIO_SETUP_COMPLETED, true).apply()
 
+    // ==================== FIT Import Disclaimer ====================
+
+    fun getFitImportDisclaimerDismissed(): Boolean {
+        return prefs.getBoolean(Constants.PreferenceKeys.KEY_FIT_IMPORT_DISCLAIMER_DISMISSED, false)
+    }
+
+    fun saveFitImportDisclaimerDismissed(dismissed: Boolean) {
+        prefs.edit().putBoolean(Constants.PreferenceKeys.KEY_FIT_IMPORT_DISCLAIMER_DISMISSED, dismissed).apply()
+    }
+
     // ==================== Theme Mode ====================
 
     fun saveThemeMode(mode: ThemeMode) {
