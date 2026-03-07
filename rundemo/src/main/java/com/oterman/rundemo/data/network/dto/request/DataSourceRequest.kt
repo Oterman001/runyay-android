@@ -75,7 +75,7 @@ data class FileListRequest(
     val lastSyncTime: String,
     
     @SerializedName("queryManual")
-    val queryManual: String = "N"
+    val queryManual: String = "Y"
 )
 
 /**

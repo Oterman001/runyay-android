@@ -168,24 +168,28 @@ fun BlendedTrajectoryThumbnail(
     trackPoints: List<TrackPoint>?,
     isLoading: Boolean = false,
     isOutdoor: Boolean,
+    totalDistance: Double = 0.0,
     modifier: Modifier = Modifier,
     width: Dp = 100.dp,
     height: Dp = 100.dp,
     trackAlpha: Float = 0.9f,
     markerAlpha: Float = 1.0f
 ) {
+    val context = LocalContext.current
     val isDark = RunTheme.isDark
     val density = LocalDensity.current
     val widthPx = with(density) { width.toPx().toInt() }
     val heightPx = with(density) { height.toPx().toInt() }
+    val colorMode = remember { PreferencesManager(context).getTrajectoryColorMode() }
 
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
 
-    LaunchedEffect(trackPoints, isLoading, isDark, widthPx, heightPx) {
+    LaunchedEffect(trackPoints, isLoading, isDark, widthPx, heightPx, colorMode) {
         if (!isOutdoor || isLoading || trackPoints.isNullOrEmpty()) {
             bitmap = null
             return@LaunchedEffect
         }
+        val trackColorOverride = getTrackColor(totalDistance, isDark, colorMode)
         bitmap = withContext(Dispatchers.Default) {
             TrajectoryRenderer.renderBlended(
                 trackPoints = trackPoints,
@@ -193,7 +197,8 @@ fun BlendedTrajectoryThumbnail(
                 height = heightPx,
                 isDark = isDark,
                 trackAlpha = trackAlpha,
-                markerAlpha = markerAlpha
+                markerAlpha = markerAlpha,
+                trackColorOverride = trackColorOverride
             )
         }
     }

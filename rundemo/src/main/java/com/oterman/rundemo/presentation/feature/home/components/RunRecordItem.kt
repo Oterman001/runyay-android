@@ -188,6 +188,7 @@ fun RunRecordItem(
                         trackPoints = trackPoints,
                         isLoading = isTrackPointsLoading,
                         isOutdoor = true,
+                        totalDistance = record.totalDistance,
                         width = 75.dp,
                         height = 75.dp
                     )

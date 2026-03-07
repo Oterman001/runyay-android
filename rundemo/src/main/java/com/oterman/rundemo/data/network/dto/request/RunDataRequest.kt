@@ -24,7 +24,7 @@ data class ActivityFileListRequest(
     val pageSize: Int = 15,
 
     @SerializedName("queryManual")
-    val queryManual: String = "N"
+    val queryManual: String = "Y"
 )
 
 /**
