@@ -57,6 +57,7 @@ import com.oterman.rundemo.presentation.feature.debug.allrecords.AllRunRecordsDe
 import com.oterman.rundemo.presentation.feature.syncstatus.DataSyncStatusScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 import com.oterman.rundemo.ui.theme.ThemeMode
+import com.oterman.rundemo.data.local.PreferencesManager
 
 /**
  * 应用导航图
@@ -86,15 +87,24 @@ fun AppNavGraph(
 
         // 登录页面
         composable(Screen.Login.route) {
+            val context = LocalContext.current
             LoginScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
                 onLoginSuccess = {
-                    // 登录成功后导航到绑定引导页
-                    navController.navigate(Screen.BindingGuide.route) {
-                        // 清除欢迎页面和登录页面，防止返回
-                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    // TODO: 预留服务器接口，待服务端接口就绪后，在此处同步查询服务器端生理参数设置状态
+                    val prefsManager = PreferencesManager(context)
+                    if (!prefsManager.isPhysioSetupCompleted()) {
+                        // 未设置过生理参数，先引导设置
+                        navController.navigate(Screen.PhysioSetup.createRoute("binding_guide")) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
+                    } else {
+                        // 已设置，直接进入绑定引导
+                        navController.navigate(Screen.BindingGuide.route) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
                     }
                 },
                 onNavigateToRegister = {
