@@ -1,0 +1,102 @@
+
+批量上传跑步记录
+接口路径： POST /api/rundata/upload
+接口描述： 客户端批量上传 HealthKit 跑步记录数据，服务端进行去重处理，返回成功/失败统计。
+请求参数
+Body DtoClassName：RunRecordUploadRequestDto
+
+
+hkUUid
+string
+HealthKit UUID（将作为 summaryId 和 activityId）
+
+deviceVersion
+string
+设备版本
+
+deviceInfo
+string
+设备信息（存储到 dataSource）
+
+heartRateDevice
+string
+心率设备
+
+deviceName
+string
+设备名称
+
+timezone
+string
+时区，如 Asia/Shanghai
+
+startTime
+string
+开始时间（Date 字符串格式）
+
+endTime
+string
+结束时间（Date 字符串格式）
+
+duration
+double
+总时长（秒）
+
+activeDuration
+double
+活跃时长（秒）
+
+totalDistance
+double
+总距离（km）
+
+averagePace
+double
+平均配速（min/km）
+
+averageHeartRate
+double
+平均心率
+
+maxHeartRate
+double
+最大心率
+
+minHeartRate
+double
+最小心率
+
+totalStepCount
+double
+总步数
+
+totalActiveEnergy
+double
+总活动能量（卡路里）
+
+restingHeartRate
+integer
+静息心率
+
+userMaxHeartRate
+integer
+用户最大心率
+
+响应参数
+Data DtoClassName：RunRecordUploadResponseDt
+
+totalCount
+integer
+提交的总记录数
+
+successCount
+integer
+成功上传数量
+
+failedCount
+integer
+失败数量
+
+failedRecords
+array
+失败记录列表

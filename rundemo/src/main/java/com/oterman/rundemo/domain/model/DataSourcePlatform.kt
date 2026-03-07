@@ -53,6 +53,14 @@ enum class DataSourcePlatform(
         iconResId = R.drawable.icon_huawei,
         isEnabled = false,
         supportsSorting = false
+    ),
+    MANUAL(
+        code = "MANUAL",
+        displayName = "手动导入",
+        appBrandName = "手动导入",
+        iconResId = R.drawable.icon_huawei,
+        isEnabled = true,
+        supportsSorting = false
     );
 
     companion object {

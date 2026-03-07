@@ -339,27 +339,59 @@ class HomeViewModel(
             _uiState.update { it.copy(isImportingFit = true) }
             
             val result = fitImportService.importFitFile(uri)
-            
-            _uiState.update { state ->
-                state.copy(
-                    isImportingFit = false,
-                    showImportResultDialog = true,
-                    fitImportResult = result
-                )
-            }
-            
+
             when (result) {
+                is FitImportResult.ConflictFound -> {
+                    RLog.w(TAG, "发现时间冲突: ${result.conflictingRecords.size}条记录")
+                    _uiState.update {
+                        it.copy(
+                            isImportingFit = false,
+                            showConflictDialog = true,
+                            conflictingRecords = result.conflictingRecords,
+                            pendingFitUri = result.pendingUri
+                        )
+                    }
+                }
                 is FitImportResult.Success -> {
                     RLog.i(TAG, "导入成功: ${result.distance}km, ${result.duration}min")
+                    _uiState.update {
+                        it.copy(isImportingFit = false, showImportResultDialog = true, fitImportResult = result)
+                    }
                 }
                 is FitImportResult.AlreadyExists -> {
                     RLog.w(TAG, "文件已导入过")
+                    _uiState.update {
+                        it.copy(isImportingFit = false, showImportResultDialog = true, fitImportResult = result)
+                    }
                 }
                 is FitImportResult.Error -> {
                     RLog.e(TAG, "导入失败: ${result.message}")
+                    _uiState.update {
+                        it.copy(isImportingFit = false, showImportResultDialog = true, fitImportResult = result)
+                    }
+                }
+                is FitImportResult.UploadFailed -> {
+                    RLog.e(TAG, "上传失败: ${result.message}")
+                    _uiState.update {
+                        it.copy(isImportingFit = false, showImportResultDialog = true, fitImportResult = result)
+                    }
                 }
             }
         }
+    }
+
+    fun confirmConflictImport() {
+        val uri = _uiState.value.pendingFitUri ?: return
+        _uiState.update { it.copy(showConflictDialog = false, conflictingRecords = emptyList(), pendingFitUri = null) }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImportingFit = true) }
+            val result = fitImportService.importFitFile(uri, forceImport = true)
+            _uiState.update { it.copy(isImportingFit = false, showImportResultDialog = true, fitImportResult = result) }
+        }
+    }
+
+    fun skipConflictImport() {
+        _uiState.update { it.copy(showConflictDialog = false, conflictingRecords = emptyList(), pendingFitUri = null) }
     }
     
     /**

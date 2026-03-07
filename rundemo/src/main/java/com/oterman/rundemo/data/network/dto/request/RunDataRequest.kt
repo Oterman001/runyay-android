@@ -1,7 +1,33 @@
 package com.oterman.rundemo.data.network.dto.request
 
 import com.google.gson.annotations.SerializedName
-import com.oterman.rundemo.data.network.dto.RunSummaryBasicInfoDto
+
+/**
+ * 单条跑步记录上传项
+ * 对应 /api/rundata/upload Body DtoClassName: RunRecordUploadRequestDto
+ * 字段完全对齐 rundemo/docs/run_recordupload.txt
+ */
+data class RunRecordUploadItemDto(
+    @SerializedName("hkUUid") val hkUUid: String,
+    @SerializedName("deviceVersion") val deviceVersion: String? = null,
+    @SerializedName("deviceInfo") val deviceInfo: String? = null,
+    @SerializedName("heartRateDevice") val heartRateDevice: String? = null,
+    @SerializedName("deviceName") val deviceName: String? = null,
+    @SerializedName("timezone") val timezone: String? = null,
+    @SerializedName("startTime") val startTime: String,
+    @SerializedName("endTime") val endTime: String? = null,
+    @SerializedName("duration") val duration: Double? = null,
+    @SerializedName("activeDuration") val activeDuration: Double? = null,
+    @SerializedName("totalDistance") val totalDistance: Double? = null,
+    @SerializedName("averagePace") val averagePace: Double? = null,
+    @SerializedName("averageHeartRate") val averageHeartRate: Double? = null,
+    @SerializedName("maxHeartRate") val maxHeartRate: Double? = null,
+    @SerializedName("minHeartRate") val minHeartRate: Double? = null,
+    @SerializedName("totalStepCount") val totalStepCount: Double? = null,
+    @SerializedName("totalActiveEnergy") val totalActiveEnergy: Double? = null,
+    @SerializedName("restingHeartRate") val restingHeartRate: Int? = null,
+    @SerializedName("userMaxHeartRate") val userMaxHeartRate: Int? = null
+)
 
 /**
  * 统一文件列表请求
@@ -33,7 +59,7 @@ data class ActivityFileListRequest(
  */
 data class RunRecordUploadRequest(
     @SerializedName("records")
-    val records: List<RunSummaryBasicInfoDto>
+    val records: List<RunRecordUploadItemDto>
 )
 
 /**

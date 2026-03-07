@@ -92,7 +92,7 @@ object FitDataMapper {
             deviceVersion = parseResult.deviceInfo?.product?.toString(),
             
             // 数据来源
-            datasource = FitDataConverter.Datasource.LOCAL_FIT,
+            datasource = FitDataConverter.Datasource.MANUAL,
             originId = fileName,
             
             // 状态

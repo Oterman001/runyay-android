@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.ThemeMode
+import com.oterman.rundemo.presentation.feature.home.components.FitImportConflictDialog
 import com.oterman.rundemo.presentation.feature.home.tabs.DataTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.DashboardTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.ProfileTabContent
@@ -187,6 +188,16 @@ fun HomeScreen(
         )
     }
 
+    // FIT时间冲突对话框
+    if (uiState.showConflictDialog) {
+        FitImportConflictDialog(
+            conflictingRecords = uiState.conflictingRecords,
+            onConfirm = viewModel::confirmConflictImport,
+            onSkip = viewModel::skipConflictImport,
+            onViewDetail = onNavigateToRunDetail
+        )
+    }
+
     // 通知权限引导弹窗
     if (uiState.needsNotificationPermission) {
         NotificationPermissionDialog(
@@ -320,6 +331,10 @@ private fun FitImportResultDialog(
         is FitImportResult.Error -> {
             "导入失败" to result.message
         }
+        is FitImportResult.UploadFailed -> {
+            "上传失败" to result.message
+        }
+        is FitImportResult.ConflictFound -> return
         null -> return
     }
     

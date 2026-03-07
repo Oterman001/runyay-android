@@ -148,7 +148,8 @@ object FitDataConverter {
         const val SUUNTO = "SUUNTO"         // 颂拓
         const val POLAR = "POLAR"           // 博能
         const val APPLE_WATCH = "APPLE"     // Apple Watch
-        const val LOCAL_FIT = "LOCAL"       // 本地FIT文件
+        const val LOCAL_FIT = "LOCAL"       // 本地FIT文件（已废弃，改用 MANUAL）
+        const val MANUAL = "MANUAL"         // 用户手动导入
     }
     
     // ==================== 轨迹状态常量 ====================

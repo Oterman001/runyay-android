@@ -285,7 +285,7 @@ class UnifiedSyncService(
                 }
 
                 // 转换为上传DTO
-                val uploadDto = RunSummaryMapper.toUploadDto(record)
+                val uploadDto = RunSummaryMapper.toUploadItemDto(record)
                 val result = runDataRemoteRepository.uploadRunRecords(listOf(uploadDto))
 
                 if (result.isSuccess) {

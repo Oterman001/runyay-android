@@ -343,6 +343,7 @@ class UnifiedDataSyncManager private constructor(
             // 固定同步顺序：苹果健康 → 佳明中国 → 佳明国际 → 高驰
             // 不再判断平台授权状态，用户取消授权后云端可能仍有数据
             val platformsToSync = listOf(
+                DataSourcePlatform.MANUAL,
                 DataSourcePlatform.APPLE_HEALTH,
                 DataSourcePlatform.GARMIN_CHINA,
                 DataSourcePlatform.GARMIN_GLOBAL,
@@ -791,7 +792,7 @@ class UnifiedDataSyncManager private constructor(
             }
 
             // 转换为上传DTO
-            val uploadDtos = pendingRecords.map { RunSummaryMapper.toUploadDto(it) }
+            val uploadDtos = pendingRecords.map { RunSummaryMapper.toUploadItemDto(it) }
             val result = runDataRemoteRepository.uploadRunRecords(uploadDtos)
 
             result.fold(

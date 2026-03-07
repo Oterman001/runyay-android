@@ -58,6 +58,15 @@ data class RunDataUploadResponseData(
 )
 
 /**
+ * 跑步数据上传失败记录
+ */
+data class FailedRecord(
+    @SerializedName("hkUUid") val hkUUid: String? = null,
+    @SerializedName("errorCode") val errorCode: String? = null,
+    @SerializedName("errorMessage") val errorMessage: String? = null
+)
+
+/**
  * 跑步数据上传响应
  */
 data class RunDataUploadResponse(
@@ -71,7 +80,7 @@ data class RunDataUploadResponse(
     val failedCount: Int = 0,
 
     @SerializedName("failedRecords")
-    val failedRecords: List<String>? = null
+    val failedRecords: List<FailedRecord>? = null
 )
 
 /**

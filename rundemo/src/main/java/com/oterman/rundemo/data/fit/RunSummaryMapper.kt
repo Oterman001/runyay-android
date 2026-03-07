@@ -2,6 +2,11 @@ package com.oterman.rundemo.data.fit
 
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.network.dto.RunSummaryBasicInfoDto
+import com.oterman.rundemo.data.network.dto.request.RunRecordUploadItemDto
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 /**
  * RunRecordEntity <-> RunSummaryBasicInfoDto 双向映射
@@ -20,6 +25,32 @@ import com.oterman.rundemo.data.network.dto.RunSummaryBasicInfoDto
  * | outdoor | 0=户外,1=室内 | outdoor | boolean | 0↔true |
  */
 object RunSummaryMapper {
+
+    /**
+     * Entity -> RunRecordUploadItemDto (用于 /api/rundata/upload)
+     * 字段和类型完全对齐服务端 API (run_recordupload.txt)
+     */
+    fun toUploadItemDto(entity: RunRecordEntity): RunRecordUploadItemDto {
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault())
+        sdf.timeZone = TimeZone.getDefault()
+        return RunRecordUploadItemDto(
+            hkUUid = entity.workoutId,
+            deviceVersion = entity.deviceVersion,
+            deviceInfo = entity.deviceInfo,
+            timezone = TimeZone.getDefault().id,
+            startTime = sdf.format(Date(entity.startTime)),
+            endTime = sdf.format(Date(entity.endTime)),
+            duration = entity.duration * 60.0,
+            activeDuration = entity.activeDuration * 60.0,
+            totalDistance = entity.totalDistance,
+            averagePace = entity.averageSpeed.takeIf { it > 0 },
+            averageHeartRate = entity.averageHeartRate.takeIf { it > 0 },
+            maxHeartRate = entity.maxHeartRate.takeIf { it > 0 },
+            minHeartRate = entity.minHeartRate.takeIf { it > 0 },
+            totalStepCount = entity.totalStepCount.takeIf { it > 0 },
+            totalActiveEnergy = entity.totalCalories.takeIf { it > 0 }
+        )
+    }
 
     /**
      * Entity -> DTO (用于上传)

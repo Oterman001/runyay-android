@@ -1,6 +1,7 @@
 package com.oterman.rundemo.data.network
 
 import com.oterman.rundemo.data.network.api.DataSourceApi
+import com.oterman.rundemo.data.network.api.FitFileApi
 import com.oterman.rundemo.data.network.api.RunDataApi
 import com.oterman.rundemo.data.network.api.UserApi
 import com.oterman.rundemo.data.network.interceptor.AuthInterceptor
@@ -84,6 +85,13 @@ object RetrofitClient {
      */
     val runDataApi: RunDataApi by lazy {
         retrofit.create(RunDataApi::class.java)
+    }
+
+    /**
+     * FIT文件上传API接口实例
+     */
+    val fitFileApi: FitFileApi by lazy {
+        retrofit.create(FitFileApi::class.java)
     }
 }
 

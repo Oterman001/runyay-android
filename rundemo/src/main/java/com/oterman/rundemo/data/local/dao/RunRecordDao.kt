@@ -114,5 +114,19 @@ interface RunRecordDao {
 
     @Query("UPDATE run_record SET uploadStatus = :status WHERE workoutId = :workoutId")
     suspend fun updateUploadStatus(workoutId: String, status: Int)
+
+    @Query("""
+        SELECT * FROM run_record
+        WHERE userId = :userId
+        AND inclusiveLevel != 0
+        AND startTime < :newEndTime
+        AND endTime > :newStartTime
+        ORDER BY startTime DESC
+    """)
+    suspend fun getConflictingRecordsForUser(
+        userId: String,
+        newStartTime: Long,
+        newEndTime: Long
+    ): List<RunRecordEntity>
 }
 

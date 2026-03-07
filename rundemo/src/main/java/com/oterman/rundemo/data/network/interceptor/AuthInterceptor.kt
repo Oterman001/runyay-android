@@ -1,6 +1,7 @@
 package com.oterman.rundemo.data.network.interceptor
 
 import okhttp3.Interceptor
+import okhttp3.MultipartBody
 import okhttp3.Response
 
 /**
@@ -15,16 +16,15 @@ class AuthInterceptor(
         val originalRequest = chain.request()
         val token = tokenProvider()
         
-        val request = if (token != null) {
-            originalRequest.newBuilder()
-                .header("Authorization", "Bearer $token")
-                .header("Content-Type", "application/json")
-                .build()
-        } else {
-            originalRequest.newBuilder()
-                .header("Content-Type", "application/json")
-                .build()
+        val builder = originalRequest.newBuilder()
+        if (token != null) {
+            builder.header("Authorization", "Bearer $token")
         }
+        // Don't set Content-Type for multipart requests — OkHttp derives it from the body
+        if (originalRequest.body !is MultipartBody) {
+            builder.header("Content-Type", "application/json")
+        }
+        val request = builder.build()
         
         return chain.proceed(request)
     }

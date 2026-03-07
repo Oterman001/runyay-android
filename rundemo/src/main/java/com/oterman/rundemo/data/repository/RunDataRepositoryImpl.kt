@@ -448,6 +448,10 @@ class RunDataRepositoryImpl private constructor(
         runRecordDao.updateUploadStatus(workoutId, status)
     }
 
+    override suspend fun getConflictingRecords(newStartTime: Long, newEndTime: Long): List<RunRecordEntity> {
+        return runRecordDao.getConflictingRecordsForUser(requireUserId(), newStartTime, newEndTime)
+    }
+
     // ==================== 扩展函数 ====================
     
     private fun RunSegmentEntity.toRunSegment(): RunSegment {

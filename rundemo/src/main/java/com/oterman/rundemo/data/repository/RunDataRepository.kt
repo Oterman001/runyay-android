@@ -294,5 +294,10 @@ interface RunDataRepository {
      * 更新上传状态
      */
     suspend fun updateUploadStatus(workoutId: String, status: Int)
+
+    /**
+     * 获取与指定时间段冲突的记录（inclusiveLevel != 0）
+     */
+    suspend fun getConflictingRecords(newStartTime: Long, newEndTime: Long): List<RunRecordEntity>
 }
 

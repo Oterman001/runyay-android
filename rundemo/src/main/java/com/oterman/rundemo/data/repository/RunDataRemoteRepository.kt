@@ -1,11 +1,15 @@
 package com.oterman.rundemo.data.repository
 
+import com.google.gson.Gson
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.network.RequestBuilder
 import com.oterman.rundemo.data.network.RetrofitClient
+import com.oterman.rundemo.data.network.api.FitFileApi
 import com.oterman.rundemo.data.network.api.RunDataApi
 import com.oterman.rundemo.data.network.dto.RunSummaryBasicInfoDto
 import com.oterman.rundemo.data.network.dto.request.ActivityFileListRequest
+import com.oterman.rundemo.data.network.dto.request.FitFileUploadRequestDto
+import com.oterman.rundemo.data.network.dto.request.RunRecordUploadItemDto
 import com.oterman.rundemo.data.network.dto.request.RunRecordUploadRequest
 import com.oterman.rundemo.data.network.dto.request.RunSummaryDeleteRequest
 import com.oterman.rundemo.data.network.dto.request.RunSummaryQueryRequest
@@ -18,6 +22,9 @@ import com.oterman.rundemo.domain.model.UnifiedFileInfo
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
  * 跑步数据远程仓库
@@ -25,8 +32,10 @@ import kotlinx.coroutines.withContext
  */
 class RunDataRemoteRepository(
     private val preferencesManager: PreferencesManager,
-    private val api: RunDataApi = RetrofitClient.runDataApi
+    private val api: RunDataApi = RetrofitClient.runDataApi,
+    private val fitFileApi: FitFileApi = RetrofitClient.fitFileApi
 ) {
+    private val gson = Gson()
     companion object {
         private const val TAG = "RunDataRemoteRepo"
     }
@@ -77,7 +86,7 @@ class RunDataRemoteRepository(
      * 批量上传跑步基础数据
      */
     suspend fun uploadRunRecords(
-        records: List<RunSummaryBasicInfoDto>
+        records: List<RunRecordUploadItemDto>
     ): Result<RunDataUploadResponse> = withContext(Dispatchers.IO) {
         try {
             val request = createBaseRequest(
@@ -209,6 +218,53 @@ class RunDataRemoteRepository(
             }
         } catch (e: Exception) {
             RLog.e(TAG, "查询异常", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 上传FIT文件到服务器
+     * @return ossUrl on success
+     */
+    suspend fun uploadFitFile(
+        workoutId: String,
+        fileBytes: ByteArray,
+        fileName: String,
+        deviceName: String?,
+        activityType: String,
+        activityStartTime: String
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val userId = preferencesManager.getUserId()
+                ?: return@withContext Result.failure(Exception("用户未登录"))
+            val bodyDto = FitFileUploadRequestDto(
+                workoutId = workoutId,
+                platformCode = "MANUAL",
+                userId = userId,
+                deviceName = deviceName,
+                activityType = activityType,
+                activityStartTime = activityStartTime
+            )
+            val requestJson = gson.toJson(createBaseRequest("FitFileUploadRequestDto", bodyDto))
+
+            val requestPart = requestJson.toRequestBody("application/json".toMediaType())
+            val filePart = MultipartBody.Part.createFormData(
+                "file", fileName,
+                fileBytes.toRequestBody("application/octet-stream".toMediaType())
+            )
+
+            val response = fitFileApi.uploadFitFile(requestPart, filePart)
+
+            if (response.isSuccess()) {
+                val ossUrl = response.data?.fitFileUploadResponseDto?.firstOrNull()?.ossUrl ?: ""
+                RLog.i(TAG, "FIT文件上传成功: workoutId=$workoutId, ossUrl=$ossUrl")
+                Result.success(ossUrl)
+            } else {
+                RLog.w(TAG, "FIT文件上传失败: ${response.msg}")
+                Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            RLog.e(TAG, "FIT文件上传异常", e)
             Result.failure(e)
         }
     }

@@ -1,5 +1,8 @@
 package com.oterman.rundemo.presentation.feature.home
 
+import android.net.Uri
+import com.oterman.rundemo.data.local.entity.RunRecordEntity
+
 /**
  * Home screen tab definition
  * Corresponds to iOS MainTabView tabs
@@ -17,6 +20,11 @@ sealed class FitImportResult {
     data class Success(val distance: Double, val duration: Double) : FitImportResult()
     object AlreadyExists : FitImportResult()
     data class Error(val message: String) : FitImportResult()
+    data class ConflictFound(
+        val conflictingRecords: List<RunRecordEntity>,
+        val pendingUri: Uri
+    ) : FitImportResult()
+    data class UploadFailed(val message: String) : FitImportResult()
 }
 
 /**
@@ -46,6 +54,11 @@ data class HomeUiState(
     val isImportingFit: Boolean = false,
     val showImportResultDialog: Boolean = false,
     val fitImportResult: FitImportResult? = null,
+
+    // FIT冲突检测对话框状态
+    val showConflictDialog: Boolean = false,
+    val conflictingRecords: List<RunRecordEntity> = emptyList(),
+    val pendingFitUri: Uri? = null,
 
     // 数据同步状态
     val isSyncing: Boolean = false,
