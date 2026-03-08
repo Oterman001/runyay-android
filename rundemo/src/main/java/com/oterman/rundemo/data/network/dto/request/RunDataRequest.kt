@@ -26,7 +26,54 @@ data class RunRecordUploadItemDto(
     @SerializedName("totalStepCount") val totalStepCount: Double? = null,
     @SerializedName("totalActiveEnergy") val totalActiveEnergy: Double? = null,
     @SerializedName("restingHeartRate") val restingHeartRate: Int? = null,
-    @SerializedName("userMaxHeartRate") val userMaxHeartRate: Int? = null
+    @SerializedName("userMaxHeartRate") val userMaxHeartRate: Int? = null,
+
+    // 距离和速度
+    @SerializedName("originDistance") val originDistance: Double? = null,
+    @SerializedName("maxPace") val maxPace: Double? = null,
+
+    // 地理
+    @SerializedName("address") val address: String? = null,
+    @SerializedName("elevationAscended") val elevationAscended: Double? = null,
+
+    // 步幅触地垂直振幅
+    @SerializedName("averageStrideLength") val averageStrideLength: Double? = null,
+    @SerializedName("averageContactTime") val averageContactTime: Double? = null,
+    @SerializedName("averageVerticalOscillation") val averageVerticalOscillation: Double? = null,
+
+    // 功率
+    @SerializedName("averagePower") val averagePower: Double? = null,
+    @SerializedName("maxPower") val maxPower: Double? = null,
+
+    // 步频
+    @SerializedName("averageCadence") val averageCadence: Double? = null,
+
+    // 训练指标（注意服务端字段名拼写错误，SerializedName 必须与服务端一致）
+    @SerializedName("trainingLoad") val trainingLoad: Double? = null,
+    @SerializedName("tainingEffect") val trainingEffect: Double? = null,           // 服务端拼写错误
+    @SerializedName("anaerobicTrainingEffect") val anaerobicTrainingEffect: Double? = null,
+
+    // 能力评估
+    @SerializedName("vdot") val vdot: Double? = null,
+    @SerializedName("overallVdot") val overallVdot: Double? = null,
+
+    // 环境
+    @SerializedName("weatherHumidity") val weatherHumidity: Double? = null,
+    @SerializedName("weatherTemprature") val weatherTemperature: Double? = null,   // 服务端拼写错误
+    @SerializedName("outdoor") val outdoor: Int? = null,
+
+    // 用户主观
+    @SerializedName("feelingLevel") val feelingLevel: Int? = null,
+    @SerializedName("inclusiveLevel") val inclusiveLevel: Int? = null,
+    @SerializedName("note") val note: String? = null,
+    @SerializedName("eventStr") val eventStr: String? = null,
+
+    // 关联
+    @SerializedName("shoeId") val shoeId: String? = null,
+    @SerializedName("trainPlanId") val trainPlanId: String? = null,
+    @SerializedName("datasource") val datasource: String? = null,
+    @SerializedName("originId") val originId: String? = null,
+    @SerializedName("raceId") val raceId: String? = null
 )
 
 /**
