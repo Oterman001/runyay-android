@@ -160,6 +160,7 @@ class UnifiedSyncService(
 
         val userConfig: UserPhysiologyConfig
         val isHKPlatform = targetPlatform == DataSourcePlatform.APPLE_HEALTH
+        val isManualPlatform = targetPlatform == DataSourcePlatform.MANUAL
 
         if (summaryRestHR != null && summaryRestHR > 0) {
             // runSummary有有效静息心率 → 直接使用，存储到本地，跳过网络请求
@@ -168,9 +169,9 @@ class UnifiedSyncService(
 
             // 存储到本地DB
             saveHealthDataFromSummary(parseResult, summaryRestHR, summaryVo2Max)
-        } else if (isHKPlatform) {
-            // HK平台 → 不触发网络请求，使用默认值
-            RLog.i(logTag, "HK平台跳过健康数据网络请求，使用默认值")
+        } else if (isHKPlatform || isManualPlatform) {
+            // HK/MANUAL平台 → 不触发网络请求，使用默认值
+            RLog.i(logTag, "${targetPlatform.displayName}平台跳过健康数据网络请求，使用默认值")
             userConfig = UserPhysiologyConfig()
         } else {
             // 其他情况 → 走原有buildUserConfig流程（可能触发网络请求）

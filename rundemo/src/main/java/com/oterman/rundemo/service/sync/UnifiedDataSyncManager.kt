@@ -176,6 +176,14 @@ class UnifiedDataSyncManager private constructor(
         UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.APPLE_HEALTH)
     }
 
+    private val unifiedManualSyncService: UnifiedSyncService by lazy {
+        UnifiedSyncService(
+            dataSourceRepository, runRecordDao, samplePointDao, segmentDao,
+            dataSourcePreferences, runDataRepository, healthRepository,
+            runDataRemoteRepository, DataSourcePlatform.MANUAL
+        )
+    }
+
     // 同步状态
     private val isUnifiedSyncing = AtomicBoolean(false)
     private val platformSyncMutex = Mutex()
@@ -585,7 +593,8 @@ class UnifiedDataSyncManager private constructor(
                 garminChinaSyncService.isCurrentlySyncing() ||
                 garminGlobalSyncService.isCurrentlySyncing() ||
                 corosSyncService.isCurrentlySyncing() ||
-                unifiedAppleHealthSyncService.isCurrentlySyncing()
+                unifiedAppleHealthSyncService.isCurrentlySyncing() ||
+                unifiedManualSyncService.isCurrentlySyncing()
     }
 
     /**
@@ -709,6 +718,7 @@ class UnifiedDataSyncManager private constructor(
      */
     fun getUnifiedSyncService(platform: DataSourcePlatform): UnifiedSyncService? {
         return when (platform) {
+            DataSourcePlatform.MANUAL -> unifiedManualSyncService
             DataSourcePlatform.APPLE_HEALTH -> unifiedAppleHealthSyncService
             DataSourcePlatform.GARMIN_CHINA -> unifiedGarminChinaSyncService
             DataSourcePlatform.GARMIN_GLOBAL -> unifiedGarminGlobalSyncService
