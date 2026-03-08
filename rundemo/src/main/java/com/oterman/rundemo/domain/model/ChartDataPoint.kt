@@ -30,6 +30,9 @@ enum class ChartDataType(val value: Int, val displayName: String, val unit: Stri
     }
 }
 
+/** 图表平滑总开关：true=开启贝塞尔曲线+移动平均，false=保持原始折线 */
+const val CHART_SMOOTH_ENABLED = true
+
 /**
  * 移动平均平滑，用于消除传感器噪声毛刺。
  * 不改变 timeOffset，只平滑 value；avgValue/maxValue/minValue 保持原始统计。

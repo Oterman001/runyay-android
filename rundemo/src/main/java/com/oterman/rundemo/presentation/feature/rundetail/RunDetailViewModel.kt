@@ -15,6 +15,7 @@ import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.util.RLog
+import com.oterman.rundemo.domain.model.CHART_SMOOTH_ENABLED
 import com.oterman.rundemo.domain.model.smoothed
 import com.oterman.rundemo.domain.model.IntervalType
 import com.oterman.rundemo.domain.model.MergedRunSegment
@@ -89,15 +90,15 @@ class RunDetailViewModel(
                 // 判断是否为户外跑（有GPS轨迹）
                 val isOutdoor = trackPoints.isNotEmpty()
 
-                // 加载图表数据（移动平均降噪：消除传感器噪声毛刺）
-                val heartRateSeries = repository.getHeartRateSeries(workoutId).smoothed(7)
-                val speedSeries = repository.getSpeedSeries(workoutId).smoothed(9)
-                val cadenceSeries = repository.getCadenceSeries(workoutId).smoothed(5)
-                val powerSeries = repository.getPowerSeries(workoutId).smoothed(5)
-                val strideLengthSeries = repository.getStrideLengthSeries(workoutId).smoothed(5)
-                val verticalOscillationSeries = repository.getVerticalOscillationSeries(workoutId).smoothed(5)
-                val contactTimeSeries = repository.getContactTimeSeries(workoutId).smoothed(5)
-                val altitudeSeries = repository.getAltitudeSeries(workoutId).smoothed(7)
+                // 加载图表数据（移动平均降噪，受 CHART_SMOOTH_ENABLED 控制）
+                val heartRateSeries = repository.getHeartRateSeries(workoutId).let { if (CHART_SMOOTH_ENABLED) it.smoothed(7) else it }
+                val speedSeries = repository.getSpeedSeries(workoutId).let { if (CHART_SMOOTH_ENABLED) it.smoothed(9) else it }
+                val cadenceSeries = repository.getCadenceSeries(workoutId).let { if (CHART_SMOOTH_ENABLED) it.smoothed(5) else it }
+                val powerSeries = repository.getPowerSeries(workoutId).let { if (CHART_SMOOTH_ENABLED) it.smoothed(5) else it }
+                val strideLengthSeries = repository.getStrideLengthSeries(workoutId).let { if (CHART_SMOOTH_ENABLED) it.smoothed(5) else it }
+                val verticalOscillationSeries = repository.getVerticalOscillationSeries(workoutId).let { if (CHART_SMOOTH_ENABLED) it.smoothed(5) else it }
+                val contactTimeSeries = repository.getContactTimeSeries(workoutId).let { if (CHART_SMOOTH_ENABLED) it.smoothed(5) else it }
+                val altitudeSeries = repository.getAltitudeSeries(workoutId).let { if (CHART_SMOOTH_ENABLED) it.smoothed(7) else it }
 
                 // 加载区间数据（同时加载7区间和5区间）
                 val heartRate7Zones = repository.getHeartRate7Zones(workoutId)

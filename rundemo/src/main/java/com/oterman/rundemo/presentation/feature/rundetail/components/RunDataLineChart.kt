@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.oterman.rundemo.domain.model.CHART_SMOOTH_ENABLED
 import com.oterman.rundemo.domain.model.ChartDataPoint
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
@@ -305,31 +306,38 @@ private fun DrawScope.drawLineChart(
     fillPath.moveTo(firstX, chartHeight)
     fillPath.lineTo(firstX, firstY)
 
-    // 预计算所有点坐标，用于 Catmull-Rom 贝塞尔平滑
-    val pts = dataPoints.map { Offset(getX(it.timeOffset), getY(it.value)) }
-    val n = pts.size
-
-    if (n < 3) {
-        // 点数太少，直接连线
-        for (i in 1 until n) {
-            linePath.lineTo(pts[i].x, pts[i].y)
-            fillPath.lineTo(pts[i].x, pts[i].y)
+    if (!CHART_SMOOTH_ENABLED) {
+        // 直线连接（默认）
+        for (i in 1 until dataPoints.size) {
+            val x = getX(dataPoints[i].timeOffset)
+            val y = getY(dataPoints[i].value)
+            linePath.lineTo(x, y)
+            fillPath.lineTo(x, y)
         }
     } else {
-        // Catmull-Rom → 贝塞尔，tension = 1/6
-        for (i in 1 until n) {
-            val p0 = if (i == 1) pts[0] else pts[i - 2]
-            val p1 = pts[i - 1]
-            val p2 = pts[i]
-            val p3 = if (i == n - 1) pts[n - 1] else pts[i + 1]
+        // Catmull-Rom 贝塞尔平滑曲线
+        val pts = dataPoints.map { Offset(getX(it.timeOffset), getY(it.value)) }
+        val n = pts.size
+        if (n < 3) {
+            for (i in 1 until n) {
+                linePath.lineTo(pts[i].x, pts[i].y)
+                fillPath.lineTo(pts[i].x, pts[i].y)
+            }
+        } else {
+            for (i in 1 until n) {
+                val p0 = if (i == 1) pts[0] else pts[i - 2]
+                val p1 = pts[i - 1]
+                val p2 = pts[i]
+                val p3 = if (i == n - 1) pts[n - 1] else pts[i + 1]
 
-            val cp1x = p1.x + (p2.x - p0.x) / 6f
-            val cp1y = p1.y + (p2.y - p0.y) / 6f
-            val cp2x = p2.x - (p3.x - p1.x) / 6f
-            val cp2y = p2.y - (p3.y - p1.y) / 6f
+                val cp1x = p1.x + (p2.x - p0.x) / 6f
+                val cp1y = p1.y + (p2.y - p0.y) / 6f
+                val cp2x = p2.x - (p3.x - p1.x) / 6f
+                val cp2y = p2.y - (p3.y - p1.y) / 6f
 
-            linePath.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y)
-            fillPath.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y)
+                linePath.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y)
+                fillPath.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y)
+            }
         }
     }
 
