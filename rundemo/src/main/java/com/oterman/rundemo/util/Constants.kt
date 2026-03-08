@@ -68,6 +68,9 @@ object Constants {
         const val KEY_HR_GENDER = "hr_gender"
         const val KEY_PHYSIO_SETUP_COMPLETED = "physio_setup_completed"
         const val KEY_FIT_IMPORT_DISCLAIMER_DISMISSED = "fit_import_disclaimer_dismissed"
+
+        // Notification permission dialog
+        const val KEY_NOTIFICATION_DENIED_DATE = "notification_denied_date"
     }
     
     /**

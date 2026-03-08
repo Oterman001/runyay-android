@@ -421,6 +421,17 @@ class PreferencesManager(context: Context) {
         prefs.edit().putBoolean(Constants.PreferenceKeys.KEY_FIT_IMPORT_DISCLAIMER_DISMISSED, dismissed).apply()
     }
 
+    // ==================== Notification Permission ====================
+
+    fun saveNotificationDeniedDate() {
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_NOTIFICATION_DENIED_DATE, java.time.LocalDate.now().toString()).apply()
+    }
+
+    fun wasNotificationDeniedToday(): Boolean {
+        val saved = prefs.getString(Constants.PreferenceKeys.KEY_NOTIFICATION_DENIED_DATE, null)
+        return saved == java.time.LocalDate.now().toString()
+    }
+
     // ==================== Theme Mode ====================
 
     fun saveThemeMode(mode: ThemeMode) {

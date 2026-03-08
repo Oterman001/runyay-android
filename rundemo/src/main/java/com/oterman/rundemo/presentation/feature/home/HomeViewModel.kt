@@ -160,8 +160,12 @@ class HomeViewModel(
                 context, Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
             if (!granted) {
-                RLog.i(TAG, "通知权限未授予，设置权限引导标志")
-                _uiState.update { it.copy(needsNotificationPermission = true) }
+                if (preferencesManager.wasNotificationDeniedToday()) {
+                    RLog.i(TAG, "今日已拒绝通知权限，跳过引导")
+                } else {
+                    RLog.i(TAG, "通知权限未授予，设置权限引导标志")
+                    _uiState.update { it.copy(needsNotificationPermission = true) }
+                }
             }
         }
 
@@ -173,7 +177,11 @@ class HomeViewModel(
     /**
      * 关闭通知权限引导弹窗
      */
-    fun dismissNotificationPermissionRequest() {
+    fun dismissNotificationPermissionRequest(saveDenial: Boolean = true) {
+        if (saveDenial) {
+            preferencesManager.saveNotificationDeniedDate()
+            RLog.i(TAG, "通知权限被拒，记录日期: ${java.time.LocalDate.now()}")
+        }
         _uiState.update { it.copy(needsNotificationPermission = false) }
     }
 

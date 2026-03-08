@@ -83,9 +83,9 @@ fun HomeScreen(
     // 通知权限请求 launcher
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { _ ->
-        // 无论结果如何，同步已在进行，关闭弹窗
-        viewModel.dismissNotificationPermissionRequest()
+    ) { granted ->
+        // 同步已在进行，关闭弹窗；若用户拒绝，记录今日日期
+        viewModel.dismissNotificationPermissionRequest(saveDenial = !granted)
     }
 
     // 进入首页时自动触发同步
@@ -202,12 +202,14 @@ fun HomeScreen(
     if (uiState.needsNotificationPermission) {
         NotificationPermissionDialog(
             onConfirm = {
-                viewModel.dismissNotificationPermissionRequest()
+                viewModel.dismissNotificationPermissionRequest(saveDenial = false) // 结果由系统弹窗回调决定
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             },
-            onDismiss = viewModel::dismissNotificationPermissionRequest
+            onDismiss = {
+                viewModel.dismissNotificationPermissionRequest(saveDenial = true) // 用户明确拒绝
+            }
         )
     }
 }
