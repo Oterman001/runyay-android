@@ -227,16 +227,9 @@ class FitRecordProcessor(
             RLog.d(TAG, "OverallVdot保存成功: workoutId=${entity.workoutId}")
         }
 
-        // 3. 保存PB记录
-        var newPBCount = 0
-        for (pb in result.pbRecords) {
-            val isBetter = repository.savePBIfBetter(pb)
-            if (isBetter) {
-                newPBCount++
-                RLog.i(TAG, "新PB! ${pb.type}/${pb.subType} = ${String.format("%.2f", pb.value)}")
-            }
-        }
-        RLog.d(TAG, "PB计算保存完成: 共${result.pbRecords.size}项候选，${newPBCount}项为新PB")
+        // 3. 保存PB记录（全量存储，幂等）
+        repository.savePBRecords(result.pbRecords)
+        RLog.d(TAG, "PB全量保存完成: 共${result.pbRecords.size}项")
     }
 
     /**

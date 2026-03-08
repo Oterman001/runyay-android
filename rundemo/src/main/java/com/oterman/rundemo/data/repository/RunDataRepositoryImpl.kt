@@ -390,6 +390,8 @@ class RunDataRepositoryImpl private constructor(
 
     override suspend fun savePBRecords(records: List<PBRecordEntity>) {
         val uid = requireUserId()
+        val workoutId = records.firstOrNull()?.workoutId ?: return
+        pbRecordDao.deleteByWorkoutIdForUser(uid, workoutId)
         pbRecordDao.insertAll(records.map { it.copy(userId = uid) })
     }
 

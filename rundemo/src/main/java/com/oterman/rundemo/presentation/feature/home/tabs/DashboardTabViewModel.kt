@@ -461,7 +461,7 @@ class DashboardTabViewModel(
         latestVdot: OverallVdotEntity?
     ): List<PBAbilityInfo> {
         // 最大跑力：优先 pb_record (subType=MVdot)，回退到 overall_vdot 表，再回退 run_record
-        val vdotPB = abilityPBs.find { it.subType == PBAbilityKey.MAX_VDOT.subType }
+        val vdotPB = abilityPBs.filter { it.subType == PBAbilityKey.MAX_VDOT.subType }.maxByOrNull { it.value }
         val maxVdot = if (vdotPB != null) {
             PBAbilityInfo(
                 itemKey = PBAbilityKey.MAX_VDOT,
@@ -480,7 +480,7 @@ class DashboardTabViewModel(
         }
 
         // 最远距离：优先 pb_record (subType=MDistance)，回退到 run_record
-        val distancePB = abilityPBs.find { it.subType == PBAbilityKey.MAX_DISTANCE.subType }
+        val distancePB = abilityPBs.filter { it.subType == PBAbilityKey.MAX_DISTANCE.subType }.maxByOrNull { it.value }
         val maxDistance = if (distancePB != null) {
             PBAbilityInfo(
                 itemKey = PBAbilityKey.MAX_DISTANCE,
@@ -503,7 +503,7 @@ class DashboardTabViewModel(
         }
 
         // 最长时间：优先 pb_record (subType=MTime)，回退到 run_record
-        val durationPB = abilityPBs.find { it.subType == PBAbilityKey.MAX_DURATION.subType }
+        val durationPB = abilityPBs.filter { it.subType == PBAbilityKey.MAX_DURATION.subType }.maxByOrNull { it.value }
         val maxDuration = if (durationPB != null) {
             PBAbilityInfo(
                 itemKey = PBAbilityKey.MAX_DURATION,
@@ -534,7 +534,7 @@ class DashboardTabViewModel(
      */
     private fun calculatePBSpeedList(speedPBs: List<PBRecordEntity>): List<PBSpeedInfo> {
         return PBSpeedKey.entries.map { key ->
-            val entity = speedPBs.find { it.subType == key.subType }
+            val entity = speedPBs.filter { it.subType == key.subType }.minByOrNull { it.value }
             PBSpeedInfo(
                 pbKey = key,
                 pbTimeValue = entity?.let { formatDuration(it.value) },

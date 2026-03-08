@@ -232,7 +232,8 @@ interface RunDataRepository {
     suspend fun savePBIfBetter(pbRecord: PBRecordEntity): Boolean
     
     /**
-     * 批量保存PB记录
+     * 批量保存PB记录（幂等，支持重复导入）
+     * 先删除该 workoutId 的旧记录，再批量插入全量候选值
      */
     suspend fun savePBRecords(records: List<PBRecordEntity>)
     

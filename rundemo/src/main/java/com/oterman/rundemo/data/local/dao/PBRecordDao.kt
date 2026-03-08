@@ -76,6 +76,9 @@ interface PBRecordDao {
     @Query("DELETE FROM pb_record WHERE userId = :userId AND type = :type AND subType = :subType AND inclusiveLevel > 0")
     suspend fun clearBestForTypeAndSubTypeForUser(userId: String, type: String, subType: String)
 
+    @Query("DELETE FROM pb_record WHERE userId = :userId AND workoutId = :workoutId")
+    suspend fun deleteByWorkoutIdForUser(userId: String, workoutId: String)
+
     @Query("UPDATE pb_record SET userId = :userId WHERE userId = ''")
     suspend fun migrateOrphanedRecords(userId: String)
 }
