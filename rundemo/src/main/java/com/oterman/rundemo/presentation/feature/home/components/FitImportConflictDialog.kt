@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.presentation.feature.datasource.components.DataSourceItem
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 import java.text.SimpleDateFormat
@@ -103,7 +105,7 @@ private fun ConflictRecordItem(
 ) {
     val timeFormat = SimpleDateFormat("M月d日 HH:mm", Locale.getDefault())
     val startTimeStr = timeFormat.format(Date(record.startTime))
-    val datasourceLabel = record.datasource ?: ""
+    val datasourceLabel = DataSourcePlatform.fromCode(record.datasource ?: "")?.displayNameEn ?: ""
 
     Surface(
         modifier = Modifier

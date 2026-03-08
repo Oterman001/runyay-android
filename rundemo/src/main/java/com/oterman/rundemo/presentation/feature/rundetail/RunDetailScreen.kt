@@ -1,7 +1,7 @@
 package com.oterman.rundemo.presentation.feature.rundetail
 
-import android.content.Intent
 import android.net.Uri
+import com.oterman.rundemo.domain.model.DataSourcePlatform
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -536,15 +536,12 @@ private fun DataSourceLabel(
     datasource: String?,
     modifier: Modifier = Modifier
 ) {
-    val sourceText = when (datasource) {
-        "GCN" -> "数据来源: 佳明中国®"
-        "GGB" -> "数据来源: 佳明国际"
-        "COROS" -> "数据来源: 高驰"
-        "APPLE" -> "数据来源: Apple Watch"
-        "SUUNTO" -> "数据来源: Suunto"
-        "POLAR" -> "数据来源: Polar"
-        null -> "本地数据"
-        else -> "数据来源: $datasource"
+    val sourceText = if (datasource == null) {
+        "本地数据"
+    } else {
+        val platform = DataSourcePlatform.fromCode(datasource)
+        if (platform != null) "数据来源: ${platform.displayNameEn}(${platform.displayName})"
+        else "数据来源: $datasource"
     }
 
     Text(

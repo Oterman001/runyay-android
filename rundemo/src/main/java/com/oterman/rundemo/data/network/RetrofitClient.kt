@@ -18,8 +18,8 @@ import java.util.concurrent.TimeUnit
  */
 object RetrofitClient {
     
-//    private const val BASE_URL = "https://yayarun.cn/sys/"
-    private const val BASE_URL = "http://192.168.31.5:8080"
+    private const val BASE_URL = "https://yayarun.cn/sys/"
+//    private const val BASE_URL = "http://192.168.31.5:8080"
 
     private var tokenProvider: (() -> String?)? = null
     

@@ -9,6 +9,7 @@ import com.oterman.rundemo.R
 enum class DataSourcePlatform(
     val code: String,
     val displayName: String,
+    val displayNameEn: String,
     val appBrandName: String,
     val iconResId: Int,
     val isEnabled: Boolean = true,
@@ -16,7 +17,8 @@ enum class DataSourcePlatform(
 ) {
     GARMIN_CHINA(
         code = "GCN",
-        displayName = "佳明(中国)",
+        displayName = "佳明中国",
+        displayNameEn = "Garmin CN",
         appBrandName = "GARMIN CONNECT™",
         iconResId = R.drawable.icon_garmin,
         isEnabled = true,
@@ -24,7 +26,8 @@ enum class DataSourcePlatform(
     ),
     GARMIN_GLOBAL(
         code = "GGB",
-        displayName = "佳明(国际)",
+        displayName = "佳明国际",
+        displayNameEn = "Garmin GB",
         appBrandName = "GARMIN CONNECT™",
         iconResId = R.drawable.icon_garmin,
         isEnabled = true,
@@ -32,7 +35,8 @@ enum class DataSourcePlatform(
     ),
     COROS(
         code = "COROS",
-        displayName = "COROS 高驰",
+        displayName = "高驰",
+        displayNameEn = "COROS",
         appBrandName = "COROS",
         iconResId = R.drawable.icon_coros,
         isEnabled = true,
@@ -41,6 +45,7 @@ enum class DataSourcePlatform(
     APPLE_HEALTH(
         code = "HK",
         displayName = "苹果健康",
+        displayNameEn = "Apple HK",
         appBrandName = "Apple Health",
         iconResId = R.drawable.icon_huawei,
         isEnabled = true,
@@ -49,6 +54,7 @@ enum class DataSourcePlatform(
     HUAWEI(
         code = "HUAWEI",
         displayName = "华为运动健康",
+        displayNameEn = "Hua Wei",
         appBrandName = "华为运动健康",
         iconResId = R.drawable.icon_huawei,
         isEnabled = false,
@@ -57,6 +63,7 @@ enum class DataSourcePlatform(
     MANUAL(
         code = "MANUAL",
         displayName = "手动导入",
+        displayNameEn = "Manual",
         appBrandName = "手动导入",
         iconResId = R.drawable.icon_huawei,
         isEnabled = true,

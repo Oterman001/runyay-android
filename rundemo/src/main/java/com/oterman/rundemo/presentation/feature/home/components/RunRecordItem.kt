@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.components.InclusiveLevelIndicator
@@ -97,16 +98,15 @@ fun RunRecordItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    record.deviceInfo?.let { device ->
-                        if (device.isNotBlank()) {
-                            Text(
-                                text = device,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                    val platformName = DataSourcePlatform.fromCode(record.datasource ?: "")?.displayNameEn
+                    if (!platformName.isNullOrBlank()) {
+                        Text(
+                            text = platformName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                     InclusiveLevelIndicator(inclusiveLevel = record.inclusiveLevel)
                 }
