@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>智能验证码</title>
+    <script>
+        window.AliyunCaptchaConfig = window.AliyunCaptchaConfig || {
+            region: "cn",
+            prefix: "19awby",
+            sceneId: "g4yzrvks",
+            mode: "embed"
+        };
+    </script>
+    <script type="text/javascript" src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .container {
+            width: 100%;
+            padding: 24px 16px 20px;
+            text-align: center;
+        }
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #1d1d1f;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #86868b;
+            margin-bottom: 20px;
+        }
+        #captcha-element {
+            width: 100%;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .loading {
+            color: #86868b;
+            font-size: 15px;
+            padding: 20px 0;
+        }
+        .error-msg {
+            color: #ff3b30;
+            font-size: 13px;
+            margin-top: 8px;
+            padding: 10px 12px;
+            background: #ff3b301a;
+            border-radius: 8px;
+            text-align: left;
+        }
+        .retry-btn {
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: background-color 0.2s;
+        }
+        .retry-btn:active {
+            background: #0056cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">安全验证</div>
+        <div class="subtitle">请完成下方验证以继续操作</div>
+
+        <div id="captcha-element">
+            <div class="loading">正在加载验证码...</div>
+        </div>
+
+        <div id="error-message" class="error-msg" style="display: none;"></div>
+        <button id="retry-btn" class="retry-btn" style="display: none;" onclick="initCaptcha()">重新加载</button>
+    </div>
+
+    <script>
+        let captcha = null;
+
+        function getInstance(instance) {
+            captcha = instance;
+            window.captcha = instance;
+            const loadingElement = document.querySelector('.loading');
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+        }
+
+        function success(captchaVerifyParam) {
+            // iOS Bridge
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.getCaptchaVerifyParam) {
+                window.webkit.messageHandlers.getCaptchaVerifyParam.postMessage(captchaVerifyParam);
+            }
+            // Android Bridge
+            if (window.AndroidBridge) {
+                window.AndroidBridge.onCaptchaSuccess(captchaVerifyParam);
+            }
+        }
+
+        function fail(failResult) {
+            let errorMessage = '验证失败，请重试';
+            if (typeof failResult === 'string') {
+                errorMessage = failResult;
+            } else if (failResult && failResult.errorCode) {
+                switch(failResult.errorCode) {
+                    case 'SYSTEM_ERROR':  errorMessage = '系统错误，请稍后重试'; break;
+                    case 'PARAM_ERROR':   errorMessage = '参数错误，请重新验证'; break;
+                    case 'NETWORK_ERROR': errorMessage = '网络错误，请检查网络连接'; break;
+                    case 'USER_CANCEL':   errorMessage = '用户取消验证'; break;
+                    case 'VERIFY_TIMEOUT': errorMessage = '验证超时，请重新验证'; break;
+                    default: errorMessage = '验证失败: ' + failResult.errorCode;
+                }
+            }
+            showError(errorMessage);
+            // iOS Bridge
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.getCaptchaError) {
+                window.webkit.messageHandlers.getCaptchaError.postMessage({
+                    error: errorMessage,
+                    code: failResult.errorCode || 'UNKNOWN_ERROR'
+                });
+            }
+            // Android Bridge
+            if (window.AndroidBridge) {
+                window.AndroidBridge.onCaptchaFailure(errorMessage);
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('error-message');
+            const retryBtn = document.getElementById('retry-btn');
+            if (errorElement) { errorElement.textContent = message; errorElement.style.display = 'block'; }
+            if (retryBtn) { retryBtn.style.display = 'inline-block'; }
+        }
+
+        function hideError() {
+            const errorElement = document.getElementById('error-message');
+            const retryBtn = document.getElementById('retry-btn');
+            if (errorElement) { errorElement.style.display = 'none'; }
+            if (retryBtn) { retryBtn.style.display = 'none'; }
+        }
+
+        function initCaptcha() {
+            hideError();
+            const captchaElement = document.getElementById('captcha-element');
+            if (captchaElement) {
+                captchaElement.innerHTML = '<div class="loading">正在加载验证码...</div>';
+            }
+            try {
+                if (captcha && captcha.destroy) {
+                    captcha.destroy();
+                    captcha = null;
+                    window.captcha = null;
+                }
+                const config = window.AliyunCaptchaConfig;
+                // 滑块宽度自适应容器宽度，最大 300px
+                const slideWidth = Math.min(document.body.clientWidth - 32, 300);
+                window.initAliyunCaptcha({
+                    SceneId: config.sceneId,
+                    mode: config.mode,
+                    element: '#captcha-element',
+                    button: '#captcha-element',
+                    success: success,
+                    fail: fail,
+                    getInstance: getInstance,
+                    slideStyle: {
+                        width: slideWidth,
+                        height: 40,
+                    },
+                    language: 'cn',
+                });
+            } catch (error) {
+                showError('初始化失败: ' + error.message);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initCaptcha, 300);
+        });
+
+        window.addEventListener('error', function(e) {
+            showError('页面加载出错，请重试');
+        });
+
+        window.addEventListener('configUpdated', function() {
+            initCaptcha();
+        });
+    </script>
+</body>
+</html>

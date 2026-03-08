@@ -32,6 +32,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.presentation.components.AliyunCaptchaDialog
 import com.oterman.rundemo.presentation.feature.auth.register.steps.PasswordStep
 import com.oterman.rundemo.presentation.feature.auth.register.steps.PhoneInputStep
 import com.oterman.rundemo.presentation.feature.auth.register.steps.VerificationStep
@@ -162,6 +163,15 @@ fun RegisterScreen(
         }
     }
     
+    // 图形验证码对话框
+    if (uiState.showCaptcha) {
+        AliyunCaptchaDialog(
+            onSuccess = { param -> viewModel.handleCaptchaSuccess(param) },
+            onFailure = { error -> viewModel.handleCaptchaFailure(error) },
+            onCancel = { viewModel.handleCaptchaCancel() }
+        )
+    }
+
     // 错误对话框
     if (uiState.errorMessage != null) {
         RegisterErrorDialog(

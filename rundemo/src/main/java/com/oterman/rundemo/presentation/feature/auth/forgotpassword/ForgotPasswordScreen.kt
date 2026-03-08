@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.presentation.components.AliyunCaptchaDialog
 import com.oterman.rundemo.presentation.feature.auth.forgotpassword.steps.ForgotPasswordNewPasswordStep
 import com.oterman.rundemo.presentation.feature.auth.forgotpassword.steps.ForgotPasswordPhoneStep
 import com.oterman.rundemo.presentation.feature.auth.forgotpassword.steps.ForgotPasswordVerificationStep
@@ -145,6 +146,15 @@ fun ForgotPasswordScreen(
         }
     }
     
+    // 图形验证码对话框
+    if (uiState.showCaptcha) {
+        AliyunCaptchaDialog(
+            onSuccess = { param -> viewModel.handleCaptchaSuccess(param) },
+            onFailure = { error -> viewModel.handleCaptchaFailure(error) },
+            onCancel = { viewModel.handleCaptchaCancel() }
+        )
+    }
+
     // 用户不存在弹窗
     if (uiState.showUserNotExistAlert) {
         AlertDialog(

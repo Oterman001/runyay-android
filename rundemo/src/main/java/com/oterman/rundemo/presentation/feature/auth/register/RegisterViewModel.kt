@@ -32,9 +32,12 @@ class RegisterViewModel(
     // UI状态
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
-    
+
     // 倒计时Job
     private var countdownJob: Job? = null
+
+    // 图形验证码参数，验证成功后携带此参数重新发送短信
+    private var captchaParam: String = ""
 
     // ==================== 手机号输入处理 ====================
     
@@ -95,11 +98,12 @@ class RegisterViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             
-            val result = userRepository.sendRegisterVerificationCode(state.phoneNumber)
+            val result = userRepository.sendRegisterVerificationCode(state.phoneNumber, captchaParam)
             
             result.onSuccess { response ->
                 RLog.i(TAG, "验证码发送响应: sendFlag=${response.sendFlag}")
-                
+                captchaParam = ""
+
                 when {
                     response.isSuccess -> {
                         RLog.i(TAG, "验证码发送成功")
@@ -119,10 +123,10 @@ class RegisterViewModel(
                     }
                     response.needCaptcha -> {
                         RLog.w(TAG, "需要图形验证码")
-                        // TODO: 实现图形验证码功能
                         _uiState.update { it.copy(
                             isLoading = false,
-                            errorMessage = "需要图形验证码验证"
+                            showCaptcha = true,
+                            captchaSceneCode = response.captureSceneCode
                         )}
                     }
                     else -> {
@@ -143,6 +147,31 @@ class RegisterViewModel(
         }
     }
     
+    // ==================== 图形验证码处理 ====================
+
+    /**
+     * 图形验证码验证成功，携带参数重新发送短信
+     */
+    fun handleCaptchaSuccess(param: String) {
+        captchaParam = param
+        _uiState.update { it.copy(showCaptcha = false) }
+        requestVerificationCode()
+    }
+
+    /**
+     * 图形验证码验证失败
+     */
+    fun handleCaptchaFailure(error: String) {
+        _uiState.update { it.copy(showCaptcha = false, errorMessage = error) }
+    }
+
+    /**
+     * 用户取消图形验证码
+     */
+    fun handleCaptchaCancel() {
+        _uiState.update { it.copy(showCaptcha = false) }
+    }
+
     // ==================== 验证码验证处理 ====================
     
     /**

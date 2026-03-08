@@ -61,7 +61,11 @@ data class RegisterUiState(
     
     // 注册后保存的用户信息
     val registeredUserId: String? = null,
-    val registeredToken: String? = null
+    val registeredToken: String? = null,
+
+    // 图形验证码
+    val showCaptcha: Boolean = false,
+    val captchaSceneCode: String? = null
 ) {
     /**
      * 是否可以发送验证码

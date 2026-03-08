@@ -53,7 +53,11 @@ data class ForgotPasswordUiState(
     
     // 验证成功后获取的token和userId（用于设置新密码）
     val resetToken: String? = null,
-    val resetUserId: String? = null
+    val resetUserId: String? = null,
+
+    // 图形验证码
+    val showCaptcha: Boolean = false,
+    val captchaSceneCode: String? = null
 ) {
     /**
      * 是否可以发送验证码
