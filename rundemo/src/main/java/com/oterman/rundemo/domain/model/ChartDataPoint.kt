@@ -31,6 +31,21 @@ enum class ChartDataType(val value: Int, val displayName: String, val unit: Stri
 }
 
 /**
+ * 移动平均平滑，用于消除传感器噪声毛刺。
+ * 不改变 timeOffset，只平滑 value；avgValue/maxValue/minValue 保持原始统计。
+ */
+fun List<ChartDataPoint>.smoothed(windowSize: Int): List<ChartDataPoint> {
+    if (size <= windowSize) return this
+    val half = windowSize / 2
+    return mapIndexed { i, point ->
+        val from = maxOf(0, i - half)
+        val to = minOf(size - 1, i + half)
+        val avg = subList(from, to + 1).map { it.value }.average()
+        point.copy(value = avg)
+    }
+}
+
+/**
  * 图表数据系列
  */
 data class ChartSeries(
