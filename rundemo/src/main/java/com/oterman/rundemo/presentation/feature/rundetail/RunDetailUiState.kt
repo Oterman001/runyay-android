@@ -55,7 +55,13 @@ data class RunDetailUiState(
 
     // 分享状态
     val isPreparingShare: Boolean = false,
-    val shareDataReady: Boolean = false
+    val shareDataReady: Boolean = false,
+
+    // 删除状态
+    val isDeleting: Boolean = false,
+    val deleteError: String? = null,
+    val deleteSuccess: Boolean = false,
+    val showDeleteConfirmDialog: Boolean = false
 ) {
     /**
      * 是否可以下载FIT文件（需要有originId和datasource）
@@ -103,6 +109,10 @@ data class RunDetailUiState(
         if (downloadSuccess != other.downloadSuccess) return false
         if (isPreparingShare != other.isPreparingShare) return false
         if (shareDataReady != other.shareDataReady) return false
+        if (isDeleting != other.isDeleting) return false
+        if (deleteError != other.deleteError) return false
+        if (deleteSuccess != other.deleteSuccess) return false
+        if (showDeleteConfirmDialog != other.showDeleteConfirmDialog) return false
 
         return true
     }
@@ -139,6 +149,10 @@ data class RunDetailUiState(
         result = 31 * result + downloadSuccess.hashCode()
         result = 31 * result + isPreparingShare.hashCode()
         result = 31 * result + shareDataReady.hashCode()
+        result = 31 * result + isDeleting.hashCode()
+        result = 31 * result + (deleteError?.hashCode() ?: 0)
+        result = 31 * result + deleteSuccess.hashCode()
+        result = 31 * result + showDeleteConfirmDialog.hashCode()
         return result
     }
 }

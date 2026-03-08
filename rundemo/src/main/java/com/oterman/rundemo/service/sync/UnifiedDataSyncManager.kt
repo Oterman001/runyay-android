@@ -352,10 +352,10 @@ class UnifiedDataSyncManager private constructor(
             // 不再判断平台授权状态，用户取消授权后云端可能仍有数据
             val platformsToSync = listOf(
                 DataSourcePlatform.MANUAL,
-                DataSourcePlatform.APPLE_HEALTH,
-                DataSourcePlatform.GARMIN_CHINA,
-                DataSourcePlatform.GARMIN_GLOBAL,
-                DataSourcePlatform.COROS
+//                DataSourcePlatform.APPLE_HEALTH,
+//                DataSourcePlatform.GARMIN_CHINA,
+//                DataSourcePlatform.GARMIN_GLOBAL,
+//                DataSourcePlatform.COROS
             )
            RLog.i(TAG, "需要同步的平台: ${platformsToSync.map { it.displayName }}")
 

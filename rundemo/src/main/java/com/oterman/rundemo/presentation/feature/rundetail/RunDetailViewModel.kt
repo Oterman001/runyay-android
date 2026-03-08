@@ -13,6 +13,7 @@ import com.oterman.rundemo.data.repository.FitDownloadRepository
 import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
+import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.domain.model.IntervalType
 import com.oterman.rundemo.domain.model.MergedRunSegment
@@ -35,7 +36,8 @@ class RunDetailViewModel(
     private val fitDownloadRepository: FitDownloadRepository,
     private val avatarManager: AvatarManager,
     private val preferencesManager: PreferencesManager,
-    private val healthRepository: HealthRepository
+    private val healthRepository: HealthRepository,
+    private val syncManager: UnifiedDataSyncManager
 ) : ViewModel() {
 
     companion object {
@@ -531,6 +533,54 @@ class RunDetailViewModel(
         )
     }
 
+    fun showDeleteConfirmation() {
+        _uiState.value = _uiState.value.copy(showDeleteConfirmDialog = true)
+    }
+
+    fun dismissDeleteDialog() {
+        _uiState.value = _uiState.value.copy(showDeleteConfirmDialog = false)
+    }
+
+    fun deleteRunRecord() {
+        val record = _uiState.value.record ?: return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                showDeleteConfirmDialog = false,
+                isDeleting = true,
+                deleteError = null
+            )
+            val originId = record.originId
+            val result = if (originId != null && record.datasource != null) {
+                syncManager.deleteRunSummary(originId, workoutId)
+            } else {
+                try {
+                    repository.deleteRunRecord(workoutId)
+                    Result.success(true)
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+            result.fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(isDeleting = false, deleteSuccess = true)
+                },
+                onFailure = { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isDeleting = false,
+                        deleteError = e.message ?: "删除失败"
+                    )
+                }
+            )
+        }
+    }
+
+    fun clearDeleteState() {
+        _uiState.value = _uiState.value.copy(
+            deleteError = null,
+            deleteSuccess = false
+        )
+    }
+
     /**
      * 生成默认文件名
      */
@@ -563,7 +613,8 @@ class RunDetailViewModelFactory(
             val dataSourcePreferences = DataSourcePreferences(context)
             val dataSourceRepository = DataSourceRepository(dataSourcePreferences, preferencesManager)
             val healthRepository = HealthRepository(database.dailyHealthDao(), dataSourceRepository, preferencesManager)
-            return RunDetailViewModel(workoutId, repository, fitDownloadRepository, avatarManager, preferencesManager, healthRepository) as T
+            val syncManager = UnifiedDataSyncManager.getInstance(context)
+            return RunDetailViewModel(workoutId, repository, fitDownloadRepository, avatarManager, preferencesManager, healthRepository, syncManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -19,9 +19,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -108,6 +114,9 @@ fun RunDetailScreen(
     // 持有 MapView 引用用于分享时截图
     var mapViewRef by remember { mutableStateOf<MapView?>(null) }
 
+    // 右上角三点菜单展开状态
+    var showMenu by remember { mutableStateOf(false) }
+
     // SAF文件选择器 - 使用 */* 确保文件名后缀被保留
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("*/*")
@@ -146,6 +155,22 @@ fun RunDetailScreen(
         }
     }
 
+    // 删除成功后返回上一页
+    LaunchedEffect(uiState.deleteSuccess) {
+        if (uiState.deleteSuccess) {
+            viewModel.clearDeleteState()
+            onNavigateBack()
+        }
+    }
+
+    // 删除失败显示 Snackbar
+    LaunchedEffect(uiState.deleteError) {
+        uiState.deleteError?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearDeleteState()
+        }
+    }
+
     // 根据滚动位置决定导航栏透明度
     val scrollOffset by remember {
         derivedStateOf {
@@ -179,61 +204,78 @@ fun RunDetailScreen(
                     }
                 },
                 actions = {
-                    // 分享按钮
+                    // 三点菜单按钮
                     if (uiState.record != null && !uiState.isLoading) {
-                        IconButton(
-                            onClick = {
-                                val mv = mapViewRef
-                                if (mv != null && uiState.isOutdoor) {
-                                    viewModel.setPreparingShare(true)
-                                    mv.snapshot { bitmap ->
-                                        bitmap?.let { ShareDataCache.putMapSnapshot(it) }
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "更多操作",
+                                tint = if (scrollOffset < 0.5f) Color.White
+                                       else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            // 分享
+                            DropdownMenuItem(
+                                text = {
+                                    if (uiState.isPreparingShare) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        Text("分享")
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                enabled = !uiState.isPreparingShare,
+                                onClick = {
+                                    showMenu = false
+                                    val mv = mapViewRef
+                                    if (mv != null && uiState.isOutdoor) {
+                                        viewModel.setPreparingShare(true)
+                                        mv.snapshot { bitmap ->
+                                            bitmap?.let { ShareDataCache.putMapSnapshot(it) }
+                                            viewModel.prepareShareData()
+                                        }
+                                    } else {
                                         viewModel.prepareShareData()
                                     }
-                                } else {
-                                    viewModel.prepareShareData()
                                 }
-                            },
-                            enabled = !uiState.isPreparingShare
-                        ) {
-                            if (uiState.isPreparingShare) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = if (scrollOffset < 0.5f) Color.White
-                                            else MaterialTheme.colorScheme.onSurface
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Share,
-                                    contentDescription = "分享",
-                                    tint = if (scrollOffset < 0.5f) Color.White
-                                           else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-                    // 下载按钮（仅当可以下载时显示）
-                    if (uiState.canDownloadFit) {
-                        IconButton(
-                            onClick = { viewModel.downloadFitFile() },
-                            enabled = !uiState.isDownloading
-                        ) {
-                            if (uiState.isDownloading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = if (scrollOffset < 0.5f) Color.White
-                                            else MaterialTheme.colorScheme.onSurface
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Download,
-                                    contentDescription = "下载FIT文件",
-                                    tint = if (scrollOffset < 0.5f) Color.White
-                                           else MaterialTheme.colorScheme.onSurface
+                            )
+                            // 下载FIT
+                            if (uiState.canDownloadFit) {
+                                DropdownMenuItem(
+                                    text = {
+                                        if (uiState.isDownloading) {
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                        } else {
+                                            Text("下载FIT")
+                                        }
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Download, contentDescription = null) },
+                                    enabled = !uiState.isDownloading,
+                                    onClick = {
+                                        showMenu = false
+                                        viewModel.downloadFitFile()
+                                    }
                                 )
                             }
+                            // 删除记录
+                            DropdownMenuItem(
+                                text = { Text("删除记录", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.showDeleteConfirmation()
+                                }
+                            )
                         }
                     }
                 },
@@ -245,6 +287,23 @@ fun RunDetailScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
+        // 删除确认对话框
+        if (uiState.showDeleteConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissDeleteDialog() },
+                title = { Text("删除跑步记录") },
+                text = { Text("确认删除该跑步记录？此操作不可撤销，将同时删除云端数据。") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.deleteRunRecord() }) {
+                        Text("删除", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.dismissDeleteDialog() }) { Text("取消") }
+                }
+            )
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -521,6 +580,16 @@ fun RunDetailScreen(
                             Spacer(modifier = Modifier.height(40.dp))
                         }
                     }
+                }
+            }
+
+            // 删除中全屏遮罩
+            if (uiState.isDeleting) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
         }
