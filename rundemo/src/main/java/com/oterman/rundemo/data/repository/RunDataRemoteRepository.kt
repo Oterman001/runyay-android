@@ -160,7 +160,7 @@ class RunDataRemoteRepository(
     ): Result<RunSummaryDeleteResponse> = withContext(Dispatchers.IO) {
         try {
             val request = createBaseRequest(
-                dtoName = "RunSummaryDeleteRequestDto",
+                dtoName = "DeleteRunSummaryRequestDto",
                 data = RunSummaryDeleteRequest(summaryId = summaryId)
             )
 

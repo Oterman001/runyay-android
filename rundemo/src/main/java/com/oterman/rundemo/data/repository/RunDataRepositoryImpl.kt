@@ -425,11 +425,17 @@ class RunDataRepositoryImpl private constructor(
     
     override suspend fun deleteRunRecord(workoutId: String) {
         runRecordDao.deleteByWorkoutId(workoutId)
+        pbRecordDao.deleteByWorkoutId(workoutId)
+        overallVdotDao.deleteByWorkoutId(workoutId)
     }
 
     override suspend fun deleteRunRecords(workoutIds: List<String>) {
         if (workoutIds.isEmpty()) return
         runRecordDao.deleteByWorkoutIds(workoutIds)
+        workoutIds.forEach { workoutId ->
+            pbRecordDao.deleteByWorkoutId(workoutId)
+            overallVdotDao.deleteByWorkoutId(workoutId)
+        }
     }
 
     override suspend fun getAllDatasources(): List<String> {
