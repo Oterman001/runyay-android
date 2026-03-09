@@ -57,6 +57,8 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit = {},
     onNavigateToForgotPassword: () -> Unit = {},
     onNavigateToContactUs: () -> Unit = {},
+    onNavigateToUserTerms: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
     viewModel: LoginViewModel = viewModel(
         factory = LoginViewModelFactory(LocalContext.current)
     )
@@ -134,7 +136,9 @@ fun LoginScreen(
             ShakeBox(shouldShake = uiState.shouldShake) {
                 SimpleTermsCheckbox(
                     checked = uiState.hasAgreedToTerms,
-                    onCheckedChange = { viewModel.toggleTermsAgreement() }
+                    onCheckedChange = { viewModel.toggleTermsAgreement() },
+                    onUserTermsClick = onNavigateToUserTerms,
+                    onPrivacyPolicyClick = onNavigateToPrivacyPolicy
                 )
             }
 

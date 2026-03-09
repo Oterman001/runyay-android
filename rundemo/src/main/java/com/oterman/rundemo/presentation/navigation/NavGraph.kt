@@ -56,6 +56,8 @@ import com.oterman.rundemo.presentation.feature.userprofile.UserProfileScreen
 import com.oterman.rundemo.presentation.feature.debug.DebugScreen
 import com.oterman.rundemo.presentation.feature.debug.allrecords.AllRunRecordsDebugScreen
 import com.oterman.rundemo.presentation.feature.syncstatus.DataSyncStatusScreen
+import com.oterman.rundemo.presentation.feature.legal.PrivacyPolicyScreen
+import com.oterman.rundemo.presentation.feature.legal.UserTermsScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.data.local.PreferencesManager
@@ -136,6 +138,12 @@ fun AppNavGraph(
                 },
                 onNavigateToContactUs = {
                     navController.navigate(Screen.ContactUs.route)
+                },
+                onNavigateToUserTerms = {
+                    navController.navigate(Screen.UserTerms.route)
+                },
+                onNavigateToPrivacyPolicy = {
+                    navController.navigate(Screen.PrivacyPolicy.route)
                 }
             )
         }
@@ -301,14 +309,14 @@ fun AppNavGraph(
             )
         }
         
-        // 用户协议页面（占位符）
+        // 用户协议页面
         composable(Screen.UserTerms.route) {
-            PlaceholderScreen(title = "用户协议")
+            UserTermsScreen(onNavigateBack = { navController.popBackStack() })
         }
         
-        // 隐私政策页面（占位符）
+        // 隐私政策页面
         composable(Screen.PrivacyPolicy.route) {
-            PlaceholderScreen(title = "隐私政策")
+            PrivacyPolicyScreen(onNavigateBack = { navController.popBackStack() })
         }
         
         // 跑步详情页（用户友好版本）已迁移到独立的 RunDetailActivity
