@@ -75,6 +75,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.VerticalOsc
 import com.oterman.rundemo.presentation.feature.share.ShareActivity
 import com.oterman.rundemo.presentation.feature.share.ShareDataCache
 import com.oterman.rundemo.util.AppleWatchDeviceUtils
+import com.oterman.rundemo.BuildConfig
 
 /**
  * 跑步详情页面
@@ -211,38 +212,41 @@ fun RunDetailScreen(
                                 imageVector = Icons.Default.MoreVert,
                                 contentDescription = "更多操作",
                                 tint = if (scrollOffset < 0.5f) Color.White
-                                       else MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.onSurface
                             )
                         }
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
-                            // 分享
-                            DropdownMenuItem(
-                                text = {
-                                    if (uiState.isPreparingShare) {
-                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                                    } else {
-                                        Text("分享")
-                                    }
-                                },
-                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                                enabled = !uiState.isPreparingShare,
-                                onClick = {
-                                    showMenu = false
-                                    val mv = mapViewRef
-                                    if (mv != null && uiState.isOutdoor) {
-                                        viewModel.setPreparingShare(true)
-                                        mv.snapshot { bitmap ->
-                                            bitmap?.let { ShareDataCache.putMapSnapshot(it) }
+
+                            if (BuildConfig.DEBUG) {
+                                // 分享
+                                DropdownMenuItem(
+                                    text = {
+                                        if (uiState.isPreparingShare) {
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                        } else {
+                                            Text("分享")
+                                        }
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                    enabled = !uiState.isPreparingShare,
+                                    onClick = {
+                                        showMenu = false
+                                        val mv = mapViewRef
+                                        if (mv != null && uiState.isOutdoor) {
+                                            viewModel.setPreparingShare(true)
+                                            mv.snapshot { bitmap ->
+                                                bitmap?.let { ShareDataCache.putMapSnapshot(it) }
+                                                viewModel.prepareShareData()
+                                            }
+                                        } else {
                                             viewModel.prepareShareData()
                                         }
-                                    } else {
-                                        viewModel.prepareShareData()
                                     }
-                                }
-                            )
+                                )
+                            }
                             // 下载FIT
                             if (uiState.canDownloadFit) {
                                 DropdownMenuItem(
@@ -261,21 +265,26 @@ fun RunDetailScreen(
                                     }
                                 )
                             }
-                            // 删除记录
-                            DropdownMenuItem(
-                                text = { Text("删除记录", color = MaterialTheme.colorScheme.error) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                onClick = {
-                                    showMenu = false
-                                    viewModel.showDeleteConfirmation()
-                                }
-                            )
+
+                            val isManualImport = uiState.record?.datasource == DataSourcePlatform.MANUAL.code
+                            if (BuildConfig.DEBUG || isManualImport) {
+
+                                // 删除记录
+                                DropdownMenuItem(
+                                    text = { Text("删除记录", color = MaterialTheme.colorScheme.error) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    onClick = {
+                                        showMenu = false
+                                        viewModel.showDeleteConfirmation()
+                                    }
+                                )
+                            }
                         }
                     }
                 },
