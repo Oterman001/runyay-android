@@ -1,6 +1,7 @@
 package com.oterman.rundemo.service.sync
 
 import com.oterman.rundemo.data.local.DataSourcePreferences
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
@@ -27,8 +28,9 @@ class GarminGlobalSyncService(
     segmentDao: RunSegmentDao,
     dataSourcePreferences: DataSourcePreferences,
     runDataRepository: RunDataRepository,
-    healthRepository: HealthRepository? = null
-) : BaseDataSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository) {
+    healthRepository: HealthRepository? = null,
+    preferencesManager: PreferencesManager? = null
+) : BaseDataSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, preferencesManager) {
 
     override val platform: DataSourcePlatform = DataSourcePlatform.GARMIN_GLOBAL
 

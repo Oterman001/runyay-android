@@ -105,9 +105,9 @@ class FitRecordProcessor(
         // Step 3: 解析暂停事件
         val pauseList = FitEventConverter.convertEventStrToPauseList(runRecord.eventStr)
 
-        // Step 4: 确定maxHR和restHR
-        // 优先使用record中的maxHR（如果有效），否则使用用户配置
-        val maxHR = runRecord.maxHeartRate.takeIf { it > 0 } ?: userConfig.maxHR
+        // Step 4: 确定maxHR和restHR（完全由userConfig提供，即用户生理最大心率）
+        // 注意：runRecord.maxHeartRate 是本次运动峰值，不代表用户生理极限，不应参与区间计算
+        val maxHR = userConfig.maxHR
         val restHR = userConfig.restHR
 
         // Step 5: 转换Segments（完整版，含分段类型推断）

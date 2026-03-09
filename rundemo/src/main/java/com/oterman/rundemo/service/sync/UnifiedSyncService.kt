@@ -5,6 +5,7 @@ import com.oterman.rundemo.data.fit.RunSummaryMapper
 import com.oterman.rundemo.data.fit.RunSummaryMerger
 import com.oterman.rundemo.data.fit.UserPhysiologyConfig
 import com.oterman.rundemo.data.local.DataSourcePreferences
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
@@ -49,7 +50,8 @@ class UnifiedSyncService(
     runDataRepository: RunDataRepository,
     healthRepository: HealthRepository? = null,
     private val runDataRemoteRepository: RunDataRemoteRepository,
-    private val targetPlatform: DataSourcePlatform
+    private val targetPlatform: DataSourcePlatform,
+    preferencesManager: PreferencesManager? = null
 ) : BaseDataSyncService(
     dataSourceRepository,
     runRecordDao,
@@ -57,7 +59,8 @@ class UnifiedSyncService(
     segmentDao,
     dataSourcePreferences,
     runDataRepository,
-    healthRepository
+    healthRepository,
+    preferencesManager
 ) {
     companion object {
         private const val TAG = "UnifiedSyncService"
@@ -153,28 +156,45 @@ class UnifiedSyncService(
             return null
         }
 
-        // Step 2: 构建用户生理参数（优先使用runSummary中的数据）
+        // Step 2: 构建用户生理参数
         val serverRunSummary = unifiedFileInfoCache[fileInfo.summaryId]?.runSummary
         val summaryRestHR = serverRunSummary?.restingHeartRate
         val summaryVo2Max = serverRunSummary?.vo2Max
 
         val userConfig: UserPhysiologyConfig
+        val settings = preferencesManager?.getHearRateZoneSettings()
         val isHKPlatform = targetPlatform == DataSourcePlatform.APPLE_HEALTH
         val isManualPlatform = targetPlatform == DataSourcePlatform.MANUAL
 
-        if (summaryRestHR != null && summaryRestHR > 0) {
-            // runSummary有有效静息心率 → 直接使用，存储到本地，跳过网络请求
-            userConfig = UserPhysiologyConfig(restHR = summaryRestHR.toDouble())
+        if (settings != null && !settings.isAutoSyncEnabled) {
+            // 用户关闭了自动同步 → 直接使用手动配置，忽略 summaryRestHR
+            RLog.i(logTag, "使用用户手动配置（自动同步已关闭）: maxHR=${settings.maxHeartRate}, restHR=${settings.restingHeartRate}")
+            userConfig = UserPhysiologyConfig(
+                maxHR = settings.maxHeartRate.toDouble(),
+                restHR = settings.restingHeartRate.toDouble(),
+                isMale = settings.isMale
+            )
+        } else if (summaryRestHR != null && summaryRestHR > 0) {
+            // runSummary有有效静息心率 → 使用服务端值，存储到本地，跳过额外网络请求
             RLog.i(logTag, "使用runSummary中的静息心率: restHR=$summaryRestHR")
-
-            // 存储到本地DB
+            userConfig = UserPhysiologyConfig(
+                maxHR = settings?.maxHeartRate?.toDouble() ?: 190.0,
+                restHR = summaryRestHR.toDouble(),
+                isMale = settings?.isMale ?: true
+            )
             saveHealthDataFromSummary(parseResult, summaryRestHR, summaryVo2Max)
         } else if (isHKPlatform || isManualPlatform) {
-            // HK/MANUAL平台 → 不触发网络请求，使用默认值
-            RLog.i(logTag, "${targetPlatform.displayName}平台跳过健康数据网络请求，使用默认值")
-            userConfig = UserPhysiologyConfig()
+            // HK/MANUAL平台 → 不触发网络请求，使用用户设置兜底
+            RLog.i(logTag, "${targetPlatform.displayName}平台跳过健康数据网络请求，使用用户设置")
+            userConfig = settings?.let {
+                UserPhysiologyConfig(
+                    maxHR = it.maxHeartRate.toDouble(),
+                    restHR = it.restingHeartRate.toDouble(),
+                    isMale = it.isMale
+                )
+            } ?: UserPhysiologyConfig()
         } else {
-            // 其他情况 → 走原有buildUserConfig流程（可能触发网络请求）
+            // 其他情况 → 走 buildUserConfig 流程（可能触发网络请求，内部已包含用户设置兜底）
             userConfig = buildUserConfig(parseResult.session?.startTime)
         }
 
@@ -191,6 +211,9 @@ class UnifiedSyncService(
             userConfig = userConfig,
             deviceInfo = fileInfo.deviceName
         ) ?: return null
+
+        // 探测并自动更新最大心率
+        maybeUpdateMaxHR(processResult.runRecord.maxHeartRate)
 
         // Step 4: 合并或使用本地runSummary
 

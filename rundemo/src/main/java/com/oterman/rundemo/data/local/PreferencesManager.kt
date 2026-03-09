@@ -378,7 +378,6 @@ class PreferencesManager(context: Context) {
     fun getHearRateZoneSettings(): HearRateZoneSettings {
         val genderStr = prefs.getString(Constants.PreferenceKeys.KEY_HR_GENDER, "male")
         return HearRateZoneSettings(
-            isManualEnabled = prefs.getBoolean(Constants.PreferenceKeys.KEY_HR_MANUAL_ENABLED, false),
             maxHeartRate = prefs.getInt(Constants.PreferenceKeys.KEY_HR_MAX_HEART_RATE, 190),
             restingHeartRate = prefs.getInt(Constants.PreferenceKeys.KEY_HR_RESTING_HEART_RATE, 60),
             birthdayMillis = prefs.getLong(Constants.PreferenceKeys.KEY_HR_BIRTHDAY_MILLIS, 0L),
@@ -390,7 +389,6 @@ class PreferencesManager(context: Context) {
 
     fun saveHearRateZoneSettings(settings: HearRateZoneSettings) {
         prefs.edit().apply {
-            putBoolean(Constants.PreferenceKeys.KEY_HR_MANUAL_ENABLED, settings.isManualEnabled)
             putInt(Constants.PreferenceKeys.KEY_HR_MAX_HEART_RATE, settings.maxHeartRate)
             putInt(Constants.PreferenceKeys.KEY_HR_RESTING_HEART_RATE, settings.restingHeartRate)
             putLong(Constants.PreferenceKeys.KEY_HR_BIRTHDAY_MILLIS, settings.birthdayMillis)

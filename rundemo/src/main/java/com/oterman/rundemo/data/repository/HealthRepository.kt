@@ -64,16 +64,23 @@ class HealthRepository(
 
     /**
      * 获取指定日期的最佳静息心率（跨平台取最小值）
+     * 优先精确匹配当日，无数据时 fallback 到该日期前最近的一条记录
      * @param calendarDateDash 日期，格式 "yyyy-MM-dd"
      * @return 静息心率，未获取到返回null
      */
     suspend fun getRestingHRForDate(calendarDateDash: String): Int? {
         val userId = preferencesManager.getUserId() ?: return null
-        return dailyHealthDao.getBestRestingHR(userId, calendarDateDash)
+        val exact = dailyHealthDao.getBestRestingHR(userId, calendarDateDash)
+        if (exact != null && exact > 0) return exact
+        val recent = dailyHealthDao.getMostRecentRestingHRBefore(userId, calendarDateDash)
+        if (recent != null && recent > 0) {
+            RLog.d(TAG, "当日[$calendarDateDash]无静息心率，使用最近一条记录: $recent")
+        }
+        return recent
     }
 
     /**
-     * 获取健康数据并返回静息心率
+     * 获取健康数据并返回静息心率[]
      * 组合 fetchHealthDataIfNeeded + getRestingHRForDate
      * @param platform 数据源平台
      * @param calendarDateDash 日期，格式 "yyyy-MM-dd"

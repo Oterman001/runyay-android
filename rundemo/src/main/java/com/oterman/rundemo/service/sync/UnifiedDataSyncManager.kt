@@ -141,46 +141,49 @@ class UnifiedDataSyncManager private constructor(
     // 协程作用域
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // 用户偏好设置管理器
+    private val preferencesManager: PreferencesManager by lazy { PreferencesManager(context) }
+
     // 跑步数据远程仓库（lazy初始化）
     private val runDataRemoteRepository: RunDataRemoteRepository by lazy {
-        RunDataRemoteRepository(PreferencesManager(context))
+        RunDataRemoteRepository(preferencesManager)
     }
 
     // 同步服务实例
     private val garminChinaSyncService: GarminChinaSyncService by lazy {
-        GarminChinaSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository)
+        GarminChinaSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, preferencesManager)
     }
 
     private val garminGlobalSyncService: GarminGlobalSyncService by lazy {
-        GarminGlobalSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository)
+        GarminGlobalSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, preferencesManager)
     }
 
     private val corosSyncService: CorosSyncService by lazy {
-        CorosSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository)
+        CorosSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, preferencesManager)
     }
 
     // 统一同步服务实例（每个平台一个）
     private val unifiedGarminChinaSyncService: UnifiedSyncService by lazy {
-        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.GARMIN_CHINA)
+        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.GARMIN_CHINA, preferencesManager)
     }
 
     private val unifiedGarminGlobalSyncService: UnifiedSyncService by lazy {
-        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.GARMIN_GLOBAL)
+        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.GARMIN_GLOBAL, preferencesManager)
     }
 
     private val unifiedCorosSyncService: UnifiedSyncService by lazy {
-        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.COROS)
+        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.COROS, preferencesManager)
     }
 
     private val unifiedAppleHealthSyncService: UnifiedSyncService by lazy {
-        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.APPLE_HEALTH)
+        UnifiedSyncService(dataSourceRepository, runRecordDao, samplePointDao, segmentDao, dataSourcePreferences, runDataRepository, healthRepository, runDataRemoteRepository, DataSourcePlatform.APPLE_HEALTH, preferencesManager)
     }
 
     private val unifiedManualSyncService: UnifiedSyncService by lazy {
         UnifiedSyncService(
             dataSourceRepository, runRecordDao, samplePointDao, segmentDao,
             dataSourcePreferences, runDataRepository, healthRepository,
-            runDataRemoteRepository, DataSourcePlatform.MANUAL
+            runDataRemoteRepository, DataSourcePlatform.MANUAL, preferencesManager
         )
     }
 

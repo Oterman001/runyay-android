@@ -4,6 +4,7 @@ import com.oterman.rundemo.data.fit.FitFileParser
 import com.oterman.rundemo.data.fit.FitRecordProcessor
 import com.oterman.rundemo.data.fit.UserPhysiologyConfig
 import com.oterman.rundemo.data.local.DataSourcePreferences
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
@@ -44,7 +45,8 @@ abstract class BaseDataSyncService(
     protected val segmentDao: RunSegmentDao,
     protected val dataSourcePreferences: DataSourcePreferences,
     protected val runDataRepository: RunDataRepository,
-    protected val healthRepository: HealthRepository? = null
+    protected val healthRepository: HealthRepository? = null,
+    protected val preferencesManager: PreferencesManager? = null
 ) : DataSyncService {
 
     companion object {
@@ -367,10 +369,9 @@ abstract class BaseDataSyncService(
     /**
      * 将文件作为FIT文件处理
      * 使用 FitRecordProcessor 进行完整处理（包含心率区间、VDOT、PB计算）
-     * 如果 HealthRepository 可用，会先获取健康数据中的静息心率
+     * 如果 PreferencesManager 可用，会读取用户心率区间配置；如果 HealthRepository 可用，会先获取健康数据中的静息心率
      */
     protected suspend fun processAsFitFile(fileInfo: FileInfo, fileData: ByteArray): ImportedRunSummary? {
-        // 解析FIT文件
         val parseResult = FitFileParser.parseFromBytes(fileData)
         if (parseResult == null) {
             RLog.w(logTag, "FIT文件解析失败: ${fileInfo.summaryId}")
@@ -379,41 +380,84 @@ abstract class BaseDataSyncService(
 
         RLog.d(logTag, "FIT文件解析成功: ${fileInfo.summaryId}")
 
-        // 从FIT session提取运动日期，尝试获取真实静息心率
         val userConfig = buildUserConfig(parseResult.session?.startTime)
 
-        // 使用 FitRecordProcessor 进行完整处理并保存
-        return fitRecordProcessor.processAndSave(
+        val processResult = fitRecordProcessor.processFitData(
             parseResult = parseResult,
             originId = fileInfo.summaryId,
             datasource = fileInfo.platformCode,
             userConfig = userConfig,
             deviceInfo = fileInfo.deviceName
+        ) ?: return null
+
+        fitRecordProcessor.saveProcessResult(processResult)
+        maybeUpdateMaxHR(processResult.runRecord.maxHeartRate)
+
+        return ImportedRunSummary(
+            originId = processResult.runRecord.originId ?: fileInfo.summaryId,
+            platformCode = fileInfo.platformCode,
+            runDate = Date(processResult.runRecord.startTime),
+            distance = processResult.runRecord.totalDistance,
+            duration = processResult.runRecord.activeDuration,
+            displayText = formatDisplayText(processResult.runRecord.startTime, processResult.runRecord.totalDistance)
         )
     }
 
     /**
      * 构建用户生理参数配置
-     * 尝试从HealthRepository获取真实静息心率，失败则使用默认值60.0
+     * 优先级：isAutoSyncEnabled=false → 用户手动设置；isAutoSyncEnabled=true → 健康API → 用户设置兜底
      */
     protected suspend fun buildUserConfig(startTimeMs: Long?): UserPhysiologyConfig {
-        if (healthRepository == null || startTimeMs == null || startTimeMs <= 0) {
-            return UserPhysiologyConfig()
+        val settings = preferencesManager?.getHearRateZoneSettings()
+
+        if (settings != null && !settings.isAutoSyncEnabled) {
+            RLog.i(logTag, "使用用户手动配置: maxHR=${settings.maxHeartRate}, restHR=${settings.restingHeartRate}")
+            return UserPhysiologyConfig(
+                maxHR = settings.maxHeartRate.toDouble(),
+                restHR = settings.restingHeartRate.toDouble(),
+                isMale = settings.isMale
+            )
         }
 
-        try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val calendarDate = dateFormat.format(Date(FitFileParser.fitTimestampToMillis(startTimeMs)))
-            val restHR = healthRepository.fetchAndGetRestingHR(platform, calendarDate)
-            if (restHR != null && restHR > 0) {
-                RLog.i(logTag, "使用真实静息心率: restHR=$restHR, date=$calendarDate")
-                return UserPhysiologyConfig(restHR = restHR.toDouble())
+        if (healthRepository != null && startTimeMs != null && startTimeMs > 0) {
+            try {
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val calendarDate = dateFormat.format(Date(FitFileParser.fitTimestampToMillis(startTimeMs)))
+                val restHR = healthRepository.fetchAndGetRestingHR(platform, calendarDate)
+                if (restHR != null && restHR > 0) {
+                    RLog.i(logTag, "使用平台静息心率: restHR=$restHR, date=$calendarDate")
+                    return UserPhysiologyConfig(
+                        maxHR = settings?.maxHeartRate?.toDouble() ?: 190.0,
+                        restHR = restHR.toDouble(),
+                        isMale = settings?.isMale ?: true
+                    )
+                }
+            } catch (e: Exception) {
+                RLog.w(logTag, "获取静息心率失败，使用用户设置值: ${e.message}")
             }
-        } catch (e: Exception) {
-            RLog.w(logTag, "获取静息心率失败（使用默认值）: ${e.message}")
         }
 
-        return UserPhysiologyConfig()
+        return settings?.let {
+            UserPhysiologyConfig(
+                maxHR = it.maxHeartRate.toDouble(),
+                restHR = it.restingHeartRate.toDouble(),
+                isMale = it.isMale
+            )
+        } ?: UserPhysiologyConfig()
+    }
+
+    /**
+     * 探测本次运动峰值心率，若超过用户配置的最大心率则自动更新
+     */
+    protected fun maybeUpdateMaxHR(workoutPeakHR: Double) {
+        val peakInt = workoutPeakHR.toInt()
+        if (peakInt <= 0) return
+        val pm = preferencesManager ?: return
+        val settings = pm.getHearRateZoneSettings()
+        if (peakInt > settings.maxHeartRate) {
+            pm.saveHearRateZoneSettings(settings.copy(maxHeartRate = peakInt))
+            RLog.i(logTag, "自动更新最大心率: ${settings.maxHeartRate} → $peakInt bpm")
+        }
     }
 
     /**
