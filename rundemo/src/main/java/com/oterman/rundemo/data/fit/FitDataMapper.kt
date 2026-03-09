@@ -387,7 +387,7 @@ object FitDataMapper {
     /**
      * 生成确定性的workoutId
      */
-    private fun generateWorkoutId(fileName: String, startTime: Long): String {
+    internal fun generateWorkoutId(fileName: String, startTime: Long): String {
         val input = "$fileName-$startTime"
         val md = MessageDigest.getInstance("SHA-256")
         val hashBytes = md.digest(input.toByteArray())

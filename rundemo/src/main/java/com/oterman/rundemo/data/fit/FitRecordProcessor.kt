@@ -75,13 +75,14 @@ class FitRecordProcessor(
         originId: String,
         datasource: String,
         userConfig: UserPhysiologyConfig = DEFAULT_CONFIG,
-        deviceInfo: String? = null
+        deviceInfo: String? = null,
+        workoutIdFileName: String? = null
     ): FitProcessResult? {
         RLog.i(TAG, "========== 开始处理FIT数据 ==========")
         RLog.i(TAG, "originId: $originId, datasource: $datasource")
 
         // Step 1: 转换为RunRecordEntity
-        var runRecord = FitDataMapper.toRunRecordEntity(parseResult, originId)
+        var runRecord = FitDataMapper.toRunRecordEntity(parseResult, workoutIdFileName ?: originId)
         if (runRecord == null) {
             RLog.e(TAG, "转换RunRecord失败")
             return null

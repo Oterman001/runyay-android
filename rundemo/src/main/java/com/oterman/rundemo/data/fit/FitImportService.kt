@@ -94,7 +94,7 @@ class FitImportService(private val context: Context) {
 
             // 4. 去重检查（基于内容：session startTime，与文件名无关）
             val sessionStartMs = FitFileParser.fitTimestampToMillis(parseResult.session!!.startTime)
-            val originId = "fit-$sessionStartMs-$fileName"
+            val originId = FitDataMapper.generateWorkoutId(fileName, sessionStartMs)
             RLog.i(TAG, "检查是否已导入: originId=$originId")
 
             if (repository.existsByOriginId(originId, FitDataConverter.Datasource.MANUAL)) {
@@ -122,7 +122,8 @@ class FitImportService(private val context: Context) {
                 parseResult = parseResult,
                 originId = originId,
                 datasource = FitDataConverter.Datasource.MANUAL,
-                userConfig = userConfig
+                userConfig = userConfig,
+                workoutIdFileName = fileName
             ) ?: run {
                 RLog.e(TAG, "数据处理失败")
                 return@withContext FitImportResult.Error("数据处理失败")
