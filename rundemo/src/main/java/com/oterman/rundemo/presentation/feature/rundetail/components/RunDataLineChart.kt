@@ -181,12 +181,14 @@ fun RunDataLineChartContent(
     avgValue: Double? = null,
     invertYAxis: Boolean = false,
     chartHeight: Int = 160,
+    yAxisMin: Double? = null,
+    yAxisMax: Double? = null,
     modifier: Modifier = Modifier
 ) {
     if (dataPoints.isEmpty()) return
 
-    val calculatedMin = dataPoints.minOf { it.value }
-    val calculatedMax = dataPoints.maxOf { it.value }
+    val calculatedMin = yAxisMin ?: dataPoints.minOf { it.value }
+    val calculatedMax = yAxisMax ?: dataPoints.maxOf { it.value }
     val calculatedAvg = avgValue ?: dataPoints.map { it.value }.average()
 
     val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant

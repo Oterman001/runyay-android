@@ -50,6 +50,21 @@ fun AltitudeChartCard(
         descent
     }
 
+    // 智能 Y 轴范围：两侧各留 15%（至少 5m）padding，并保证最小 50m 可见范围，取整到 10m
+    val yAxisBounds = remember(minAltitude, maxAltitude) {
+        val range = maxAltitude - minAltitude
+        val padding = maxOf(range * 0.15, 5.0)
+        var yMin = kotlin.math.floor((minAltitude - padding) / 10.0) * 10.0
+        var yMax = kotlin.math.ceil((maxAltitude + padding) / 10.0) * 10.0
+        val minRange = 50.0
+        if (yMax - yMin < minRange) {
+            val center = (yMin + yMax) / 2.0
+            yMin = kotlin.math.floor((center - minRange / 2.0) / 10.0) * 10.0
+            yMax = kotlin.math.ceil((center + minRange / 2.0) / 10.0) * 10.0
+        }
+        Pair(yMin, yMax)
+    }
+
     AppCard(
         modifier = modifier
             .padding(horizontal = RunDetailLayoutConstants.HeaderCardMargin.dp)
@@ -109,7 +124,9 @@ fun AltitudeChartCard(
                 dataPoints = altitudeSeries,
                 lineColor = AltitudeLineColor,
                 avgValue = avgAltitude,
-                chartHeight = 160
+                chartHeight = 160,
+                yAxisMin = yAxisBounds.first,
+                yAxisMax = yAxisBounds.second
             )
 
 //            Text(
