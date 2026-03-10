@@ -1,6 +1,7 @@
 package com.oterman.rundemo.service.sync
 
 import com.oterman.rundemo.data.fit.FitFileParser
+import com.oterman.rundemo.data.fit.InclusiveLevelResolver
 import com.oterman.rundemo.data.fit.RunSummaryMapper
 import com.oterman.rundemo.data.fit.RunSummaryMerger
 import com.oterman.rundemo.data.fit.UserPhysiologyConfig
@@ -72,6 +73,11 @@ class UnifiedSyncService(
 
     /** 缓存UnifiedFileInfo，key=summaryId */
     private val unifiedFileInfoCache = ConcurrentHashMap<String, UnifiedFileInfo>()
+
+    /** inclusiveLevel 冲突解决器 */
+    private val inclusiveLevelResolver: InclusiveLevelResolver by lazy {
+        InclusiveLevelResolver(runDataRepository, dataSourcePreferences)
+    }
 
     /** 异步上传协程作用域 */
     private val uploadScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -230,22 +236,30 @@ class UnifiedSyncService(
             processResult.runRecord.copy(uploadStatus = 0)
         }
 
-        // Step 5: 保存（使用更新后的record）
-        val updatedResult = processResult.copy(runRecord = finalRecord)
+        // Step 5: 解决 inclusiveLevel 冲突
+        val serverInclusiveLevel = serverRunSummary?.inclusiveLevel
+        val resolveResult = inclusiveLevelResolver.resolve(finalRecord, serverInclusiveLevel)
+        val resolvedRecord = resolveResult.adjustedRecord
+
+        // Step 6: 保存（使用解决冲突后的record）
+        val updatedResult = processResult.copy(
+            runRecord = resolvedRecord,
+            vdotEntity = processResult.vdotEntity?.copy(inclusiveLevel = resolvedRecord.inclusiveLevel)
+        )
         fitRecordProcessor.saveProcessResult(updatedResult)
 
-        // Step 6: 服务端无runSummary时异步上传
+        // Step 7: 服务端无runSummary时异步上传
         if (serverRunSummary == null) {
-            // asyncUploadRunData(finalRecord.workoutId, fileInfo.summaryId)
+            // asyncUploadRunData(resolvedRecord.workoutId, fileInfo.summaryId)
         }
 
         return ImportedRunSummary(
-            originId = finalRecord.originId ?: fileInfo.summaryId,
+            originId = resolvedRecord.originId ?: fileInfo.summaryId,
             platformCode = fileInfo.platformCode,
-            runDate = Date(finalRecord.startTime),
-            distance = finalRecord.totalDistance,
-            duration = finalRecord.activeDuration,
-            displayText = formatDisplayText(finalRecord.startTime, finalRecord.totalDistance)
+            runDate = Date(resolvedRecord.startTime),
+            distance = resolvedRecord.totalDistance,
+            duration = resolvedRecord.activeDuration,
+            displayText = formatDisplayText(resolvedRecord.startTime, resolvedRecord.totalDistance)
         )
     }
 

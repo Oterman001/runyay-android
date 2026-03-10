@@ -3,6 +3,7 @@ package com.oterman.rundemo.data.fit
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.HealthRepository
@@ -67,6 +68,16 @@ class FitImportService(private val context: Context) {
     /** 用于 fire-and-forget 异步操作的协程作用域 */
     private val bgScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /** 数据源偏好 */
+    private val dataSourcePreferences: DataSourcePreferences by lazy {
+        DataSourcePreferences(context)
+    }
+
+    /** inclusiveLevel 冲突解决器 */
+    private val inclusiveLevelResolver: InclusiveLevelResolver by lazy {
+        InclusiveLevelResolver(repository, dataSourcePreferences)
+    }
+
     /** FIT数据处理器 */
     private val fitRecordProcessor: FitRecordProcessor by lazy {
         FitRecordProcessor(repository)
@@ -129,7 +140,7 @@ class FitImportService(private val context: Context) {
             val userConfig = buildUserConfig(parseResult.session?.startTime)
             maybeUpdateMaxHR(parseResult.session?.maxHeartRate?.toDouble() ?: 0.0)
 
-            val processResult = fitRecordProcessor.processFitData(
+            var processResult = fitRecordProcessor.processFitData(
                 parseResult = parseResult,
                 originId = originId,
                 datasource = FitDataConverter.Datasource.MANUAL,
@@ -138,6 +149,17 @@ class FitImportService(private val context: Context) {
             ) ?: run {
                 RLog.e(TAG, "数据处理失败")
                 return@withContext FitImportResult.Error("数据处理失败")
+            }
+
+            // 5b. 解决 inclusiveLevel 冲突（forceImport 时执行，非 forceImport 已在前面拦截冲突）
+            if (forceImport) {
+                val resolveResult = inclusiveLevelResolver.resolve(processResult.runRecord)
+                processResult = processResult.copy(
+                    runRecord = resolveResult.adjustedRecord,
+                    vdotEntity = processResult.vdotEntity?.copy(
+                        inclusiveLevel = resolveResult.adjustedRecord.inclusiveLevel
+                    )
+                )
             }
 
             val runRecord = processResult.runRecord
