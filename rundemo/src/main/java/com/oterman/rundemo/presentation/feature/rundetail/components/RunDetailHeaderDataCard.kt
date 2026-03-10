@@ -108,7 +108,7 @@ fun RunDetailHeaderDataCard(
                         ) {
                             Text(
                                 text = String.format("%.2f", distance),
-                                fontSize = RunDetailLayoutConstants.DistanceFontSize.sp,
+                                fontSize = 42.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontFamily = RunYayFontFamily
@@ -234,7 +234,7 @@ private fun MergedMetricCell(
             if (metric.isVdot) {
                 Text(
                     text = metric.value,
-                    fontSize = 28.sp,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     color = RunTheme.colorScheme.blue,
                     fontFamily = RunYayFontFamily
@@ -242,7 +242,7 @@ private fun MergedMetricCell(
             } else {
                 Text(
                     text = metric.value,
-                    fontSize = 22.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontFamily = RunYayFontFamily4
