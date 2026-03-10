@@ -122,10 +122,11 @@ class DataTabViewModel(
                     // 按月分组
                     val monthGroups = groupRecordsByMonth(records)
 
-                    // 计算总统计数据
-                    val totalDistance = records.sumOf { it.totalDistance }
-                    val totalRunCount = records.size
-                    val totalDuration = records.sumOf { it.activeDuration }
+                    // 计算总统计数据（过滤掉 inclusiveLevel == 0 的不纳入统计记录）
+                    val statsRecords = records.filter { it.inclusiveLevel != 0 }
+                    val totalDistance = statsRecords.sumOf { it.totalDistance }
+                    val totalRunCount = statsRecords.size
+                    val totalDuration = statsRecords.sumOf { it.activeDuration }
 
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -177,9 +178,10 @@ class DataTabViewModel(
             val key = "$year-$month"
             val monthRecords = recordsByMonth[key] ?: emptyList()
 
-            // 计算统计数据
-            val totalDistance = monthRecords.sumOf { it.totalDistance }
-            val totalDuration = monthRecords.sumOf { it.activeDuration }
+            // 计算统计数据（过滤掉 inclusiveLevel == 0 的不纳入统计记录）
+            val statsRecords = monthRecords.filter { it.inclusiveLevel != 0 }
+            val totalDistance = statsRecords.sumOf { it.totalDistance }
+            val totalDuration = statsRecords.sumOf { it.activeDuration }
             val avgPace = if (totalDistance > 0) {
                 formatPace(totalDuration / totalDistance)
             } else {
@@ -194,7 +196,7 @@ class DataTabViewModel(
                 month = month,
                 totalDistance = totalDistance,
                 totalDurationMinutes = totalDuration,
-                runCount = monthRecords.size,
+                runCount = statsRecords.size,
                 avgPace = avgPace,
                 dailyRecords = dailyRecords
             ))
@@ -251,11 +253,12 @@ class DataTabViewModel(
         for (day in 1..daysInMonth) {
             val dayRecords = recordsByDay[day] ?: emptyList()
             val isFuture = isCurrentMonth && day > todayDay
+            val dayStatsRecords = dayRecords.filter { it.inclusiveLevel != 0 }
 
             result.add(DayRunData(
                 dayOfMonth = day,
-                totalDistance = dayRecords.sumOf { it.totalDistance },
-                runCount = dayRecords.size,
+                totalDistance = dayStatsRecords.sumOf { it.totalDistance },
+                runCount = dayStatsRecords.size,
                 isToday = isCurrentMonth && day == todayDay,
                 isFuture = isFuture,
                 workoutIds = dayRecords.map { it.workoutId }
