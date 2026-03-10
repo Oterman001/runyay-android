@@ -297,7 +297,10 @@ class WeekStatisticsViewModel(
             // Calculate day stats
             val dayDistance = dayRecords.sumOf { it.totalDistance }
             val dayDuration = dayRecords.sumOf { it.activeDuration }
-            val dayPace = if (dayDistance > 0) formatPace(dayRecords.sumOf { it.averageSpeed * it.activeDuration } / dayDuration) else "--'--\""
+            val dayPace = if (dayDistance > 0) {
+                val avgSpeed = dayDistance / (dayDuration / 60.0)
+                formatPace(avgSpeed)
+            } else "--'--\""
             val dayElevation = dayRecords.sumOf { it.elevationAscended }
 
             // Build record infos for multi-select dialog
