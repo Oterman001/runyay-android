@@ -124,7 +124,7 @@ class RunDataRemoteRepository(
     ): Result<RunSummaryUpdateResponse> = withContext(Dispatchers.IO) {
         try {
             val request = createBaseRequest(
-                dtoName = "RunSummaryUpdateRequestDto",
+                dtoName = "UpdateRunSummaryRequestDto",
                 data = RunSummaryUpdateRequest(
                     summaryId = summaryId,
                     activityName = activityName,

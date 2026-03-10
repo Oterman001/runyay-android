@@ -628,6 +628,14 @@ class DashboardTabViewModel(
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
         return sdf.format(Date(timestamp))
     }
+
+    fun updateInclusiveLevel(record: RunRecordEntity, newLevel: Int) {
+        viewModelScope.launch {
+            try {
+                repository.updateRunRecord(record.copy(inclusiveLevel = newLevel, uploadStatus = 0))
+            } catch (_: Exception) { }
+        }
+    }
 }
 
 /**

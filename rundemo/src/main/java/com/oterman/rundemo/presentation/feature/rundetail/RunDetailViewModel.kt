@@ -583,6 +583,86 @@ class RunDetailViewModel(
         )
     }
 
+    fun showEditDistanceDialog() {
+        val d = _uiState.value.record?.totalDistance ?: return
+        _uiState.value = _uiState.value.copy(
+            showEditDistanceDialog = true,
+            editDistanceInput = String.format("%.2f", d),
+            editDistanceError = null
+        )
+    }
+
+    fun dismissEditDistanceDialog() {
+        _uiState.value = _uiState.value.copy(
+            showEditDistanceDialog = false,
+            editDistanceInput = "",
+            editDistanceError = null
+        )
+    }
+
+    fun onEditDistanceInputChanged(input: String) {
+        _uiState.value = _uiState.value.copy(editDistanceInput = input, editDistanceError = null)
+    }
+
+    fun confirmEditDistance() {
+        val record = _uiState.value.record ?: return
+        val newDistance = _uiState.value.editDistanceInput.replace(",", ".").toDoubleOrNull()
+        if (newDistance == null || newDistance <= 0) {
+            _uiState.value = _uiState.value.copy(editDistanceError = "请输入有效距离"); return
+        }
+        val baseline = if (record.originDistance > 0) record.originDistance else record.totalDistance
+        val lower = baseline * 0.9; val upper = baseline * 1.1
+        if (newDistance < lower || newDistance > upper) {
+            _uiState.value = _uiState.value.copy(
+                editDistanceError = String.format(
+                    "须在原始距离 %.2f km 的 ±10%% 范围内（%.2f ~ %.2f）", baseline, lower, upper
+                )
+            ); return
+        }
+        viewModelScope.launch {
+            try {
+                val updated = record.copy(
+                    totalDistance = newDistance,
+                    originDistance = if (record.originDistance <= 0) record.totalDistance else record.originDistance,
+                    uploadStatus = 0
+                )
+                repository.updateRunRecord(updated)
+                _uiState.value = _uiState.value.copy(
+                    showEditDistanceDialog = false, editDistanceInput = "", editDistanceError = null,
+                    updateSuccess = true
+                )
+                loadData()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(editDistanceError = e.message ?: "保存失败")
+            }
+        }
+    }
+
+    fun showEditInclusiveLevelDialog() {
+        _uiState.value = _uiState.value.copy(showEditInclusiveLevelDialog = true)
+    }
+
+    fun dismissEditInclusiveLevelDialog() {
+        _uiState.value = _uiState.value.copy(showEditInclusiveLevelDialog = false)
+    }
+
+    fun confirmEditInclusiveLevel(newLevel: Int) {
+        val record = _uiState.value.record ?: return
+        viewModelScope.launch {
+            try {
+                repository.updateRunRecord(record.copy(inclusiveLevel = newLevel, uploadStatus = 0))
+                _uiState.value = _uiState.value.copy(showEditInclusiveLevelDialog = false, updateSuccess = true)
+                loadData()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(showEditInclusiveLevelDialog = false, updateError = e.message ?: "保存失败")
+            }
+        }
+    }
+
+    fun clearUpdateState() {
+        _uiState.value = _uiState.value.copy(updateSuccess = false, updateError = null)
+    }
+
     /**
      * 生成默认文件名
      */

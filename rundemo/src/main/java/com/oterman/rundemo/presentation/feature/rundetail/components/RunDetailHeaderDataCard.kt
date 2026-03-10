@@ -2,6 +2,8 @@ package com.oterman.rundemo.presentation.feature.rundetail.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +74,7 @@ fun RunDetailHeaderDataCard(
     avatarUrl: String? = null,
     isLoadingAvatar: Boolean = false,
     inclusiveLevel: Int = 1,
+    onInclusiveLevelClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // Tag dialog state
@@ -94,7 +97,14 @@ fun RunDetailHeaderDataCard(
                     Column(modifier = Modifier.weight(1f)) {
                         // 第一行：距离（大字）
                         Row(
-                            verticalAlignment = Alignment.Bottom
+                            verticalAlignment = Alignment.Bottom,
+                            modifier = if (onInclusiveLevelClick != null)
+                                Modifier.clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    onClick = onInclusiveLevelClick
+                                )
+                            else Modifier
                         ) {
                             Text(
                                 text = String.format("%.2f", distance),

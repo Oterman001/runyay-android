@@ -1,7 +1,9 @@
 package com.oterman.rundemo.presentation.feature.home.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.res.painterResource
 import com.oterman.rundemo.R
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.components.InclusiveLevelIndicator
 import com.oterman.rundemo.presentation.components.trajectory.BlendedTrajectoryThumbnail
@@ -57,6 +61,7 @@ fun RunRecordItem(
     primaryColor: Color = Color.Unspecified,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
+    onInclusiveLevelClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
 ) {
     val isOutdoor = record.outdoor == 0
@@ -95,6 +100,12 @@ fun RunRecordItem(
                     )
                 }
                 Row(
+                    modifier = if (BuildConfig.DEBUG && onInclusiveLevelClick != null)
+                        Modifier.clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { onInclusiveLevelClick() }
+                    else Modifier,
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {

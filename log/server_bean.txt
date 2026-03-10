@@ -1,0 +1,125 @@
+package com.zhi.zhi.adapter.rundata.dto;
+
+import lombok.Data;
+
+/**
+ * 单条跑步记录DTO
+ * 用于客户端上传跑步记录数据
+ */
+@Data
+public class RunRecordDto {
+
+    // 唯一标识
+    private String hkUUid;  // HealthKit UUID，将作为summaryId和activityId
+
+    // 设备信息
+    private String deviceVersion;       // 设备版本
+    private String deviceInfo;          // 设备信息（将存储到dataSource）
+    private String heartRateDevice;     // 心率设备
+    private String deviceName; //设备名称
+
+    // 时间相关
+    private String timezone;            // 时区
+    private String startTime;           // 开始时间（Date类型的字符串）
+    private String endTime;             // 结束时间（Date类型的字符串）
+    private Double duration;            // 总时长（秒）
+    private Double activeDuration;      // 活跃时长（秒）
+
+    // 距离和速度
+    private Double totalDistance;       // 总距离（km）
+    private Double originDistance;      // 原始距离
+    private Double averagePace;         // 平均配速（min/km）
+    private Double maxPace;             // 最大配速
+    private Double minPace;             // 最小配速
+    private Double equivalentSpeed;     // 等效速度
+
+    // 地理信息
+    private String address;             // 地址
+    private Double altitude;            // 海拔
+    private Double elevationAscended;   // 爬升高度
+
+    // 心率数据
+    private Double averageHeartRate;    // 平均心率
+    private Double maxHeartRate;        // 最大心率
+    private Double minHeartRate;        // 最小心率
+    private Double maf;                 // MAF心率
+
+    // 步幅数据
+    private Double averageStrideLength; // 平均步幅
+    private Double maxStrideLength;     // 最大步幅
+    private Double minStrideLength;     // 最小步幅
+
+    // 触地时间
+    private Double averageContactTime;  // 平均触地时间
+    private Double maxContactTime;      // 最大触地时间
+    private Double minContactTime;      // 最小触地时间
+
+    // 垂直振幅
+    private Double averageVerticalOscillation;  // 平均垂直振幅
+    private Double maxVerticalOscillation;      // 最大垂直振幅
+    private Double minVerticalOscillation;      // 最小垂直振幅
+
+    // 能量消耗
+    private Double mets;                // MET值（将映射到average_mets）
+    private Double averageMETs;         // 平均MET值
+    private Double totalActiveEnergy;   // 总活动能量
+    private Double totalBasalEnergy;    // 总基础能量
+    private Double totalStepCount;      // 总步数
+
+    // 功率数据
+    private Double averagePower;        // 平均功率
+    private Double maxPower;            // 最大功率
+    private Double minPower;            // 最小功率
+
+    //步频数据
+    private Double averageCadence;     // 平均步频
+    private Double maxCadence;         // 最大步频
+    private Double minCadence;
+
+    // 训练数据
+    private Double trainingLoad;        // 训练负荷
+    private Double trainingPerformance; // 训练表现
+    private Double tainingEffect;       // 训练效果（客户端拼写错误）
+    private Double anaerobicTrainingEffect;  // 无氧训练效果（不保存）
+
+    // 能力评估
+    private Double vdot;                // VDOT
+    private Double vo2Max;              // 最大摄氧量
+    private Double overallVdot;         // 整体VDOT
+
+    // 环境数据
+    private Double aqi;                 // 空气质量指数
+    private Double weatherHumidity;     // 天气湿度
+    private Double weatherTemprature;   // 天气温度（客户端拼写错误）
+    private Integer outdoor;            // 户外标志（1=户外，0=室内）
+
+    // 用户主观数据
+    private Integer feelingLevel;       // 感受等级
+    private Integer inclusiveLevel;     // 包容等级
+    private String note;                // 备注
+    private String runDescription;      // 跑步描述
+    private String eventStr;            // 事件字符串（不保存）
+    private String pb;                  // 个人最佳
+
+    // 跑步分类
+    private Integer runType;            // 跑步类型
+    private Integer runId;              // 跑步ID
+
+    // 关联数据
+    private String shoeId;              // 鞋履ID
+    private String trainPlanId;         // 训练计划ID
+
+    // 数据源
+    private String datasource;          // 数据来源
+    private String originId;            // 原始数据ID
+
+
+    private String startLatitude;    // 起点纬度
+    private String startLongitude;// 起点经度
+    private String mapCoordinateSystem;  // 坐标系类型 (0=未知, 1=WGS84, 2=GCJ02)
+
+    private String raceId;
+
+    private Integer restingHeartRate;
+    private Integer userMaxHeartRate;
+}

@@ -39,7 +39,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -59,6 +61,7 @@ import com.oterman.rundemo.domain.model.DataTabDisplayMode
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.components.AppCard
+import com.oterman.rundemo.presentation.components.EditInclusiveLevelDialog
 import com.oterman.rundemo.presentation.components.trajectory.BlendedTrajectoryThumbnail
 import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
 import com.oterman.rundemo.presentation.feature.home.tabs.components.MonthSection
@@ -88,6 +91,7 @@ fun DataTabContent(
     val uiState by viewModel.uiState.collectAsState()
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
+    var pendingInclusiveLevelRecord by remember { mutableStateOf<RunRecordEntity?>(null) }
 
     // Calculate collapse progress based on scroll offset
     val collapseProgress by remember {
@@ -102,6 +106,14 @@ fun DataTabContent(
                 (firstItemOffset / 200f).coerceIn(0f, 1f)
             }
         }
+    }
+
+    pendingInclusiveLevelRecord?.let { rec ->
+        EditInclusiveLevelDialog(
+            currentLevel = rec.inclusiveLevel,
+            onDismiss = { pendingInclusiveLevelRecord = null },
+            onConfirm = { viewModel.updateInclusiveLevel(rec, it); pendingInclusiveLevelRecord = null }
+        )
     }
 
     Box(
@@ -258,6 +270,7 @@ fun DataTabContent(
                                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 onRecordLongClick(record.workoutId)
                                             },
+                                            onInclusiveLevelClick = { pendingInclusiveLevelRecord = record },
                                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                                         )
                                     }

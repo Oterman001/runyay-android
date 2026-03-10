@@ -1,37 +1,33 @@
-2026-03-07 23:28:55.866 16829-16952 XRUN_OkHttp             com.oterman.rundemo                  D  {"code":"0000","msg":"OK","data":{"FitFileUploadResponseDto":[{"workoutId":"c7d454f9-c4e4-386f-b0f3-bb0810866b35","ossUrl":"https://yayarun.oss-cn-hangzhou.aliyuncs.com/activity-files/MANUAL/U17583556565808214/c7d454f9-c4e4-386f-b0f3-bb0810866b35.fit","status":"S"}]}} (RetrofitClient.kt:39) [v1.0_b95207]
-2026-03-07 23:28:55.867 16829-16952 XRUN_OkHttp             com.oterman.rundemo                  D  <-- END HTTP (268-byte body) (RetrofitClient.kt:39) [v1.0_b95207]
-2026-03-07 23:28:55.874 16829-16926 XRUN_RunDataRemoteRepo  com.oterman.rundemo                  E  FIT文件上传异常 (RunDataRemoteRepository.kt:267) [v1.0_b95207] (Ask Gemini)
-                                                                                                    com.google.gson.JsonSyntaxException: java.lang.NumberFormatException: For input string: "S"
-                                                                                                    	at com.google.gson.internal.bind.TypeAdapters$7.read(TypeAdapters.java:267)
-                                                                                                    	at com.google.gson.internal.bind.TypeAdapters$7.read(TypeAdapters.java:257)
-                                                                                                    	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$2.readIntoField(ReflectiveTypeAdapterFactory.java:271)
-                                                                                                    	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$FieldReflectionAdapter.readField(ReflectiveTypeAdapterFactory.java:561)
-                                                                                                    	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$Adapter.read(ReflectiveTypeAdapterFactory.java:519)
-                                                                                                    	at com.google.gson.internal.bind.TypeAdapterRuntimeTypeWrapper.read(TypeAdapterRuntimeTypeWrapper.java:40)
-                                                                                                    	at com.google.gson.internal.bind.CollectionTypeAdapterFactory$Adapter.read(CollectionTypeAdapterFactory.java:84)
-                                                                                                    	at com.google.gson.internal.bind.CollectionTypeAdapterFactory$Adapter.read(CollectionTypeAdapterFactory.java:64)
-                                                                                                    	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$2.readIntoField(ReflectiveTypeAdapterFactory.java:271)
-                                                                                                    	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$FieldReflectionAdapter.readField(ReflectiveTypeAdapterFactory.java:561)
-                                                                                                    	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$Adapter.read(ReflectiveTypeAdapterFactory.java:519)
-                                                                                                    	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$2.readIntoField(ReflectiveTypeAdapterFactory.java:271)
-                                                                                                    	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$FieldReflectionAdapter.readField(ReflectiveTypeAdapterFactory.java:561)
-                                                                                                    	at com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$Adapter.read(ReflectiveTypeAdapterFactory.java:519)
-                                                                                                    	at retrofit2.converter.gson.GsonResponseBodyConverter.convert(GsonResponseBodyConverter.java:40)
-                                                                                                    	at retrofit2.converter.gson.GsonResponseBodyConverter.convert(GsonResponseBodyConverter.java:27)
-                                                                                                    	at retrofit2.OkHttpCall.parseResponse(OkHttpCall.java:243)
-                                                                                                    	at retrofit2.OkHttpCall$1.onResponse(OkHttpCall.java:153)
-                                                                                                    	at okhttp3.internal.connection.RealCall$AsyncCall.run(RealCall.kt:519)
-                                                                                                    	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1156)
-                                                                                                    	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:651)
-                                                                                                    	at java.lang.Thread.run(Thread.java:1119)
-                                                                                                    Caused by: java.lang.NumberFormatException: For input string: "S"
-                                                                                                    	at jdk.internal.math.FloatingDecimal.readJavaFormatString(FloatingDecimal.java:2054)
-                                                                                                    	at jdk.internal.math.FloatingDecimal.parseDouble(FloatingDecimal.java:110)
-                                                                                                    	at java.lang.Double.parseDouble(Double.java:662)
-                                                                                                    	at com.google.gson.stream.JsonReader.nextInt(JsonReader.java:1350)
-                                                                                                    	at com.google.gson.internal.bind.TypeAdapters$7.read(TypeAdapters.java:265)
-                                                                                                    	... 21 more
-2026-03-07 23:28:55.875 16829-16926 XRUN_FitImportService   com.oterman.rundemo                  W  FIT文件上传失败: java.lang.NumberFormatException: For input string: "S" (FitImportService.kt:169) [v1.0_b95207]
-2026-03-07 23:28:55.876 16829-16829 XRUN_HomeViewModel      com.oterman.rundemo                  E  上传失败: FIT文件上传失败: java.lang.NumberFormatException: For input string: "S" (HomeViewModel.kt:374) [v1.0_b95207]
-
-
+2026-03-09 09:05:56.756   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  --> POST https://yayarun.cn/sys/api/rundata/summary/delete (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.756   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  Content-Length: 370 (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.757   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  Authorization: Bearer zq/DUd/tN1nn4EN6vbN4LrXGP5JAD0ydfpaoUEgUFMZh00i5OcFjjJDMdA33Nbs398QY3ldpf0BQftOIuTaqHQ== (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.757   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  Content-Type: application/json (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.757   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D   (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.758   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  {"body":{"DeleteRunSummaryRequestDto":[{"summaryId":"1c1ecefa-0f47-31f4-a211-c0ee55187be3"}]},"head":{"appKey":"1jns01o9lksa12","sign":"0c492b38d118eab7eddc7e223be0e31ac387e59efa9784fd25ecec655a1b2e50","timestamp":"1773018356747","token":"zq/DUd/tN1nn4EN6vbN4LrXGP5JAD0ydfpaoUEgUFMZh00i5OcFjjJDMdA33Nbs398QY3ldpf0BQftOIuTaqHQ\u003d\u003d","userId":"U17719807750907289"}} (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.758   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  --> END POST (370-byte body) (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.890   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  <-- 200 https://yayarun.cn/sys/api/rundata/summary/delete (131ms) (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.891   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  cache-control: no-cache, no-store, max-age=0, must-revalidate (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.892   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  connection: keep-alive (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.893   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  content-type: application/json (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.894   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  date: Mon, 09 Mar 2026 01:05:57 GMT (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.895   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  expires: 0 (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.895   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  pragma: no-cache (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.896   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  referrer-policy: no-referrer-when-downgrade (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.896   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  server: nginx (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.897   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  strict-transport-security: max-age=31536000; includeSubDomains; preload (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.897   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  strict-transport-security: max-age=31536000 (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.898   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  transfer-encoding: chunked (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.899   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  vary: Accept-Encoding (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.899   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  x-content-type-options: nosniff (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.899   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  x-content-type-options: nosniff (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.900   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  x-frame-options: DENY (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.900   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  x-frame-options: SAMEORIGIN (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.901   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  x-xss-protection: 1; mode=block (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.901   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  x-xss-protection: 1; mode=block (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.901   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  response-status-code: 200 (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.902   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D   (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.903   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  {"code":"0000","msg":"OK","data":{"DeleteRunSummaryResponseDto":[{"summaryId":"1c1ecefa-0f47-31f4-a211-c0ee55187be3","success":true,"activityFileDeleted":false,"message":"删除成功"}]}} (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.903   558-3084  XRUN_OkHttp             com.oterman.rundemo                  D  <-- END HTTP (188-byte body) (RetrofitClient.kt:39) [v1.0_3bdc99]
+2026-03-09 09:05:56.905   558-682   XRUN_RunDataRemoteRepo  com.oterman.rundemo                  I  删除成功: summaryId=1c1ecefa-0f47-31f4-a211-c0ee55187be3 (RunDataRemoteRepository.kt:172) [v1.0_3bdc99]
+2026-03-09 09:05:56.915   558-558   XRUN_Unifi...yncManager com.oterman.rundemo                  I  删除成功: summaryId=1c1ecefa-0f47-31f4-a211-c0ee55187be3, workoutId=1c1ecefa-0f47-31f4-a211-c0ee55187be3 (UnifiedDataSyncManager.kt:771) [v1.0_3bdc99]
+2026-03-09 09:05:56.942   558-558   XRUN_RunDetailPerf      com.oterman.rundemo                  D  finish() called (RunDetailActivity.kt:101) [v1.0_3bdc99]

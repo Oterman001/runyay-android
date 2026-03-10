@@ -61,7 +61,19 @@ data class RunDetailUiState(
     val isDeleting: Boolean = false,
     val deleteError: String? = null,
     val deleteSuccess: Boolean = false,
-    val showDeleteConfirmDialog: Boolean = false
+    val showDeleteConfirmDialog: Boolean = false,
+
+    // 修正距离
+    val showEditDistanceDialog: Boolean = false,
+    val editDistanceInput: String = "",
+    val editDistanceError: String? = null,
+
+    // 修改 inclusiveLevel
+    val showEditInclusiveLevelDialog: Boolean = false,
+
+    // 通用更新反馈
+    val updateSuccess: Boolean = false,
+    val updateError: String? = null
 ) {
     /**
      * 是否可以下载FIT文件（需要有originId和datasource）
@@ -113,6 +125,12 @@ data class RunDetailUiState(
         if (deleteError != other.deleteError) return false
         if (deleteSuccess != other.deleteSuccess) return false
         if (showDeleteConfirmDialog != other.showDeleteConfirmDialog) return false
+        if (showEditDistanceDialog != other.showEditDistanceDialog) return false
+        if (editDistanceInput != other.editDistanceInput) return false
+        if (editDistanceError != other.editDistanceError) return false
+        if (showEditInclusiveLevelDialog != other.showEditInclusiveLevelDialog) return false
+        if (updateSuccess != other.updateSuccess) return false
+        if (updateError != other.updateError) return false
 
         return true
     }
@@ -153,6 +171,12 @@ data class RunDetailUiState(
         result = 31 * result + (deleteError?.hashCode() ?: 0)
         result = 31 * result + deleteSuccess.hashCode()
         result = 31 * result + showDeleteConfirmDialog.hashCode()
+        result = 31 * result + showEditDistanceDialog.hashCode()
+        result = 31 * result + editDistanceInput.hashCode()
+        result = 31 * result + (editDistanceError?.hashCode() ?: 0)
+        result = 31 * result + showEditInclusiveLevelDialog.hashCode()
+        result = 31 * result + updateSuccess.hashCode()
+        result = 31 * result + (updateError?.hashCode() ?: 0)
         return result
     }
 }

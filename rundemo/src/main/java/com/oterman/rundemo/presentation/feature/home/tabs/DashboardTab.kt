@@ -54,6 +54,8 @@ import com.oterman.rundemo.presentation.feature.home.components.AllPBSpeedCard
 import com.oterman.rundemo.presentation.feature.home.components.DailySentenceCard
 import com.oterman.rundemo.presentation.feature.home.components.DayRunRecordSelectDialog
 import com.oterman.rundemo.presentation.feature.home.components.NextRaceCard
+import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.presentation.components.EditInclusiveLevelDialog
 import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.presentation.feature.home.components.PeriodStatisticsCard
@@ -102,6 +104,7 @@ fun DashboardTabContent(
     var showRecordSelectDialog by remember { mutableStateOf(false) }
     var selectedDayData by remember { mutableStateOf<DayRunData?>(null) }
     var showEditSheet by remember { mutableStateOf(false) }
+    var pendingInclusiveLevelRecord by remember { mutableStateOf<RunRecordEntity?>(null) }
 
     // Calculate collapse progress based on scroll offset
     val collapseProgress by remember {
@@ -252,6 +255,7 @@ fun DashboardTabContent(
                                         isTrackPointsLoading = isLoading,
                                         primaryColor = MaterialTheme.colorScheme.onSurface,
                                         onClick = { onNavigateToRunDetail(record.workoutId) },
+                                        onInclusiveLevelClick = { pendingInclusiveLevelRecord = record },
                                         modifier = Modifier.padding(bottom = 10.dp)
                                     )
                                 }
@@ -319,6 +323,15 @@ fun DashboardTabContent(
 //            }
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+
+    // InclusiveLevel edit dialog for latest run card
+    pendingInclusiveLevelRecord?.let { rec ->
+        EditInclusiveLevelDialog(
+            currentLevel = rec.inclusiveLevel,
+            onDismiss = { pendingInclusiveLevelRecord = null },
+            onConfirm = { viewModel.updateInclusiveLevel(rec, it); pendingInclusiveLevelRecord = null }
+        )
     }
 
     // Dashboard card edit sheet

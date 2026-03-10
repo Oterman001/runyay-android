@@ -9,20 +9,21 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import com.oterman.rundemo.presentation.components.EditInclusiveLevelDialog
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -31,6 +32,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -51,6 +53,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -172,6 +176,22 @@ fun RunDetailScreen(
         }
     }
 
+    // 更新成功反馈
+    LaunchedEffect(uiState.updateSuccess) {
+        if (uiState.updateSuccess) {
+            snackbarHostState.showSnackbar("已保存，将在下次同步时上传")
+            viewModel.clearUpdateState()
+        }
+    }
+
+    // 更新失败反馈
+    LaunchedEffect(uiState.updateError) {
+        uiState.updateError?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearUpdateState()
+        }
+    }
+
     // 根据滚动位置决定导航栏透明度
     val scrollOffset by remember {
         derivedStateOf {
@@ -221,6 +241,11 @@ fun RunDetailScreen(
                         ) {
 
                             if (BuildConfig.DEBUG) {
+                                // 修正距离
+                                DropdownMenuItem(
+                                    text = { Text("修正距离") },
+                                    onClick = { showMenu = false; viewModel.showEditDistanceDialog() }
+                                )
                                 // 分享
                                 DropdownMenuItem(
                                     text = {
@@ -230,7 +255,6 @@ fun RunDetailScreen(
                                             Text("分享")
                                         }
                                     },
-                                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
                                     enabled = !uiState.isPreparingShare,
                                     onClick = {
                                         showMenu = false
@@ -257,7 +281,6 @@ fun RunDetailScreen(
                                             Text("下载FIT")
                                         }
                                     },
-                                    leadingIcon = { Icon(Icons.Default.Download, contentDescription = null) },
                                     enabled = !uiState.isDownloading,
                                     onClick = {
                                         showMenu = false
@@ -272,13 +295,6 @@ fun RunDetailScreen(
                                 // 删除记录
                                 DropdownMenuItem(
                                     text = { Text("删除记录", color = MaterialTheme.colorScheme.error) },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    },
                                     onClick = {
                                         showMenu = false
                                         viewModel.showDeleteConfirmation()
@@ -310,6 +326,51 @@ fun RunDetailScreen(
                 dismissButton = {
                     TextButton(onClick = { viewModel.dismissDeleteDialog() }) { Text("取消") }
                 }
+            )
+        }
+
+        // 修正距离对话框
+        if (uiState.showEditDistanceDialog) {
+            val record = uiState.record
+            val baseline = if (record != null && record.originDistance > 0) record.originDistance else record?.totalDistance ?: 0.0
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissEditDistanceDialog() },
+                title = { Text("修正距离") },
+                text = {
+                    Column {
+                        Text(
+                            "当前距离：${String.format("%.2f", record?.totalDistance ?: 0.0)} km",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "原始距离：${String.format("%.2f", baseline)} km（允许 ±10%）",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = uiState.editDistanceInput,
+                            onValueChange = { viewModel.onEditDistanceInputChanged(it) },
+                            label = { Text("新距离 (km)") },
+                            isError = uiState.editDistanceError != null,
+                            supportingText = uiState.editDistanceError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true
+                        )
+                    }
+                },
+                confirmButton = { TextButton(onClick = { viewModel.confirmEditDistance() }) { Text("确认") } },
+                dismissButton = { TextButton(onClick = { viewModel.dismissEditDistanceDialog() }) { Text("取消") } }
+            )
+        }
+
+        // 修改 inclusiveLevel 对话框
+        if (uiState.showEditInclusiveLevelDialog) {
+            EditInclusiveLevelDialog(
+                currentLevel = uiState.record?.inclusiveLevel ?: 1,
+                onDismiss = { viewModel.dismissEditInclusiveLevelDialog() },
+                onConfirm = { viewModel.confirmEditInclusiveLevel(it) }
             )
         }
 
@@ -396,6 +457,9 @@ fun RunDetailScreen(
                                 avatarUrl = uiState.avatarUrl,
                                 isLoadingAvatar = uiState.isLoadingAvatar,
                                 inclusiveLevel = record.inclusiveLevel,
+                                onInclusiveLevelClick = if (BuildConfig.DEBUG) {
+                                    { viewModel.showEditInclusiveLevelDialog() }
+                                } else null,
                                 modifier = Modifier
                                     .layout { measurable, constraints ->
                                         val placeable = measurable.measure(constraints)

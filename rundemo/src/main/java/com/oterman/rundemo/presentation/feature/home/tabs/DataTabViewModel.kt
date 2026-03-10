@@ -352,6 +352,17 @@ class DataTabViewModel(
     fun clearTrackPointsCache() {
         trackPointsCache.clear()
     }
+
+    /**
+     * 更新跑步记录的统计分析级别
+     */
+    fun updateInclusiveLevel(record: RunRecordEntity, newLevel: Int) {
+        viewModelScope.launch {
+            try {
+                repository.updateRunRecord(record.copy(inclusiveLevel = newLevel, uploadStatus = 0))
+            } catch (_: Exception) { }
+        }
+    }
 }
 
 /**
