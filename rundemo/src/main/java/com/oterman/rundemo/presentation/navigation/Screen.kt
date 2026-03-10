@@ -110,6 +110,14 @@ sealed class Screen(val route: String) {
     }
 
     /**
+     * 平台记录列表页面（用户版）
+     * 查看指定平台导入的所有跑步记录
+     */
+    object PlatformRecordList : Screen("platform_record_list/{platformCode}") {
+        fun createRoute(platformCode: String) = "platform_record_list/$platformCode"
+    }
+
+    /**
      * 跑步目标设置页面
      * 用于设置年度/月度跑步目标
      */

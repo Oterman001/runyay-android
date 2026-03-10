@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.AlertDialog
@@ -62,7 +63,8 @@ fun DataSourceDetailScreen(
     viewModel: DataSourceDetailViewModel,
     onNavigateBack: () -> Unit,
     onOpenOAuthWebView: (String) -> Unit,
-    onNavigateToDebug: (() -> Unit)? = null
+    onNavigateToDebug: (() -> Unit)? = null,
+    onNavigateToRecordList: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
@@ -128,6 +130,39 @@ fun DataSourceDetailScreen(
                     )
                 }
                 
+                // 查看该平台数据入口
+                if (onNavigateToRecordList != null) {
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
+
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clickable { onNavigateToRecordList() }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "查看该平台数据",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
                 // 同步状态区域
                 if (uiState.isSyncing || uiState.importedRecords.isNotEmpty()) {
                     item { Spacer(modifier = Modifier.height(20.dp)) }

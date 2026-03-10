@@ -32,6 +32,9 @@ import com.oterman.rundemo.presentation.feature.datasource.DataSourceManageScree
 import com.oterman.rundemo.presentation.feature.datasource.DataSourceManageViewModel
 import com.oterman.rundemo.presentation.feature.datasource.DataSourceManageViewModelFactory
 import com.oterman.rundemo.presentation.feature.datasource.OAuthWebViewScreen
+import com.oterman.rundemo.presentation.feature.datasource.records.PlatformRecordListScreen
+import com.oterman.rundemo.presentation.feature.datasource.records.PlatformRecordListViewModel
+import com.oterman.rundemo.presentation.feature.datasource.records.PlatformRecordListViewModelFactory
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceDebugScreen
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceDebugViewModel
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceDebugViewModelFactory
@@ -386,10 +389,13 @@ fun AppNavGraph(
                 },
                 onNavigateToDebug = {
                     navController.navigate(Screen.DataSourceDebug.createRoute(platformCode))
+                },
+                onNavigateToRecordList = {
+                    navController.navigate(Screen.PlatformRecordList.createRoute(platformCode))
                 }
             )
         }
-        
+
         // OAuth授权WebView页面
         composable(
             route = Screen.OAuthWebView.route,
@@ -475,6 +481,31 @@ fun AppNavGraph(
                 },
                 onNavigateToDebugDetail = { workoutId ->
                     navController.navigate(Screen.RunDetailDebug.createRoute(workoutId))
+                }
+            )
+        }
+
+        // 平台记录列表页面（用户版）
+        composable(
+            route = Screen.PlatformRecordList.route,
+            arguments = listOf(
+                navArgument("platformCode") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val platformCode = backStackEntry.arguments?.getString("platformCode") ?: return@composable
+            val platform = DataSourcePlatform.fromCode(platformCode) ?: return@composable
+            val context = LocalContext.current
+            val viewModel: PlatformRecordListViewModel = viewModel(
+                factory = PlatformRecordListViewModelFactory(context, platform)
+            )
+            PlatformRecordListScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToRunDetail = { workoutId ->
+                    val intent = RunDetailActivity.createIntent(context, workoutId)
+                    context.startActivity(intent)
                 }
             )
         }
