@@ -1,10 +1,8 @@
 package com.oterman.rundemo.presentation.feature.datasource
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -33,6 +31,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.presentation.feature.datasource.components.DataSourceItem
+import com.oterman.rundemo.presentation.feature.home.FitImportResult
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -84,6 +85,22 @@ fun DataSourceManageScreen(
         viewModel.moveDataSource(from.index, to.index)
     }
 
+    // 单个FIT文件选择器
+    val singleFitLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.importSingleFitFile(it) }
+    }
+
+    // 批量FIT文件选择器
+    val batchFitLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            viewModel.importBatchFitFiles(uris)
+        }
+    }
+
     // 每次屏幕显示时刷新数据源状态（处理从详情页授权返回的情况）
     LaunchedEffect(Unit) {
         viewModel.refreshDataSources()
@@ -93,7 +110,7 @@ fun DataSourceManageScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
+                title = {
                     Text(
                         text = "数据源管理",
                         fontWeight = FontWeight.SemiBold
@@ -187,10 +204,16 @@ fun DataSourceManageScreen(
                                 isEditMode = false,
                                 showPriority = dataSourceInfo.platform.supportsSorting,
                                 onClick = {
-                                    if (viewModel.isComingSoonDataSource(dataSourceInfo.platform)) {
-                                        viewModel.showComingSoonDialog()
-                                    } else {
-                                        onNavigateToDetail(dataSourceInfo.platform)
+                                    when {
+                                        viewModel.isComingSoonDataSource(dataSourceInfo.platform) -> {
+                                            viewModel.showComingSoonDialog()
+                                        }
+                                        viewModel.isManualImportDataSource(dataSourceInfo.platform) -> {
+                                            viewModel.showManualImportDialog()
+                                        }
+                                        else -> {
+                                            onNavigateToDetail(dataSourceInfo.platform)
+                                        }
                                     }
                                 }
                             )
@@ -204,7 +227,7 @@ fun DataSourceManageScreen(
                         }
                     }
                 }
-                
+
                 // 底部按钮区域（非编辑模式）
                 AnimatedVisibility(
                     visible = !uiState.isEditingOrder,
@@ -219,7 +242,40 @@ fun DataSourceManageScreen(
             }
         }
     }
-    
+
+    // 手动导入选择弹窗
+    if (uiState.showManualImportDialog) {
+        ManualImportDialog(
+            onSingleImport = {
+                viewModel.dismissManualImportDialog()
+                singleFitLauncher.launch(arrayOf("*/*"))
+            },
+            onBatchImport = {
+                viewModel.dismissManualImportDialog()
+                batchFitLauncher.launch(arrayOf("*/*"))
+            },
+            onDismiss = { viewModel.dismissManualImportDialog() }
+        )
+    }
+
+    // 导入进度提示
+    if (uiState.isImportingFit) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("导入中") },
+            text = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    Text(uiState.importProgress ?: "导入中...")
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
     // 即将支持弹窗
     if (uiState.showComingSoonDialog) {
         AlertDialog(
@@ -233,7 +289,7 @@ fun DataSourceManageScreen(
             }
         )
     }
-    
+
     // 需要登录弹窗
     if (uiState.showLoginRequiredDialog) {
         AlertDialog(
@@ -255,6 +311,160 @@ fun DataSourceManageScreen(
             }
         )
     }
+
+    // 导入结果弹窗
+    if (uiState.showImportResultDialog) {
+        ManageScreenFitImportResultDialog(
+            result = uiState.fitImportResult,
+            onDismiss = { viewModel.dismissImportResultDialog() }
+        )
+    }
+}
+
+/**
+ * 手动导入选择弹窗
+ */
+@Composable
+private fun ManualImportDialog(
+    onSingleImport: () -> Unit,
+    onBatchImport: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("手动导入") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "请选择导入方式",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // 单个导入
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onSingleImport),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.FileUpload,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "导入单个FIT文件",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "选择一个FIT文件进行导入",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                // 批量导入
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onBatchImport),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.FolderOpen,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "批量导入FIT文件",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "选择多个FIT文件一次性导入",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+/**
+ * 导入结果弹窗（数据源管理页面用）
+ */
+@Composable
+private fun ManageScreenFitImportResultDialog(
+    result: FitImportResult?,
+    onDismiss: () -> Unit
+) {
+    val (title, message) = when (result) {
+        is FitImportResult.Success -> {
+            if (result.distance == 0.0 && result.duration == 0.0) {
+                // 批量导入的汇总结果
+                "导入完成" to "批量导入已完成"
+            } else {
+                "导入成功" to "已成功导入跑步记录\n距离：${String.format("%.2f", result.distance)} 公里\n时长：${String.format("%.1f", result.duration)} 分钟"
+            }
+        }
+        is FitImportResult.AlreadyExists -> {
+            "文件已存在" to "所有文件之前已导入过，无需重复导入"
+        }
+        is FitImportResult.Error -> {
+            "导入失败" to result.message
+        }
+        is FitImportResult.UploadFailed -> {
+            "上传失败" to result.message
+        }
+        is FitImportResult.ConflictFound -> return
+        null -> return
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("确定")
+            }
+        }
+    )
 }
 
 /**
@@ -344,9 +554,9 @@ private fun PriorityExplanationCard() {
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(12.dp))
-        
+
         Text(
             text = "排在前面的数据源优先级更高。当多个数据源有冲突的运动数据时，会优先采用排序靠前的数据源。",
             style = MaterialTheme.typography.bodySmall,
@@ -392,7 +602,7 @@ private fun BottomButtonSection(
                 fontWeight = FontWeight.Medium
             )
         }
-        
+
         Text(
             text = "碰到问题？联系我们",
             style = MaterialTheme.typography.bodySmall,
@@ -402,4 +612,3 @@ private fun BottomButtonSection(
         )
     }
 }
-

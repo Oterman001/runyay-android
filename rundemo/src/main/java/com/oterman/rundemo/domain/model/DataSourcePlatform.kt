@@ -47,9 +47,9 @@ enum class DataSourcePlatform(
         displayName = "苹果健康",
         displayNameEn = "Apple HK",
         appBrandName = "Apple Health",
-        iconResId = R.drawable.icon_huawei,
+        iconResId = R.drawable.apple_hk,
         isEnabled = true,
-        supportsSorting = false
+        supportsSorting = true
     ),
     HUAWEI(
         code = "HUAWEI",
@@ -65,7 +65,7 @@ enum class DataSourcePlatform(
         displayName = "手动导入",
         displayNameEn = "Manual",
         appBrandName = "手动导入",
-        iconResId = R.drawable.icon_huawei,
+        iconResId = R.drawable.ic_manual_import,
         isEnabled = true,
         supportsSorting = false
     );

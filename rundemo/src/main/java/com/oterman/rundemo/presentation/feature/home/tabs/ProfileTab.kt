@@ -1,8 +1,5 @@
 package com.oterman.rundemo.presentation.feature.home.tabs
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Route
@@ -74,13 +70,11 @@ fun ProfileTabContent(
     phoneNumber: String? = null,
     avatarUrl: String? = null,
     isLoadingAvatar: Boolean = false,
-    isImportingFit: Boolean = false,
     onLogoutClick: () -> Unit,
     onLoginClick: () -> Unit,
     onUserProfileClick: () -> Unit = {},
     onShowWelcomeClick: () -> Unit,
     onResetFirstLaunchClick: () -> Unit,
-    onImportFitFile: (Uri) -> Unit = {},
     onDataSourceManageClick: () -> Unit = {},
     onRunGoalClick: () -> Unit = {},
     onHearRateZoneClick: () -> Unit = {},
@@ -104,13 +98,6 @@ fun ProfileTabContent(
     val currentColorModeLabel = when (currentColorMode) {
         TrajectoryColorMode.FIXED -> "固定配色"
         TrajectoryColorMode.DISTANCE_BASED -> "距离分色"
-    }
-
-    // FIT文件选择器
-    val fitFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        uri?.let { onImportFitFile(it) }
     }
 
     // Calculate collapse progress based on scroll offset
@@ -212,19 +199,8 @@ fun ProfileTabContent(
                         title = "数据源管理",
                         subtitle = "佳明、高驰等平台数据同步",
                         iconTint = RunTheme.colorScheme.blue,
-                        onClick = onDataSourceManageClick
-                    )
-                    SettingsItem(
-                        icon = Icons.Outlined.FileUpload,
-                        title = "导入FIT文件",
-                        subtitle = if (isImportingFit) "导入中..." else "从本地导入运动数据",
-                        iconTint = RunTheme.colorScheme.blue,
                         showDivider = false,
-                        onClick = {
-                            if (!isImportingFit) {
-                                fitFileLauncher.launch(arrayOf("*/*"))
-                            }
-                        }
+                        onClick = onDataSourceManageClick
                     )
                 }
             }

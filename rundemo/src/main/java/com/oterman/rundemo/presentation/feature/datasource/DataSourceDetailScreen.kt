@@ -147,6 +147,7 @@ fun DataSourceDetailScreen(
             
             // 底部按钮区域
             BottomButtonsSection(
+                platform = uiState.platform,
                 isAuthorized = uiState.isAuthorized,
                 isLoading = uiState.isLoading,
                 isUnbinding = uiState.isUnbinding,
@@ -422,6 +423,7 @@ private fun SyncStatusSection(
  */
 @Composable
 private fun BottomButtonsSection(
+    platform: com.oterman.rundemo.domain.model.DataSourcePlatform,
     isAuthorized: Boolean,
     isLoading: Boolean,
     isUnbinding: Boolean,
@@ -473,8 +475,8 @@ private fun BottomButtonsSection(
             )
         }
         
-        // 取消授权按钮（仅在已授权时显示）
-        if (isAuthorized) {
+        // 取消授权按钮（仅在已授权且非苹果健康时显示）
+        if (isAuthorized && platform != com.oterman.rundemo.domain.model.DataSourcePlatform.APPLE_HEALTH) {
             TextButton(
                 onClick = onUnbindClick,
                 enabled = !isUnbinding && !isLoading && !isSyncing

@@ -323,6 +323,10 @@ class DataSourceDetailViewModel(
                 // 佳明中国/高驰弹出时间范围选择弹窗
                 showSyncOptions()
             }
+            DataSourcePlatform.APPLE_HEALTH -> {
+                // 苹果健康直接同步，不弹时间范围选择
+                startSyncWithTimeRange(null)
+            }
             else -> {
                 // 其他平台直接开始同步
                 startSyncWithTimeRange(null)

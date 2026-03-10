@@ -105,8 +105,10 @@ fun DataSourceItem(
                     }
                 )
 
-                // 在编辑模式下也显示授权状态
-                if (!isEditMode || dataSourceInfo.platform.supportsSorting) {
+                // 在编辑模式下也显示授权状态（手动导入和苹果健康不显示）
+                val hideAuthStatus = dataSourceInfo.platform == com.oterman.rundemo.domain.model.DataSourcePlatform.MANUAL ||
+                        dataSourceInfo.platform == com.oterman.rundemo.domain.model.DataSourcePlatform.APPLE_HEALTH
+                if (!hideAuthStatus && (!isEditMode || dataSourceInfo.platform.supportsSorting)) {
                     Text(
                         text = if (dataSourceInfo.isAuthorized) "已授权" else "未授权",
                         style = MaterialTheme.typography.bodySmall,

@@ -47,13 +47,24 @@ data class DataSourceInfo(
                         "4、数据拉取的速度依赖高驰服务器推送，触发数据同步后，尽量保持应用位于前台，避免同步异常",
                     )
                 ),
-//                // 华为运动健康 (暂未支持)
-//                DataSourceInfo(
-//                    platform = DataSourcePlatform.HUAWEI,
-//                    descriptions = listOf(
-//                        "1、功能即将开放，敬请期待"
-//                    )
-//                )
+                // 手动导入
+                DataSourceInfo(
+                    platform = DataSourcePlatform.MANUAL,
+                    descriptions = listOf(
+                        "1、支持导入单个或批量FIT文件",
+                        "2、导入后数据会自动解析并存储到本地",
+                        "3、支持的文件格式：.fit（Garmin、COROS等设备导出的运动数据文件）",
+                    )
+                ),
+                // 苹果健康
+                DataSourceInfo(
+                    platform = DataSourcePlatform.APPLE_HEALTH,
+                    descriptions = listOf(
+                        "1、数据来自其他苹果设备同步到服务器，无需授权",
+                        "2、支持手动同步，点击手动同步按钮即可拉取最新数据",
+                        "3、同步的数据包括跑步、步行等运动记录",
+                    )
+                ),
             )
         }
 

@@ -324,7 +324,8 @@ class DataSourcePreferences(context: Context) {
         return mapOf(
             DataSourcePlatform.GARMIN_CHINA.code to 1,
             DataSourcePlatform.GARMIN_GLOBAL.code to 2,
-            DataSourcePlatform.COROS.code to 3
+            DataSourcePlatform.COROS.code to 3,
+            DataSourcePlatform.APPLE_HEALTH.code to 4
         )
     }
     
