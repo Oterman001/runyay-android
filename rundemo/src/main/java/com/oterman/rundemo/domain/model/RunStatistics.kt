@@ -124,7 +124,8 @@ data class DayRunData(
     val recordInfos: List<DayRunRecordInfo> = emptyList(),  // Record details for multi-select dialog
     // Additional fields for week/month detail table
     val totalDurationMinutes: Double = 0.0,     // Duration in minutes
-    val avgPace: String = "--'--\""             // Average pace formatted
+    val avgPace: String = "--'--\"",            // Average pace formatted
+    val totalElevation: Double = 0.0            // Total elevation gain (meters)
 ) {
     val hasRun: Boolean get() = totalDistance > 0 && !isPlaceholder
 
@@ -146,6 +147,11 @@ data class DayRunData(
         } else {
             "${mins}'"
         }
+    }
+
+    fun getFormattedElevation(): String {
+        if (!hasRun || totalElevation <= 0) return "-"
+        return String.format("%.0f", totalElevation)
     }
 }
 

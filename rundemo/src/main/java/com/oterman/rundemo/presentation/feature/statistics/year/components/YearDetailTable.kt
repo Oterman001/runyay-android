@@ -27,9 +27,10 @@ import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
  * Year detail table showing monthly breakdown
- * Headers: 月份 | 总距离(km) | 总时长(h) | 平均配速
- * Data rows for 12 months
+ * Headers: 月份 | 总距离(km) | 总时长(h) | 配速 | 爬升(m) or 爬升(km)
+ * Data rows for months with runs only
  * Summary row with averages in blue
+ * Elevation unit auto-switches to km when any row exceeds 9999m
  */
 @Composable
 fun YearDetailTable(
@@ -62,6 +63,12 @@ fun YearDetailTable(
         } else 0.0
     }
 
+    // Switch to km when any month's elevation exceeds 9999m
+    val useKm = remember(displayMonths) {
+        displayMonths.any { it.totalElevation > 9999 }
+    }
+    val elevationHeader = if (useKm) "爬升(km)" else "爬升(m)"
+
     AppCard(modifier = modifier) {
         Column(modifier = Modifier.padding(vertical = 12.dp)) {
             // Title
@@ -78,7 +85,8 @@ fun YearDetailTable(
                 col1 = "月份",
                 col2 = "总距离(km)",
                 col3 = "总时长(h)",
-                col4 = "平均配速",
+                col4 = "配速",
+                col5 = elevationHeader,
                 isHeader = true,
                 backgroundColor = headerBgColor
             )
@@ -94,6 +102,7 @@ fun YearDetailTable(
                     col2 = monthData.getFormattedDistance(),
                     col3 = monthData.getFormattedDuration(),
                     col4 = monthData.avgPace,
+                    col5 = formatElevation(monthData.totalElevation, useKm),
                     isHeader = false,
                     backgroundColor = bgColor
                 )
@@ -112,6 +121,7 @@ fun YearDetailTable(
                     col2 = String.format("%.1f", avgDistance),
                     col3 = formatAverageDuration(avgDuration),
                     col4 = yearStats.avgPace,
+                    col5 = formatElevation(yearStats.totalElevation, useKm),
                     isHeader = false,
                     backgroundColor = Color.Transparent,
                     isSummary = true
@@ -130,6 +140,7 @@ private fun TableRow(
     col2: String,
     col3: String,
     col4: String,
+    col5: String,
     isHeader: Boolean,
     backgroundColor: Color,
     isSummary: Boolean = false
@@ -187,6 +198,14 @@ private fun TableRow(
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1.2f)
         )
+        Text(
+            text = col5,
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+            color = textColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -199,20 +218,33 @@ private fun formatAverageDuration(minutes: Double): String {
     return String.format("%.1f", hours)
 }
 
+/**
+ * Format elevation: meters when useKm=false, kilometers (1 decimal) when useKm=true
+ */
+private fun formatElevation(meters: Double, useKm: Boolean): String {
+    if (meters <= 0) return "-"
+    return if (useKm) {
+        String.format("%.1f", meters / 1000.0)
+    } else {
+        String.format("%.0f", meters)
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun YearDetailTablePreview() {
     val mockMonths = listOf(
-        MonthRangeData(month = 1, totalDistance = 85.2, totalDurationMinutes = 480.0, runCount = 8, avgPace = "5'38\""),
-        MonthRangeData(month = 2, totalDistance = 92.5, totalDurationMinutes = 520.0, runCount = 10, avgPace = "5'37\""),
-        MonthRangeData(month = 3, totalDistance = 105.0, totalDurationMinutes = 600.0, runCount = 12, avgPace = "5'43\""),
-        MonthRangeData(month = 4, totalDistance = 78.3, totalDurationMinutes = 420.0, runCount = 7, avgPace = "5'22\""),
+        MonthRangeData(month = 1, totalDistance = 85.2, totalDurationMinutes = 480.0, runCount = 8, avgPace = "5'38\"", totalElevation = 1200.0),
+        MonthRangeData(month = 2, totalDistance = 92.5, totalDurationMinutes = 520.0, runCount = 10, avgPace = "5'37\"", totalElevation = 1500.0),
+        MonthRangeData(month = 3, totalDistance = 105.0, totalDurationMinutes = 600.0, runCount = 12, avgPace = "5'43\"", totalElevation = 1800.0),
+        MonthRangeData(month = 4, totalDistance = 78.3, totalDurationMinutes = 420.0, runCount = 7, avgPace = "5'22\"", totalElevation = 980.0),
     )
     val yearStats = YearStatistics(
         totalDistance = 361.0,
         totalDurationMinutes = 2020.0,
         runCount = 37,
-        avgPace = "5'35\""
+        avgPace = "5'35\"",
+        totalElevation = 5480.0
     )
 
     YearDetailTable(
@@ -220,5 +252,28 @@ private fun YearDetailTablePreview() {
         yearStats = yearStats,
         isCurYear = true,
         curMonth = 4
+    )
+}
+
+@Preview(showBackground = true, name = "Year Table with km elevation")
+@Composable
+private fun YearDetailTableKmPreview() {
+    val mockMonths = listOf(
+        MonthRangeData(month = 1, totalDistance = 200.0, totalDurationMinutes = 1200.0, runCount = 20, avgPace = "5'38\"", totalElevation = 12000.0),
+        MonthRangeData(month = 2, totalDistance = 180.0, totalDurationMinutes = 1080.0, runCount = 18, avgPace = "5'37\"", totalElevation = 9800.0),
+    )
+    val yearStats = YearStatistics(
+        totalDistance = 380.0,
+        totalDurationMinutes = 2280.0,
+        runCount = 38,
+        avgPace = "5'35\"",
+        totalElevation = 21800.0
+    )
+
+    YearDetailTable(
+        monthRangeDataList = mockMonths,
+        yearStats = yearStats,
+        isCurYear = true,
+        curMonth = 2
     )
 }

@@ -326,6 +326,7 @@ class MonthStatisticsViewModel(
             val dayDistance = dayRecords.sumOf { it.totalDistance }
             val dayDuration = dayRecords.sumOf { it.activeDuration }
             val dayPace = if (dayDistance > 0) formatPace(dayRecords.sumOf { it.averageSpeed * it.activeDuration } / dayDuration) else "--'--\""
+            val dayElevation = dayRecords.sumOf { it.elevationAscended }
 
             // Build record infos for multi-select dialog
             val recordInfos = dayRecords.map { record ->
@@ -352,7 +353,8 @@ class MonthStatisticsViewModel(
                     workoutIds = dayRecords.map { it.workoutId },
                     recordInfos = recordInfos,
                     totalDurationMinutes = dayDuration,
-                    avgPace = dayPace
+                    avgPace = dayPace,
+                    totalElevation = dayElevation
                 )
             )
 

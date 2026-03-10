@@ -27,7 +27,7 @@ import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
  * Month detail table showing daily breakdown
- * Headers: 日期 | 距离(km) | 时长(h) | 平均配速
+ * Headers: 日期 | 距离(km) | 时长 | 配速 | 爬升(m)
  * Data rows for past days with runs only
  * Summary row with averages in blue
  */
@@ -46,6 +46,9 @@ fun MonthDetailTable(
         dailyRecords.filter { !it.isPlaceholder && !it.isFuture && it.hasRun }
     }
 
+    // Number of run days is displayRecords.size (all records here have hasRun == true)
+    val runDayCount = displayRecords.size
+
     AppCard(modifier = modifier) {
         Column(modifier = Modifier.padding(vertical = 12.dp)) {
             // Title
@@ -62,7 +65,8 @@ fun MonthDetailTable(
                 col1 = "日期",
                 col2 = "距离(km)",
                 col3 = "时长",
-                col4 = "平均配速",
+                col4 = "配速",
+                col5 = "爬升(m)",
                 isHeader = true,
                 backgroundColor = headerBgColor
             )
@@ -78,6 +82,7 @@ fun MonthDetailTable(
                     col2 = dayData.getFormattedDistance(),
                     col3 = dayData.getFormattedDuration(),
                     col4 = dayData.avgPace,
+                    col5 = dayData.getFormattedElevation(),
                     isHeader = false,
                     backgroundColor = bgColor,
                     isToday = dayData.isToday
@@ -91,12 +96,13 @@ fun MonthDetailTable(
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
 
-                // Summary row (averages)
+                // Summary row (averages: distance/duration per run day, overall pace, total elevation)
                 TableRow(
                     col1 = "平均",
-                    col2 = String.format("%.1f", monthStats.totalDistance / maxOf(monthStats.runCount, 1)),
-                    col3 = formatAverageDuration(monthStats.totalDurationMinutes, monthStats.runCount),
+                    col2 = if (runDayCount > 0) String.format("%.1f", monthStats.totalDistance / runDayCount) else "-",
+                    col3 = formatAverageDuration(monthStats.totalDurationMinutes, runDayCount),
                     col4 = monthStats.avgPace,
+                    col5 = formatElevation(monthStats.totalElevation),
                     isHeader = false,
                     backgroundColor = Color.Transparent,
                     isSummary = true
@@ -115,6 +121,7 @@ private fun TableRow(
     col2: String,
     col3: String,
     col4: String,
+    col5: String,
     isHeader: Boolean,
     backgroundColor: Color,
     isToday: Boolean = false,
@@ -174,15 +181,23 @@ private fun TableRow(
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1.2f)
         )
+        Text(
+            text = col5,
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+            color = textColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
 /**
- * Format average duration
+ * Format average duration using run day count as denominator
  */
-private fun formatAverageDuration(totalMinutes: Double, runCount: Int): String {
-    if (runCount <= 0) return "-"
-    val avgMinutes = totalMinutes / runCount
+private fun formatAverageDuration(totalMinutes: Double, runDayCount: Int): String {
+    if (runDayCount <= 0) return "-"
+    val avgMinutes = totalMinutes / runDayCount
     val hours = (avgMinutes / 60).toInt()
     val mins = (avgMinutes % 60).toInt()
     return if (hours > 0) {
@@ -192,20 +207,29 @@ private fun formatAverageDuration(totalMinutes: Double, runCount: Int): String {
     }
 }
 
+/**
+ * Format elevation in meters
+ */
+private fun formatElevation(meters: Double): String {
+    if (meters <= 0) return "-"
+    return String.format("%.0f", meters)
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun MonthDetailTablePreview() {
     val mockDays = listOf(
-        DayRunData(dayOfMonth = 3, totalDistance = 5.2, runCount = 1, totalDurationMinutes = 32.0, avgPace = "6'09\""),
-        DayRunData(dayOfMonth = 6, totalDistance = 10.5, runCount = 1, totalDurationMinutes = 58.0, avgPace = "5'31\""),
-        DayRunData(dayOfMonth = 9, totalDistance = 8.3, runCount = 1, totalDurationMinutes = 45.0, avgPace = "5'25\""),
-        DayRunData(dayOfMonth = 12, totalDistance = 6.0, runCount = 1, totalDurationMinutes = 35.0, avgPace = "5'50\"", isToday = true),
+        DayRunData(dayOfMonth = 3, totalDistance = 5.2, runCount = 1, totalDurationMinutes = 32.0, avgPace = "6'09\"", totalElevation = 120.0),
+        DayRunData(dayOfMonth = 6, totalDistance = 10.5, runCount = 1, totalDurationMinutes = 58.0, avgPace = "5'31\"", totalElevation = 250.0),
+        DayRunData(dayOfMonth = 9, totalDistance = 8.3, runCount = 1, totalDurationMinutes = 45.0, avgPace = "5'25\"", totalElevation = 180.0),
+        DayRunData(dayOfMonth = 12, totalDistance = 6.0, runCount = 1, totalDurationMinutes = 35.0, avgPace = "5'50\"", isToday = true, totalElevation = 90.0),
     )
     val monthStats = MonthStatistics(
         totalDistance = 30.0,
         totalDurationMinutes = 170.0,
         runCount = 4,
-        avgPace = "5'40\""
+        avgPace = "5'40\"",
+        totalElevation = 640.0
     )
     MonthDetailTable(
         dailyRecords = mockDays,

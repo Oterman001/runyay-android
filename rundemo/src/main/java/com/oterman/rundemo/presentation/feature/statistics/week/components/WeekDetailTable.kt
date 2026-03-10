@@ -27,9 +27,9 @@ import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
  * Week detail table showing daily breakdown
- * Headers: 星期 | 距离(km) | 时长 | 平均配速
+ * Headers: 星期 | 距离(km) | 时长 | 配速 | 爬升(m)
  * Data rows for past and current day only
- * Summary row with averages in blue
+ * Summary row with totals in blue
  */
 @Composable
 fun WeekDetailTable(
@@ -44,6 +44,11 @@ fun WeekDetailTable(
     // Filter out future days
     val displayRecords = remember(dailyRecords) {
         dailyRecords.filter { !it.isFuture }
+    }
+
+    // Number of days with runs (for average calculation - ensures pace/distance/duration use same denominator)
+    val runDayCount = remember(displayRecords) {
+        displayRecords.count { it.hasRun }
     }
 
     AppCard(modifier = modifier) {
@@ -62,7 +67,8 @@ fun WeekDetailTable(
                 col1 = "星期",
                 col2 = "距离(km)",
                 col3 = "时长",
-                col4 = "平均配速",
+                col4 = "配速",
+                col5 = "爬升(m)",
                 isHeader = true,
                 backgroundColor = headerBgColor
             )
@@ -78,6 +84,7 @@ fun WeekDetailTable(
                     col2 = if (dayData.hasRun) dayData.getFormattedDistance() else "-",
                     col3 = if (dayData.hasRun) dayData.getFormattedDuration() else "-",
                     col4 = if (dayData.hasRun) dayData.avgPace else "-",
+                    col5 = dayData.getFormattedElevation(),
                     isHeader = false,
                     backgroundColor = bgColor,
                     isToday = dayData.isToday
@@ -90,12 +97,13 @@ fun WeekDetailTable(
                 modifier = Modifier.padding(vertical = 4.dp)
             )
 
-            // Summary row (averages)
+            // Summary row (averages: distance/duration per run day, overall pace, total elevation)
             TableRow(
                 col1 = "平均",
-                col2 = String.format("%.1f", weekStats.totalDistance / maxOf(weekStats.runCount, 1)),
-                col3 = formatAverageDuration(weekStats.totalDurationMinutes, weekStats.runCount),
+                col2 = if (runDayCount > 0) String.format("%.1f", weekStats.totalDistance / runDayCount) else "-",
+                col3 = formatAverageDuration(weekStats.totalDurationMinutes, runDayCount),
                 col4 = weekStats.avgPace,
+                col5 = formatElevation(weekStats.totalElevation),
                 isHeader = false,
                 backgroundColor = Color.Transparent,
                 isSummary = true
@@ -113,6 +121,7 @@ private fun TableRow(
     col2: String,
     col3: String,
     col4: String,
+    col5: String,
     isHeader: Boolean,
     backgroundColor: Color,
     isToday: Boolean = false,
@@ -146,7 +155,7 @@ private fun TableRow(
             fontWeight = fontWeight,
             color = if (isToday) RunTheme.colorScheme.blue else textColor,
             textAlign = TextAlign.Center,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(0.8f)
         )
         Text(
             text = col2,
@@ -172,15 +181,23 @@ private fun TableRow(
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1.2f)
         )
+        Text(
+            text = col5,
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+            color = textColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
 /**
- * Format average duration
+ * Format average duration using run day count as denominator
  */
-private fun formatAverageDuration(totalMinutes: Double, runCount: Int): String {
-    if (runCount <= 0) return "-"
-    val avgMinutes = totalMinutes / runCount
+private fun formatAverageDuration(totalMinutes: Double, runDayCount: Int): String {
+    if (runDayCount <= 0) return "-"
+    val avgMinutes = totalMinutes / runDayCount
     val hours = (avgMinutes / 60).toInt()
     val mins = (avgMinutes % 60).toInt()
     return if (hours > 0) {
@@ -190,16 +207,24 @@ private fun formatAverageDuration(totalMinutes: Double, runCount: Int): String {
     }
 }
 
+/**
+ * Format elevation in meters
+ */
+private fun formatElevation(meters: Double): String {
+    if (meters <= 0) return "-"
+    return String.format("%.0f", meters)
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun WeekDetailTablePreview() {
     val mockDays = listOf(
-        DayRunData(dayOfWeek = "一", totalDistance = 5.2, runCount = 1, totalDurationMinutes = 32.0, avgPace = "6'09\""),
+        DayRunData(dayOfWeek = "一", totalDistance = 5.2, runCount = 1, totalDurationMinutes = 32.0, avgPace = "6'09\"", totalElevation = 120.0),
         DayRunData(dayOfWeek = "二", totalDistance = 0.0, runCount = 0),
-        DayRunData(dayOfWeek = "三", totalDistance = 10.5, runCount = 1, totalDurationMinutes = 58.0, avgPace = "5'31\""),
+        DayRunData(dayOfWeek = "三", totalDistance = 10.5, runCount = 1, totalDurationMinutes = 58.0, avgPace = "5'31\"", totalElevation = 250.0),
         DayRunData(dayOfWeek = "四", totalDistance = 0.0, runCount = 0),
-        DayRunData(dayOfWeek = "五", totalDistance = 8.3, runCount = 1, totalDurationMinutes = 45.0, avgPace = "5'25\""),
-        DayRunData(dayOfWeek = "六", totalDistance = 6.0, runCount = 1, totalDurationMinutes = 35.0, avgPace = "5'50\"", isToday = true),
+        DayRunData(dayOfWeek = "五", totalDistance = 8.3, runCount = 1, totalDurationMinutes = 45.0, avgPace = "5'25\"", totalElevation = 180.0),
+        DayRunData(dayOfWeek = "六", totalDistance = 6.0, runCount = 1, totalDurationMinutes = 35.0, avgPace = "5'50\"", isToday = true, totalElevation = 90.0),
         DayRunData(dayOfWeek = "日", totalDistance = 0.0, runCount = 0, isFuture = true)
     )
     val weekStats = WeekStatistics(
@@ -207,7 +232,8 @@ private fun WeekDetailTablePreview() {
         totalDurationMinutes = 170.0,
         dailyRecords = mockDays,
         runCount = 4,
-        avgPace = "5'40\""
+        avgPace = "5'40\"",
+        totalElevation = 640.0
     )
     WeekDetailTable(
         dailyRecords = mockDays,
