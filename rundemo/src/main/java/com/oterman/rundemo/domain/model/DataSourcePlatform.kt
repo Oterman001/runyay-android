@@ -67,7 +67,7 @@ enum class DataSourcePlatform(
         appBrandName = "手动导入",
         iconResId = R.drawable.ic_manual_import,
         isEnabled = true,
-        supportsSorting = false
+        supportsSorting = true
     );
 
     companion object {

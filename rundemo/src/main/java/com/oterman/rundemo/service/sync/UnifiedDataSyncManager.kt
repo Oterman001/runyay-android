@@ -351,16 +351,12 @@ class UnifiedDataSyncManager private constructor(
         try {
            RLog.i(TAG, "开始统一同步, forceRefresh=$forceRefresh")
 
-            // 固定同步顺序：苹果健康 → 佳明中国 → 佳明国际 → 高驰
-            // 不再判断平台授权状态，用户取消授权后云端可能仍有数据
-            val platformsToSync = listOf(
-                DataSourcePlatform.MANUAL,
-                DataSourcePlatform.APPLE_HEALTH,
-                DataSourcePlatform.GARMIN_CHINA,
-                DataSourcePlatform.GARMIN_GLOBAL,
-                DataSourcePlatform.COROS
-            )
-           RLog.i(TAG, "需要同步的平台: ${platformsToSync.map { it.displayName }}")
+            // 读取用户在数据源管理页面设置的平台排序，所有支持排序的平台均按用户设置顺序执行
+            val savedOrder = dataSourcePreferences.getDataSourceOrder()
+            val platformsToSync = DataSourcePlatform.getSortablePlatforms()
+                .filter { it.isEnabled }
+                .sortedBy { savedOrder[it.code] ?: Int.MAX_VALUE }
+           RLog.i(TAG, "需要同步的平台(按用户排序): ${platformsToSync.map { it.displayName }}")
 
             // 按顺序同步每个平台
             for (platform in platformsToSync) {
