@@ -73,6 +73,12 @@ sealed class Screen(val route: String) {
      * 用于管理佳明、高驰等第三方数据源的授权和同步
      */
     object DataSourceManage : Screen("data_source_manage")
+
+    /**
+     * 手动导入落地页
+     * 统一的 FIT 文件导入入口，支持多选批量导入，并展示已导入记录列表（支持删除）
+     */
+    object ManualImport : Screen("manual_import")
     
     /**
      * 数据源详情页面

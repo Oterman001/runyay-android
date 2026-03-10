@@ -212,7 +212,8 @@ class FitImportService(private val context: Context) {
             RLog.i(TAG, "========== FIT文件导入成功 ==========")
             FitImportResult.Success(
                 distance = runRecord.totalDistance,
-                duration = runRecord.activeDuration
+                duration = runRecord.activeDuration,
+                workoutId = runRecord.workoutId
             )
 
         } catch (e: Exception) {

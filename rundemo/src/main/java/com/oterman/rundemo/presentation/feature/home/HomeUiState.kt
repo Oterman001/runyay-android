@@ -17,7 +17,7 @@ enum class HomeTab(val index: Int) {
  * FIT文件导入结果
  */
 sealed class FitImportResult {
-    data class Success(val distance: Double, val duration: Double) : FitImportResult()
+    data class Success(val distance: Double, val duration: Double, val workoutId: String? = null) : FitImportResult()
     object AlreadyExists : FitImportResult()
     data class Error(val message: String) : FitImportResult()
     data class ConflictFound(

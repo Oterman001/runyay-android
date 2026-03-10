@@ -1,12 +1,10 @@
 package com.oterman.rundemo.presentation.feature.datasource
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.fit.FitImportService
 import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
-import com.oterman.rundemo.presentation.feature.home.FitImportResult
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -174,109 +172,6 @@ class DataSourceManageViewModel(
      */
     fun dismissLoginRequiredDialog() {
         _uiState.update { it.copy(showLoginRequiredDialog = false) }
-    }
-
-    // ==================== 手动导入 ====================
-
-    /**
-     * 显示手动导入选择弹窗
-     */
-    fun showManualImportDialog() {
-        _uiState.update { it.copy(showManualImportDialog = true) }
-    }
-
-    /**
-     * 关闭手动导入选择弹窗
-     */
-    fun dismissManualImportDialog() {
-        _uiState.update { it.copy(showManualImportDialog = false) }
-    }
-
-    /**
-     * 导入单个FIT文件
-     */
-    fun importSingleFitFile(uri: Uri) {
-        RLog.i(TAG, "开始导入单个FIT文件: $uri")
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isImportingFit = true, importProgress = "导入中...") }
-
-            val result = fitImportService.importFitFile(uri)
-
-            _uiState.update {
-                it.copy(
-                    isImportingFit = false,
-                    importProgress = null,
-                    showImportResultDialog = true,
-                    fitImportResult = result
-                )
-            }
-        }
-    }
-
-    /**
-     * 批量导入FIT文件
-     */
-    fun importBatchFitFiles(uris: List<Uri>) {
-        if (uris.isEmpty()) return
-        RLog.i(TAG, "开始批量导入FIT文件: ${uris.size}个")
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isImportingFit = true, importProgress = "准备导入 ${uris.size} 个文件...") }
-
-            var successCount = 0
-            var failCount = 0
-            var skipCount = 0
-
-            uris.forEachIndexed { index, uri ->
-                _uiState.update {
-                    it.copy(importProgress = "正在导入第 ${index + 1}/${uris.size} 个文件...")
-                }
-
-                val result = fitImportService.importFitFile(uri)
-                when (result) {
-                    is FitImportResult.Success -> successCount++
-                    is FitImportResult.AlreadyExists -> skipCount++
-                    is FitImportResult.ConflictFound -> {
-                        // 批量导入时自动强制导入冲突文件
-                        val forceResult = fitImportService.importFitFile(uri, forceImport = true)
-                        if (forceResult is FitImportResult.Success) successCount++ else failCount++
-                    }
-                    else -> failCount++
-                }
-            }
-
-            val message = buildString {
-                append("批量导入完成\n")
-                if (successCount > 0) append("成功：${successCount} 个\n")
-                if (skipCount > 0) append("已存在跳过：${skipCount} 个\n")
-                if (failCount > 0) append("失败：${failCount} 个")
-            }.trimEnd()
-
-            _uiState.update {
-                it.copy(
-                    isImportingFit = false,
-                    importProgress = null,
-                    showImportResultDialog = true,
-                    fitImportResult = if (successCount > 0) {
-                        FitImportResult.Success(0.0, 0.0)
-                    } else if (failCount > 0) {
-                        FitImportResult.Error(message)
-                    } else {
-                        FitImportResult.AlreadyExists
-                    }
-                )
-            }
-
-            RLog.i(TAG, "批量导入完成: 成功=$successCount, 跳过=$skipCount, 失败=$failCount")
-        }
-    }
-
-    /**
-     * 关闭导入结果弹窗
-     */
-    fun dismissImportResultDialog() {
-        _uiState.update { it.copy(showImportResultDialog = false, fitImportResult = null) }
     }
 
     /**

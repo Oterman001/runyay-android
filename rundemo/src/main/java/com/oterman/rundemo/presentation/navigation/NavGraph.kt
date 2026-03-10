@@ -35,6 +35,9 @@ import com.oterman.rundemo.presentation.feature.datasource.OAuthWebViewScreen
 import com.oterman.rundemo.presentation.feature.datasource.records.PlatformRecordListScreen
 import com.oterman.rundemo.presentation.feature.datasource.records.PlatformRecordListViewModel
 import com.oterman.rundemo.presentation.feature.datasource.records.PlatformRecordListViewModelFactory
+import com.oterman.rundemo.presentation.feature.datasource.manualimport.ManualImportScreen
+import com.oterman.rundemo.presentation.feature.datasource.manualimport.ManualImportViewModel
+import com.oterman.rundemo.presentation.feature.datasource.manualimport.ManualImportViewModelFactory
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceDebugScreen
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceDebugViewModel
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceDebugViewModelFactory
@@ -358,6 +361,9 @@ fun AppNavGraph(
                 onNavigateToLogin = {
                     navController.navigate(Screen.Login.route)
                 },
+                onNavigateToManualImport = {
+                    navController.navigate(Screen.ManualImport.route)
+                },
                 onNavigateToHkDebug = {
                     navController.navigate(
                         Screen.DataSourceDebug.createRoute(DataSourcePlatform.APPLE_HEALTH.code)
@@ -365,7 +371,27 @@ fun AppNavGraph(
                 }
             )
         }
-        
+
+        // 手动导入落地页
+        composable(Screen.ManualImport.route) {
+            val context = LocalContext.current
+            val manualImportViewModel: ManualImportViewModel = viewModel(
+                factory = ManualImportViewModelFactory(context)
+            )
+            ManualImportScreen(
+                viewModel = manualImportViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToRecordList = {
+                    navController.navigate(
+                        Screen.PlatformRecordList.createRoute(DataSourcePlatform.MANUAL.code)
+                    )
+                },
+                onNavigateToRunDetail = { workoutId ->
+                    context.startActivity(RunDetailActivity.createIntent(context, workoutId))
+                }
+            )
+        }
+
         // 数据源详情页面
         composable(
             route = Screen.DataSourceDetail.route,

@@ -6,6 +6,7 @@ import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,13 +17,18 @@ import java.util.concurrent.ConcurrentHashMap
 data class PlatformRecordListUiState(
     val platform: DataSourcePlatform,
     val records: List<RunRecordEntity> = emptyList(),
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val pendingDeleteWorkoutId: String? = null
 )
 
 class PlatformRecordListViewModel(
     private val platform: DataSourcePlatform,
     private val repository: RunDataRepository
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "PlatformRecordListVM"
+    }
 
     private val _uiState = MutableStateFlow(PlatformRecordListUiState(platform = platform))
     val uiState: StateFlow<PlatformRecordListUiState> = _uiState.asStateFlow()
@@ -36,6 +42,29 @@ class PlatformRecordListViewModel(
 
     init {
         loadRecords()
+    }
+
+    fun requestDelete(workoutId: String) {
+        _uiState.update { it.copy(pendingDeleteWorkoutId = workoutId) }
+    }
+
+    fun cancelDelete() {
+        _uiState.update { it.copy(pendingDeleteWorkoutId = null) }
+    }
+
+    fun confirmDelete() {
+        val workoutId = _uiState.value.pendingDeleteWorkoutId ?: return
+        viewModelScope.launch {
+            try {
+                repository.deleteRunRecord(workoutId)
+                RLog.i(TAG, "删除记录成功: $workoutId")
+                loadRecords()
+            } catch (e: Exception) {
+                RLog.e(TAG, "删除记录失败", e)
+            } finally {
+                _uiState.update { it.copy(pendingDeleteWorkoutId = null) }
+            }
+        }
     }
 
     private fun loadRecords() {
