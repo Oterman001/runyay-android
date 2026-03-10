@@ -37,6 +37,9 @@ class DataSourcePreferences(context: Context) {
         // 数据源优先级
         private const val KEY_DATA_SOURCE_ORDER = "data_source_order"
 
+        // Debug: 同步开关（仅Debug版本使用）
+        private const val KEY_DEBUG_SYNC_DISABLED_PLATFORMS = "debug_sync_disabled_platforms"
+
         // 默认同步开始时间 (格式: yyyyMMddHHmmssSSS，17位)
         const val DEFAULT_SYNC_START_TIME = TimestampUtils.DEFAULT_SYNC_START_TIME
     }
@@ -345,6 +348,42 @@ class DataSourcePreferences(context: Context) {
         return order[platform.code] ?: 999
     }
     
+    // ============ Debug同步开关 ============
+
+    /**
+     * 获取被禁用同步的平台集合（Debug用）
+     */
+    fun getDebugDisabledPlatforms(): Set<String> {
+        val json = prefs.getString(KEY_DEBUG_SYNC_DISABLED_PLATFORMS, null)
+        if (json.isNullOrEmpty()) return emptySet()
+        return try {
+            val type = object : TypeToken<Set<String>>() {}.type
+            gson.fromJson(json, type)
+        } catch (e: Exception) {
+            emptySet()
+        }
+    }
+
+    /**
+     * 设置平台同步开关（Debug用）
+     */
+    fun setDebugSyncEnabled(platform: DataSourcePlatform, enabled: Boolean) {
+        val current = getDebugDisabledPlatforms().toMutableSet()
+        if (enabled) {
+            current.remove(platform.code)
+        } else {
+            current.add(platform.code)
+        }
+        prefs.edit().putString(KEY_DEBUG_SYNC_DISABLED_PLATFORMS, gson.toJson(current)).apply()
+    }
+
+    /**
+     * 检查平台同步是否启用（Debug用）
+     */
+    fun isDebugSyncEnabled(platform: DataSourcePlatform): Boolean {
+        return !getDebugDisabledPlatforms().contains(platform.code)
+    }
+
     // ============ 清理 ============
     
     /**

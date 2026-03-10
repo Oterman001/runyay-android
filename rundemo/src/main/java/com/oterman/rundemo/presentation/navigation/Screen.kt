@@ -170,6 +170,15 @@ sealed class Screen(val route: String) {
     object AllRunRecords : Screen("all_run_records")
 
     /**
+     * 同步控制调试页面（仅Debug版本可见）
+     * 控制各平台同步排序、开关、数据重置
+     */
+    object SyncControl : Screen("sync_control?showHome={showHome}") {
+        fun createRoute(showHome: Boolean = false): String =
+            "sync_control?showHome=$showHome"
+    }
+
+    /**
      * 联系我们页面
      * 提供微信、小红书、发送日志等联系方式
      */

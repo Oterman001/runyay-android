@@ -198,12 +198,6 @@ fun DataSourceManageScreen(
                             )
                         }
 
-                        // Debug 专属：HK - 苹果健康调试入口
-                        if (BuildConfig.DEBUG) {
-                            item(key = "hk_debug_entry") {
-                                HkDebugEntry(onClick = onNavigateToHkDebug)
-                            }
-                        }
                     }
                 }
 

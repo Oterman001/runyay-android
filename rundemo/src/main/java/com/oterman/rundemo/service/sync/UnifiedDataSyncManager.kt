@@ -13,6 +13,7 @@ import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.repository.RunDataRemoteRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
+import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.SyncResult
 import com.oterman.rundemo.domain.model.SyncTimeRange
@@ -353,8 +354,14 @@ class UnifiedDataSyncManager private constructor(
 
             // 读取用户在数据源管理页面设置的平台排序，所有支持排序的平台均按用户设置顺序执行
             val savedOrder = dataSourcePreferences.getDataSourceOrder()
+            val debugDisabledPlatforms = if (BuildConfig.DEBUG) {
+                dataSourcePreferences.getDebugDisabledPlatforms()
+            } else {
+                emptySet()
+            }
             val platformsToSync = DataSourcePlatform.getSortablePlatforms()
                 .filter { it.isEnabled }
+                .filter { it.code !in debugDisabledPlatforms }
                 .sortedBy { savedOrder[it.code] ?: Int.MAX_VALUE }
            RLog.i(TAG, "需要同步的平台(按用户排序): ${platformsToSync.map { it.displayName }}")
 

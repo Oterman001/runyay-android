@@ -61,12 +61,18 @@ import com.oterman.rundemo.presentation.feature.statistics.RunStatisticsScreen
 import com.oterman.rundemo.presentation.feature.userprofile.UserProfileScreen
 import com.oterman.rundemo.presentation.feature.debug.DebugScreen
 import com.oterman.rundemo.presentation.feature.debug.allrecords.AllRunRecordsDebugScreen
+import com.oterman.rundemo.BuildConfig
+import com.oterman.rundemo.presentation.feature.debug.synccontrol.SyncControlScreen
+import com.oterman.rundemo.presentation.feature.debug.synccontrol.SyncControlViewModel
+import com.oterman.rundemo.presentation.feature.debug.synccontrol.SyncControlViewModelFactory
 import com.oterman.rundemo.presentation.feature.syncstatus.DataSyncStatusScreen
 import com.oterman.rundemo.presentation.feature.legal.PrivacyPolicyScreen
 import com.oterman.rundemo.presentation.feature.legal.UserTermsScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.repository.UserRepository
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -110,6 +116,12 @@ fun AppNavGraph(
                 onLoginSuccess = {
                     scope.launch {
                         val prefsManager = PreferencesManager(context)
+
+                        // 确保 RunDataRepository 的 userId 已设置（SyncControl 等页面需要）
+                        val database = RunDatabase.getInstance(context)
+                        val runDataRepo = RunDataRepositoryImpl.getInstance(database)
+                        prefsManager.getUserId()?.let { runDataRepo.setCurrentUserId(it) }
+
                         val userRepo = UserRepository(context)
                         val result = userRepo.queryBasicInfo()
                         val serverInfo = result.getOrNull()
@@ -153,7 +165,7 @@ fun AppNavGraph(
                 }
             )
         }
-        
+
         // 绑定引导页面（登录/注册成功后）
         composable(Screen.BindingGuide.route) {
             val context = LocalContext.current
@@ -162,8 +174,14 @@ fun AppNavGraph(
             )
             val navigateAfterBinding = {
                 viewModel.markGuideCompleted()
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.BindingGuide.route) { inclusive = true }
+                if (BuildConfig.DEBUG) {
+                    navController.navigate(Screen.SyncControl.createRoute(showHome = true)) {
+                        popUpTo(Screen.BindingGuide.route) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.BindingGuide.route) { inclusive = true }
+                    }
                 }
             }
             BindingGuideScreen(
@@ -566,8 +584,14 @@ fun AppNavGraph(
                             popUpTo(Screen.PhysioSetup.route) { inclusive = true }
                         }
                     } else {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.PhysioSetup.route) { inclusive = true }
+                        if (BuildConfig.DEBUG) {
+                            navController.navigate(Screen.SyncControl.createRoute(showHome = true)) {
+                                popUpTo(Screen.PhysioSetup.route) { inclusive = true }
+                            }
+                        } else {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.PhysioSetup.route) { inclusive = true }
+                            }
                         }
                     }
                 }
@@ -616,7 +640,38 @@ fun AppNavGraph(
                 },
                 onNavigateToDataSourceDebug = { platformCode ->
                     navController.navigate(Screen.DataSourceDebug.createRoute(platformCode))
+                },
+                onNavigateToSyncControl = {
+                    navController.navigate(Screen.SyncControl.route)
                 }
+            )
+        }
+
+        // 同步控制调试页面
+        composable(
+            route = Screen.SyncControl.route,
+            arguments = listOf(navArgument("showHome") {
+                type = NavType.BoolType
+                defaultValue = false
+            })
+        ) { backStackEntry ->
+            val showHome = backStackEntry.arguments?.getBoolean("showHome") ?: false
+            val context = LocalContext.current
+            val viewModel: SyncControlViewModel = viewModel(
+                factory = SyncControlViewModelFactory(context)
+            )
+            SyncControlScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToHome = if (showHome) {
+                    {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.SyncControl.route) { inclusive = true }
+                        }
+                    }
+                } else null
             )
         }
 
