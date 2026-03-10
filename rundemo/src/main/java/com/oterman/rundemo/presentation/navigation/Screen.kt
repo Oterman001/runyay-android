@@ -116,6 +116,14 @@ sealed class Screen(val route: String) {
     }
 
     /**
+     * 服务端活动列表页面
+     * 查看各平台服务端下发的活动列表
+     */
+    object ServerActivityList : Screen("server_activity_list/{platformCode}") {
+        fun createRoute(platformCode: String) = "server_activity_list/$platformCode"
+    }
+
+    /**
      * 平台记录列表页面（用户版）
      * 查看指定平台导入的所有跑步记录
      */

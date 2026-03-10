@@ -44,6 +44,9 @@ import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceDebug
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecordListScreen
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecordListViewModel
 import com.oterman.rundemo.presentation.feature.datasource.debug.DataSourceRecordListViewModelFactory
+import com.oterman.rundemo.presentation.feature.datasource.debug.ServerActivityListScreen
+import com.oterman.rundemo.presentation.feature.datasource.debug.ServerActivityListViewModel
+import com.oterman.rundemo.presentation.feature.datasource.debug.ServerActivityListViewModelFactory
 import com.oterman.rundemo.presentation.feature.onboarding.BindingGuideScreen
 import com.oterman.rundemo.presentation.feature.onboarding.BindingGuideViewModel
 import com.oterman.rundemo.presentation.feature.onboarding.BindingGuideViewModelFactory
@@ -496,6 +499,9 @@ fun AppNavGraph(
                 },
                 onNavigateToRecordList = {
                     navController.navigate(Screen.DataSourceRecordList.createRoute(platformCode))
+                },
+                onNavigateToServerActivityList = {
+                    navController.navigate(Screen.ServerActivityList.createRoute(platformCode))
                 }
             )
         }
@@ -525,6 +531,27 @@ fun AppNavGraph(
                 },
                 onNavigateToDebugDetail = { workoutId ->
                     navController.navigate(Screen.RunDetailDebug.createRoute(workoutId))
+                }
+            )
+        }
+
+        // 服务端活动列表页面
+        composable(
+            route = Screen.ServerActivityList.route,
+            arguments = listOf(
+                navArgument("platformCode") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val platformCode = backStackEntry.arguments?.getString("platformCode") ?: return@composable
+            val platform = DataSourcePlatform.fromCode(platformCode) ?: return@composable
+            val context = LocalContext.current
+            val viewModel: ServerActivityListViewModel = viewModel(
+                factory = ServerActivityListViewModelFactory(context, platform)
+            )
+            ServerActivityListScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }

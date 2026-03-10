@@ -288,7 +288,7 @@ class WeekStatisticsViewModel(
             dayCal.add(Calendar.DAY_OF_WEEK, 1)
             val dayEnd = dayCal.timeInMillis
 
-            val dayRecords = records.filter { it.startTime in dayStart until dayEnd }
+            val dayRecords = records.filter { it.startTime in dayStart until dayEnd && it.inclusiveLevel != 0 }
 
             dayCal.timeInMillis = dayStart
             val isToday = isSameDay(dayCal, today)

@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Button
@@ -50,7 +51,8 @@ import com.oterman.rundemo.domain.model.DataSourcePlatform
 fun DataSourceDebugScreen(
     viewModel: DataSourceDebugViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToRecordList: () -> Unit
+    onNavigateToRecordList: () -> Unit,
+    onNavigateToServerActivityList: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -168,6 +170,23 @@ fun DataSourceDebugScreen(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 Text("查看记录列表")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onNavigateToServerActivityList,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Cloud,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text("服务端活动列表")
             }
 
             Spacer(modifier = Modifier.height(12.dp))
