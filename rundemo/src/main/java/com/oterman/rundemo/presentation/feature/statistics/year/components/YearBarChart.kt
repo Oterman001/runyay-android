@@ -15,6 +15,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -85,16 +86,21 @@ fun YearBarChart(
                 val barAreaWidth = canvasWidth - leftPadding - rightPadding
 
                 // Draw Y-axis labels and grid lines
-                val yValues = listOf(0.0, avgMonthDistance, effectiveMaxDistance)
+                val yValues = listOf(0.0, avgMonthDistance)
                 yValues.forEachIndexed { index, value ->
                     val y = barAreaBottom - (value / effectiveMaxDistance * barAreaHeight).toFloat()
+
 
                     // Grid line
                     drawLine(
                         color = gridLineColor,
                         start = Offset(leftPadding, y),
                         end = Offset(canvasWidth - rightPadding, y),
-                        strokeWidth = 1.dp.toPx()
+                        strokeWidth = 1.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(
+                            intervals = floatArrayOf(7f, 5f), // 10px实线，10px间隔
+                            phase = 0f
+                        )
                     )
 
                     // Y-axis label
