@@ -4,16 +4,7 @@
 #
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
-# Keep public API for VDOT calculators
--keep class com.oterman.rundemo.data.fit.VdotCalculator {
-    public static double calculateFromDistanceAndTime(double, double, double, java.lang.Double, double, double);
-    public static *** calculateFromSegments(...);
-    public static *** calculateOverallVdot(...);
-    public static double getVDot(double, double);
-}
--keep class com.oterman.rundemo.data.fit.VdotSpeedCalculator { public *; }
--keep class com.oterman.rundemo.data.fit.AbilityZoneCalculator { public *; }
--keep class com.oterman.rundemo.data.fit.AbilityZoneCalculator$* { *; }
+
 
 # Obfuscation settings
 # Note: -repackageclasses and -overloadaggressively removed because they break
@@ -53,13 +44,48 @@
     public <methods>;
 }
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
 
+# Aggressive obfuscation for internal implementation
+-repackageclasses 'o'
+-allowaccessmodification
+-overloadaggressively
+-optimizationpasses 5
+
+
+
+# Keep Room entities
+-keep class com.oterman.rundemo.data.local.entity.** { *; }
+
+# Keep Retrofit interfaces
+-keep,allowobfuscation interface com.oterman.rundemo.data.network.api.** { *; }
+
+# Keep data classes used in API requests/responses
+-keep class com.oterman.rundemo.data.network.dto.** { *; }
+
+# Keep FitRecord and related data classes used by FitRecordProcessor
+-keep class com.oterman.rundemo.data.fit.FitRecord { *; }
+-keep class com.oterman.rundemo.data.fit.FitEventConverter$PauseEvent { *; }
+-keep class com.oterman.rundemo.data.fit.FitFileParser { *; }
+-keep class com.oterman.rundemo.data.fit.FitRecordProcessor { public *; }
+
+# Standard Android / Kotlin rules
+-dontwarn kotlin.**
+-dontwarn kotlinx.**
+-keep class kotlin.Metadata { *; }
+-keepclassmembers class kotlin.Metadata {
+    public <methods>;
+}
+
+# Garmin FIT SDK
+-keep class com.garmin.fit.** { *; }
+
+# Gson / Retrofit
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.google.gson.** { *; }
+-keepclassmembers,allowobfuscation class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
 # Gson / Retrofit
 -keepattributes Signature,InnerClasses,EnclosingMethod
 -keepattributes *Annotation*
@@ -91,3 +117,6 @@
 #-keep public class [您的应用包名].R$*{
 #public static final int *;
 #}
+# Mapbox
+-keep class com.mapbox.** { *; }
+-dontwarn com.mapbox.**
