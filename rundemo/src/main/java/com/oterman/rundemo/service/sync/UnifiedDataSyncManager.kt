@@ -10,6 +10,7 @@ import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.fit.RunSummaryMapper
 import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.data.repository.HealthRepository
+import com.oterman.rundemo.data.network.dto.request.RunSummaryUpdateRequest
 import com.oterman.rundemo.data.repository.RunDataRemoteRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
@@ -736,25 +737,13 @@ class UnifiedDataSyncManager private constructor(
     // ============ 跑步数据管理 ============
 
     /**
-     * 更新跑步摘要（note/feeling/shoe等）
+     * 更新跑步摘要
      */
     suspend fun updateRunSummary(
-        summaryId: String,
-        activityName: String? = null,
-        note: String? = null,
-        feelingLevel: Int? = null,
-        shoeId: String? = null,
-        raceId: String? = null
+        request: RunSummaryUpdateRequest
     ): Result<Boolean> {
         return try {
-            val result = runDataRemoteRepository.updateRunSummary(
-                summaryId = summaryId,
-                activityName = activityName,
-                note = note,
-                feelingLevel = feelingLevel,
-                shoeId = shoeId,
-                raceId = raceId
-            )
+            val result = runDataRemoteRepository.updateRunSummary(request)
             result.map { it.success }
         } catch (e: Exception) {
             RLog.e(TAG, "更新跑步摘要失败", e)

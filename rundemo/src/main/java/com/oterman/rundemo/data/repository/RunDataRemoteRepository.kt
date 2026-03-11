@@ -115,24 +115,13 @@ class RunDataRemoteRepository(
      * 更新跑步摘要
      */
     suspend fun updateRunSummary(
-        summaryId: String,
-        activityName: String? = null,
-        note: String? = null,
-        feelingLevel: Int? = null,
-        shoeId: String? = null,
-        raceId: String? = null
+        updateRequest: RunSummaryUpdateRequest
     ): Result<RunSummaryUpdateResponse> = withContext(Dispatchers.IO) {
         try {
+            val summaryId = updateRequest.summaryId
             val request = createBaseRequest(
                 dtoName = "UpdateRunSummaryRequestDto",
-                data = RunSummaryUpdateRequest(
-                    summaryId = summaryId,
-                    activityName = activityName,
-                    note = note,
-                    feelingLevel = feelingLevel,
-                    shoeId = shoeId,
-                    raceId = raceId
-                )
+                data = updateRequest
             )
 
             val response = api.updateRunSummary(request)

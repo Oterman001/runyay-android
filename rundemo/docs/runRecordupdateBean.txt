@@ -1,0 +1,114 @@
+
+public class UpdateRunSummaryRequestDto {
+
+    // 必填字段
+    private String summaryId;  // 摘要ID（必填，用于定位记录）
+
+    // 基础信息（可选）
+    private String platformCode;
+    private String activityId;
+    private String activityName;
+    private Long startTimeInSeconds;
+    private Integer startTimeOffsetInSeconds;
+    private String activityType;
+    private Integer durationInSeconds;
+
+    // 生理指标（可选）
+    private Integer averageHeartRate;
+    private BigDecimal averageRunCadence;
+    private BigDecimal averagePushCadence;
+    private BigDecimal averagePace;
+    private BigDecimal activeKilocalories;
+
+    // 设备信息（可选）
+    private String deviceName;
+
+    // 运动指标（可选）
+    private BigDecimal distanceInMeters;
+    private BigDecimal maxHeartRate;
+    private BigDecimal maxPace;
+    private BigDecimal maxRunCadence;
+    private BigDecimal maxPushCadence;
+
+    // 运动数据（可选）
+    private Integer steps;
+    private Integer pushes;
+    private BigDecimal totalElevationGain;
+    private BigDecimal totalElevationLoss;
+
+    // 活动关系（可选）
+    private Boolean isParent;
+    private String parentSummaryId;
+    private Boolean isManual;
+
+    // 数据插入日期（可选）
+    private String dataDate;
+
+    // HealthKit扩展字段 - 生理指标详细数据（可选）
+    private Integer minHeartRate;
+    private BigDecimal averageContactTime;
+    private BigDecimal maxContactTime;
+    private BigDecimal minContactTime;
+    private BigDecimal averagePower;
+    private BigDecimal maxPower;
+    private BigDecimal minPower;
+    private BigDecimal averageStrideLength;
+    private BigDecimal maxStrideLength;
+    private BigDecimal minStrideLength;
+    private BigDecimal averageVerticalOscillation;
+    private BigDecimal maxVerticalOscillation;
+    private BigDecimal minVerticalOscillation;
+    private BigDecimal minPace;
+    private BigDecimal maxSpeed;
+    private BigDecimal minSpeed;
+    private BigDecimal averageMets;
+
+    // HealthKit扩展字段 - 环境与状态（可选）
+    private BigDecimal weatherTemperature;
+    private BigDecimal weatherHumidity;
+    private BigDecimal aqi;
+    private BigDecimal altitude;
+    private String address;
+    private String timezone;
+    private Integer outdoor;
+    private Integer feelingLevel;
+
+    // HealthKit扩展字段 - 训练分析（可选）
+    private BigDecimal vdot;
+    private BigDecimal overallVdot;
+    private BigDecimal vo2Max;
+    private BigDecimal maf;
+    private BigDecimal trainingLoad;
+    private BigDecimal trainingPerformance;
+    private BigDecimal trainingEffect;
+    private BigDecimal equivalentSpeed;
+    private BigDecimal originDistance;
+
+    // HealthKit扩展字段 - 其他（可选）
+    private String dataSource;
+    private Integer inclusiveLevel;
+    private Integer runId;
+    private Integer runType;
+    private String pb;
+    private String note;
+    private String runDescription;
+    private BigDecimal totalBasalEnergy;
+    private String deviceVersion;
+    private String heartRateDevice;
+    private String shoeId;
+    private String trainPlanId;
+
+    // 新增字段 - 2024-12-20（可选）
+    private String originId;
+    private BigDecimal startLatitude;
+    private BigDecimal startLongitude;
+    private Integer mapCoordinateSystem;
+    private String raceId;
+
+    // HealthKit客户端上传字段（可选）
+    private String startTime;
+    private String endTime;
+    private Integer activeDuration;
+    private Integer restingHeartRate;  // 静息心率（可选）
+    private Integer userMaxHeartRate;  // 用户最大心率（可选）
+}
