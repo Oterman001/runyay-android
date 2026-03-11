@@ -65,7 +65,7 @@ enum class DataSourcePlatform(
         displayName = "手动导入",
         displayNameEn = "Manual",
         appBrandName = "手动导入",
-        iconResId = R.drawable.manual,
+        iconResId = R.drawable.ic_manual2,
         isEnabled = true,
         supportsSorting = true
     );

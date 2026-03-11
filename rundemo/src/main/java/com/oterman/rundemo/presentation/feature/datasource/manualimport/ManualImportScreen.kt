@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.oterman.rundemo.data.fit.ZipFitExtractor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,6 +137,13 @@ fun ManualImportScreen(
                     isImporting = uiState.isImporting,
                     onImportClick = { fitLauncher.launch(arrayOf("*/*")) },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+            }
+
+            // 支持格式说明 Banner
+            item {
+                FileFormatInfoBanner(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
             }
 
@@ -228,7 +236,7 @@ private fun ImportEntryCard(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "支持同时选择多个文件批量导入",
+                    text = "支持 .fit 文件及 .zip格式的fit文件压缩包，可同时选择多个",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -251,6 +259,119 @@ private fun ImportEntryCard(
                     fontWeight = FontWeight.Medium
                 )
             }
+        }
+    }
+}
+
+/**
+ * 支持文件格式与大小限制说明 Banner（可展开/折叠）
+ */
+@Composable
+private fun FileFormatInfoBanner(modifier: Modifier = Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f))
+            .clickable { expanded = !expanded }
+            .padding(12.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                text = "支持的文件格式",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = if (expanded) "折叠" else "展开",
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        if (expanded) {
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+                thickness = 0.5.dp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 格式列表
+            val formats = listOf(
+                ".fit" to "单个 FIT 运动文件",
+                ".zip" to "ZIP 压缩包（可包含多个 .fit 文件）",
+                ".fit.gz" to "GZ 压缩的单个 FIT 文件"
+            )
+            formats.forEach { (ext, desc) ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(vertical = 2.dp)
+                ) {
+                    Text(
+                        text = ext,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    Text(
+                        text = desc,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
+                thickness = 0.5.dp
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // 限制说明
+            Text(
+                text = "ZIP 包限制",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            val limits = listOf(
+                "压缩包体积 ≤ ${ZipFitExtractor.MAX_ZIP_SIZE_MB} MB",
+                "包内单个 FIT 文件 ≤ ${ZipFitExtractor.MAX_FIT_ENTRY_SIZE_MB} MB",
+                "包内最多读取 ${ZipFitExtractor.MAX_FIT_ENTRIES} 个 FIT 文件"
+            )
+            limits.forEach { hint ->
+                Text(
+                    text = "· $hint",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.75f),
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
+        } else {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "支持 .fit、.zip、.fit.gz，可同时选择多个",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                modifier = Modifier.padding(start = 26.dp)
+            )
         }
     }
 }
