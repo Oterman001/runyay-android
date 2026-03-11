@@ -1,5 +1,6 @@
 package com.oterman.rundemo.data.network.api
 
+import com.oterman.rundemo.data.network.dto.request.SaveDatasourceConfigReqDto
 import com.oterman.rundemo.data.network.dto.request.BackfillRequest
 import com.oterman.rundemo.data.network.dto.request.BaseRequest
 import com.oterman.rundemo.data.network.dto.request.CorosCallbackRequest
@@ -176,6 +177,24 @@ interface DataSourceApi {
     @POST("api/fit/detail")
     suspend fun getFitFileDetail(
         @Body request: BaseRequest<FitFileDetailRequest>
+    ): BaseResponse<DataSourceResponseData>
+
+    // ============ 数据源优先级配置 ============
+
+    /**
+     * 保存数据源优先级配置
+     */
+    @POST("api/user/datasource-config/save")
+    suspend fun saveDatasourceConfig(
+        @Body request: BaseRequest<SaveDatasourceConfigReqDto>
+    ): BaseResponse<DataSourceResponseData>
+
+    /**
+     * 查询数据源优先级配置
+     */
+    @POST("api/user/datasource-config/query")
+    suspend fun queryDatasourceConfig(
+        @Body request: BaseRequest<Any>
     ): BaseResponse<DataSourceResponseData>
 
     // ============ 健康数据 ============

@@ -45,6 +45,35 @@ object RequestBuilder {
     }
     
     /**
+     * 创建空body请求
+     * 用于query等不需要body参数的接口
+     *
+     * @param preferencesManager 用于获取token和userId
+     * @return 构建好的BaseRequest，body为空map
+     */
+    fun createEmptyBodyRequest(
+        preferencesManager: PreferencesManager
+    ): BaseRequest<Any> {
+        val timestamp = SecurityUtils.getTimestamp()
+        val sign = SecurityUtils.generateSign(
+            params = emptyMap(),
+            timestamp = timestamp,
+            appKey = Constants.Network.APP_KEY
+        )
+
+        return BaseRequest(
+            head = RequestHead(
+                appKey = Constants.Network.APP_KEY,
+                timestamp = timestamp,
+                sign = sign,
+                token = preferencesManager.getUserToken() ?: "",
+                userId = preferencesManager.getUserId() ?: ""
+            ),
+            body = emptyMap()
+        )
+    }
+
+    /**
      * 创建请求（自定义token和userId）
      * 用于登录等场景，此时可能还没有保存token/userId
      * 

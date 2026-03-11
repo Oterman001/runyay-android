@@ -121,6 +121,11 @@ fun SyncControlScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
+                    } else if (uiState.isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(

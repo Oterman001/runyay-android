@@ -111,12 +111,22 @@ fun DataSourceManageScreen(
                 },
                 actions = {
                     if (uiState.isEditingOrder) {
-                        TextButton(onClick = { viewModel.saveOrder() }) {
-                            Text(
-                                text = "保存",
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                        TextButton(
+                            onClick = { viewModel.saveOrder() },
+                            enabled = !uiState.isSaving
+                        ) {
+                            if (uiState.isSaving) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(
+                                    text = "保存",
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 },

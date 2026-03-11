@@ -143,3 +143,11 @@ data class HealthQueryRequest(
     val endDate: String      // "yyyyMMdd", must == startDate for Garmin
 )
 
+/**
+ * 数据源优先级配置保存请求
+ */
+data class SaveDatasourceConfigReqDto(
+    @SerializedName("platformCodes")
+    val platformCodes: String  // 逗号分隔，如 "GCN,COROS,HK"
+)
+

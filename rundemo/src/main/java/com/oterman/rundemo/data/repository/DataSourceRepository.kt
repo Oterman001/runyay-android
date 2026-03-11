@@ -5,6 +5,7 @@ import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.network.RequestBuilder
 import com.oterman.rundemo.data.network.RetrofitClient
 import com.oterman.rundemo.data.network.api.DataSourceApi
+import com.oterman.rundemo.data.network.dto.request.SaveDatasourceConfigReqDto
 import com.oterman.rundemo.data.network.dto.request.BackfillRequest
 import com.oterman.rundemo.data.network.dto.request.CorosCallbackRequest
 import com.oterman.rundemo.data.network.dto.request.FileDownloadRequest
@@ -17,6 +18,7 @@ import com.oterman.rundemo.data.network.dto.request.PlatformUnbindRequest
 import com.oterman.rundemo.service.sync.model.SyncConstants
 import com.oterman.rundemo.util.TimestampUtils
 import com.oterman.rundemo.data.network.dto.response.DailyHealthData
+import com.oterman.rundemo.data.network.dto.response.DatasourceConfigDto
 import com.oterman.rundemo.data.network.dto.response.FileInfoDto
 import com.oterman.rundemo.data.network.dto.response.PlatformStatusResponse
 import com.oterman.rundemo.domain.model.DataSourceInfo
@@ -40,7 +42,12 @@ class DataSourceRepository(
 ) {
     companion object {
         private const val TAG = "DataSourceRepository"
+        private const val CONFIG_CACHE_DURATION_MS = 60_000L  // 60秒缓存
     }
+
+    // 数据源配置查询缓存
+    private var lastConfigQueryTime = 0L
+    private var lastConfigQueryResult: Result<DatasourceConfigDto>? = null
     
     // ============ 平台状态 ============
     
@@ -727,6 +734,99 @@ class DataSourceRepository(
             }
         } catch (e: Exception) {
             RLog.e(TAG, "查询健康数据异常", e)
+            Result.failure(e)
+        }
+    }
+
+    // ============ 数据源优先级配置（服务端同步） ============
+
+    /**
+     * 从服务端查询数据源优先级配置，并同步到本地
+     */
+    suspend fun queryDatasourceConfigFromServer(forceRefresh: Boolean = false): Result<DatasourceConfigDto> = withContext(Dispatchers.IO) {
+        // 缓存命中则直接返回
+        val cached = lastConfigQueryResult
+        if (!forceRefresh && cached != null && cached.isSuccess
+            && System.currentTimeMillis() - lastConfigQueryTime < CONFIG_CACHE_DURATION_MS) {
+            RLog.d(TAG, "使用缓存的数据源配置")
+            return@withContext cached
+        }
+
+        try {
+            RLog.i(TAG, "开始从服务端查询数据源优先级配置")
+
+            val request = RequestBuilder.createEmptyBodyRequest(preferencesManager)
+            val response = api.queryDatasourceConfig(request)
+
+            RLog.d(TAG, "数据源配置查询响应: code=${response.code}, msg=${response.msg}")
+
+            if (response.isSuccess()) {
+                val configDto = response.data?.datasourceConfigDto?.firstOrNull()
+                if (configDto != null) {
+                    // 将 platformCodes 转换为 Map<String, Int> 并同步到本地
+                    val codes = configDto.platformCodes.split(",").filter { it.isNotBlank() }
+                    val order = codes.mapIndexed { index, code -> code.trim() to (index + 1) }.toMap()
+                    dataSourcePreferences.saveDataSourceOrder(order)
+                    RLog.i(TAG, "服务端数据源配置已同步到本地: $order")
+                    val result = Result.success(configDto)
+                    lastConfigQueryTime = System.currentTimeMillis()
+                    lastConfigQueryResult = result
+                    result
+                } else {
+                    RLog.w(TAG, "服务端未返回数据源配置")
+                    Result.failure(Exception("服务端未返回数据源配置"))
+                }
+            } else {
+                RLog.w(TAG, "查询数据源配置失败: ${response.msg}")
+                Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            RLog.e(TAG, "查询数据源配置异常", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 保存数据源优先级到服务端，同时保存到本地
+     */
+    suspend fun saveDatasourceConfigToServer(platformCodes: String): Result<DatasourceConfigDto> = withContext(Dispatchers.IO) {
+        try {
+            RLog.i(TAG, "开始保存数据源优先级到服务端: $platformCodes")
+
+            val request = createBaseRequest(
+                dtoName = "SaveDatasourceConfigReqDto",
+                data = SaveDatasourceConfigReqDto(platformCodes = platformCodes)
+            )
+            val response = api.saveDatasourceConfig(request)
+
+            RLog.d(TAG, "数据源配置保存响应: code=${response.code}, msg=${response.msg}")
+
+            if (response.isSuccess()) {
+                val configDto = response.data?.datasourceConfigDto?.firstOrNull()
+                if (configDto != null) {
+                    // 同步服务端返回的配置到本地
+                    val codes = configDto.platformCodes.split(",").filter { it.isNotBlank() }
+                    val order = codes.mapIndexed { index, code -> code.trim() to (index + 1) }.toMap()
+                    dataSourcePreferences.saveDataSourceOrder(order)
+                    RLog.i(TAG, "服务端保存成功，已同步到本地: $order")
+                }
+                val savedConfig = configDto ?: DatasourceConfigDto(
+                    platformCodes = platformCodes,
+                    configuredCodes = platformCodes,
+                    updatedAt = null,
+                    version = null
+                )
+                // 保存成功后更新缓存（数据已是最新，无需再查）
+                val successResult = Result.success(savedConfig)
+                lastConfigQueryTime = System.currentTimeMillis()
+                lastConfigQueryResult = successResult
+                successResult
+            } else {
+                RLog.w(TAG, "保存数据源配置失败: ${response.msg}")
+                Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            RLog.e(TAG, "保存数据源配置异常", e)
             Result.failure(e)
         }
     }

@@ -44,7 +44,10 @@ data class DataSourceResponseData(
     val fitFileDetailResponse: List<FitFileDetailResponse>? = null,
 
     @SerializedName("GarminHealthQueryResponse")
-    val garminHealthQueryResponse: List<GarminHealthQueryResponse>? = null
+    val garminHealthQueryResponse: List<GarminHealthQueryResponse>? = null,
+
+    @SerializedName("DatasourceConfigDto")
+    val datasourceConfigDto: List<DatasourceConfigDto>? = null
 )
 
 /**
@@ -163,6 +166,23 @@ data class GarminHealthQueryResponse(
 /**
  * 每日健康数据
  */
+/**
+ * 数据源优先级配置响应
+ */
+data class DatasourceConfigDto(
+    @SerializedName("platformCodes")
+    val platformCodes: String,
+
+    @SerializedName("configuredCodes")
+    val configuredCodes: String,
+
+    @SerializedName("updatedAt")
+    val updatedAt: String?,
+
+    @SerializedName("version")
+    val version: Int?
+)
+
 data class DailyHealthData(
     @SerializedName("calendarDate")
     val calendarDate: String,

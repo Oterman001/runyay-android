@@ -43,7 +43,18 @@ class DataSourceManageViewModel(
                 val localDataSources = repository.getAllDataSourceInfos()
                 _uiState.update { it.copy(dataSources = localDataSources) }
 
-                // 再从服务器刷新状态
+                // 从服务端查询数据源优先级配置，同步到本地
+                repository.queryDatasourceConfigFromServer()
+                    .onSuccess {
+                        RLog.d(TAG, "服务端数据源配置已同步")
+                        val updatedDataSources = repository.getAllDataSourceInfos()
+                        _uiState.update { it.copy(dataSources = updatedDataSources) }
+                    }
+                    .onFailure { error ->
+                        RLog.e(TAG, "查询服务端数据源配置失败，使用本地配置", error)
+                    }
+
+                // 再从服务器刷新绑定状态
                 repository.queryPlatformStatus()
                     .onSuccess {
                         // 重新加载数据源（包含最新的授权状态）
@@ -96,14 +107,29 @@ class DataSourceManageViewModel(
      * 保存排序
      */
     fun saveOrder() {
-        val currentOrder = _uiState.value.sortableDataSources
+        val sortableList = _uiState.value.sortableDataSources
+        val currentOrder = sortableList
             .mapIndexed { index, info -> info.platform.code to (index + 1) }
             .toMap()
 
+        // 先本地保存（立即生效）
         repository.saveDataSourceOrder(currentOrder)
-        _uiState.update { it.copy(isEditingOrder = false) }
+        _uiState.update { it.copy(isEditingOrder = false, isSaving = true) }
 
-        RLog.d(TAG, "排序已保存: $currentOrder")
+        RLog.d(TAG, "排序已本地保存: $currentOrder")
+
+        // 异步同步到服务端
+        val platformCodes = sortableList.joinToString(",") { it.platform.code }
+        viewModelScope.launch {
+            repository.saveDatasourceConfigToServer(platformCodes)
+                .onSuccess {
+                    RLog.d(TAG, "排序已同步到服务端")
+                }
+                .onFailure { error ->
+                    RLog.e(TAG, "排序同步到服务端失败", error)
+                }
+            _uiState.update { it.copy(isSaving = false) }
+        }
     }
 
     /**

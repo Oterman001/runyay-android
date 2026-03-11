@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.DataSourcePreferences
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.domain.model.DataSourcePlatform
@@ -35,6 +37,7 @@ data class SyncControlPlatformInfo(
 data class SyncControlUiState(
     val isLoading: Boolean = false,
     val isEditingOrder: Boolean = false,
+    val isSaving: Boolean = false,
     val platforms: List<SyncControlPlatformInfo> = emptyList(),
     val showResetDialog: DataSourcePlatform? = null,
     val isResetting: Boolean = false,
@@ -51,7 +54,8 @@ class SyncControlViewModel(
     private val context: Context,
     private val dataSourcePreferences: DataSourcePreferences,
     private val runDataRepository: RunDataRepository,
-    private val syncManager: UnifiedDataSyncManager
+    private val syncManager: UnifiedDataSyncManager,
+    private val dataSourceRepository: DataSourceRepository
 ) : ViewModel() {
 
     companion object {
@@ -69,6 +73,15 @@ class SyncControlViewModel(
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             try {
+                // 先从服务端拉取最新排序（有缓存防重复）
+                try {
+                    dataSourceRepository.queryDatasourceConfigFromServer()
+                        .onSuccess { RLog.d(TAG, "已从服务端更新数据源排序") }
+                        .onFailure { RLog.w(TAG, "获取服务端排序失败，使用本地排序: ${it.message}") }
+                } catch (e: Exception) {
+                    RLog.w(TAG, "获取服务端排序异常，使用本地排序: ${e.message}")
+                }
+
                 val savedOrder = dataSourcePreferences.getDataSourceOrder()
                 val platforms = DataSourcePlatform.getSortablePlatforms()
                     .filter { it.isEnabled }
@@ -104,12 +117,34 @@ class SyncControlViewModel(
     }
 
     fun saveOrder() {
-        val currentOrder = _uiState.value.sortablePlatforms
+        val sortablePlatforms = _uiState.value.sortablePlatforms
+        val currentOrder = sortablePlatforms
             .mapIndexed { index, info -> info.platform.code to (index + 1) }
             .toMap()
+        val platformCodes = sortablePlatforms.joinToString(",") { it.platform.code }
+
+        // 先保存到本地
         dataSourcePreferences.saveDataSourceOrder(currentOrder)
-        _uiState.update { it.copy(isEditingOrder = false, message = "排序已保存") }
-        RLog.d(TAG, "排序已保存: $currentOrder")
+        _uiState.update { it.copy(isEditingOrder = false, isSaving = true) }
+        RLog.d(TAG, "排序已本地保存: $currentOrder")
+
+        // 异步保存到服务端
+        viewModelScope.launch {
+            try {
+                dataSourceRepository.saveDatasourceConfigToServer(platformCodes)
+                    .onSuccess {
+                        RLog.i(TAG, "排序已同步到服务端")
+                        _uiState.update { it.copy(isSaving = false, message = "排序已保存") }
+                    }
+                    .onFailure {
+                        RLog.w(TAG, "排序同步到服务端失败: ${it.message}")
+                        _uiState.update { it.copy(isSaving = false, message = "排序已本地保存，同步服务端失败") }
+                    }
+            } catch (e: Exception) {
+                RLog.e(TAG, "排序同步到服务端异常", e)
+                _uiState.update { it.copy(isSaving = false, message = "排序已本地保存，同步服务端异常") }
+            }
+        }
     }
 
     fun movePlatform(fromIndex: Int, toIndex: Int) {
@@ -193,14 +228,20 @@ class SyncControlViewModelFactory(
         if (modelClass.isAssignableFrom(SyncControlViewModel::class.java)) {
             val appContext = context.applicationContext
             val dataSourcePreferences = DataSourcePreferences(appContext)
+            val preferencesManager = PreferencesManager(appContext)
             val database = RunDatabase.getInstance(appContext)
             val runDataRepository = RunDataRepositoryImpl.getInstance(database)
             val syncManager = UnifiedDataSyncManager.getInstance(appContext)
+            val dataSourceRepository = DataSourceRepository(
+                dataSourcePreferences = dataSourcePreferences,
+                preferencesManager = preferencesManager
+            )
             return SyncControlViewModel(
                 context = appContext,
                 dataSourcePreferences = dataSourcePreferences,
                 runDataRepository = runDataRepository,
-                syncManager = syncManager
+                syncManager = syncManager,
+                dataSourceRepository = dataSourceRepository
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

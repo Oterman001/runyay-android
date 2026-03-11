@@ -353,6 +353,15 @@ class UnifiedDataSyncManager private constructor(
         try {
            RLog.i(TAG, "开始统一同步, forceRefresh=$forceRefresh")
 
+            // 同步前从服务端拉取最新数据源排序（有缓存，不会重复请求）
+            try {
+                dataSourceRepository.queryDatasourceConfigFromServer()
+                    .onSuccess { RLog.i(TAG, "同步前已从服务端更新数据源排序") }
+                    .onFailure { RLog.w(TAG, "同步前获取服务端排序失败，使用本地排序: ${it.message}") }
+            } catch (e: Exception) {
+                RLog.w(TAG, "同步前获取服务端排序异常，使用本地排序: ${e.message}")
+            }
+
             // 读取用户在数据源管理页面设置的平台排序，所有支持排序的平台均按用户设置顺序执行
             val savedOrder = dataSourcePreferences.getDataSourceOrder()
             val debugDisabledPlatforms = if (BuildConfig.DEBUG) {

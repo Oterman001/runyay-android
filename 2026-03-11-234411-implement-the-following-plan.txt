@@ -1,0 +1,553 @@
+ ▐▛███▜▌   Claude Code v2.1.72
+▝▜█████▛▘  Opus 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/0oppo/0code/DemoHub
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Plan to implement                                                            │
+│                                                                              │
+│ Plan: Sync Data Source Order — 同步前拉取服务端顺序 & Debug页面同步          │
+│                                                                              │
+│ Context                                                                      │
+│                                                                              │
+│ 前一轮已完成：数据源管理页面的排序同步到服务端（查询+保存）。                │
+│ 本轮需求：确保所有使用数据源顺序的场景都基于服务端的最新顺序，同时避免重复请 │
+│ 求。                                                                         │
+│                                                                              │
+│ 涉及场景：                                                                   │
+│ 1. 登录后数据同步：UnifiedDataSyncManager.executeUnifiedSync()               │
+│ 读取排序前需拉取服务端最新配置                                               │
+│ 2. 数据源管理页面：已实现（上一轮），进入时查询服务端                        │
+│ 3. Debug同步控制页面：SyncControlViewModel 进入时加载 & 保存排序也要走服务端 │
+│                                                                              │
+│ 重复请求问题：场景1和2/3可能在短时间内同时触发，需要缓存避免重复请求。       │
+│                                                                              │
+│ Changes                                                                      │
+│                                                                              │
+│ 1. DataSourceRepository — 添加查询缓存（防重复请求）                         │
+│                                                                              │
+│ File: rundemo/src/main/java/com/oterman/rundemo/data/repository/DataSourceRe │
+│ pository.kt                                                                  │
+│                                                                              │
+│ 在 queryDatasourceConfigFromServer() 中增加时间戳缓存：                      │
+│ - 新增成员变量：lastQueryTimestamp: Long = 0、lastQueryResult:               │
+│ Result<DatasourceConfigDto>? = null                                          │
+│ - 查询时检查：如果距上次成功请求不超过 60 秒，直接返回缓存结果               │
+│ - saveDatasourceConfigToServer()                                             │
+│ 成功后更新缓存（保存后数据已是最新，无需再查）                               │
+│ - 提供 forceRefresh 参数允许强制刷新                                         │
+│                                                                              │
+│ private var lastConfigQueryTime = 0L                                         │
+│ private var lastConfigQueryResult: Result<DatasourceConfigDto>? = null       │
+│                                                                              │
+│ private companion object {                                                   │
+│     const val CONFIG_CACHE_DURATION_MS = 60_000L  // 60秒缓存                │
+│ }                                                                            │
+│                                                                              │
+│ suspend fun queryDatasourceConfigFromServer(forceRefresh: Boolean = false):  │
+│ Result<DatasourceConfigDto> {                                                │
+│     // 缓存命中则直接返回                                                    │
+│     val cached = lastConfigQueryResult                                       │
+│     if (!forceRefresh && cached != null && cached.isSuccess                  │
+│         && System.currentTimeMillis() - lastConfigQueryTime <                │
+│ CONFIG_CACHE_DURATION_MS) {                                                  │
+│         RLog.d(TAG, "使用缓存的数据源配置")                                  │
+│         return cached                                                        │
+│     }                                                                        │
+│     // ...原有逻辑...                                                        │
+│     // 成功后更新缓存                                                        │
+│     lastConfigQueryTime = System.currentTimeMillis()                         │
+│     lastConfigQueryResult = result                                           │
+│ }                                                                            │
+│                                                                              │
+│ 2. UnifiedDataSyncManager — 同步前拉取服务端排序                             │
+│                                                                              │
+│ File: rundemo/src/main/java/com/oterman/rundemo/service/sync/UnifiedDataSync │
+│ Manager.kt                                                                   │
+│                                                                              │
+│ 在 executeUnifiedSync() 方法中（约 line 354），在 val savedOrder =           │
+│ dataSourcePreferences.getDataSourceOrder() 之前插入：                        │
+│                                                                              │
+│ // 同步前从服务端拉取最新数据源排序（有缓存，不会重复请求）                  │
+│ try {                                                                        │
+│     dataSourceRepository.queryDatasourceConfigFromServer()                   │
+│         .onSuccess { RLog.i(TAG, "同步前已从服务端更新数据源排序") }         │
+│         .onFailure { RLog.w(TAG, "同步前获取服务端排序失败，使用本地排序",   │
+│ it) }                                                                        │
+│ } catch (e: Exception) {                                                     │
+│     RLog.w(TAG, "同步前获取服务端排序异常，使用本地排序", e)                 │
+│ }                                                                            │
+│                                                                              │
+│ 3. SyncControlViewModel — 添加 DataSourceRepository 依赖                     │
+│                                                                              │
+│ File: rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/s │
+│ ynccontrol/SyncControlViewModel.kt                                           │
+│                                                                              │
+│ 构造函数：新增 private val dataSourceRepository: DataSourceRepository        │
+│                                                                              │
+│ loadPlatforms()：在读取本地排序之前，先调                                    │
+│ dataSourceRepository.queryDatasourceConfigFromServer()（有缓存防重复）       │
+│                                                                              │
+│ saveOrder()：改为先本地保存再异步调                                          │
+│ dataSourceRepository.saveDatasourceConfigToServer(platformCodes)             │
+│                                                                              │
+│ SyncControlViewModelFactory：创建 DataSourceRepository 实例传入 ViewModel    │
+│                                                                              │
+│ 4. SyncControlUiState — 新增 isSaving                                        │
+│                                                                              │
+│ File: 同上                                                                   │
+│                                                                              │
+│ SyncControlUiState 新增 isSaving: Boolean = false                            │
+│                                                                              │
+│ 5. SyncControlScreen — 保存按钮 loading                                      │
+│                                                                              │
+│ File: rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/s │
+│ ynccontrol/SyncControlScreen.kt                                              │
+│                                                                              │
+│ 保存按钮在 isSaving 时显示 CircularProgressIndicator 并禁用。                │
+│                                                                              │
+│ Key Files                                                                    │
+│                                                                              │
+│ ┌───────────────────────────┬──────────────────────────────────────────────┐ │
+│ │           File            │                   修改内容                   │ │
+│ ├───────────────────────────┼──────────────────────────────────────────────┤ │
+│ │ DataSourceRepository.kt   │ 添加缓存逻辑 (lastConfigQueryTime/Result)    │ │
+│ ├───────────────────────────┼──────────────────────────────────────────────┤ │
+│ │ UnifiedDataSyncManager.kt │ executeUnifiedSync() 前插入查询              │ │
+│ ├───────────────────────────┼──────────────────────────────────────────────┤ │
+│ │ SyncControlViewModel.kt   │ 添加 dataSourceRepository                    │ │
+│ │                           │ 依赖，loadPlatforms/saveOrder 改造           │ │
+│ ├───────────────────────────┼──────────────────────────────────────────────┤ │
+│ │ SyncControlScreen.kt      │ 保存按钮 loading                             │ │
+│ └───────────────────────────┴──────────────────────────────────────────────┘ │
+│                                                                              │
+│ Verification                                                                 │
+│                                                                              │
+│ 1. ./gradlew :rundemo:compileInternalDebugKotlin 编译通过                    │
+│ 2. 登录后首页同步，logcat 确认拉取服务端排序日志                             │
+│ 3. 快速连续进入多个页面，确认只有一次服务端请求（60秒内缓存命中）            │
+│ 4. Debug 同步控制页面保存排序后确认同步到服务端                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+⏺ Let me read the key files first.
+
+⏺ Read 4 files (ctrl+o to expand)
+
+⏺ Now I have all the context. Let me implement all 4 changes.
+
+  1. DataSourceRepository — Add query cache
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/repository/DataSourceRep
+        ository.kt)
+  ⎿  Added 5 lines
+      42  ) {
+      43      companion object {
+      44          private const val TAG = "DataSourceRepository"
+      45 +        private const val CONFIG_CACHE_DURATION_MS = 60_000L  /
+         +/ 60秒缓存                                                     
+      46      }
+      47 +                                                               
+      48 +    // 数据源配置查询缓存                                      
+      49 +    private var lastConfigQueryTime = 0L                       
+      50 +    private var lastConfigQueryResult: Result<DatasourceConfigD
+         +to>? = null                                                    
+      51      
+      52      // ============ 平台状态 ============
+      53      
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/repository/DataSourceRep
+        ository.kt)
+  ⎿  Added 13 lines, removed 2 lines
+      743      /**
+      744       * 从服务端查询数据源优先级配置，并同步到本地
+      745       */
+      746 -    suspend fun queryDatasourceConfigFromServer(): Result<Data
+          -sourceConfigDto> = withContext(Dispatchers.IO) {              
+      746 +    suspend fun queryDatasourceConfigFromServer(forceRefresh: 
+          +Boolean = false): Result<DatasourceConfigDto> = withContext(Di
+          +spatchers.IO) {                                               
+      747 +        // 缓存命中则直接返回                                 
+      748 +        val cached = lastConfigQueryResult                    
+      749 +        if (!forceRefresh && cached != null && cached.isSucces
+          +s                                                             
+      750 +            && System.currentTimeMillis() - lastConfigQueryTim
+          +e < CONFIG_CACHE_DURATION_MS) {                               
+      751 +            RLog.d(TAG, "使用缓存的数据源配置")               
+      752 +            return@withContext cached                         
+      753 +        }                                                     
+      754 +                                                              
+      755          try {
+      756              RLog.i(TAG, "开始从服务端查询数据源优先级配置")
+      757  
+     ...
+      768                      val order = codes.mapIndexed { index, code
+            -> code.trim() to (index + 1) }.toMap()
+      769                      dataSourcePreferences.saveDataSourceOrder(
+           order)
+      770                      RLog.i(TAG, "服务端数据源配置已同步到本地:
+            $order")
+      763 -                    Result.success(configDto)                 
+      771 +                    val result = Result.success(configDto)    
+      772 +                    lastConfigQueryTime = System.currentTimeMi
+          +llis()                                                        
+      773 +                    lastConfigQueryResult = result            
+      774 +                    result                                    
+      775                  } else {
+      776                      RLog.w(TAG, "服务端未返回数据源配置")
+      777                      Result.failure(Exception("服务端未返回数据
+           源配置"))
+
+⏺ Now update saveDatasourceConfigToServer to also update the cache after
+  successful save:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/repository/DataSourceRep
+        ository.kt)
+  ⎿  Added 1 line, removed 1 line
+      810                      dataSourcePreferences.saveDataSourceOrder(
+           order)
+      811                      RLog.i(TAG, "服务端保存成功，已同步到本地:
+            $order")
+      812                  }
+      813 -                Result.success(configDto ?: DatasourceConfigDt
+          -o(                                                            
+      813 +                val result = configDto ?: DatasourceConfigDto(
+      814                      platformCodes = platformCodes,
+      815                      configuredCodes = platformCodes,
+      816                      updatedAt = null,
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/repository/DataSourceRep
+        ository.kt)
+  ⎿  Added 7 lines, removed 2 lines
+      810                      dataSourcePreferences.saveDataSourceOrder(
+           order)
+      811                      RLog.i(TAG, "服务端保存成功，已同步到本地:
+            $order")
+      812                  }
+      813 -                val result = configDto ?: DatasourceConfigDto(
+      813 +                val savedConfig = configDto ?: DatasourceConfi
+          +gDto(                                                         
+      814                      platformCodes = platformCodes,
+      815                      configuredCodes = platformCodes,
+      816                      updatedAt = null,
+      817                      version = null
+      818 -                ))                                            
+      818 +                )                                             
+      819 +                // 保存成功后更新缓存（数据已是最新，无需再查 
+          +）                                                            
+      820 +                val successResult = Result.success(savedConfig
+          +)                                                             
+      821 +                lastConfigQueryTime = System.currentTimeMillis
+          +()                                                            
+      822 +                lastConfigQueryResult = successResult         
+      823 +                successResult                                 
+      824              } else {
+      825                  RLog.w(TAG, "保存数据源配置失败: ${response.ms
+           g}")
+      826                  Result.failure(Exception(response.msg))
+
+⏺ 2. UnifiedDataSyncManager — Fetch server order before sync
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/service/sync/UnifiedDataSyncM
+        anager.kt)
+  ⎿  Added 9 lines
+      353          try {
+      354             RLog.i(TAG, "开始统一同步, forceRefresh=$forceRefre
+           sh")
+      355  
+      356 +            // 同步前从服务端拉取最新数据源排序（有缓存，不会 
+          +重复请求）                                                    
+      357 +            try {                                             
+      358 +                dataSourceRepository.queryDatasourceConfigFrom
+          +Server()                                                      
+      359 +                    .onSuccess { RLog.i(TAG, "同步前已从服务端
+          +更新数据源排序") }                                            
+      360 +                    .onFailure { RLog.w(TAG, "同步前获取服务端
+          +排序失败，使用本地排序", it) }                                
+      361 +            } catch (e: Exception) {                          
+      362 +                RLog.w(TAG, "同步前获取服务端排序异常，使用本 
+          +地排序", e)                                                   
+      363 +            }                                                 
+      364 +                                                              
+      365              // 读取用户在数据源管理页面设置的平台排序，所有支
+           持排序的平台均按用户设置顺序执行
+      366              val savedOrder = dataSourcePreferences.getDataSour
+           ceOrder()
+      367              val debugDisabledPlatforms = if (BuildConfig.DEBUG
+           ) {
+
+⏺ 3 & 4. SyncControlViewModel — Add DataSourceRepository + isSaving
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/sy
+        nccontrol/SyncControlViewModel.kt)
+  ⎿  Added 2 lines
+       5  import androidx.lifecycle.ViewModelProvider
+       6  import androidx.lifecycle.viewModelScope
+       7  import com.oterman.rundemo.data.local.DataSourcePreferences
+       8 +import com.oterman.rundemo.data.local.PreferencesManager       
+       9  import com.oterman.rundemo.data.local.database.RunDatabase
+      10 +import com.oterman.rundemo.data.repository.DataSourceRepository
+      11  import com.oterman.rundemo.data.repository.RunDataRepository
+      12  import com.oterman.rundemo.data.repository.RunDataRepositoryImp
+          l
+      13  import com.oterman.rundemo.domain.model.DataSourcePlatform
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/sy
+        nccontrol/SyncControlViewModel.kt)
+  ⎿  Added 1 line
+      37  data class SyncControlUiState(
+      38      val isLoading: Boolean = false,
+      39      val isEditingOrder: Boolean = false,
+      40 +    val isSaving: Boolean = false,                             
+      41      val platforms: List<SyncControlPlatformInfo> = emptyList(),
+      42      val showResetDialog: DataSourcePlatform? = null,
+      43      val isResetting: Boolean = false,
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/sy
+        nccontrol/SyncControlViewModel.kt)
+  ⎿  Added 2 lines, removed 1 line
+      54      private val context: Context,
+      55      private val dataSourcePreferences: DataSourcePreferences,
+      56      private val runDataRepository: RunDataRepository,
+      57 -    private val syncManager: UnifiedDataSyncManager            
+      57 +    private val syncManager: UnifiedDataSyncManager,           
+      58 +    private val dataSourceRepository: DataSourceRepository     
+      59  ) : ViewModel() {
+      60  
+      61      companion object {
+
+⏺ Now update loadPlatforms() to fetch server config first:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/sy
+        nccontrol/SyncControlViewModel.kt)
+  ⎿  Added 9 lines
+      73          _uiState.update { it.copy(isLoading = true) }
+      74          viewModelScope.launch {
+      75              try {
+      76 +                // 先从服务端拉取最新排序（有缓存防重复）      
+      77 +                try {                                          
+      78 +                    dataSourceRepository.queryDatasourceConfigF
+         +romServer()                                                    
+      79 +                        .onSuccess { RLog.d(TAG, "已从服务端更 
+         +新数据源排序") }                                               
+      80 +                        .onFailure { RLog.w(TAG, "获取服务端排 
+         +序失败，使用本地排序", it) }                                   
+      81 +                } catch (e: Exception) {                       
+      82 +                    RLog.w(TAG, "获取服务端排序异常，使用本地排
+         +序", e)                                                        
+      83 +                }                                              
+      84 +                                                               
+      85                  val savedOrder = dataSourcePreferences.getDataS
+          ourceOrder()
+      86                  val platforms = DataSourcePlatform.getSortableP
+          latforms()
+      87                      .filter { it.isEnabled }
+
+⏺ Now update saveOrder() to also save to server:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/sy
+        nccontrol/SyncControlViewModel.kt)
+  ⎿  Added 25 lines, removed 3 lines
+      117      }
+      118  
+      119      fun saveOrder() {
+      120 -        val currentOrder = _uiState.value.sortablePlatforms   
+      120 +        val sortablePlatforms = _uiState.value.sortablePlatfor
+          +ms                                                            
+      121 +        val currentOrder = sortablePlatforms                  
+      122              .mapIndexed { index, info -> info.platform.code to
+            (index + 1) }
+      123              .toMap()
+      124 +        val platformCodes = sortablePlatforms.joinToString(","
+          +) { it.platform.code }                                        
+      125 +                                                              
+      126 +        // 先保存到本地                                       
+      127          dataSourcePreferences.saveDataSourceOrder(currentOrder
+           )
+      124 -        _uiState.update { it.copy(isEditingOrder = false, mess
+          -age = "排序已保存") }                                         
+      125 -        RLog.d(TAG, "排序已保存: $currentOrder")              
+      128 +        _uiState.update { it.copy(isEditingOrder = false, isSa
+          +ving = true) }                                                
+      129 +        RLog.d(TAG, "排序已本地保存: $currentOrder")          
+      130 +                                                              
+      131 +        // 异步保存到服务端                                   
+      132 +        viewModelScope.launch {                               
+      133 +            try {                                             
+      134 +                dataSourceRepository.saveDatasourceConfigToSer
+          +ver(platformCodes)                                            
+      135 +                    .onSuccess {                              
+      136 +                        RLog.i(TAG, "排序已同步到服务端")     
+      137 +                        _uiState.update { it.copy(isSaving = f
+          +alse, message = "排序已保存") }                               
+      138 +                    }                                         
+      139 +                    .onFailure {                              
+      140 +                        RLog.w(TAG, "排序同步到服务端失败", it
+          +)                                                             
+      141 +                        _uiState.update { it.copy(isSaving = f
+          +alse, message = "排序已本地保存，同步服务端失败") }           
+      142 +                    }                                         
+      143 +            } catch (e: Exception) {                          
+      144 +                RLog.e(TAG, "排序同步到服务端异常", e)        
+      145 +                _uiState.update { it.copy(isSaving = false, me
+          +ssage = "排序已本地保存，同步服务端异常") }                   
+      146 +            }                                                 
+      147 +        }                                                     
+      148      }
+      149  
+      150      fun movePlatform(fromIndex: Int, toIndex: Int) {
+
+⏺ Now update the Factory to pass DataSourceRepository:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/sy
+        nccontrol/SyncControlViewModel.kt)
+  ⎿  Added 7 lines, removed 1 line
+      228          if (modelClass.isAssignableFrom(SyncControlViewModel::
+           class.java)) {
+      229              val appContext = context.applicationContext
+      230              val dataSourcePreferences = DataSourcePreferences(
+           appContext)
+      231 +            val preferencesManager = PreferencesManager(appCon
+          +text)                                                         
+      232              val database = RunDatabase.getInstance(appContext)
+      233              val runDataRepository = RunDataRepositoryImpl.getI
+           nstance(database)
+      234              val syncManager = UnifiedDataSyncManager.getInstan
+           ce(appContext)
+      235 +            val dataSourceRepository = DataSourceRepository(  
+      236 +                dataSourcePreferences = dataSourcePreferences,
+      237 +                preferencesManager = preferencesManager       
+      238 +            )                                                 
+      239              return SyncControlViewModel(
+      240                  context = appContext,
+      241                  dataSourcePreferences = dataSourcePreferences,
+      242                  runDataRepository = runDataRepository,
+      238 -                syncManager = syncManager                     
+      243 +                syncManager = syncManager,                    
+      244 +                dataSourceRepository = dataSourceRepository   
+      245              ) as T
+      246          }
+      247          throw IllegalArgumentException("Unknown ViewModel clas
+           s")
+
+⏺ 5. SyncControlScreen — Save button loading
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/sy
+        nccontrol/SyncControlScreen.kt)
+  ⎿  Added 5 lines
+      121                                  color = MaterialTheme.colorSch
+           eme.primary
+      122                              )
+      123                          }
+      124 +                    } else if (uiState.isSaving) {            
+      125 +                        CircularProgressIndicator(            
+      126 +                            modifier = Modifier.size(20.dp),  
+      127 +                            strokeWidth = 2.dp                
+      128 +                        )                                     
+      129                      }
+      130                  },
+      131                  colors = TopAppBarDefaults.centerAlignedTopApp
+           BarColors(
+
+⏺ Now let's verify the build compiles:
+
+⏺ Bash(./gradlew :rundemo:compileInternalDebugKotlin 2>&1 | tail -20)
+  ⎿  e: file:///Users/80268743/0oppo/0code/DemoHub/rundemo/src/main/java/co
+     m/oterman/rundemo/presentation/feature/debug/synccontrol/SyncControlVi
+     ewModel.kt:82:53 Too many arguments for 'fun w(tag: String, message: S
+     … +18 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+⏺ RLog.w doesn't accept a throwable parameter. Let me fix all 4 occurrences:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/service/sync/UnifiedDataSyncM
+        anager.kt)
+  ⎿  Added 2 lines, removed 2 lines
+      357              try {
+      358                  dataSourceRepository.queryDatasourceConfigFrom
+           Server()
+      359                      .onSuccess { RLog.i(TAG, "同步前已从服务端
+           更新数据源排序") }
+      360 -                    .onFailure { RLog.w(TAG, "同步前获取服务端
+          -排序失败，使用本地排序", it) }                                
+      360 +                    .onFailure { RLog.w(TAG, "同步前获取服务端
+          +排序失败，使用本地排序: ${it.message}") }                     
+      361              } catch (e: Exception) {
+      362 -                RLog.w(TAG, "同步前获取服务端排序异常，使用本 
+          -地排序", e)                                                   
+      362 +                RLog.w(TAG, "同步前获取服务端排序异常，使用本 
+          +地排序: ${e.message}")                                        
+      363              }
+      364  
+      365              // 读取用户在数据源管理页面设置的平台排序，所有支
+           持排序的平台均按用户设置顺序执行
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/sy
+        nccontrol/SyncControlViewModel.kt)
+  ⎿  Added 2 lines, removed 2 lines
+      77                  try {
+      78                      dataSourceRepository.queryDatasourceConfigF
+          romServer()
+      79                          .onSuccess { RLog.d(TAG, "已从服务端更
+          新数据源排序") }
+      80 -                        .onFailure { RLog.w(TAG, "获取服务端排 
+         -序失败，使用本地排序", it) }                                   
+      80 +                        .onFailure { RLog.w(TAG, "获取服务端排 
+         +序失败，使用本地排序: ${it.message}") }                        
+      81                  } catch (e: Exception) {
+      82 -                    RLog.w(TAG, "获取服务端排序异常，使用本地排
+         -序", e)                                                        
+      82 +                    RLog.w(TAG, "获取服务端排序异常，使用本地排
+         +序: ${e.message}")                                             
+      83                  }
+      84  
+      85                  val savedOrder = dataSourcePreferences.getDataS
+          ourceOrder()
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/debug/sy
+        nccontrol/SyncControlViewModel.kt)
+  ⎿  Added 1 line, removed 1 line
+      137                          _uiState.update { it.copy(isSaving = f
+           alse, message = "排序已保存") }
+      138                      }
+      139                      .onFailure {
+      140 -                        RLog.w(TAG, "排序同步到服务端失败", it
+          -)                                                             
+      140 +                        RLog.w(TAG, "排序同步到服务端失败: ${i
+          +t.message}")                                                  
+      141                          _uiState.update { it.copy(isSaving = f
+           alse, message = "排序已本地保存，同步服务端失败") }
+      142                      }
+      143              } catch (e: Exception) {
+
+⏺ Bash(./gradlew :rundemo:compileInternalDebugKotlin 2>&1 | tail -10)
+  ⎿  w: file:///Users/80268743/0oppo/0code/DemoHub/rundemo/src/main/java/co
+     m/oterman/rundemo/presentation/feature/home/tabs/DataTab.kt:327:46 'va
+     l Icons.Outlined.DirectionsRun: ImageVector' is deprecated. Use the Au
+     … +29 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+⏺ Build successful. Here's a summary of all changes:
+
+  Changes Made
+
+  1. DataSourceRepository.kt — Added 60-second query cache:
+    - lastConfigQueryTime / lastConfigQueryResult fields +
+  CONFIG_CACHE_DURATION_MS constant
+    - queryDatasourceConfigFromServer(forceRefresh) checks cache before making
+  network call
+    - saveDatasourceConfigToServer() updates cache after successful save
+  2. UnifiedDataSyncManager.kt — Before reading local order in
+  executeUnifiedSync(), calls queryDatasourceConfigFromServer() to fetch latest
+  server config (cache-protected)
+  3. SyncControlViewModel.kt:
+    - Added DataSourceRepository constructor parameter
+    - loadPlatforms() fetches server config before reading local order
+    - saveOrder() saves locally first, then async saves to server with isSaving
+  state
+    - Factory creates and passes DataSourceRepository instance
+  4. SyncControlUiState — Added isSaving: Boolean = false
+  5. SyncControlScreen.kt — Shows CircularProgressIndicator in top bar when
+  isSaving is true
+
+✻ Cooked for 3m 13s

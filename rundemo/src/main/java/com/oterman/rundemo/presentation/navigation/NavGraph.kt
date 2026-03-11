@@ -258,7 +258,7 @@ fun AppNavGraph(
                     navController.navigate(Screen.DataSyncStatus.route)
                 },
                 onNavigateToVdotDetail = {
-                    navController.navigate(Screen.VdotDetail.route)
+//                    navController.navigate(Screen.VdotDetail.route)
                 },
                 onThemeModeChanged = onThemeModeChanged,
                 viewModel = homeViewModel

@@ -9,6 +9,7 @@ import com.oterman.rundemo.domain.model.DataSourcePlatform
 data class DataSourceManageUiState(
     val isLoading: Boolean = false,
     val isEditingOrder: Boolean = false,
+    val isSaving: Boolean = false,
     val dataSources: List<DataSourceInfo> = emptyList(),
     val error: String? = null,
     val showLoginRequiredDialog: Boolean = false,
