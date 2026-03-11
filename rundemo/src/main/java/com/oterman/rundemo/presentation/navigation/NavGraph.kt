@@ -409,6 +409,9 @@ fun AppNavGraph(
                 },
                 onNavigateToRunDetail = { workoutId ->
                     context.startActivity(RunDetailActivity.createIntent(context, workoutId))
+                },
+                onNavigateToDebug = {
+                    navController.navigate(Screen.DataSourceDebug.createRoute("MANUAL"))
                 }
             )
         }

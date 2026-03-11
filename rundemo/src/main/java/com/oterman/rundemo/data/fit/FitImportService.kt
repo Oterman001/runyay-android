@@ -13,7 +13,9 @@ import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.presentation.feature.home.FitImportResult
 import com.oterman.rundemo.util.FitDataConverter
+import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.util.RLog
+import com.oterman.rundemo.util.TimestampUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -208,6 +210,12 @@ class FitImportService(private val context: Context) {
             // 10. 两次上传均成功，保存到 Room
             fitRecordProcessor.saveProcessResult(processResult)
             repository.updateUploadStatus(runRecord.workoutId, 2)
+
+            // 11. 更新MANUAL平台同步时间戳
+            dataSourcePreferences.setLastSyncTime(
+                DataSourcePlatform.MANUAL,
+                TimestampUtils.getCurrentTimestamp()
+            )
 
             RLog.i(TAG, "========== FIT文件导入成功 ==========")
             FitImportResult.Success(

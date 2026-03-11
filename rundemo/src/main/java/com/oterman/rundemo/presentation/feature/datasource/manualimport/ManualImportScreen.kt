@@ -64,7 +64,8 @@ fun ManualImportScreen(
     viewModel: ManualImportViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToRecordList: () -> Unit,
-    onNavigateToRunDetail: (String) -> Unit
+    onNavigateToRunDetail: (String) -> Unit,
+    onNavigateToDebug: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -93,9 +94,20 @@ fun ManualImportScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
+                    val clickTimestamps = remember { mutableListOf<Long>() }
                     Text(
                         text = "手动导入",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable {
+                            val now = System.currentTimeMillis()
+                            clickTimestamps.add(now)
+                            // 只保留最近500ms内的点击
+                            clickTimestamps.removeAll { now - it > 500L }
+                            if (clickTimestamps.size >= 5) {
+                                clickTimestamps.clear()
+                                onNavigateToDebug()
+                            }
+                        }
                     )
                 },
                 navigationIcon = {
@@ -248,7 +260,7 @@ private fun ImportEntryCard(
  */
 @Composable
 private fun ConflictInfoBanner(modifier: Modifier = Modifier) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(true) }
 
     Column(
         modifier = modifier

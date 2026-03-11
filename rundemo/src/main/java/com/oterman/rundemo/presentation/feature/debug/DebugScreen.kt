@@ -275,8 +275,14 @@ fun DebugScreen(
                     SettingsItem(
                         icon = Icons.Outlined.BugReport,
                         title = "苹果健康",
-                        showDivider = false,
+                        showDivider = true,
                         onClick = { onNavigateToDataSourceDebug("HK") }
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.BugReport,
+                        title = "手动导入",
+                        showDivider = false,
+                        onClick = { onNavigateToDataSourceDebug("MANUAL") }
                     )
                 }
             }

@@ -26,6 +26,7 @@ class DataSourcePreferences(context: Context) {
         private const val KEY_GARMIN_GLOBAL_LAST_SYNC_TIME = "garmin_global_last_sync_time"
         private const val KEY_COROS_LAST_SYNC_TIME = "coros_last_sync_time"
         private const val KEY_APPLE_HEALTH_LAST_SYNC_TIME = "apple_health_last_sync_time"
+        private const val KEY_MANUAL_LAST_SYNC_TIME = "manual_last_sync_time"
 
         // 旧版时间戳key（用于迁移）
         @Deprecated("Use KEY_GARMIN_CHINA_LAST_SYNC_TIME instead")
@@ -246,6 +247,33 @@ class DataSourcePreferences(context: Context) {
     }
 
     /**
+     * 获取手动导入上次同步时间戳（17位格式）
+     */
+    fun getManualLastSyncTime(): String {
+        val value = prefs.getString(KEY_MANUAL_LAST_SYNC_TIME, null)
+        return if (value != null) {
+            TimestampUtils.normalizeTimestamp(value)
+        } else {
+            DEFAULT_SYNC_START_TIME
+        }
+    }
+
+    /**
+     * 设置手动导入上次同步时间戳（17位格式）
+     */
+    fun setManualLastSyncTime(timestamp: String) {
+        val normalized = TimestampUtils.normalizeTimestamp(timestamp)
+        prefs.edit().putString(KEY_MANUAL_LAST_SYNC_TIME, normalized).apply()
+    }
+
+    /**
+     * 清除手动导入同步时间戳
+     */
+    fun clearManualSyncTime() {
+        prefs.edit().remove(KEY_MANUAL_LAST_SYNC_TIME).apply()
+    }
+
+    /**
      * 获取指定平台的同步时间戳
      */
     fun getLastSyncTime(platform: DataSourcePlatform): String {
@@ -254,6 +282,7 @@ class DataSourcePreferences(context: Context) {
             DataSourcePlatform.GARMIN_GLOBAL -> getGarminGlobalLastSyncTime()
             DataSourcePlatform.COROS -> getCorosLastSyncTime()
             DataSourcePlatform.APPLE_HEALTH -> getAppleHealthLastSyncTime()
+            DataSourcePlatform.MANUAL -> getManualLastSyncTime()
             else -> DEFAULT_SYNC_START_TIME
         }
     }
@@ -267,6 +296,7 @@ class DataSourcePreferences(context: Context) {
             DataSourcePlatform.GARMIN_GLOBAL -> setGarminGlobalLastSyncTime(timestamp)
             DataSourcePlatform.COROS -> setCorosLastSyncTime(timestamp)
             DataSourcePlatform.APPLE_HEALTH -> setAppleHealthLastSyncTime(timestamp)
+            DataSourcePlatform.MANUAL -> setManualLastSyncTime(timestamp)
             else -> {}
         }
     }
@@ -280,6 +310,7 @@ class DataSourcePreferences(context: Context) {
             DataSourcePlatform.GARMIN_GLOBAL -> clearGarminGlobalSyncTime()
             DataSourcePlatform.COROS -> clearCorosSyncTime()
             DataSourcePlatform.APPLE_HEALTH -> clearAppleHealthSyncTime()
+            DataSourcePlatform.MANUAL -> clearManualSyncTime()
             else -> {}
         }
     }
