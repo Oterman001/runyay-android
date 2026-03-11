@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.InsertDriveFile
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,6 +64,7 @@ fun DebugScreen(
     onNavigateToAllRunRecords: () -> Unit = {},
     onNavigateToDataSourceDebug: (platformCode: String) -> Unit = {},
     onNavigateToSyncControl: () -> Unit = {},
+    onNavigateToVdotDebug: () -> Unit = {},
     viewModel: DebugViewModel = viewModel(
         factory = DebugViewModelFactory(LocalContext.current)
     )
@@ -235,6 +237,32 @@ fun DebugScreen(
                             subtitle = "排序、开关、重置平台数据",
                             showDivider = false,
                             onClick = onNavigateToSyncControl
+                        )
+                    }
+                }
+            }
+
+            // VDOT 计算调试（仅 Debug）
+            if (BuildConfig.DEBUG) {
+                item { Spacer(modifier = Modifier.height(16.dp)) }
+
+                item {
+                    Text(
+                        text = "算法调试",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                    )
+                }
+
+                item {
+                    SettingsCard {
+                        SettingsItem(
+                            icon = Icons.Outlined.Speed,
+                            title = "VDOT 计算调试",
+                            subtitle = "手动输入参数验证跑力计算",
+                            showDivider = false,
+                            onClick = onNavigateToVdotDebug
                         )
                     }
                 }

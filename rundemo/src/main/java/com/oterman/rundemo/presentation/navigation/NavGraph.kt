@@ -63,6 +63,7 @@ import com.oterman.rundemo.presentation.feature.statistics.RunStatisticTab
 import com.oterman.rundemo.presentation.feature.statistics.RunStatisticsScreen
 import com.oterman.rundemo.presentation.feature.userprofile.UserProfileScreen
 import com.oterman.rundemo.presentation.feature.debug.DebugScreen
+import com.oterman.rundemo.presentation.feature.debug.vdot.VdotDebugScreen
 import com.oterman.rundemo.presentation.feature.debug.allrecords.AllRunRecordsDebugScreen
 import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.presentation.feature.debug.synccontrol.SyncControlScreen
@@ -674,7 +675,17 @@ fun AppNavGraph(
                 },
                 onNavigateToSyncControl = {
                     navController.navigate(Screen.SyncControl.route)
+                },
+                onNavigateToVdotDebug = {
+                    navController.navigate(Screen.VdotDebug.route)
                 }
+            )
+        }
+
+        // VDOT计算调试页面
+        composable(Screen.VdotDebug.route) {
+            VdotDebugScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

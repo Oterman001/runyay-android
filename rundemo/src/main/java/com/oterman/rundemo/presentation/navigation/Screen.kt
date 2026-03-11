@@ -166,6 +166,12 @@ sealed class Screen(val route: String) {
     object Debug : Screen("debug")
 
     /**
+     * VDOT计算调试页面
+     * 手动输入参数验证跑力计算结果
+     */
+    object VdotDebug : Screen("vdot_debug")
+
+    /**
      * 数据同步状态页面
      * 用于展示数据同步进度和导入记录
      */
