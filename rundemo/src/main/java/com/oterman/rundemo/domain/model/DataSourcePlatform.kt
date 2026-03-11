@@ -20,7 +20,7 @@ enum class DataSourcePlatform(
         displayName = "佳明中国",
         displayNameEn = "Garmin CN",
         appBrandName = "GARMIN CONNECT™",
-        iconResId = R.drawable.icon_garmin,
+        iconResId = R.drawable.ic_garmin,
         isEnabled = true,
         supportsSorting = true
     ),
@@ -29,7 +29,7 @@ enum class DataSourcePlatform(
         displayName = "佳明国际",
         displayNameEn = "Garmin GB",
         appBrandName = "GARMIN CONNECT™",
-        iconResId = R.drawable.icon_garmin,
+        iconResId = R.drawable.ic_garmin,
         isEnabled = true,
         supportsSorting = true
     ),
