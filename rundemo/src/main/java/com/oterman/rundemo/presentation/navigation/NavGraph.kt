@@ -394,13 +394,14 @@ fun AppNavGraph(
         }
 
         // 手动导入落地页
-        composable(Screen.ManualImport.route) {
+        composable(Screen.ManualImport.route) { backStackEntry ->
             val context = LocalContext.current
             val manualImportViewModel: ManualImportViewModel = viewModel(
                 factory = ManualImportViewModelFactory(context)
             )
             ManualImportScreen(
                 viewModel = manualImportViewModel,
+                navBackStackEntry = backStackEntry,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToRecordList = {
                     navController.navigate(

@@ -43,6 +43,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,18 +58,41 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavBackStackEntry
+import com.oterman.rundemo.MainActivity
 import com.oterman.rundemo.data.fit.ZipFitExtractor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManualImportScreen(
     viewModel: ManualImportViewModel,
+    navBackStackEntry: NavBackStackEntry,
     onNavigateBack: () -> Unit,
     onNavigateToRecordList: () -> Unit,
     onNavigateToRunDetail: (String) -> Unit,
     onNavigateToDebug: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // 处理系统分享传入的 URI（onCreate 或导航时由 savedStateHandle 携带）
+    LaunchedEffect(navBackStackEntry) {
+        val rawUris = navBackStackEntry.savedStateHandle
+            .get<List<String>>("share_uris")
+        if (!rawUris.isNullOrEmpty()) {
+            navBackStackEntry.savedStateHandle.remove<List<String>>("share_uris")
+            val uris = rawUris.map { Uri.parse(it) }
+            viewModel.importFitFiles(uris)
+        }
+    }
+
+    // 处理应用在前台时通过 onNewIntent 收到的新分享（如从其他 app 分享给本应用）
+    LaunchedEffect(Unit) {
+        MainActivity.pendingShareUris.collect { uris ->
+            if (uris.isNotEmpty()) {
+                viewModel.importFitFiles(uris)
+            }
+        }
+    }
 
     // 从记录列表返回时刷新计数
     val lifecycleOwner = LocalLifecycleOwner.current

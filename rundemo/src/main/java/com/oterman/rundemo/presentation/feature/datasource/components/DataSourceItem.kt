@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -35,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.DataSourceInfo
 import com.oterman.rundemo.presentation.components.AppCard
+import com.oterman.rundemo.ui.theme.CardBgDark
+import com.oterman.rundemo.ui.theme.CardBgLight
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * 数据源列表项组件
@@ -51,20 +55,35 @@ fun DataSourceItem(
     modifier: Modifier = Modifier
 ) {
     val isEnabled = dataSourceInfo.platform.isEnabled
+    val isDark = RunTheme.isDark
+    val cardShape = RoundedCornerShape(10.dp)
+    val cardColor = when {
+        isDragging -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
+        isDark -> CardBgDark
+        else -> CardBgLight
+    }
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .then(
+                if (!isDragging && !isDark) {
+                    Modifier.shadow(
+                        elevation = 5.dp,
+                        shape = cardShape,
+                        ambientColor = Color.Gray.copy(alpha = 0.1f),
+                        spotColor = Color.Gray.copy(alpha = 0.1f)
+                    )
+                } else {
+                    Modifier
+                }
+            )
+            .clip(cardShape)
             .clickable(enabled = !isLoading) { onClick() }
             .alpha(if (isEnabled) 1f else 0.6f),
-        color = if (isDragging) {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        },
+        color = cardColor,
         shadowElevation = if (isDragging) 8.dp else 0.dp,
-        shape = RoundedCornerShape(12.dp)
+        shape = cardShape
     ) {
         Row(
             modifier = Modifier

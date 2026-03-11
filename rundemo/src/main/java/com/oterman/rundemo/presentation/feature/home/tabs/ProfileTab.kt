@@ -189,6 +189,23 @@ fun ProfileTabContent(
                 )
             }
 
+            // Debug Group (Show Welcome, Reset First Launch) - 仅Debug版本可见
+            if (BuildConfig.DEBUG) {
+                item { Spacer(modifier = Modifier.height(20.dp)) }
+                item {
+                    SettingsCard {
+                        SettingsItem(
+                            icon = Icons.Outlined.Flag,
+                            title = "调试工具",
+                            subtitle = "缓存管理、开发调试",
+                            iconTint = RunTheme.colorScheme.blue,
+                            showDivider = false,
+                            onClick = onDebugClick
+                        )
+                    }
+                }
+            }
+
             item { Spacer(modifier = Modifier.height(20.dp)) }
 
             // Settings Group: Data Import & Sync
@@ -197,7 +214,7 @@ fun ProfileTabContent(
                     SettingsItem(
                         icon = Icons.Outlined.Sync,
                         title = "数据源管理",
-                        subtitle = "佳明、高驰等平台数据同步",
+                        subtitle = "绑定佳明、高驰、手动导入等",
                         iconTint = RunTheme.colorScheme.blue,
                         showDivider = false,
                         onClick = onDataSourceManageClick
@@ -272,37 +289,6 @@ fun ProfileTabContent(
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(20.dp)) }
-
-            // Debug Group (Show Welcome, Reset First Launch) - 仅Debug版本可见
-            if (BuildConfig.DEBUG) {
-                item {
-                    SettingsCard {
-                        SettingsItem(
-                            icon = Icons.Outlined.Flag,
-                            title = "显示欢迎页",
-                            iconTint = RunTheme.colorScheme.blue,
-                            showDivider = true,
-                            onClick = onShowWelcomeClick
-                        )
-                        SettingsItem(
-                            icon = Icons.Outlined.Flag,
-                            title = "重置首次启动",
-                            iconTint = RunTheme.colorScheme.blue,
-                            showDivider = true,
-                            onClick = onResetFirstLaunchClick
-                        )
-                        SettingsItem(
-                            icon = Icons.Outlined.Flag,
-                            title = "调试工具",
-                            subtitle = "缓存管理、开发调试",
-                            iconTint = RunTheme.colorScheme.blue,
-                            showDivider = false,
-                            onClick = onDebugClick
-                        )
-                    }
-                }
-            }
 
             item { Spacer(modifier = Modifier.height(24.dp)) }
 

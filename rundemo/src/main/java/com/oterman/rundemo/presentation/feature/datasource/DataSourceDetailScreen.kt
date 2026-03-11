@@ -21,7 +21,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -41,6 +45,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -130,6 +135,15 @@ fun DataSourceDetailScreen(
                     )
                 }
                 
+                // 数据冲突说明 Banner
+                item { Spacer(modifier = Modifier.height(12.dp)) }
+                
+                item {
+                    ConflictInfoBanner(
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                }
+
                 // 查看该平台数据入口
                 if (onNavigateToRecordList != null) {
                     item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -177,7 +191,12 @@ fun DataSourceDetailScreen(
                     item { Spacer(modifier = Modifier.height(60.dp)) }
                 }
                 
-                item { Spacer(modifier = Modifier.height(100.dp)) }
+                // 底部间距需大于 BottomButtonsSection 的高度，避免内容被遮挡
+                // 授权后多一个"取消授权"按钮，高度约 130dp；未授权约 82dp
+                val bottomSpacerHeight = if (uiState.isAuthorized &&
+                    uiState.platform != com.oterman.rundemo.domain.model.DataSourcePlatform.APPLE_HEALTH
+                ) 160.dp else 110.dp
+                item { Spacer(modifier = Modifier.height(bottomSpacerHeight)) }
             }
             
             // 底部按钮区域
@@ -530,6 +549,76 @@ private fun BottomButtonsSection(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+    }
+}
+
+/**
+ * 数据冲突说明 Banner（可展开/折叠）
+ */
+@Composable
+private fun ConflictInfoBanner(modifier: Modifier = Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable { expanded = !expanded }
+            .padding(12.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                text = "关于数据时段重叠",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = if (expanded) "折叠" else "展开",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        if (expanded) {
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                thickness = 0.5.dp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "若该平台同步的记录与其他数据源的记录存在时间重叠，系统将按数据源优先级规则自动处理冲突。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "排序靠后的记录可能不会被纳入统计与分析，但数据仍会保留。可在数据源管理页面中调整各数据源的优先级顺序。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+            )
+        } else {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "时段重叠时，部分记录可能不参与统计与分析",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.padding(start = 26.dp)
+            )
         }
     }
 }
