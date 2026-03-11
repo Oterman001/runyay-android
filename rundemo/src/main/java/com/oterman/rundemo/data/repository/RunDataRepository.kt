@@ -264,7 +264,27 @@ interface RunDataRepository {
      * 用于Overall VDOT的历史加权计算
      */
     suspend fun getVdotsByDateRange(startDate: Long, endDate: Long): List<OverallVdotEntity>
-    
+
+    /**
+     * 获取指定日期范围内的所有VDOT记录（不过滤inclusiveLevel，用于级联重算）
+     */
+    suspend fun getAllVdotsByDateRange(startDate: Long, endDate: Long): List<OverallVdotEntity>
+
+    /**
+     * 更新指定workout的综合VDOT值
+     */
+    suspend fun updateOverallVdotValue(workoutId: String, newValue: Double)
+
+    /**
+     * 更新指定workout的inclusiveLevel
+     */
+    suspend fun updateVdotInclusiveLevel(workoutId: String, level: Int)
+
+    /**
+     * 获取指定workout的VDOT记录
+     */
+    suspend fun getVdotByWorkoutId(workoutId: String): OverallVdotEntity?
+
     // ==================== 删除操作 ====================
     
     /**

@@ -68,5 +68,26 @@ interface OverallVdotDao {
 
     @Query("UPDATE overall_vdot SET userId = :userId WHERE userId = ''")
     suspend fun migrateOrphanedRecords(userId: String)
+
+    // ==================== 动态排除/级联重算 ====================
+
+    /**
+     * 获取指定日期范围内的所有VDOT记录（不过滤inclusiveLevel）
+     * 用于级联重算
+     */
+    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND date >= :startDate AND date <= :endDate AND value > 0 ORDER BY date ASC")
+    suspend fun getAllVdotsByDateRangeForUser(userId: String, startDate: Long, endDate: Long): List<OverallVdotEntity>
+
+    /**
+     * 更新指定workout的综合VDOT值
+     */
+    @Query("UPDATE overall_vdot SET value = :newValue WHERE workoutId = :workoutId")
+    suspend fun updateOverallValue(workoutId: String, newValue: Double)
+
+    /**
+     * 更新指定workout的inclusiveLevel
+     */
+    @Query("UPDATE overall_vdot SET inclusiveLevel = :level WHERE workoutId = :workoutId")
+    suspend fun updateInclusiveLevel(workoutId: String, level: Int)
 }
 

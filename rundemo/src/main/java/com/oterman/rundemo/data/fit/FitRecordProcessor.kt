@@ -152,19 +152,20 @@ class FitRecordProcessor(
 
         // Step 9: 计算VDOT
         var vdotEntity: OverallVdotEntity? = null
-        val vdotResult = calculateVdot(runRecord, segments, maxHR, restHR)
-        if (vdotResult != null) {
+        val vdotCalcResult = calculateVdot(runRecord, segments, maxHR, restHR)
+        if (vdotCalcResult != null) {
             runRecord = runRecord.copy(
-                vdot = vdotResult.first,
-                overallVdot = vdotResult.second
+                vdot = vdotCalcResult.vdot,
+                overallVdot = vdotCalcResult.overallVdot
             )
 
             // 构建OverallVdotEntity
             vdotEntity = OverallVdotEntity(
                 workoutId = runRecord.workoutId,
                 date = runRecord.startTime,
-                originValue = vdotResult.first,
-                value = vdotResult.second,
+                originValue = vdotCalcResult.vdot,
+                value = vdotCalcResult.overallVdot,
+                confidence = vdotCalcResult.confidence,
                 inclusiveLevel = runRecord.inclusiveLevel
             )
 
@@ -173,7 +174,7 @@ class FitRecordProcessor(
                 records = parseResult.records,
                 workoutId = runRecord.workoutId,
                 startTimeMs = runRecord.startTime,
-                vdot = vdotResult.first,
+                vdot = vdotCalcResult.vdot,
                 pauseList = pauseList
             )
             zones.addAll(speedZones)
@@ -262,21 +263,33 @@ class FitRecordProcessor(
     }
 
     /**
+     * VDOT计算结果
+     */
+    private data class VdotCalcResult(
+        val vdot: Double,
+        val overallVdot: Double,
+        val confidence: Double
+    )
+
+    /**
      * VDOT计算（私有方法）
      *
-     * @return Pair<vdot, overallVdot>，无法计算时返回null
+     * @return VdotCalcResult，无法计算时返回null
      */
     private suspend fun calculateVdot(
         runRecord: RunRecordEntity,
         segments: List<RunSegmentEntity>,
         maxHR: Double,
         restHR: Double
-    ): Pair<Double, Double>? {
+    ): VdotCalcResult? {
         // 数据不足检查
         if (runRecord.totalDistance <= 0 || runRecord.activeDuration <= 0 || runRecord.averageHeartRate <= 0) {
             RLog.w(TAG, "数据不足，跳过VDOT计算: distance=${runRecord.totalDistance}, duration=${runRecord.activeDuration}, hr=${runRecord.averageHeartRate}")
             return null
         }
+
+        val temperature = runRecord.weatherTemperature.takeIf { it != 0.0 }
+        val humidity = runRecord.weatherHumidity.takeIf { it != 0.0 }
 
         // 1. 检查是否有间歇训练分段
         val hasIntervalTraining = segments.any { seg ->
@@ -284,58 +297,66 @@ class FitRecordProcessor(
             !type.isNullOrEmpty() && (type == "work" || type == "warmup" || type == "cooldown")
         }
 
-        var vdot = 0.0
-        var useIntervalVdot = false
+        var vdotResult: VdotResult? = null
 
         if (hasIntervalTraining) {
             // 间歇训练：使用分段计算VDOT
             RLog.i(TAG, "检测到间歇训练，使用分段计算VDOT")
-            val segmentVdot = VdotCalculator.calculateFromSegments(
+            vdotResult = VdotCalculator.calculateFromSegmentsWithResult(
                 segments = segments,
-                temperature = runRecord.weatherTemperature.takeIf { it != 0.0 },
+                temperature = temperature,
+                humidity = humidity,
                 maxHR = maxHR,
                 restHR = restHR
             )
-            if (segmentVdot != null && segmentVdot > 0) {
-                vdot = segmentVdot
-                useIntervalVdot = true
-                RLog.i(TAG, "间歇训练VDOT计算成功: $vdot")
+            if (vdotResult != null) {
+                RLog.i(TAG, "间歇训练VDOT计算成功: ${vdotResult.vdot}, confidence=${vdotResult.confidence}")
             } else {
                 RLog.w(TAG, "间歇训练VDOT计算失败，使用整体数据计算")
             }
         }
 
         // 普通跑步或间歇训练计算失败：使用整体数据
-        if (!useIntervalVdot) {
-            vdot = VdotCalculator.calculateFromDistanceAndTime(
+        if (vdotResult == null) {
+            vdotResult = VdotCalculator.calculateWithResult(
                 distanceMeters = runRecord.totalDistance * 1000, // 公里转米
                 timeMinute = runRecord.activeDuration,
                 heartRate = runRecord.averageHeartRate,
-                temperature = runRecord.weatherTemperature.takeIf { it != 0.0 },
+                temperature = temperature,
+                humidity = humidity,
                 maxHR = maxHR,
                 restHR = restHR
             )
-            RLog.i(TAG, "整体VDOT计算: $vdot")
+            RLog.i(TAG, "整体VDOT计算: ${vdotResult?.vdot}")
         }
 
-        if (vdot <= 0) {
-            RLog.w(TAG, "VDOT计算结果无效: $vdot")
+        if (vdotResult == null || vdotResult.vdot <= 0) {
+            RLog.w(TAG, "VDOT计算结果无效")
             return null
         }
+
+        val vdot = vdotResult.vdot
+        val confidence = vdotResult.confidence
 
         // 2. 获取历史45天VDOT数据并计算OverallVDOT
         val historyStartDate = runRecord.startTime - 45L * 24 * 60 * 60 * 1000 // 45天前
         val hisVdotList = repository.getVdotsByDateRange(historyStartDate, runRecord.startTime)
 
+        // 获取上一次的综合VDOT（用于钳制）
+        val previousOverallVdot = hisVdotList.firstOrNull()?.value
+
         val overallVdot = VdotCalculator.calculateOverallVdot(
             hisVdotList = hisVdotList,
             originVdot = vdot,
+            currentConfidence = confidence,
+            currentDateMs = runRecord.startTime,
             totalDistance = runRecord.totalDistance,
-            activeDuration = runRecord.activeDuration
+            activeDuration = runRecord.activeDuration,
+            previousOverallVdot = previousOverallVdot
         ) ?: vdot // 如果Overall计算失败，使用原始VDOT
 
-        RLog.i(TAG, "OverallVDOT计算: vdot=$vdot, overallVdot=$overallVdot")
-        return Pair(vdot, overallVdot)
+        RLog.i(TAG, "OverallVDOT计算: vdot=$vdot, overallVdot=$overallVdot, confidence=$confidence")
+        return VdotCalcResult(vdot, overallVdot, confidence)
     }
 
     /**

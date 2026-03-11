@@ -420,7 +420,24 @@ class RunDataRepositoryImpl private constructor(
         val uid = currentUserId ?: return emptyList()
         return overallVdotDao.getVdotsByDateRangeForUser(uid, startDate, endDate)
     }
-    
+
+    override suspend fun getAllVdotsByDateRange(startDate: Long, endDate: Long): List<OverallVdotEntity> {
+        val uid = currentUserId ?: return emptyList()
+        return overallVdotDao.getAllVdotsByDateRangeForUser(uid, startDate, endDate)
+    }
+
+    override suspend fun updateOverallVdotValue(workoutId: String, newValue: Double) {
+        overallVdotDao.updateOverallValue(workoutId, newValue)
+    }
+
+    override suspend fun updateVdotInclusiveLevel(workoutId: String, level: Int) {
+        overallVdotDao.updateInclusiveLevel(workoutId, level)
+    }
+
+    override suspend fun getVdotByWorkoutId(workoutId: String): OverallVdotEntity? {
+        return overallVdotDao.getByWorkoutId(workoutId)
+    }
+
     // ==================== 删除操作 ====================
     
     override suspend fun deleteRunRecord(workoutId: String) {

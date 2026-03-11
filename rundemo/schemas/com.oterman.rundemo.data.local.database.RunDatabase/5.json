@@ -1,0 +1,930 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 5,
+    "identityHash": "924412ca00a80cecce9b3e9f70b7dd71",
+    "entities": [
+      {
+        "tableName": "run_record",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`workoutId` TEXT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `duration` REAL NOT NULL, `activeDuration` REAL NOT NULL, `totalDistance` REAL NOT NULL, `originDistance` REAL NOT NULL, `averageSpeed` REAL NOT NULL, `maxSpeed` REAL NOT NULL, `averageHeartRate` REAL NOT NULL, `maxHeartRate` REAL NOT NULL, `minHeartRate` REAL NOT NULL, `averagePower` REAL NOT NULL, `maxPower` REAL NOT NULL, `averageCadence` REAL NOT NULL, `averageStrideLength` REAL NOT NULL, `averageVerticalOscillation` REAL NOT NULL, `averageContactTime` REAL NOT NULL, `totalCalories` REAL NOT NULL, `totalStepCount` REAL NOT NULL, `elevationAscended` REAL NOT NULL, `vdot` REAL NOT NULL, `overallVdot` REAL NOT NULL, `trainingEffect` REAL NOT NULL, `anaerobicTrainingEffect` REAL NOT NULL, `trainingLoad` REAL NOT NULL, `weatherTemperature` REAL NOT NULL, `weatherHumidity` REAL NOT NULL, `outdoor` INTEGER NOT NULL, `deviceInfo` TEXT, `deviceVersion` TEXT, `datasource` TEXT, `originId` TEXT, `inclusiveLevel` INTEGER NOT NULL, `trajectoryStatus` INTEGER NOT NULL, `uploadStatus` INTEGER NOT NULL, `note` TEXT, `feelingLevel` INTEGER NOT NULL, `address` TEXT, `eventStr` TEXT, `trainPlanId` TEXT, `shoeId` TEXT, `linkedRaceRecordId` TEXT, `userId` TEXT NOT NULL, PRIMARY KEY(`workoutId`))",
+        "fields": [
+          {
+            "fieldPath": "workoutId",
+            "columnName": "workoutId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTime",
+            "columnName": "startTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTime",
+            "columnName": "endTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duration",
+            "columnName": "duration",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeDuration",
+            "columnName": "activeDuration",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalDistance",
+            "columnName": "totalDistance",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originDistance",
+            "columnName": "originDistance",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageSpeed",
+            "columnName": "averageSpeed",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxSpeed",
+            "columnName": "maxSpeed",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageHeartRate",
+            "columnName": "averageHeartRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxHeartRate",
+            "columnName": "maxHeartRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minHeartRate",
+            "columnName": "minHeartRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averagePower",
+            "columnName": "averagePower",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxPower",
+            "columnName": "maxPower",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageCadence",
+            "columnName": "averageCadence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageStrideLength",
+            "columnName": "averageStrideLength",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageVerticalOscillation",
+            "columnName": "averageVerticalOscillation",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageContactTime",
+            "columnName": "averageContactTime",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalCalories",
+            "columnName": "totalCalories",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalStepCount",
+            "columnName": "totalStepCount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "elevationAscended",
+            "columnName": "elevationAscended",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vdot",
+            "columnName": "vdot",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overallVdot",
+            "columnName": "overallVdot",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trainingEffect",
+            "columnName": "trainingEffect",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "anaerobicTrainingEffect",
+            "columnName": "anaerobicTrainingEffect",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trainingLoad",
+            "columnName": "trainingLoad",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weatherTemperature",
+            "columnName": "weatherTemperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weatherHumidity",
+            "columnName": "weatherHumidity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "outdoor",
+            "columnName": "outdoor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceInfo",
+            "columnName": "deviceInfo",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "deviceVersion",
+            "columnName": "deviceVersion",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "datasource",
+            "columnName": "datasource",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "originId",
+            "columnName": "originId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "inclusiveLevel",
+            "columnName": "inclusiveLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trajectoryStatus",
+            "columnName": "trajectoryStatus",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uploadStatus",
+            "columnName": "uploadStatus",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "feelingLevel",
+            "columnName": "feelingLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "eventStr",
+            "columnName": "eventStr",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "trainPlanId",
+            "columnName": "trainPlanId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "shoeId",
+            "columnName": "shoeId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "linkedRaceRecordId",
+            "columnName": "linkedRaceRecordId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "workoutId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_run_record_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_run_record_userId` ON `${TABLE_NAME}` (`userId`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "run_sample_point",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `workoutId` TEXT NOT NULL, `sequence` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, `timeOffset` INTEGER NOT NULL, `latitude` REAL, `longitude` REAL, `altitude` REAL, `heartRate` INTEGER, `power` INTEGER, `speed` REAL, `cadence` INTEGER, `strideLength` REAL, `verticalOscillation` REAL, `contactTime` REAL, `cumulativeDistance` REAL, FOREIGN KEY(`workoutId`) REFERENCES `run_record`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workoutId",
+            "columnName": "workoutId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sequence",
+            "columnName": "sequence",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeOffset",
+            "columnName": "timeOffset",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "altitude",
+            "columnName": "altitude",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "heartRate",
+            "columnName": "heartRate",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "power",
+            "columnName": "power",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "speed",
+            "columnName": "speed",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "cadence",
+            "columnName": "cadence",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "strideLength",
+            "columnName": "strideLength",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "verticalOscillation",
+            "columnName": "verticalOscillation",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "contactTime",
+            "columnName": "contactTime",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "cumulativeDistance",
+            "columnName": "cumulativeDistance",
+            "affinity": "REAL",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_run_sample_point_workoutId",
+            "unique": false,
+            "columnNames": [
+              "workoutId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_run_sample_point_workoutId` ON `${TABLE_NAME}` (`workoutId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "run_record",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "workoutId"
+            ],
+            "referencedColumns": [
+              "workoutId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "run_segment",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `workoutId` TEXT NOT NULL, `seq` INTEGER NOT NULL, `segmentType` INTEGER NOT NULL, `beginTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `duration` REAL NOT NULL, `activeDuration` REAL NOT NULL, `distance` REAL NOT NULL, `averageSpeed` REAL NOT NULL, `averageHeartRate` REAL NOT NULL, `averagePower` REAL NOT NULL, `averageCadence` REAL NOT NULL, `averageStrideLength` REAL NOT NULL, `averageVerticalOscillation` REAL NOT NULL, `averageContactTime` REAL NOT NULL, `stepCount` REAL NOT NULL, `intervalType` TEXT, `wktStepIndex` INTEGER, `displayName` TEXT, FOREIGN KEY(`workoutId`) REFERENCES `run_record`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workoutId",
+            "columnName": "workoutId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seq",
+            "columnName": "seq",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "segmentType",
+            "columnName": "segmentType",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "beginTime",
+            "columnName": "beginTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTime",
+            "columnName": "endTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duration",
+            "columnName": "duration",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeDuration",
+            "columnName": "activeDuration",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "distance",
+            "columnName": "distance",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageSpeed",
+            "columnName": "averageSpeed",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageHeartRate",
+            "columnName": "averageHeartRate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averagePower",
+            "columnName": "averagePower",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageCadence",
+            "columnName": "averageCadence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageStrideLength",
+            "columnName": "averageStrideLength",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageVerticalOscillation",
+            "columnName": "averageVerticalOscillation",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageContactTime",
+            "columnName": "averageContactTime",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stepCount",
+            "columnName": "stepCount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intervalType",
+            "columnName": "intervalType",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "wktStepIndex",
+            "columnName": "wktStepIndex",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_run_segment_workoutId",
+            "unique": false,
+            "columnNames": [
+              "workoutId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_run_segment_workoutId` ON `${TABLE_NAME}` (`workoutId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "run_record",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "workoutId"
+            ],
+            "referencedColumns": [
+              "workoutId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "run_ability_zone",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `workoutId` TEXT NOT NULL, `zoneType` INTEGER NOT NULL, `zoneIndex` INTEGER NOT NULL, `duration` REAL NOT NULL, `minValue` REAL NOT NULL, `maxValue` REAL NOT NULL, FOREIGN KEY(`workoutId`) REFERENCES `run_record`(`workoutId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workoutId",
+            "columnName": "workoutId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "zoneType",
+            "columnName": "zoneType",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "zoneIndex",
+            "columnName": "zoneIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duration",
+            "columnName": "duration",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minValue",
+            "columnName": "minValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxValue",
+            "columnName": "maxValue",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_run_ability_zone_workoutId",
+            "unique": false,
+            "columnNames": [
+              "workoutId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_run_ability_zone_workoutId` ON `${TABLE_NAME}` (`workoutId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "run_record",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "workoutId"
+            ],
+            "referencedColumns": [
+              "workoutId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "pb_record",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `workoutId` TEXT NOT NULL, `type` TEXT NOT NULL, `subType` TEXT NOT NULL, `value` REAL NOT NULL, `completeTime` INTEGER NOT NULL, `inclusiveLevel` INTEGER NOT NULL, `userId` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workoutId",
+            "columnName": "workoutId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subType",
+            "columnName": "subType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completeTime",
+            "columnName": "completeTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "inclusiveLevel",
+            "columnName": "inclusiveLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pb_record_type_subType",
+            "unique": false,
+            "columnNames": [
+              "type",
+              "subType"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pb_record_type_subType` ON `${TABLE_NAME}` (`type`, `subType`)"
+          },
+          {
+            "name": "index_pb_record_workoutId",
+            "unique": false,
+            "columnNames": [
+              "workoutId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pb_record_workoutId` ON `${TABLE_NAME}` (`workoutId`)"
+          },
+          {
+            "name": "index_pb_record_userId_type_subType",
+            "unique": false,
+            "columnNames": [
+              "userId",
+              "type",
+              "subType"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pb_record_userId_type_subType` ON `${TABLE_NAME}` (`userId`, `type`, `subType`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "overall_vdot",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `workoutId` TEXT NOT NULL, `date` INTEGER NOT NULL, `originValue` REAL NOT NULL, `value` REAL NOT NULL, `confidence` REAL NOT NULL, `inclusiveLevel` INTEGER NOT NULL, `userId` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workoutId",
+            "columnName": "workoutId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originValue",
+            "columnName": "originValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confidence",
+            "columnName": "confidence",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "inclusiveLevel",
+            "columnName": "inclusiveLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_overall_vdot_workoutId",
+            "unique": false,
+            "columnNames": [
+              "workoutId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_overall_vdot_workoutId` ON `${TABLE_NAME}` (`workoutId`)"
+          },
+          {
+            "name": "index_overall_vdot_date",
+            "unique": false,
+            "columnNames": [
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_overall_vdot_date` ON `${TABLE_NAME}` (`date`)"
+          },
+          {
+            "name": "index_overall_vdot_userId_date",
+            "unique": false,
+            "columnNames": [
+              "userId",
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_overall_vdot_userId_date` ON `${TABLE_NAME}` (`userId`, `date`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "daily_health",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userId` TEXT NOT NULL, `platformCode` TEXT NOT NULL, `calendarDate` TEXT NOT NULL, `restingHeartRate` INTEGER, `vo2Max` REAL, `fetchedAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "platformCode",
+            "columnName": "platformCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "calendarDate",
+            "columnName": "calendarDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "restingHeartRate",
+            "columnName": "restingHeartRate",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "vo2Max",
+            "columnName": "vo2Max",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetchedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_daily_health_userId_platformCode_calendarDate",
+            "unique": true,
+            "columnNames": [
+              "userId",
+              "platformCode",
+              "calendarDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_daily_health_userId_platformCode_calendarDate` ON `${TABLE_NAME}` (`userId`, `platformCode`, `calendarDate`)"
+          },
+          {
+            "name": "index_daily_health_userId_calendarDate",
+            "unique": false,
+            "columnNames": [
+              "userId",
+              "calendarDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_daily_health_userId_calendarDate` ON `${TABLE_NAME}` (`userId`, `calendarDate`)"
+          }
+        ],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '924412ca00a80cecce9b3e9f70b7dd71')"
+    ]
+  }
+}

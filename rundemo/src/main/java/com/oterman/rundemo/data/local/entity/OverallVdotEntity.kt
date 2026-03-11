@@ -27,6 +27,7 @@ data class OverallVdotEntity(
     val date: Long = 0L,                 // 记录日期时间戳(ms)
     val originValue: Double = 0.0,       // 原始VDOT值（未平滑）
     val value: Double = 0.0,             // 平滑后的VDOT值
+    val confidence: Double = 0.0,         // 数据质量置信度 [0.0, 1.0]
     val inclusiveLevel: Int = 1,          // 0=不纳入统计，1+=纳入统计
     val userId: String = ""               // 所属用户ID
 )

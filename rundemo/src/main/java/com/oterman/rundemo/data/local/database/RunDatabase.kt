@@ -41,7 +41,7 @@ import com.oterman.rundemo.data.local.entity.RunSegmentEntity
         OverallVdotEntity::class,
         DailyHealthEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -77,6 +77,13 @@ abstract class RunDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // overall_vdot: 添加 confidence 字段
+                db.execSQL("ALTER TABLE overall_vdot ADD COLUMN confidence REAL NOT NULL DEFAULT 0.0")
+            }
+        }
+
         /**
          * 获取数据库单例
          */
@@ -87,7 +94,7 @@ abstract class RunDatabase : RoomDatabase() {
                     RunDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_3_4)
+                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
