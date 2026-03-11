@@ -203,5 +203,11 @@ sealed class Screen(val route: String) {
      * 展示公众号二维码，支持一键复制并打开微信
      */
     object WeChatQrCode : Screen("wechat_qr_code")
+
+    /**
+     * VDOT跑力详情页面
+     * 展示VDOT趋势图、预测成绩和训练配速
+     */
+    object VdotDetail : Screen("vdot_detail")
 }
 

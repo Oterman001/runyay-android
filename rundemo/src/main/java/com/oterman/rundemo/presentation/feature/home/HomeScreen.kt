@@ -72,6 +72,7 @@ fun HomeScreen(
     onNavigateToDebug: () -> Unit = {},
     onNavigateToContactUs: () -> Unit = {},
     onNavigateToSyncStatus: () -> Unit = {},
+    onNavigateToVdotDetail: () -> Unit = {},
     onThemeModeChanged: (ThemeMode) -> Unit = {},
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(LocalContext.current)
@@ -141,7 +142,8 @@ fun HomeScreen(
                     onSyncIconClick = onNavigateToSyncStatus,
                     onSetGoalClick = onNavigateToRunGoalSet,
                     onNavigateToRunDetail = onNavigateToRunDetail,
-                    onNavigateToRunStatistics = onNavigateToRunStatistics
+                    onNavigateToRunStatistics = onNavigateToRunStatistics,
+                    onNavigateToVdotDetail = onNavigateToVdotDetail
                 )
                 HomeTab.DATA -> DataTabContent(
                     onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },

@@ -72,6 +72,7 @@ import com.oterman.rundemo.presentation.feature.debug.synccontrol.SyncControlVie
 import com.oterman.rundemo.presentation.feature.syncstatus.DataSyncStatusScreen
 import com.oterman.rundemo.presentation.feature.legal.PrivacyPolicyScreen
 import com.oterman.rundemo.presentation.feature.legal.UserTermsScreen
+import com.oterman.rundemo.presentation.feature.vdotdetail.VdotDetailScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.data.local.PreferencesManager
@@ -255,6 +256,9 @@ fun AppNavGraph(
                 },
                 onNavigateToSyncStatus = {
                     navController.navigate(Screen.DataSyncStatus.route)
+                },
+                onNavigateToVdotDetail = {
+                    navController.navigate(Screen.VdotDetail.route)
                 },
                 onThemeModeChanged = onThemeModeChanged,
                 viewModel = homeViewModel
@@ -750,6 +754,15 @@ fun AppNavGraph(
         // 微信公众号二维码页面
         composable(Screen.WeChatQrCode.route) {
             WeChatQrCodeScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // VDOT跑力详情页面
+        composable(Screen.VdotDetail.route) {
+            VdotDetailScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
