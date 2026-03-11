@@ -436,8 +436,19 @@ object VdotCalculator {
 
     // ==================== 间歇训练VDOT计算 ====================
 
+    private fun isWorkType(type: String?): Boolean =
+        type == "work" || type == "active"
+
+    private fun isSteadyType(type: String?): Boolean =
+        type == "warmup" || type == "cooldown"
+
     /**
      * 从间歇训练分段计算VDOT（返回VdotResult）
+     *
+     * 分组件独立评估策略：
+     * 1. 稳态段（warmup/cooldown）：合并计算，适用于长距离稳态跑
+     * 2. 工作段（work/active）：逐个计算 VDOT 取中位数，避免短距离聚合惩罚
+     * 3. 取两者中较高的 VDOT 作为最终结果
      */
     fun calculateFromSegmentsWithResult(
         segments: List<RunSegmentEntity>,
@@ -446,40 +457,189 @@ object VdotCalculator {
         maxHR: Double,
         restHR: Double
     ): VdotResult? {
-        var sumDistance = 0.0   // 公里
-        var sumTime = 0.0      // 分钟
-        var sumHeartRate = 0.0  // 心率*时间（用于加权平均）
+        val workSegments = segments.filter { isWorkType(it.intervalType) }
+        val steadySegments = segments.filter { isSteadyType(it.intervalType) }
 
-        for (seg in segments) {
-            val type = seg.intervalType
-            if (type == "work" || type == "warmup" || type == "cooldown") {
-                sumDistance += seg.distance
-                sumTime += seg.activeDuration
-                sumHeartRate += seg.averageHeartRate * seg.activeDuration
+        RLog.i(TAG, "间歇分段分析: work=${workSegments.size}个, steady=${steadySegments.size}个")
+
+        // 1. 稳态段 VDOT（warmup/cooldown 合并）
+        val steadyResult = calculateSteadyStateVdot(
+            steadySegments, temperature, humidity, maxHR, restHR
+        )
+
+        // 2. 工作段 VDOT（逐个计算取中位数）
+        val intervalResult = calculateIntervalWorkVdot(
+            workSegments, temperature, humidity, maxHR, restHR
+        )
+
+        RLog.i(TAG, "稳态VDOT: ${steadyResult?.vdot ?: "N/A"}, 间歇VDOT: ${intervalResult?.vdot ?: "N/A"}")
+
+        // 3. 取较高值
+        return when {
+            steadyResult != null && intervalResult != null -> {
+                if (intervalResult.vdot >= steadyResult.vdot) {
+                    RLog.i(TAG, "选用间歇VDOT: ${intervalResult.vdot} >= ${steadyResult.vdot}")
+                    intervalResult
+                } else {
+                    RLog.i(TAG, "选用稳态VDOT: ${steadyResult.vdot} > ${intervalResult.vdot}")
+                    steadyResult
+                }
+            }
+            intervalResult != null -> intervalResult
+            steadyResult != null -> steadyResult
+            else -> {
+                RLog.w(TAG, "间歇训练数据不足，无法计算VDOT")
+                null
             }
         }
+    }
 
-        if (sumDistance <= 0 || sumTime <= 0 || sumHeartRate <= 0) {
-            RLog.w(TAG, "间歇训练数据不足: distance=$sumDistance, time=$sumTime, heartRate=$sumHeartRate")
+    /**
+     * 从稳态段（warmup/cooldown）计算 VDOT
+     * 要求：合并距离 >= 2km 且 合并时间 >= 10min
+     */
+    private fun calculateSteadyStateVdot(
+        segments: List<RunSegmentEntity>,
+        temperature: Double?,
+        humidity: Double?,
+        maxHR: Double,
+        restHR: Double
+    ): VdotResult? {
+        if (segments.isEmpty()) return null
+
+        var sumDistance = 0.0
+        var sumTime = 0.0
+        var sumHRxTime = 0.0
+
+        for (seg in segments) {
+            sumDistance += seg.distance
+            sumTime += seg.activeDuration
+            sumHRxTime += seg.averageHeartRate * seg.activeDuration
+        }
+
+        if (sumDistance < 2.0 || sumTime < 10.0 || sumHRxTime <= 0) {
+            RLog.d(TAG, "稳态段数据不足: distance=${sumDistance}km, time=${sumTime}min")
             return null
         }
 
-        val avgHeartRate = sumHeartRate / sumTime
-
-        val result = calculateWithResult(
+        val avgHR = sumHRxTime / sumTime
+        return calculateWithResult(
             distanceMeters = sumDistance * 1000,
             timeMinute = sumTime,
-            heartRate = avgHeartRate,
+            heartRate = avgHR,
             temperature = temperature,
             humidity = humidity,
             maxHR = maxHR,
             restHR = restHR
         )
+    }
 
-        if (result != null) {
-            RLog.i(TAG, "间歇训练VDOT: distance=${sumDistance}km, time=${sumTime}min, avgHR=$avgHeartRate, vdot=${result.vdot}")
+    /**
+     * 从工作段计算间歇 VDOT
+     *
+     * 逐个工作段独立计算 VDOT，取中位数。
+     * 要求：至少 2 个有效工作段，总时间 >= 1min
+     */
+    private fun calculateIntervalWorkVdot(
+        workSegments: List<RunSegmentEntity>,
+        temperature: Double?,
+        humidity: Double?,
+        maxHR: Double,
+        restHR: Double
+    ): VdotResult? {
+        if (workSegments.size < 2) {
+            RLog.d(TAG, "工作段数量不足: ${workSegments.size}")
+            return null
         }
-        return result
+
+        val totalWorkTime = workSegments.sumOf { it.activeDuration }
+        if (totalWorkTime < 1.0) {
+            RLog.d(TAG, "工作段总时间不足: ${totalWorkTime}min")
+            return null
+        }
+
+        // 逐个计算原始 VDOT
+        val perIntervalVdots = mutableListOf<Double>()
+        for (seg in workSegments) {
+            if (seg.distance <= 0 || seg.activeDuration <= 0) continue
+            val rawVdot = getVDot(seg.distance * 1000, seg.activeDuration)
+            if (rawVdot > 0) {
+                perIntervalVdots.add(rawVdot)
+                RLog.d(TAG, "  工作段[${seg.seq}]: ${seg.distance}km, ${seg.activeDuration}min → rawVDOT=$rawVdot")
+            }
+        }
+
+        if (perIntervalVdots.size < 2) {
+            RLog.d(TAG, "有效工作段VDOT不足: ${perIntervalVdots.size}")
+            return null
+        }
+
+        // 取中位数
+        val medianRawVdot = calculateMedian(perIntervalVdots)
+
+        // 温度修正：用总工作时间计算温度影响
+        val tempEffect = getTemperatureEffect(temperature, humidity, totalWorkTime)
+        val adjustedTime = if (totalWorkTime - tempEffect < 0) totalWorkTime else totalWorkTime - tempEffect
+        val timeRatio = if (totalWorkTime > 0) adjustedTime / totalWorkTime else 1.0
+        val envAdjustedVdot = medianRawVdot * timeRatio + medianRawVdot * (1 - timeRatio) * 0.5
+
+        // 用工作段的加权平均心率做心率修正
+        var sumHRxTime = 0.0
+        var sumWorkTime = 0.0
+        for (seg in workSegments) {
+            if (seg.averageHeartRate > 0 && seg.activeDuration > 0) {
+                sumHRxTime += seg.averageHeartRate * seg.activeDuration
+                sumWorkTime += seg.activeDuration
+            }
+        }
+        val avgWorkHR = if (sumWorkTime > 0) sumHRxTime / sumWorkTime else 0.0
+
+        val finalVdot = if (avgWorkHR > 0) {
+            adjustWithHeartRate(avgWorkHR, envAdjustedVdot, maxHR, restHR)
+        } else {
+            envAdjustedVdot
+        }
+
+        // 间歇训练的置信度：基于工作段数量和心率区间
+        val zone = if (avgWorkHR > 0) getHeartRateZone(avgWorkHR, maxHR, restHR) else 0
+        val countScore = when {
+            perIntervalVdots.size >= 6 -> 0.35
+            perIntervalVdots.size >= 4 -> 0.30
+            perIntervalVdots.size >= 2 -> 0.20
+            else -> 0.10
+        }
+        val hrZoneScore = when (zone) {
+            4, 5 -> 0.20
+            3 -> 0.15
+            else -> 0.10
+        }
+        val durationScore = when {
+            totalWorkTime >= 10 -> 0.25
+            totalWorkTime >= 5 -> 0.20
+            totalWorkTime >= 2 -> 0.15
+            else -> 0.10
+        }
+        val envScore = if (temperature != null && temperature != 0.0) 0.10 else 0.05
+        val confidence = countScore + hrZoneScore + durationScore + envScore
+
+        RLog.i(TAG, "间歇VDOT: 中位数rawVDOT=$medianRawVdot, avgWorkHR=$avgWorkHR, " +
+                "finalVdot=$finalVdot, intervals=${perIntervalVdots.size}, confidence=$confidence")
+
+        return VdotResult(
+            vdot = finalVdot,
+            confidence = confidence,
+            rawVdot = medianRawVdot,
+            environmentalAdjustmentMinutes = tempEffect
+        )
+    }
+
+    private fun calculateMedian(values: List<Double>): Double {
+        val sorted = values.sorted()
+        return if (sorted.size % 2 == 0) {
+            (sorted[sorted.size / 2 - 1] + sorted[sorted.size / 2]) / 2.0
+        } else {
+            sorted[sorted.size / 2]
+        }
     }
 
     /**

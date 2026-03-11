@@ -291,26 +291,45 @@ class FitRecordProcessor(
         val temperature = runRecord.weatherTemperature.takeIf { it != 0.0 }
         val humidity = runRecord.weatherHumidity.takeIf { it != 0.0 }
 
-        // 1. 检查是否有间歇训练分段
+        // 1. 检查是否有间歇训练分段（"active" 是 Garmin FIT 中 intensity=0 的标准工作段类型）
         val hasIntervalTraining = segments.any { seg ->
             val type = seg.intervalType
-            !type.isNullOrEmpty() && (type == "work" || type == "warmup" || type == "cooldown")
+            !type.isNullOrEmpty() && (type == "work" || type == "active" || type == "warmup" || type == "cooldown")
         }
 
         var vdotResult: VdotResult? = null
 
+        // 始终计算整体 VDOT 作为基准
+        val overallVdotResult = VdotCalculator.calculateWithResult(
+            distanceMeters = runRecord.totalDistance * 1000,
+            timeMinute = runRecord.activeDuration,
+            heartRate = runRecord.averageHeartRate,
+            temperature = temperature,
+            humidity = humidity,
+            maxHR = maxHR,
+            restHR = restHR
+        )
+        RLog.i(TAG, "整体VDOT基准: ${overallVdotResult?.vdot}")
+
         if (hasIntervalTraining) {
-            // 间歇训练：使用分段计算VDOT
             RLog.i(TAG, "检测到间歇训练，使用分段计算VDOT")
-            vdotResult = VdotCalculator.calculateFromSegmentsWithResult(
+            val intervalVdotResult = VdotCalculator.calculateFromSegmentsWithResult(
                 segments = segments,
                 temperature = temperature,
                 humidity = humidity,
                 maxHR = maxHR,
                 restHR = restHR
             )
-            if (vdotResult != null) {
-                RLog.i(TAG, "间歇训练VDOT计算成功: ${vdotResult.vdot}, confidence=${vdotResult.confidence}")
+
+            if (intervalVdotResult != null) {
+                // 兜底：间歇算法结果不应低于整体算法结果
+                if (overallVdotResult != null && intervalVdotResult.vdot < overallVdotResult.vdot) {
+                    RLog.w(TAG, "间歇VDOT(${intervalVdotResult.vdot}) < 整体VDOT(${overallVdotResult.vdot})，使用整体VDOT")
+                    vdotResult = overallVdotResult
+                } else {
+                    RLog.i(TAG, "间歇训练VDOT计算成功: ${intervalVdotResult.vdot}, confidence=${intervalVdotResult.confidence}")
+                    vdotResult = intervalVdotResult
+                }
             } else {
                 RLog.w(TAG, "间歇训练VDOT计算失败，使用整体数据计算")
             }
@@ -318,16 +337,7 @@ class FitRecordProcessor(
 
         // 普通跑步或间歇训练计算失败：使用整体数据
         if (vdotResult == null) {
-            vdotResult = VdotCalculator.calculateWithResult(
-                distanceMeters = runRecord.totalDistance * 1000, // 公里转米
-                timeMinute = runRecord.activeDuration,
-                heartRate = runRecord.averageHeartRate,
-                temperature = temperature,
-                humidity = humidity,
-                maxHR = maxHR,
-                restHR = restHR
-            )
-            RLog.i(TAG, "整体VDOT计算: ${vdotResult?.vdot}")
+            vdotResult = overallVdotResult
         }
 
         if (vdotResult == null || vdotResult.vdot <= 0) {
