@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 
 class PlatformRecordListViewModelFactory(
     private val context: Context,
@@ -16,7 +17,8 @@ class PlatformRecordListViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(PlatformRecordListViewModel::class.java)) {
             val repository = RunDataRepositoryImpl.getInstance(RunDatabase.getInstance(context))
-            return PlatformRecordListViewModel(platform, repository) as T
+            val syncManager = UnifiedDataSyncManager.getInstance(context)
+            return PlatformRecordListViewModel(platform, repository, syncManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

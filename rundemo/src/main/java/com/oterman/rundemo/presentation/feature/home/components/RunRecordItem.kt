@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.TrackPoint
-import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.components.InclusiveLevelIndicator
 import com.oterman.rundemo.presentation.components.trajectory.BlendedTrajectoryThumbnail
@@ -100,7 +99,7 @@ fun RunRecordItem(
                     )
                 }
                 Row(
-                    modifier = if (BuildConfig.DEBUG && onInclusiveLevelClick != null)
+                    modifier = if (onInclusiveLevelClick != null)
                         Modifier.clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }

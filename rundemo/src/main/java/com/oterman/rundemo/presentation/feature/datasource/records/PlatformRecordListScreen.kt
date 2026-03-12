@@ -40,7 +40,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.presentation.components.EditInclusiveLevelDialog
 import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,6 +55,7 @@ fun PlatformRecordListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val trackPointsVersion by viewModel.trackPointsVersion.collectAsState()
     val isManual = uiState.platform == DataSourcePlatform.MANUAL
+    var pendingInclusiveLevelRecord by remember { mutableStateOf<RunRecordEntity?>(null) }
 
     val title = if (isManual) "手动导入记录" else "${uiState.platform.displayName} 的数据"
 
@@ -142,7 +145,8 @@ fun PlatformRecordListScreen(
                                 record = record,
                                 trackPoints = trackPoints,
                                 isTrackPointsLoading = isLoading,
-                                onClick = { onNavigateToRunDetail(record.workoutId) }
+                                onClick = { onNavigateToRunDetail(record.workoutId) },
+                                onInclusiveLevelClick = { pendingInclusiveLevelRecord = record }
                             )
                         }
                     }
@@ -151,6 +155,17 @@ fun PlatformRecordListScreen(
         }
     }
 
+    // EditInclusiveLevelDialog
+    pendingInclusiveLevelRecord?.let { record ->
+        EditInclusiveLevelDialog(
+            currentLevel = record.inclusiveLevel,
+            onDismiss = { pendingInclusiveLevelRecord = null },
+            onConfirm = { newLevel ->
+                viewModel.updateInclusiveLevel(record, newLevel)
+                pendingInclusiveLevelRecord = null
+            }
+        )
+    }
 }
 
 /**

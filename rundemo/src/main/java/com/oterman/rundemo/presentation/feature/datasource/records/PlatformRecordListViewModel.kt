@@ -2,10 +2,13 @@ package com.oterman.rundemo.presentation.feature.datasource.records
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.oterman.rundemo.data.fit.VdotRecalculationService
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.data.network.dto.request.toUpdateRequest
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,8 +26,11 @@ data class PlatformRecordListUiState(
 
 class PlatformRecordListViewModel(
     private val platform: DataSourcePlatform,
-    private val repository: RunDataRepository
+    private val repository: RunDataRepository,
+    private val syncManager: UnifiedDataSyncManager
 ) : ViewModel() {
+
+    private val vdotRecalculationService = VdotRecalculationService(repository)
 
     companion object {
         private const val TAG = "PlatformRecordListVM"
@@ -64,6 +70,40 @@ class PlatformRecordListViewModel(
             } finally {
                 _uiState.update { it.copy(pendingDeleteWorkoutId = null) }
             }
+        }
+    }
+
+    fun updateInclusiveLevel(record: RunRecordEntity, newLevel: Int) {
+        viewModelScope.launch {
+            val updatedRecord = record.copy(inclusiveLevel = newLevel, uploadStatus = 0)
+            try {
+                repository.updateRunRecord(updatedRecord)
+            } catch (_: Exception) { return@launch }
+
+            // 同步到服务器
+            if (updatedRecord.originId != null) {
+                try {
+                    val request = updatedRecord.toUpdateRequest()
+                    val result = syncManager.updateRunSummary(request)
+                    if (result.isSuccess) {
+                        repository.updateRunRecord(updatedRecord.copy(uploadStatus = 2))
+                    } else {
+                        RLog.w(TAG, "同步服务器失败: ${result.exceptionOrNull()?.message}")
+                    }
+                } catch (e: Exception) {
+                    RLog.w(TAG, "同步服务器异常: ${e.message}")
+                }
+            }
+
+            // VDOT级联重算
+            try {
+                vdotRecalculationService.onInclusiveLevelChanged(record.workoutId, newLevel)
+            } catch (e: Exception) {
+                RLog.w(TAG, "VDOT级联重算失败: ${e.message}")
+            }
+
+            // 刷新列表
+            loadRecords()
         }
     }
 
