@@ -78,7 +78,8 @@ fun DashboardTabContent(
     onSetGoalClick: () -> Unit = {},
     onNavigateToRunDetail: (workoutId: String) -> Unit = {},
     onNavigateToRunStatistics: (tab: String) -> Unit = {},
-    onNavigateToVdotDetail: () -> Unit = {}
+    onNavigateToVdotDetail: () -> Unit = {},
+    onSwitchToDataTab: () -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -194,7 +195,8 @@ fun DashboardTabContent(
                             TotalRunVdotCard(
                                 stats = uiState.totalStats,
                                 modifier = Modifier.padding(bottom = 10.dp, top = 10.dp),
-                                onClick = { onNavigateToVdotDetail() }
+                                onDistanceClick = { onSwitchToDataTab() },
+                                onVdotClick = { onNavigateToVdotDetail() }
                             )
                         }
                         DashboardCardId.YEAR_MONTH -> {

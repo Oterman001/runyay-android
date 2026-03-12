@@ -27,10 +27,11 @@ import com.oterman.rundemo.ui.theme.SecondaryTextColor
 fun TotalRunVdotCard(
     stats: TotalRunStatistics,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
+    onDistanceClick: () -> Unit = {},
+    onVdotClick: () -> Unit = {}
 ) {
     StatisticsCard(
-        modifier = modifier.clickable { onClick() }
+        modifier = modifier
     ) {
         Row(
             modifier = Modifier
@@ -40,7 +41,8 @@ fun TotalRunVdotCard(
         ) {
             // Left - Total Distance
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.clickable { onDistanceClick() }
             ) {
                 Row(
                     verticalAlignment = Alignment.Bottom
@@ -68,7 +70,8 @@ fun TotalRunVdotCard(
 
             // Right - VDOT
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.clickable { onVdotClick() }
             ) {
                 Row(
                     verticalAlignment = Alignment.Bottom

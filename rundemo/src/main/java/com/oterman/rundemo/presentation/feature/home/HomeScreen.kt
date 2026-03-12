@@ -78,6 +78,7 @@ fun HomeScreen(
         factory = HomeViewModelFactory(LocalContext.current)
     )
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -143,7 +144,15 @@ fun HomeScreen(
                     onSetGoalClick = onNavigateToRunGoalSet,
                     onNavigateToRunDetail = onNavigateToRunDetail,
                     onNavigateToRunStatistics = onNavigateToRunStatistics,
-                    onNavigateToVdotDetail = onNavigateToVdotDetail
+                    onNavigateToVdotDetail = {
+                        // TODO: 跑力详情页面待实现
+                        android.widget.Toast.makeText(
+                            context,
+                            "跑力详情页面即将上线",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onSwitchToDataTab = { viewModel.selectTab(HomeTab.DATA) }
                 )
                 HomeTab.DATA -> DataTabContent(
                     onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },
