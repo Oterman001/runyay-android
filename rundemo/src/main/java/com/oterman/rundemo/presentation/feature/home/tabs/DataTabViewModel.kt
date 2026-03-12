@@ -13,6 +13,8 @@ import com.oterman.rundemo.domain.model.DataTabDisplayMode
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.data.fit.VdotRecalculationService
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,6 +47,8 @@ class DataTabViewModel(
     private val repository: RunDataRepository,
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
+
+    private val vdotRecalculationService = VdotRecalculationService(repository)
 
     private val _uiState = MutableStateFlow(DataTabUiState())
     val uiState: StateFlow<DataTabUiState> = _uiState.asStateFlow()
@@ -363,7 +367,13 @@ class DataTabViewModel(
         viewModelScope.launch {
             try {
                 repository.updateRunRecord(record.copy(inclusiveLevel = newLevel, uploadStatus = 0))
-            } catch (_: Exception) { }
+            } catch (_: Exception) { return@launch }
+
+            try {
+                vdotRecalculationService.onInclusiveLevelChanged(record.workoutId, newLevel)
+            } catch (e: Exception) {
+                RLog.w("DataTabViewModel", "VDOT级联重算失败: ${e.message}")
+            }
         }
     }
 }

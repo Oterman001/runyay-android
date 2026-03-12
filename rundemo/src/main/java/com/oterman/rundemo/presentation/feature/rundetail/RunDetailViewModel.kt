@@ -11,6 +11,7 @@ import com.oterman.rundemo.data.repository.AvatarManager
 import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.data.repository.FitDownloadRepository
 import com.oterman.rundemo.data.repository.HealthRepository
+import com.oterman.rundemo.data.fit.VdotRecalculationService
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
@@ -48,6 +49,8 @@ class RunDetailViewModel(
     companion object {
         private const val TAG = "RunDetailViewModel"
     }
+
+    private val vdotRecalculationService = VdotRecalculationService(repository)
 
     private val _uiState = MutableStateFlow(RunDetailUiState())
     val uiState: StateFlow<RunDetailUiState> = _uiState.asStateFlow()
@@ -657,6 +660,13 @@ class RunDetailViewModel(
                 val updatedRecord = record.copy(inclusiveLevel = newLevel, uploadStatus = 0)
                 repository.updateRunRecord(updatedRecord)
                 uploadToServerIfManual(updatedRecord)
+
+                try {
+                    vdotRecalculationService.onInclusiveLevelChanged(record.workoutId, newLevel)
+                } catch (e: Exception) {
+                    RLog.w(TAG, "VDOT级联重算失败: ${e.message}")
+                }
+
                 _uiState.value = _uiState.value.copy(showEditInclusiveLevelDialog = false, updateSuccess = true)
                 loadData()
             } catch (e: Exception) {
