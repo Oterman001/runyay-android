@@ -543,15 +543,15 @@ private fun ImportResultDialog(
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("已成功导入跑步记录")
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "距离：${String.format("%.2f", result.distance / 1000.0)} 公里",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = "时长：${String.format("%.1f", result.duration / 60.0)} 分钟",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+//                        Spacer(modifier = Modifier.height(4.dp))
+//                        Text(
+//                            text = "距离：${String.format("%.2f", result.distance / 1000.0)} 公里",
+//                            style = MaterialTheme.typography.bodyMedium
+//                        )
+//                        Text(
+//                            text = "时长：${String.format("%.1f", result.duration / 60.0)} 分钟",
+//                            style = MaterialTheme.typography.bodyMedium
+//                        )
                     }
                 },
                 confirmButton = {

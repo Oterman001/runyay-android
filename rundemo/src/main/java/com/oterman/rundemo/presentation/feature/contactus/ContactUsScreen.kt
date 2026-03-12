@@ -9,9 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Forum
-import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.R
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
 import com.oterman.rundemo.presentation.components.settings.SettingsItem
 import com.oterman.rundemo.ui.theme.RunTheme
@@ -77,15 +77,13 @@ fun ContactUsScreen(
             item {
                 SettingsCard {
                     SettingsItem(
-                        icon = Icons.Outlined.Forum,
+                        iconResId = R.drawable.ic_wechat,
                         title = "微信",
-                        iconTint = RunTheme.colorScheme.blue,
                         onClick = onNavigateToWeChat
                     )
                     SettingsItem(
-                        icon = Icons.Outlined.Language,
+                        iconResId = R.drawable.ic_xiaohongshu,
                         title = "小红书",
-                        iconTint = RunTheme.colorScheme.blue,
                         onClick = {
                             val intent = Intent(
                                 Intent.ACTION_VIEW,
@@ -95,7 +93,7 @@ fun ContactUsScreen(
                         }
                     )
                     SettingsItem(
-                        icon = Icons.Outlined.Email,
+                        icon = Icons.Default.BugReport,
                         title = "发送日志",
                         subtitle = if (isExportingLogs) "日志导出中..." else null,
                         iconTint = RunTheme.colorScheme.blue,

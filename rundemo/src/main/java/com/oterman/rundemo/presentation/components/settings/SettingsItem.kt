@@ -1,5 +1,7 @@
 package com.oterman.rundemo.presentation.components.settings
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 
 /**
@@ -27,9 +30,10 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun SettingsItem(
-    icon: ImageVector,
+    icon: ImageVector? = null,
     title: String,
     modifier: Modifier = Modifier,
+    @DrawableRes iconResId: Int? = null,
     iconTint: Color = MaterialTheme.colorScheme.primary,
     subtitle: String? = null,
     showChevron: Boolean = true,
@@ -45,13 +49,23 @@ fun SettingsItem(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Leading icon
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                modifier = Modifier.size(24.dp),
-                tint = iconTint
-            )
+            when {
+                iconResId != null -> {
+                    Image(
+                        painter = painterResource(id = iconResId),
+                        contentDescription = title,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                icon != null -> {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        modifier = Modifier.size(24.dp),
+                        tint = iconTint
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.width(14.dp))
 

@@ -71,6 +71,7 @@ fun DataSourceManageScreen(
     onNavigateBack: () -> Unit,
     onNavigateToDetail: (DataSourcePlatform) -> Unit,
     onNavigateToLogin: () -> Unit,
+    onNavigateToContactUs: () -> Unit = {},
     onNavigateToManualImport: () -> Unit = {},
     onNavigateToHkDebug: () -> Unit = {}
 ) {
@@ -219,7 +220,8 @@ fun DataSourceManageScreen(
                     modifier = Modifier.align(Alignment.BottomCenter)
                 ) {
                     BottomButtonSection(
-                        onEditOrderClick = { viewModel.startEditingOrder() }
+                        onEditOrderClick = { viewModel.startEditingOrder() },
+                        onContactUsClick = onNavigateToContactUs
                     )
                 }
             }
@@ -367,7 +369,8 @@ private fun PriorityExplanationCard() {
  */
 @Composable
 private fun BottomButtonSection(
-    onEditOrderClick: () -> Unit
+    onEditOrderClick: () -> Unit,
+    onContactUsClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -405,7 +408,10 @@ private fun BottomButtonSection(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.alpha(0.7f)
+            modifier = Modifier
+                .clickable(onClick = onContactUsClick)
+                .alpha(0.7f)
+                .padding(vertical = 4.dp)
         )
     }
 }

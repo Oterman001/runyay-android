@@ -387,6 +387,9 @@ fun AppNavGraph(
                 onNavigateToLogin = {
                     navController.navigate(Screen.Login.route)
                 },
+                onNavigateToContactUs = {
+                    navController.navigate(Screen.ContactUs.route)
+                },
                 onNavigateToManualImport = {
                     navController.navigate(Screen.ManualImport.route)
                 },
