@@ -14,6 +14,8 @@ import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.data.fit.VdotRecalculationService
+import com.oterman.rundemo.data.network.dto.request.toUpdateRequest
+import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,7 +47,8 @@ data class DataTabUiState(
  */
 class DataTabViewModel(
     private val repository: RunDataRepository,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val syncManager: UnifiedDataSyncManager
 ) : ViewModel() {
 
     private val vdotRecalculationService = VdotRecalculationService(repository)
@@ -365,10 +368,27 @@ class DataTabViewModel(
      */
     fun updateInclusiveLevel(record: RunRecordEntity, newLevel: Int) {
         viewModelScope.launch {
+            val updatedRecord = record.copy(inclusiveLevel = newLevel, uploadStatus = 0)
             try {
-                repository.updateRunRecord(record.copy(inclusiveLevel = newLevel, uploadStatus = 0))
+                repository.updateRunRecord(updatedRecord)
             } catch (_: Exception) { return@launch }
 
+            // 同步到服务器
+            if (updatedRecord.originId != null) {
+                try {
+                    val request = updatedRecord.toUpdateRequest()
+                    val result = syncManager.updateRunSummary(request)
+                    if (result.isSuccess) {
+                        repository.updateRunRecord(updatedRecord.copy(uploadStatus = 2))
+                    } else {
+                        RLog.w("DataTabViewModel", "同步服务器失败: ${result.exceptionOrNull()?.message}")
+                    }
+                } catch (e: Exception) {
+                    RLog.w("DataTabViewModel", "同步服务器异常: ${e.message}")
+                }
+            }
+
+            // VDOT级联重算
             try {
                 vdotRecalculationService.onInclusiveLevelChanged(record.workoutId, newLevel)
             } catch (e: Exception) {
@@ -391,7 +411,8 @@ class DataTabViewModelFactory(
             val database = RunDatabase.getInstance(context)
             val repository = RunDataRepositoryImpl.getInstance(database)
             val preferencesManager = PreferencesManager(context)
-            return DataTabViewModel(repository, preferencesManager) as T
+            val syncManager = UnifiedDataSyncManager.getInstance(context)
+            return DataTabViewModel(repository, preferencesManager, syncManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

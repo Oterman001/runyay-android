@@ -15,8 +15,7 @@ import com.oterman.rundemo.data.fit.VdotRecalculationService
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
-import com.oterman.rundemo.data.network.dto.request.RunSummaryUpdateRequest
-import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.data.network.dto.request.toUpdateRequest
 import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.domain.model.CHART_SMOOTH_ENABLED
@@ -633,7 +632,7 @@ class RunDetailViewModel(
                     uploadStatus = 0
                 )
                 repository.updateRunRecord(updated)
-                uploadToServerIfManual(updated)
+                uploadToServer(updated)
                 _uiState.value = _uiState.value.copy(
                     showEditDistanceDialog = false, editDistanceInput = "", editDistanceError = null,
                     updateSuccess = true
@@ -659,7 +658,7 @@ class RunDetailViewModel(
             try {
                 val updatedRecord = record.copy(inclusiveLevel = newLevel, uploadStatus = 0)
                 repository.updateRunRecord(updatedRecord)
-                uploadToServerIfManual(updatedRecord)
+                uploadToServer(updatedRecord)
 
                 try {
                     vdotRecalculationService.onInclusiveLevelChanged(record.workoutId, newLevel)
@@ -675,50 +674,10 @@ class RunDetailViewModel(
         }
     }
 
-    private suspend fun uploadToServerIfManual(record: RunRecordEntity) {
-        if (record.datasource != DataSourcePlatform.MANUAL.code || record.originId == null) return
+    private suspend fun uploadToServer(record: RunRecordEntity) {
+        if (record.originId == null) return
         try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-            val request = RunSummaryUpdateRequest(
-                summaryId = record.originId,
-                distanceInMeters = record.totalDistance * 1000.0,
-                averageHeartRate = record.averageHeartRate.takeIf { it > 0 }?.toInt(),
-                maxHeartRate = record.maxHeartRate.takeIf { it > 0 },
-                minHeartRate = record.minHeartRate.takeIf { it > 0 }?.toInt(),
-                averagePace = record.averageSpeed.takeIf { it > 0 },
-                maxSpeed = record.maxSpeed.takeIf { it > 0 },
-                averagePower = record.averagePower.takeIf { it > 0 },
-                maxPower = record.maxPower.takeIf { it > 0 },
-                averageRunCadence = record.averageCadence.takeIf { it > 0 },
-                averageStrideLength = record.averageStrideLength.takeIf { it > 0 },
-                averageVerticalOscillation = record.averageVerticalOscillation.takeIf { it > 0 },
-                averageContactTime = record.averageContactTime.takeIf { it > 0 },
-                activeKilocalories = record.totalCalories.takeIf { it > 0 },
-                steps = record.totalStepCount.takeIf { it > 0 }?.toInt(),
-                totalElevationGain = record.elevationAscended.takeIf { it > 0 },
-                vdot = record.vdot.takeIf { it > 0 },
-                overallVdot = record.overallVdot.takeIf { it > 0 },
-                trainingEffect = record.trainingEffect.takeIf { it > 0 },
-                trainingLoad = record.trainingLoad.takeIf { it > 0 },
-                weatherTemperature = record.weatherTemperature.takeIf { it != 0.0 },
-                weatherHumidity = record.weatherHumidity.takeIf { it != 0.0 },
-                outdoor = record.outdoor,
-                feelingLevel = record.feelingLevel,
-                inclusiveLevel = record.inclusiveLevel,
-                note = record.note,
-                address = record.address,
-                deviceName = record.deviceInfo,
-                deviceVersion = record.deviceVersion,
-                dataSource = record.datasource,
-                originDistance = record.originDistance.takeIf { it > 0 },
-                shoeId = record.shoeId,
-                trainPlanId = record.trainPlanId,
-                originId = record.originId,
-                startTime = sdf.format(Date(record.startTime)),
-                endTime = sdf.format(Date(record.endTime)),
-                activeDuration = (record.activeDuration * 60).toInt(),
-                durationInSeconds = (record.duration * 60).toInt()
-            )
+            val request = record.toUpdateRequest()
             val result = syncManager.updateRunSummary(request)
             if (result.isSuccess) {
                 repository.updateRunRecord(record.copy(uploadStatus = 2))
