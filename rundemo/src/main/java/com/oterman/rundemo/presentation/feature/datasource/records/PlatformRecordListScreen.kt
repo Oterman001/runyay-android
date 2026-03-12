@@ -1,6 +1,5 @@
 package com.oterman.rundemo.presentation.feature.datasource.records
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,11 +15,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,14 +25,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -45,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.domain.model.DataSourcePlatform
@@ -132,7 +124,7 @@ fun PlatformRecordListScreen(
 
                     item {
                         Text(
-                            text = "共 ${uiState.records.size} 条记录" + if (isManual) "（左滑可删除）" else "",
+                            text = "共 ${uiState.records.size} 条记录",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -144,72 +136,14 @@ fun PlatformRecordListScreen(
                         key = { it.workoutId }
                     ) { record ->
                         key(record.workoutId, trackPointsVersion) {
-                            if (isManual) {
-                                val dismissState = rememberSwipeToDismissBoxState(
-                                    confirmValueChange = { value ->
-                                        if (value == SwipeToDismissBoxValue.EndToStart) {
-                                            viewModel.requestDelete(record.workoutId)
-                                            true
-                                        } else false
-                                    },
-                                    positionalThreshold = { it * 0.4f }
-                                )
-
-                                val isPendingDelete = uiState.pendingDeleteWorkoutId == record.workoutId
-                                LaunchedEffect(isPendingDelete) {
-                                    if (!isPendingDelete && dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                                        dismissState.reset()
-                                    }
-                                }
-
-                                SwipeToDismissBox(
-                                    state = dismissState,
-                                    enableDismissFromStartToEnd = false,
-                                    enableDismissFromEndToStart = true,
-                                    backgroundContent = {
-                                        val color by animateColorAsState(
-                                            targetValue = when (dismissState.targetValue) {
-                                                SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
-                                                else -> MaterialTheme.colorScheme.surfaceVariant
-                                            },
-                                            label = "swipe_bg"
-                                        )
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .padding(horizontal = 16.dp, vertical = 6.dp)
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .background(color),
-                                            contentAlignment = Alignment.CenterEnd
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = "删除",
-                                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                                modifier = Modifier.padding(end = 24.dp)
-                                            )
-                                        }
-                                    }
-                                ) {
-                                    val trackPoints = viewModel.getCachedTrackPoints(record.workoutId)
-                                    val isLoading = viewModel.isTrackPointsLoading(record.workoutId)
-                                    RunRecordItem(
-                                        record = record,
-                                        trackPoints = trackPoints,
-                                        isTrackPointsLoading = isLoading,
-                                        onClick = { onNavigateToRunDetail(record.workoutId) }
-                                    )
-                                }
-                            } else {
-                                val trackPoints = viewModel.getCachedTrackPoints(record.workoutId)
-                                val isLoading = viewModel.isTrackPointsLoading(record.workoutId)
-                                RunRecordItem(
-                                    record = record,
-                                    trackPoints = trackPoints,
-                                    isTrackPointsLoading = isLoading,
-                                    onClick = { onNavigateToRunDetail(record.workoutId) }
-                                )
-                            }
+                            val trackPoints = viewModel.getCachedTrackPoints(record.workoutId)
+                            val isLoading = viewModel.isTrackPointsLoading(record.workoutId)
+                            RunRecordItem(
+                                record = record,
+                                trackPoints = trackPoints,
+                                isTrackPointsLoading = isLoading,
+                                onClick = { onNavigateToRunDetail(record.workoutId) }
+                            )
                         }
                     }
                 }
@@ -217,32 +151,6 @@ fun PlatformRecordListScreen(
         }
     }
 
-    // MANUAL 平台删除确认弹窗
-    if (isManual && uiState.pendingDeleteWorkoutId != null) {
-        AlertDialog(
-            onDismissRequest = { viewModel.cancelDelete() },
-            title = { Text("删除记录") },
-            text = { Text("确定要删除这条手动导入的记录吗？此操作不可恢复。") },
-            confirmButton = {
-                TextButton(
-                    onClick = { viewModel.confirmDelete() },
-                    colors = androidx.compose.material3.ButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = MaterialTheme.colorScheme.error,
-                        disabledContainerColor = Color.Transparent,
-                        disabledContentColor = MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
-                    )
-                ) {
-                    Text("删除")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.cancelDelete() }) {
-                    Text("取消")
-                }
-            }
-        )
-    }
 }
 
 /**

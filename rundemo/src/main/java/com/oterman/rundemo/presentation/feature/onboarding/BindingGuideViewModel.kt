@@ -26,6 +26,8 @@ class BindingGuideViewModel(
     private val _uiState = MutableStateFlow(BindingGuideUiState())
     val uiState: StateFlow<BindingGuideUiState> = _uiState.asStateFlow()
 
+    private var isInitialLoadDone = false
+
     init {
         checkAndLoadPlatforms()
     }
@@ -42,6 +44,7 @@ class BindingGuideViewModel(
                         shouldNavigateToHome = true
                     )
                 }
+                isInitialLoadDone = true
                 return@launch
             }
 
@@ -81,6 +84,8 @@ class BindingGuideViewModel(
                     RLog.e(TAG, "刷新平台状态失败", error)
                     _uiState.update { it.copy(isLoading = false) }
                 }
+
+            isInitialLoadDone = true
         }
     }
 
@@ -88,6 +93,7 @@ class BindingGuideViewModel(
      * 从详情页返回后刷新绑定状态
      */
     fun refreshAfterBinding() {
+        if (!isInitialLoadDone) return
         viewModelScope.launch {
             val updatedPlatforms = repository.getAllDataSourceInfos()
                 .filter { it.platform.isEnabled }
