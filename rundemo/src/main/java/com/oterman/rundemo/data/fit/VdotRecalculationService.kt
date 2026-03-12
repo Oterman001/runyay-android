@@ -57,7 +57,7 @@ class VdotRecalculationService(
             // 获取上一次的综合VDOT
             val previousOverall = history.firstOrNull()?.value
 
-            val newOverallVdot = if (record.inclusiveLevel <= 0) {
+            val newOverallVdot = if (record.inclusiveLevel != 1) {
                 // 该记录被排除，overallVdot设为0（或保持原始值但不参与后续计算）
                 record.originValue
             } else {

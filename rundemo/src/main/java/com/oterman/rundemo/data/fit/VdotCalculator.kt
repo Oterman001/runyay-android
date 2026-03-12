@@ -322,8 +322,8 @@ object VdotCalculator {
             return null
         }
 
-        // 过滤已排除的记录（inclusiveLevel <= 0）
-        val includedList = hisVdotList.filter { it.inclusiveLevel > 0 }
+        // 过滤非分析记录：仅 level 1（既统计又分析）参与VDOT计算
+        val includedList = hisVdotList.filter { it.inclusiveLevel == 1 }
 
         // 收集所有VDOT值（当前 + 历史）用于异常值检测
         val allVdots = mutableListOf(originVdot)

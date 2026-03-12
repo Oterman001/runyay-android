@@ -21,19 +21,19 @@ interface OverallVdotDao {
     /**
      * 获取最近N条VDOT记录（按日期倒序，仅纳入统计的）
      */
-    @Query("SELECT * FROM overall_vdot WHERE inclusiveLevel > 0 ORDER BY date DESC LIMIT :limit")
+    @Query("SELECT * FROM overall_vdot WHERE inclusiveLevel = 1 ORDER BY date DESC LIMIT :limit")
     suspend fun getRecentVdots(limit: Int = 10): List<OverallVdotEntity>
 
     /**
      * 获取所有VDOT记录（按日期正序，仅纳入统计的）
      */
-    @Query("SELECT * FROM overall_vdot WHERE inclusiveLevel > 0 ORDER BY date ASC")
+    @Query("SELECT * FROM overall_vdot WHERE inclusiveLevel = 1 ORDER BY date ASC")
     suspend fun getAllVdots(): List<OverallVdotEntity>
 
     /**
      * 获取最新的VDOT记录
      */
-    @Query("SELECT * FROM overall_vdot WHERE inclusiveLevel > 0 ORDER BY date DESC LIMIT 1")
+    @Query("SELECT * FROM overall_vdot WHERE inclusiveLevel = 1 ORDER BY date DESC LIMIT 1")
     suspend fun getLatestVdot(): OverallVdotEntity?
 
     /**
@@ -46,7 +46,7 @@ interface OverallVdotDao {
      * 获取指定日期范围内的VDOT记录（按日期倒序，用于Overall VDOT计算）
      * 对齐iOS VdotDataManager.getVdotByDateDscending
      */
-    @Query("SELECT * FROM overall_vdot WHERE date >= :startDate AND date <= :endDate AND inclusiveLevel > 0 AND value > 0 ORDER BY date DESC")
+    @Query("SELECT * FROM overall_vdot WHERE date >= :startDate AND date <= :endDate AND inclusiveLevel = 1 AND value > 0 ORDER BY date DESC")
     suspend fun getVdotsByDateRange(startDate: Long, endDate: Long): List<OverallVdotEntity>
 
     /**
@@ -57,13 +57,13 @@ interface OverallVdotDao {
 
     // ==================== userId 过滤查询 ====================
 
-    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND inclusiveLevel > 0 ORDER BY date DESC LIMIT :limit")
+    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND inclusiveLevel = 1 ORDER BY date DESC LIMIT :limit")
     suspend fun getRecentVdotsForUser(userId: String, limit: Int = 10): List<OverallVdotEntity>
 
-    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND inclusiveLevel > 0 ORDER BY date DESC LIMIT 1")
+    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND inclusiveLevel = 1 ORDER BY date DESC LIMIT 1")
     suspend fun getLatestVdotForUser(userId: String): OverallVdotEntity?
 
-    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND date >= :startDate AND date <= :endDate AND inclusiveLevel > 0 AND value > 0 ORDER BY date DESC")
+    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND date >= :startDate AND date <= :endDate AND inclusiveLevel = 1 AND value > 0 ORDER BY date DESC")
     suspend fun getVdotsByDateRangeForUser(userId: String, startDate: Long, endDate: Long): List<OverallVdotEntity>
 
     @Query("UPDATE overall_vdot SET userId = :userId WHERE userId = ''")
