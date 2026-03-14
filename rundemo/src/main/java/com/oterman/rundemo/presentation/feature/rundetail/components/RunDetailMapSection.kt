@@ -1,8 +1,7 @@
 package com.oterman.rundemo.presentation.feature.rundetail.components
 
 import android.content.Context
-import android.view.MotionEvent
-import android.view.ViewGroup
+import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,24 +39,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.mapbox.geojson.LineString
-import com.mapbox.geojson.Point
-import com.mapbox.maps.CameraOptions
-import com.mapbox.maps.CoordinateBounds
-import com.mapbox.maps.EdgeInsets
-import com.mapbox.maps.MapView
-import com.mapbox.maps.Style
-import com.mapbox.maps.extension.style.layers.addLayer
-import com.mapbox.maps.extension.style.layers.generated.circleLayer
-import com.mapbox.maps.extension.style.layers.generated.lineLayer
-import com.mapbox.maps.extension.style.layers.generated.symbolLayer
-import com.mapbox.maps.extension.style.layers.properties.generated.LineCap
-import com.mapbox.maps.extension.style.layers.properties.generated.LineJoin
-import com.mapbox.maps.extension.style.sources.addSource
-import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
-import com.mapbox.maps.plugin.gestures.gestures
-import com.mapbox.maps.plugin.scalebar.scalebar
 import com.oterman.rundemo.R
+import com.oterman.rundemo.data.map.MapRendererFactory
+import com.oterman.rundemo.domain.map.EdgePadding
+import com.oterman.rundemo.domain.map.MapCameraState
+import com.oterman.rundemo.domain.map.MapProvider
+import com.oterman.rundemo.domain.map.TrackColorSet
+import com.oterman.rundemo.domain.map.TrackMapRenderer
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.ui.theme.RunTheme
@@ -111,18 +99,6 @@ object MapTrackColors {
 }
 
 /**
- * 轨迹颜色集合
- */
-data class TrackColorSet(
-    val track: String,
-    val start: String,
-    val end: String,
-    val stroke: String,
-    val kmBadgeBg: String,
-    val kmBadgeText: String
-)
-
-/**
  * 根据主题获取轨迹颜色
  */
 @Composable
@@ -154,22 +130,27 @@ fun getTrackColors(): TrackColorSet {
 /**
  * 跑步详情页地图区域
  * 显示GPS轨迹，带底部渐变遮罩和地图风格切换
+ * 支持 Mapbox 和高德地图供应商切换
  */
 @Composable
 fun RunDetailMapSection(
     trackPoints: List<TrackPoint>,
     isOutdoor: Boolean,
     modifier: Modifier = Modifier,
-    savedCameraOptions: CameraOptions? = null,
-    onCameraChanged: (CameraOptions) -> Unit = {},
-    onMapViewReady: (MapView) -> Unit = {}
+    savedCameraState: MapCameraState? = null,
+    onCameraChanged: (MapCameraState) -> Unit = {},
+    onMapViewReady: (View) -> Unit = {}
 ) {
     val context = LocalContext.current
     val isDarkTheme = RunTheme.isDark
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val mapHeight = screenHeight * RunDetailLayoutConstants.MapHeightRatio
 
-    var currentStyle by remember { mutableStateOf(RunMapPreferences.getMapStyle(context, isDarkTheme)) }
+    var currentProvider by remember { mutableStateOf(RunMapPreferences.getMapProvider(context)) }
+    val renderer = remember(currentProvider) { MapRendererFactory.getRenderer(currentProvider) }
+    var currentStyle by remember(currentProvider) {
+        mutableStateOf(RunMapPreferences.getMapStyle(context, isDarkTheme, renderer))
+    }
     var showKmMarkers by remember { mutableStateOf(RunMapPreferences.getShowKmMarkers(context)) }
     var kmMarkerInterval by remember { mutableIntStateOf(RunMapPreferences.getKmMarkerInterval(context)) }
     var showSettingSheet by remember { mutableStateOf(false) }
@@ -180,16 +161,20 @@ fun RunDetailMapSection(
             .height(mapHeight)
     ) {
         if (isOutdoor && trackPoints.isNotEmpty()) {
-            MapViewComposable(
-                trackPoints = trackPoints,
-                context = context,
-                styleUri = currentStyle,
-                showKmMarkers = showKmMarkers,
-                kmMarkerInterval = kmMarkerInterval,
-                savedCameraOptions = savedCameraOptions,
-                onCameraChanged = onCameraChanged,
-                onMapViewReady = onMapViewReady
-            )
+            // key(currentProvider) 确保切换供应商时重建地图
+            androidx.compose.runtime.key(currentProvider) {
+                MapViewComposable(
+                    trackPoints = trackPoints,
+                    context = context,
+                    renderer = renderer,
+                    styleUri = currentStyle,
+                    showKmMarkers = showKmMarkers,
+                    kmMarkerInterval = kmMarkerInterval,
+                    savedCameraState = savedCameraState,
+                    onCameraChanged = onCameraChanged,
+                    onMapViewReady = onMapViewReady
+                )
+            }
 
             // 底部渐变遮罩
             Box(
@@ -212,7 +197,6 @@ fun RunDetailMapSection(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 12.dp, bottom = 30.dp),
-//                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
                 contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 elevation = FloatingActionButtonDefaults.elevation(
                     defaultElevation = 2.dp,
@@ -229,9 +213,18 @@ fun RunDetailMapSection(
 
             if (showSettingSheet) {
                 RunMapSettingBottomSheet(
+                    currentProvider = currentProvider,
                     currentStyleUri = currentStyle,
                     showKmMarkers = showKmMarkers,
                     kmMarkerInterval = kmMarkerInterval,
+                    renderer = renderer,
+                    onProviderChanged = { newProvider ->
+                        currentProvider = newProvider
+                        RunMapPreferences.saveMapProvider(context, newProvider)
+                        val newRenderer = MapRendererFactory.getRenderer(newProvider)
+                        currentStyle = newRenderer.getDefaultStyle(isDarkTheme).styleUri
+                        RunMapPreferences.saveMapStyle(context, currentStyle)
+                    },
                     onStyleSelected = { styleUri ->
                         currentStyle = styleUri
                         RunMapPreferences.saveMapStyle(context, styleUri)
@@ -284,46 +277,30 @@ private fun IndoorRunPlaceholder() {
 }
 
 /**
- * Mapbox MapView Composable包装
+ * 地图视图 Composable 包装（供应商无关）
  */
 @Composable
 private fun MapViewComposable(
     trackPoints: List<TrackPoint>,
     context: Context,
+    renderer: TrackMapRenderer,
     styleUri: String,
     showKmMarkers: Boolean,
     kmMarkerInterval: Int,
-    savedCameraOptions: CameraOptions? = null,
-    onCameraChanged: (CameraOptions) -> Unit = {},
-    onMapViewReady: (MapView) -> Unit = {}
+    savedCameraState: MapCameraState? = null,
+    onCameraChanged: (MapCameraState) -> Unit = {},
+    onMapViewReady: (View) -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val isDarkTheme = RunTheme.isDark
 
     val trackColors by rememberUpdatedState(getTrackColors())
 
     val mapView = remember {
-        RLog.d(TAG, "创建MapView, 轨迹点数: ${trackPoints.size}")
-        MapView(context).apply {
-            gestures.rotateEnabled = false
-            gestures.pitchEnabled = false
-            gestures.scrollEnabled = true
-            gestures.doubleTapToZoomInEnabled = true
-            gestures.pinchToZoomEnabled = true
-
-            scalebar.enabled = false
-
-            setOnTouchListener { view, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        (view.parent as? ViewGroup)?.requestDisallowInterceptTouchEvent(true)
-                    }
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        (view.parent as? ViewGroup)?.requestDisallowInterceptTouchEvent(false)
-                    }
-                }
-                false
-            }
+        RLog.d(TAG, "创建MapView(${renderer.provider}), 轨迹点数: ${trackPoints.size}")
+        renderer.createMapView(context).also { view ->
+            renderer.configureGestures(view)
+            renderer.setupTouchInterception(view)
+            renderer.hideScaleBar(view)
         }
     }
 
@@ -337,23 +314,23 @@ private fun MapViewComposable(
 
     DisposableEffect(lifecycleOwner) {
         var isDestroyed = false
-        RLog.d("RunDetailPerf", "MapView DisposableEffect setup")
+        RLog.d("RunDetailPerf", "MapView DisposableEffect setup (${renderer.provider})")
 
         val observer = LifecycleEventObserver { _, event ->
             val startTime = System.currentTimeMillis()
             when (event) {
                 Lifecycle.Event.ON_START -> {
-                    mapView.onStart()
+                    renderer.onStart(mapView)
                     RLog.d("RunDetailPerf", "MapView.onStart() cost=${System.currentTimeMillis() - startTime}ms")
                 }
                 Lifecycle.Event.ON_STOP -> {
-                    mapView.onStop()
+                    renderer.onStop(mapView)
                     RLog.d("RunDetailPerf", "MapView.onStop() cost=${System.currentTimeMillis() - startTime}ms")
                 }
                 Lifecycle.Event.ON_DESTROY -> {
                     if (!isDestroyed) {
                         isDestroyed = true
-                        mapView.onDestroy()
+                        renderer.onDestroy(mapView)
                         RLog.d("RunDetailPerf", "MapView.onDestroy(lifecycle) cost=${System.currentTimeMillis() - startTime}ms")
                     }
                 }
@@ -368,44 +345,39 @@ private fun MapViewComposable(
             RLog.d("RunDetailPerf", "MapView onDispose START")
             // 保存相机状态，以便地图重建时恢复
             try {
-                val state = mapView.mapboxMap.cameraState
-                onCameraChanged(
-                    CameraOptions.Builder()
-                        .center(state.center)
-                        .zoom(state.zoom)
-                        .bearing(state.bearing)
-                        .pitch(state.pitch)
-                        .padding(state.padding)
-                        .build()
-                )
+                renderer.getCameraState(mapView)?.let { state ->
+                    onCameraChanged(state)
+                }
             } catch (e: Exception) {
                 RLog.e("RunDetailPerf", "保存相机状态失败", e)
             }
             lifecycleOwner.lifecycle.removeObserver(observer)
             if (!isDestroyed) {
                 isDestroyed = true
-                mapView.onDestroy()
+                renderer.onDestroy(mapView)
                 RLog.d("RunDetailPerf", "MapView.onDestroy(dispose) cost=${System.currentTimeMillis() - startTime}ms")
             }
             RLog.d("RunDetailPerf", "MapView onDispose END, total=${System.currentTimeMillis() - startTime}ms")
         }
     }
 
+    val defaultPadding = EdgePadding(180.0, 100.0, 200.0, 100.0)
+
     AndroidView(
         factory = {
             mapView.apply {
-                RLog.d(TAG, "初始化地图样式: $styleUri, 有保存的相机状态: ${savedCameraOptions != null}")
-                mapboxMap.loadStyle(styleUri) { style ->
+                RLog.d(TAG, "初始化地图样式: $styleUri, 有保存的相机状态: ${savedCameraState != null}")
+                renderer.loadStyle(this, styleUri) {
                     if (trackPoints.isNotEmpty()) {
                         RLog.d(TAG, "添加轨迹到地图")
-                        addTrackToMap(style, trackPoints, trackColors)
+                        renderer.renderTrack(this, trackPoints, trackColors)
                         if (showKmMarkers) {
-                            addKilometerMarkers(style, trackPoints, trackColors, kmMarkerInterval)
+                            renderer.renderKmMarkers(this, trackPoints, trackColors, kmMarkerInterval)
                         }
-                        if (savedCameraOptions != null) {
-                            mapboxMap.setCamera(savedCameraOptions)
+                        if (savedCameraState != null) {
+                            renderer.setCamera(this, savedCameraState)
                         } else {
-                            centerMapOnTrack(this, trackPoints)
+                            renderer.fitTrackBounds(this, trackPoints, defaultPadding)
                         }
                     } else {
                         RLog.w(TAG, "轨迹点为空")
@@ -423,13 +395,14 @@ private fun MapViewComposable(
                 lastShowKmMarkers = showKmMarkers
                 lastKmMarkerInterval = kmMarkerInterval
 
-                view.mapboxMap.loadStyle(styleUri) { style ->
+                renderer.clearOverlays(view)
+                renderer.loadStyle(view, styleUri) {
                     if (trackPoints.isNotEmpty()) {
-                        addTrackToMap(style, trackPoints, trackColors)
+                        renderer.renderTrack(view, trackPoints, trackColors)
                         if (showKmMarkers) {
-                            addKilometerMarkers(style, trackPoints, trackColors, kmMarkerInterval)
+                            renderer.renderKmMarkers(view, trackPoints, trackColors, kmMarkerInterval)
                         }
-                        centerMapOnTrack(view, trackPoints)
+                        renderer.fitTrackBounds(view, trackPoints, defaultPadding)
                     }
                 }
             }
@@ -438,147 +411,13 @@ private fun MapViewComposable(
     )
 }
 
-/**
- * 添加轨迹到地图
- */
-private fun addTrackToMap(
-    style: Style,
-    trackPoints: List<TrackPoint>,
-    colors: TrackColorSet
-) {
-    try {
-        // 过滤有效坐标点
-        val validPoints = trackPoints.filter { it.isValidCoordinate() }
-        if (validPoints.isEmpty()) {
-            RLog.w(TAG, "没有有效的轨迹点")
-            return
-        }
-
-        // 创建线条的坐标点列表
-        val points = validPoints.map { point ->
-            Point.fromLngLat(point.longitude, point.latitude)
-        }
-
-        RLog.d(TAG, "创建轨迹线，点数: ${points.size}")
-
-        // 创建LineString
-        val lineString = LineString.fromLngLats(points)
-
-        // 添加轨迹线数据源
-        style.addSource(
-            geoJsonSource("track-source") {
-                geometry(lineString)
-            }
-        )
-
-        // 添加轨迹线图层 (使用主题颜色)
-        style.addLayer(
-            lineLayer("track-layer", "track-source") {
-                lineColor(colors.track)  // 亮色:#FB7B26(橙) / 暗色:#DDFF04(黄绿)
-                lineWidth(MapTrackColors.TRACK_WIDTH)
-                lineCap(LineCap.ROUND)
-                lineJoin(LineJoin.ROUND)
-            }
-        )
-
-        // 添加起点标记 (使用主题颜色)
-        val startPoint = validPoints.first()
-        style.addSource(
-            geoJsonSource("start-point-source") {
-                geometry(Point.fromLngLat(startPoint.longitude, startPoint.latitude))
-            }
-        )
-
-        style.addLayer(
-            circleLayer("start-point-layer", "start-point-source") {
-                circleRadius(MapTrackColors.START_RADIUS)
-                circleColor(colors.start)  // 亮色:#008F00(绿) / 暗色:#73FA79(亮绿)
-                circleStrokeWidth(MapTrackColors.MARKER_STROKE_WIDTH)
-                circleStrokeColor(colors.stroke)
-            }
-        )
-
-        // 添加终点标记 (使用主题颜色)
-        if (validPoints.size > 1) {
-            val endPoint = validPoints.last()
-            style.addSource(
-                geoJsonSource("end-point-source") {
-                    geometry(Point.fromLngLat(endPoint.longitude, endPoint.latitude))
-                }
-            )
-
-            style.addLayer(
-                circleLayer("end-point-layer", "end-point-source") {
-                    circleRadius(MapTrackColors.END_RADIUS)
-                    circleColor(colors.end)  // 亮色:#941652(深红) / 暗色:#FF2F92(洋红)
-                    circleStrokeWidth(MapTrackColors.MARKER_STROKE_WIDTH)
-                    circleStrokeColor(colors.stroke)
-                }
-            )
-        }
-
-        RLog.d(TAG, "轨迹添加成功")
-    } catch (e: Exception) {
-        RLog.e(TAG, "添加轨迹失败", e)
-    }
-}
-
-/**
- * 添加公里标记
- */
-private fun addKilometerMarkers(
-    style: Style,
-    trackPoints: List<TrackPoint>,
-    colors: TrackColorSet,
-    interval: Int = 1
-) {
-    try {
-        val kmPositions = calculateKilometerPositions(trackPoints, interval)
-        RLog.d(TAG, "公里标记点数: ${kmPositions.size}, 间隔: ${interval}km")
-
-        kmPositions.forEachIndexed { index, point ->
-            val kmNumber = (index + 1) * interval
-            val sourceId = "km-marker-source-$kmNumber"
-            val bgLayerId = "km-marker-bg-layer-$kmNumber"
-            val textLayerId = "km-marker-text-layer-$kmNumber"
-
-            style.addSource(
-                geoJsonSource(sourceId) {
-                    geometry(Point.fromLngLat(point.longitude, point.latitude))
-                }
-            )
-
-            style.addLayer(
-                circleLayer(bgLayerId, sourceId) {
-                    circleRadius(MapTrackColors.KM_BADGE_RADIUS)
-                    circleColor(colors.kmBadgeBg)
-                    circleStrokeWidth(MapTrackColors.KM_BADGE_STROKE_WIDTH)
-                    circleStrokeColor(colors.stroke)
-                }
-            )
-
-            style.addLayer(
-                symbolLayer(textLayerId, sourceId) {
-                    textField("$kmNumber")
-                    textSize(9.0)
-                    textColor(colors.kmBadgeText)
-                    textAllowOverlap(true)
-                    textIgnorePlacement(true)
-                }
-            )
-        }
-
-        RLog.d(TAG, "公里标记添加成功")
-    } catch (e: Exception) {
-        RLog.e(TAG, "添加公里标记失败", e)
-    }
-}
+// ==================== 工具函数 ====================
 
 /**
  * 计算公里标记位置点
  * @param interval 公里间隔（例如 2 表示每 2km 一个标记）
  */
-private fun calculateKilometerPositions(
+fun calculateKilometerPositions(
     trackPoints: List<TrackPoint>,
     interval: Int = 1
 ): List<TrackPoint> {
@@ -634,50 +473,4 @@ private fun haversineDistance(
             sin(dLon / 2).pow(2)
     val c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return R * c
-}
-
-/**
- * 将地图居中到轨迹
- */
-private fun centerMapOnTrack(mapView: MapView, trackPoints: List<TrackPoint>) {
-    val validPoints = trackPoints.filter { it.isValidCoordinate() }
-    if (validPoints.isEmpty()) return
-
-    try {
-        // 计算边界
-        var minLat = validPoints.first().latitude
-        var maxLat = validPoints.first().latitude
-        var minLon = validPoints.first().longitude
-        var maxLon = validPoints.first().longitude
-
-        validPoints.forEach { point ->
-            if (point.latitude < minLat) minLat = point.latitude
-            if (point.latitude > maxLat) maxLat = point.latitude
-            if (point.longitude < minLon) minLon = point.longitude
-            if (point.longitude > maxLon) maxLon = point.longitude
-        }
-
-        // Use Mapbox's cameraForCoordinateBounds for precise fitting
-        val bounds = CoordinateBounds(
-            Point.fromLngLat(minLon, minLat),
-            Point.fromLngLat(maxLon, maxLat)
-        )
-
-        // Padding: top=150 (for TopAppBar + extra margin), bottom=180 (for gradient overlay + header card invasion),
-        // left/right=80 (comfortable margin from edges)
-        val padding = EdgeInsets(180.0, 100.0, 200.0, 100.0)
-
-        val cameraOptions = mapView.mapboxMap.cameraForCoordinateBounds(
-            bounds,
-            padding,
-            null,  // bearing
-            0.0    // pitch (flat)
-        )
-
-        RLog.d(TAG, "居中地图: bounds=$bounds, padding=$padding")
-
-        mapView.mapboxMap.setCamera(cameraOptions)
-    } catch (e: Exception) {
-        RLog.e(TAG, "居中地图失败", e)
-    }
 }

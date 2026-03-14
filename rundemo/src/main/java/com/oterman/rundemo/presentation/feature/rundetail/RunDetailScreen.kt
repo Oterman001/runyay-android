@@ -65,8 +65,8 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.ContactTime
 import com.oterman.rundemo.presentation.feature.rundetail.components.HeartRateChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.PaceChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.PowerChartCard
-import com.mapbox.maps.CameraOptions
-import com.mapbox.maps.MapView
+import com.oterman.rundemo.data.map.MapRendererFactory
+import com.oterman.rundemo.domain.map.MapCameraState
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailHeaderDataCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailMapSection
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailSegmentTable
@@ -116,8 +116,8 @@ fun RunDetailScreen(
     val lazyListState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 持有 MapView 引用用于分享时截图
-    var mapViewRef by remember { mutableStateOf<MapView?>(null) }
+    // 持有 MapView 引用用于分享时截图（View 类型，供应商无关）
+    var mapViewRef by remember { mutableStateOf<android.view.View?>(null) }
 
     // 右上角三点菜单展开状态
     var showMenu by remember { mutableStateOf(false) }
@@ -261,7 +261,9 @@ fun RunDetailScreen(
                                         val mv = mapViewRef
                                         if (mv != null && uiState.isOutdoor) {
                                             viewModel.setPreparingShare(true)
-                                            mv.snapshot { bitmap ->
+                                            val provider = com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getMapProvider(context)
+                                            val renderer = MapRendererFactory.getRenderer(provider)
+                                            renderer.snapshot(mv) { bitmap ->
                                                 bitmap?.let { ShareDataCache.putMapSnapshot(it) }
                                                 viewModel.prepareShareData()
                                             }
@@ -410,7 +412,7 @@ fun RunDetailScreen(
 
                     // 保存地图相机状态，在 LazyColumn 外部 remember，
                     // 避免地图 item 被 dispose 后相机状态丢失
-                    var savedCameraOptions by remember { mutableStateOf<CameraOptions?>(null) }
+                    var savedCameraState by remember { mutableStateOf<MapCameraState?>(null) }
 
                     LazyColumn(
                         state = lazyListState,
@@ -422,8 +424,8 @@ fun RunDetailScreen(
                                 RunDetailMapSection(
                                     trackPoints = uiState.trackPoints,
                                     isOutdoor = uiState.isOutdoor,
-                                    savedCameraOptions = savedCameraOptions,
-                                    onCameraChanged = { savedCameraOptions = it },
+                                    savedCameraState = savedCameraState,
+                                    onCameraChanged = { savedCameraState = it },
                                     onMapViewReady = { mapViewRef = it }
                                 )
 

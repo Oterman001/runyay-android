@@ -21,6 +21,9 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        // 高德地图 API Key（通过 gradle.properties 或环境变量配置）
+        manifestPlaceholders["AMAP_API_KEY"] = providers.gradleProperty("AMAP_API_KEY").getOrElse("YOUR_AMAP_API_KEY")
+
         val gitHash = try {
             val process = Runtime.getRuntime().exec(arrayOf("git", "rev-parse", "--short=6", "HEAD"))
             process.inputStream.bufferedReader().readLine()?.trim() ?: "unknown"
@@ -121,6 +124,9 @@ dependencies {
 
     // Mapbox Maps SDK
     implementation("com.mapbox.maps:android:11.18.0")
+
+    // 高德地图 3D SDK
+    implementation("com.amap.api:3dmap:10.0.600")
 
     // Vico Charts (Compose)
     implementation("com.patrykandpatrick.vico:compose-m3:2.1.0-beta.1")

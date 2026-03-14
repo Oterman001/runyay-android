@@ -98,6 +98,13 @@
 -keep class com.mapbox.** { *; }
 -dontwarn com.mapbox.**
 
+# 高德地图
+-keep class com.amap.api.** { *; }
+-keep class com.autonavi.** { *; }
+-keep class com.loc.** { *; }
+-dontwarn com.amap.api.**
+-dontwarn com.autonavi.**
+
 #umeng
 -keep class com.umeng.** {*;}
 

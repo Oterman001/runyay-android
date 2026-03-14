@@ -19,17 +19,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Satellite
-import androidx.compose.material.icons.filled.SatelliteAlt
-import androidx.compose.material.icons.filled.Terrain
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -46,93 +41,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.mapbox.maps.Style
+import com.oterman.rundemo.domain.map.MapProvider
+import com.oterman.rundemo.domain.map.MapStyleInfo
+import com.oterman.rundemo.domain.map.TrackMapRenderer
 import com.oterman.rundemo.ui.theme.RunTheme
-
-/**
- * Mapbox地图风格数据模型
- */
-data class RunMapStyle(
-    val id: String,
-    val name: String,
-    val description: String,
-    val styleUri: String,
-    val icon: ImageVector
-)
-
-/**
- * 所有可用的Mapbox地图风格
- */
-object RunMapStyles {
-    val STANDARD = RunMapStyle(
-        id = "standard",
-        name = "标准",
-        description = "通用地图风格",
-        styleUri = Style.STANDARD,
-        icon = Icons.Default.Map
-    )
-
-    val OUTDOORS = RunMapStyle(
-        id = "outdoors",
-        name = "户外",
-        description = "适合户外跑步和越野",
-        styleUri = Style.OUTDOORS,
-        icon = Icons.Default.Terrain
-    )
-
-    val LIGHT = RunMapStyle(
-        id = "light",
-        name = "浅色",
-        description = "简洁的浅色主题",
-        styleUri = Style.LIGHT,
-        icon = Icons.Default.LightMode
-    )
-
-    val DARK = RunMapStyle(
-        id = "dark",
-        name = "深色",
-        description = "夜间模式深色主题",
-        styleUri = Style.DARK,
-        icon = Icons.Default.DarkMode
-    )
-
-    val SATELLITE = RunMapStyle(
-        id = "satellite",
-        name = "卫星",
-        description = "真实卫星影像",
-        styleUri = Style.SATELLITE,
-        icon = Icons.Default.Satellite
-    )
-
-    val SATELLITE_STREETS = RunMapStyle(
-        id = "satellite_streets",
-        name = "卫星街道",
-        description = "卫星影像叠加街道信息",
-        styleUri = Style.SATELLITE_STREETS,
-        icon = Icons.Default.SatelliteAlt
-    )
-
-    /**
-     * 所有可用风格列表
-     */
-    val ALL_STYLES = listOf(
-        STANDARD,
-        OUTDOORS,
-        LIGHT,
-        DARK,
-        SATELLITE,
-        SATELLITE_STREETS
-    )
-
-    /**
-     * 根据URI获取风格
-     */
-    fun getStyleByUri(uri: String): RunMapStyle {
-        return ALL_STYLES.find { it.styleUri == uri } ?: OUTDOORS
-    }
-}
 
 /**
  * 地图风格偏好设置管理器
@@ -142,23 +55,35 @@ object RunMapPreferences {
     private const val KEY_MAP_STYLE = "map_style"
     private const val KEY_SHOW_KM_MARKERS = "show_km_markers"
     private const val KEY_KM_MARKER_INTERVAL = "km_marker_interval"
+    private const val KEY_MAP_PROVIDER = "map_provider"
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun getMapStyle(context: Context, isDarkTheme: Boolean): String {
+    fun getMapProvider(context: Context): MapProvider {
+        val saved = prefs(context).getString(KEY_MAP_PROVIDER, null)
+        return try {
+            if (saved != null) MapProvider.valueOf(saved) else MapProvider.MAPBOX
+        } catch (e: Exception) {
+            MapProvider.MAPBOX
+        }
+    }
+
+    fun saveMapProvider(context: Context, provider: MapProvider) {
+        prefs(context).edit().putString(KEY_MAP_PROVIDER, provider.name).apply()
+    }
+
+    fun getMapStyle(context: Context, isDarkTheme: Boolean, renderer: TrackMapRenderer): String {
         val p = prefs(context)
+        val provider = getMapProvider(context)
+        // 如果供应商不匹配已保存的样式，返回默认
         if (!p.contains(KEY_MAP_STYLE)) {
-            return if (isDarkTheme) Style.DARK else Style.STANDARD
+            return renderer.getDefaultStyle(isDarkTheme).styleUri
         }
-        val saved = p.getString(KEY_MAP_STYLE, Style.STANDARD) ?: Style.STANDARD
-        return if (isDarkTheme) {
-            if (saved in listOf(Style.DARK, Style.SATELLITE, Style.SATELLITE_STREETS)) saved
-            else Style.DARK
-        } else {
-            if (saved in listOf(Style.STANDARD, Style.OUTDOORS, Style.LIGHT)) saved
-            else Style.LIGHT
-        }
+        val saved = p.getString(KEY_MAP_STYLE, null) ?: return renderer.getDefaultStyle(isDarkTheme).styleUri
+        // 检查样式是否属于当前供应商
+        val availableUris = renderer.getAvailableStyles(isDarkTheme).map { it.styleUri }
+        return if (saved in availableUris) saved else renderer.getDefaultStyle(isDarkTheme).styleUri
     }
 
     fun saveMapStyle(context: Context, styleUri: String) {
@@ -188,14 +113,17 @@ object RunMapPreferences {
 
 /**
  * 地图设置底部弹窗
- * 包含：1) 地图风格横向选择  2) 公里点开关 + 间隔控制
+ * 包含：1) 地图供应商切换  2) 地图风格横向选择  3) 公里点开关 + 间隔控制
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RunMapSettingBottomSheet(
+    currentProvider: MapProvider,
     currentStyleUri: String,
     showKmMarkers: Boolean,
     kmMarkerInterval: Int,
+    renderer: TrackMapRenderer,
+    onProviderChanged: (MapProvider) -> Unit,
     onStyleSelected: (String) -> Unit,
     onKmMarkersToggled: (Boolean) -> Unit,
     onKmIntervalChanged: (Int) -> Unit,
@@ -203,6 +131,8 @@ fun RunMapSettingBottomSheet(
     modifier: Modifier = Modifier
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val isDarkTheme = RunTheme.isDark
+    val styles = renderer.getAvailableStyles(isDarkTheme)
 
     var tempShowKm by remember { mutableStateOf(showKmMarkers) }
     var tempInterval by remember { mutableFloatStateOf(kmMarkerInterval.toFloat()) }
@@ -218,6 +148,38 @@ fun RunMapSettingBottomSheet(
                 .padding(horizontal = 16.dp)
                 .padding(top = 8.dp, bottom = 32.dp)
         ) {
+            // ========== 第零部分：地图供应商切换 ==========
+            Text(
+                text = "地图供应商",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                MapProvider.entries.forEach { provider ->
+                    FilterChip(
+                        selected = provider == currentProvider,
+                        onClick = {
+                            if (provider != currentProvider) {
+                                onProviderChanged(provider)
+                            }
+                        },
+                        label = { Text(provider.displayName) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = RunTheme.colorScheme.blue.copy(alpha = 0.15f),
+                            selectedLabelColor = RunTheme.colorScheme.blue
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider()
+            Spacer(modifier = Modifier.height(12.dp))
+
             // ========== 第一部分：地图风格 ==========
             Text(
                 text = "地图风格",
@@ -230,7 +192,7 @@ fun RunMapSettingBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
-                items(RunMapStyles.ALL_STYLES) { style ->
+                items(styles) { style ->
                     MapStyleCard(
                         style = style,
                         isSelected = style.styleUri == currentStyleUri,
@@ -350,7 +312,7 @@ private fun getIntervalPreviewText(interval: Int): String {
  */
 @Composable
 private fun MapStyleCard(
-    style: RunMapStyle,
+    style: MapStyleInfo,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier

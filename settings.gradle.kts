@@ -85,6 +85,9 @@ dependencyResolutionManagement {
         // JitPack for uCrop
         maven { url = uri("https://jitpack.io") }
 
+        // 高德地图 Maven
+        maven { url = uri("https://repo1.maven.org/maven2/") }
+
         // Mapbox Maven repository
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")

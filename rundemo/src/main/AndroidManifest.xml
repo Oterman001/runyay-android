@@ -127,6 +127,11 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.UCrop" />
 
+        <!-- 高德地图 API Key -->
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="${AMAP_API_KEY}" />
+
         <!-- 数据同步前台服务 -->
         <service
             android:name=".service.sync.DataSyncForegroundService"
