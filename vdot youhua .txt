@@ -1,0 +1,542 @@
+ ▐▛███▜▌   Claude Code v2.1.72
+▝▜█████▛▘  Opus 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/0oppo/0code/DemoHub
+
+  ✻ Voice mode is now available · /voice to enable
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Plan to implement                                                            │
+│                                                                              │
+│ VDOT综合跑力计算优化方案                                                     │
+│                                                                              │
+│ Context                                                                      │
+│                                                                              │
+│ 同步过程中综合跑力(overallVdot)计算存在三个问题：                            │
+│ 1. 乱序问题：服务端返回文件列表无时间排序保证，新日期记录可能先于旧记录处理  │
+│ ，导致overallVdot计算时历史数据不完整                                        │
+│ 2. 双源冲突：服务端下发runSummary时以服务端vdot/overallVdot为准，但overall_v │
+│ dot表存的是本地计算值，两表不一致                                            │
+│ 3. 双表冗余：run_record和overall_vdot都存储跑力数据，recalculation只更新over │
+│ all_vdot表，run_record永远不更新                                             │
+│                                                                              │
+│ 核心设计决策                                                                 │
+│                                                                              │
+│ ┌──────────────┬──────────────────────┬──────────────────────────────────┐   │
+│ │     决策     │         结论         │               理由               │   │
+│ ├──────────────┼──────────────────────┼──────────────────────────────────┤   │
+│ │ 单次VDOT以谁 │ 本地FIT解析          │ 本地有完整原始传感器数据，服务端 │   │
+│ │ 为准？       │                      │ 值可能过时                       │   │
+│ ├──────────────┼──────────────────────┼──────────────────────────────────┤   │
+│ │ overallVdot  │ 同步完成后批量重算   │ 消除乱序依赖，保证所有历史数据完 │   │
+│ │ 何时计算？   │                      │ 整                               │   │
+│ ├──────────────┼──────────────────────┼──────────────────────────────────┤   │
+│ │ 是否排序再处 │ 否                   │ 排序只解决页内问题，跨页仍无法保 │   │
+│ │ 理？         │                      │ 证；批量重算彻底解决             │   │
+│ ├──────────────┼──────────────────────┼──────────────────────────────────┤   │
+│ │ 双表如何统一 │ overall_vdot为主，ru │ 重算时同步更新run_record.overall │   │
+│ │ ？           │ n_record为缓存       │ Vdot                             │   │
+│ └──────────────┴──────────────────────┴──────────────────────────────────┘   │
+│                                                                              │
+│ 实施步骤（4个变更）                                                          │
+│                                                                              │
+│ Change 1: FitRecordProcessor — 增加skipOverallVdot参数                       │
+│                                                                              │
+│ 文件:                                                                        │
+│ rundemo/src/main/java/com/oterman/rundemo/data/fit/FitRecordProcessor.kt     │
+│                                                                              │
+│ - processFitData() 增加参数 skipOverallVdot: Boolean =                       │
+│ false（默认false保持向后兼容）                                               │
+│ - 传递给 calculateVdot()                                                     │
+│ - calculateVdot() 中当 skipOverallVdot=true 时：                             │
+│   - 仍计算单次VDOT（vdotResult）和confidence                                 │
+│   - 跳过 repository.getVdotsByDateRange() 和                                 │
+│ VdotCalculator.calculateOverallVdot()                                        │
+│   - 返回 VdotCalcResult(vdot, vdot, confidence) — overallVdot暂用单次值占位  │
+│                                                                              │
+│ Change 2: RunSummaryMapper — 不覆盖本地VDOT                                  │
+│                                                                              │
+│ 文件: rundemo/src/main/java/com/oterman/rundemo/data/fit/RunSummaryMapper.kt │
+│                                                                              │
+│ 行160-161修改：                                                              │
+│ // 改前：                                                                    │
+│ vdot = server.vdot ?: local.vdot,                                            │
+│ overallVdot = server.overallVdot ?: local.overallVdot,                       │
+│ // 改后：                                                                    │
+│ vdot = local.vdot,            // 本地FIT解析的单次VDOT为准                   │
+│ overallVdot = local.overallVdot,  // 批量重算后统一更新                      │
+│                                                                              │
+│ Change 3: VdotRecalculationService — 增加批量重算 + 双表同步                 │
+│                                                                              │
+│ 文件: rundemo/src/main/java/com/oterman/rundemo/data/fit/VdotRecalculationSe │
+│ rvice.kt                                                                     │
+│                                                                              │
+│ 新增方法 recalculateAfterSync(earliestDateMs: Long)：                        │
+│ 1. 计算范围：[earliestDateMs - 45天, 最新记录]                               │
+│ 2. 查询范围内所有overall_vdot记录（按date ASC，不过滤inclusiveLevel）        │
+│ 3. 按时间顺序逐条重算overallVdot（确保每条记录都能看到之前所有历史）         │
+│ 4. 同时更新 overall_vdot.value 和 run_record.overallVdot                     │
+│                                                                              │
+│ 修改现有 onInclusiveLevelChanged()：                                         │
+│ - 第75行 repository.updateOverallVdotValue() 后增加                          │
+│ repository.updateRunRecordOverallVdot() — 修复双表不一致                     │
+│                                                                              │
+│ 需要新增的DAO/Repository方法：                                               │
+│ - RunRecordDao: @Query("UPDATE run_record SET overallVdot = :value WHERE     │
+│ workoutId = :workoutId")                                                     │
+│ - RunDataRepository / RunDataRepositoryImpl:                                 │
+│ updateRunRecordOverallVdot(workoutId, value)                                 │
+│                                                                              │
+│ Change 4: UnifiedSyncService — 接入批量重算                                  │
+│                                                                              │
+│ 文件:                                                                        │
+│ rundemo/src/main/java/com/oterman/rundemo/service/sync/UnifiedSyncService.kt │
+│                                                                              │
+│ 4a. processFileData() 中调用 fitRecordProcessor.processFitData() 时传入      │
+│ skipOverallVdot = true                                                       │
+│                                                                              │
+│ 4b. 新增成员变量 private var earliestImportedStartTime: Long =               │
+│ Long.MAX_VALUE，在 processFileData() 成功处理每条记录后更新：                │
+│ earliestImportedStartTime = minOf(earliestImportedStartTime,                 │
+│ resolvedRecord.startTime)                                                    │
+│                                                                              │
+│ 4c. 重写 onAfterSync()：                                                     │
+│ override suspend fun onAfterSync(result: SyncResult) {                       │
+│     if (result.importedCount > 0 && earliestImportedStartTime !=             │
+│ Long.MAX_VALUE) {                                                            │
+│         RLog.i(logTag, "同步完成，开始批量重算VDOT...")                      │
+│         val recalcService = VdotRecalculationService(runDataRepository)      │
+│         recalcService.recalculateAfterSync(earliestImportedStartTime)        │
+│         RLog.i(logTag, "VDOT批量重算完成")                                   │
+│     }                                                                        │
+│     // 重置追踪变量                                                          │
+│     earliestImportedStartTime = Long.MAX_VALUE                               │
+│ }                                                                            │
+│                                                                              │
+│ 涉及文件清单                                                                 │
+│                                                                              │
+│ ┌──────────────────────────────────────────┬───────────────────────────────┐ │
+│ │                   文件                   │           改动类型            │ │
+│ ├──────────────────────────────────────────┼───────────────────────────────┤ │
+│ │ data/fit/FitRecordProcessor.kt           │ 增加skipOverallVdot参数       │ │
+│ ├──────────────────────────────────────────┼───────────────────────────────┤ │
+│ │ data/fit/RunSummaryMapper.kt             │ 2行修改（不覆盖本地VDOT）     │ │
+│ ├──────────────────────────────────────────┼───────────────────────────────┤ │
+│ │ data/fit/VdotRecalculationService.kt     │ 新增recalculateAfterSync方法  │ │
+│ │                                          │ + 修复双表同步                │ │
+│ ├──────────────────────────────────────────┼───────────────────────────────┤ │
+│ │ data/local/dao/RunRecordDao.kt           │ 新增updateOverallVdot DAO方法 │ │
+│ ├──────────────────────────────────────────┼───────────────────────────────┤ │
+│ │ data/repository/RunDataRepository.kt     │ 新增接口方法                  │ │
+│ ├──────────────────────────────────────────┼───────────────────────────────┤ │
+│ │ data/repository/RunDataRepositoryImpl.kt │ 新增实现                      │ │
+│ ├──────────────────────────────────────────┼───────────────────────────────┤ │
+│ │ service/sync/UnifiedSyncService.kt       │ skipOverallVdot=true +        │ │
+│ │                                          │ onAfterSync                   │ │
+│ └──────────────────────────────────────────┴───────────────────────────────┘ │
+│                                                                              │
+│ 验证方式                                                                     │
+│                                                                              │
+│ 1. 编译通过：./gradlew :rundemo:assembleDebug                                │
+│ 2. 单元测试：./gradlew :rundemo:test                                         │
+│ 3. 功能验证：                                                                │
+│   - 本地导入FIT文件 → VDOT正常计算（skipOverallVdot默认false，不受影响）     │
+│   - 服务端同步 → 同步期间不计算overallVdot，同步完成后批量重算               │
+│   - toggle inclusiveLevel → 级联重算同时更新run_record和overall_vdot         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+⏺ I'll read all the relevant files in parallel first.
+
+⏺ Read 6 files (ctrl+o to expand)
+
+⏺ Now let me read the DAO and BaseDataSyncService files.
+
+⏺ Searched for 3 patterns, read 1 file (ctrl+o to expand)
+
+⏺ Let me check the SyncResult model and the RunSummaryMerger to understand the
+  merge flow.
+
+⏺ Searched for 2 patterns (ctrl+o to expand)
+
+⏺ Good, now I have full understanding. Let me implement all 4 changes. I'll work
+   through them systematically.
+
+  Change 1: FitRecordProcessor — add skipOverallVdot parameter
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/fit/FitRecordProcessor.k
+        t)
+  ⎿  Added 2 lines, removed 1 line
+      76          datasource: String,
+      77          userConfig: UserPhysiologyConfig = DEFAULT_CONFIG,
+      78          deviceInfo: String? = null,
+      79 -        workoutIdFileName: String? = null                      
+      79 +        workoutIdFileName: String? = null,                     
+      80 +        skipOverallVdot: Boolean = false                       
+      81      ): FitProcessResult? {
+      82          RLog.i(TAG, "========== 开始处理FIT数据 ==========")
+      83          RLog.i(TAG, "originId: $originId, datasource: $datasour
+          ce")
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/fit/FitRecordProcessor.k
+        t)
+  ⎿  Added 1 line, removed 1 line
+      153  
+      154          // Step 9: 计算VDOT
+      155          var vdotEntity: OverallVdotEntity? = null
+      156 -        val vdotCalcResult = calculateVdot(runRecord, segments
+          -, maxHR, restHR)                                              
+      156 +        val vdotCalcResult = calculateVdot(runRecord, segments
+          +, maxHR, restHR, skipOverallVdot)                             
+      157          if (vdotCalcResult != null) {
+      158              runRecord = runRecord.copy(
+      159                  vdot = vdotCalcResult.vdot,
+
+⏺ Now modify calculateVdot to accept and use skipOverallVdot:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/fit/FitRecordProcessor.k
+        t)
+  ⎿  Added 2 lines, removed 1 line
+      281          runRecord: RunRecordEntity,
+      282          segments: List<RunSegmentEntity>,
+      283          maxHR: Double,
+      284 -        restHR: Double                                        
+      284 +        restHR: Double,                                       
+      285 +        skipOverallVdot: Boolean = false                      
+      286      ): VdotCalcResult? {
+      287          // 数据不足检查
+      288          if (runRecord.totalDistance <= 0 || runRecord.activeDu
+           ration <= 0 || runRecord.averageHeartRate <= 0) {
+
+⏺ Now replace the overallVdot calculation section to skip when
+  skipOverallVdot=true:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/fit/FitRecordProcessor.k
+        t)
+  ⎿  Added 6 lines
+      350          val vdot = vdotResult.vdot
+      351          val confidence = vdotResult.confidence
+      352  
+      353 +        // skipOverallVdot模式：跳过历史查询和overallVdot计算 
+          +，用单次值占位                                                
+      354 +        if (skipOverallVdot) {                                
+      355 +            RLog.i(TAG, "跳过OverallVDOT计算(同步模式): vdot=$
+          +vdot, confidence=$confidence")                                
+      356 +            return VdotCalcResult(vdot, vdot, confidence)     
+      357 +        }                                                     
+      358 +                                                              
+      359          // 2. 获取历史45天VDOT数据并计算OverallVDOT
+      360          val historyStartDate = runRecord.startTime - 45L * 24 
+           * 60 * 60 * 1000 // 45天前
+      361          val hisVdotList = repository.getVdotsByDateRange(histo
+           ryStartDate, runRecord.startTime)
+
+⏺ Change 2: RunSummaryMapper — don't overwrite local VDOT
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/fit/RunSummaryMapper.kt)
+  ⎿  Added 2 lines, removed 2 lines
+      157              totalCalories = server.activeKilocalories ?: local
+           .totalCalories,
+      158              totalStepCount = server.totalStepCount ?: local.to
+           talStepCount,
+      159              elevationAscended = server.totalElevationGain ?: l
+           ocal.elevationAscended,
+      160 -            vdot = server.vdot ?: local.vdot,                 
+      161 -            overallVdot = server.overallVdot ?: local.overallV
+          -dot,                                                          
+      160 +            vdot = local.vdot,            // 本地FIT解析的单次
+          +VDOT为准                                                      
+      161 +            overallVdot = local.overallVdot,  // 批量重算后统 
+          +一更新                                                        
+      162              trainingEffect = server.trainingEffect ?: local.tr
+           ainingEffect,
+      163              anaerobicTrainingEffect = server.anaerobicTraining
+           Effect ?: local.anaerobicTrainingEffect,
+      164              trainingLoad = server.trainingLoad ?: local.traini
+           ngLoad,
+
+⏺ Change 3a: RunRecordDao — add updateOverallVdot query
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/local/dao/RunRecordDao.k
+        t)
+  ⎿  Added 3 lines
+      115      @Query("UPDATE run_record SET uploadStatus = :status WHERE
+            workoutId = :workoutId")
+      116      suspend fun updateUploadStatus(workoutId: String, status: 
+           Int)
+      117  
+      118 +    @Query("UPDATE run_record SET overallVdot = :value WHERE w
+          +orkoutId = :workoutId")                                       
+      119 +    suspend fun updateOverallVdot(workoutId: String, value: Do
+          +uble)                                                         
+      120 +                                                              
+      121      @Query("""
+      122          SELECT * FROM run_record
+      123          WHERE userId = :userId
+
+⏺ Change 3b: RunDataRepository interface — add updateRunRecordOverallVdot
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/repository/RunDataReposi
+        tory.kt)
+  ⎿  Added 6 lines, removed 1 line
+      271      suspend fun getAllVdotsByDateRange(startDate: Long, endDat
+           e: Long): List<OverallVdotEntity>
+      272  
+      273      /**
+      274 -     * 更新指定workout的综合VDOT值                            
+      274 +     * 更新指定workout的综合VDOT值（overall_vdot表）          
+      275       */
+      276      suspend fun updateOverallVdotValue(workoutId: String, newV
+           alue: Double)
+      277  
+      278      /**
+      279 +     * 更新run_record表的overallVdot字段                      
+      280 +     */                                                       
+      281 +    suspend fun updateRunRecordOverallVdot(workoutId: String, 
+          +value: Double)                                                
+      282 +                                                              
+      283 +    /**                                                       
+      284       * 更新指定workout的inclusiveLevel
+      285       */
+      286      suspend fun updateVdotInclusiveLevel(workoutId: String, le
+           vel: Int)
+
+⏺ Change 3c: RunDataRepositoryImpl — implement updateRunRecordOverallVdot
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/repository/RunDataReposi
+        toryImpl.kt)
+  ⎿  Added 4 lines
+      430          overallVdotDao.updateOverallValue(workoutId, newValue)
+      431      }
+      432  
+      433 +    override suspend fun updateRunRecordOverallVdot(workoutId:
+          + String, value: Double) {                                     
+      434 +        runRecordDao.updateOverallVdot(workoutId, value)      
+      435 +    }                                                         
+      436 +                                                              
+      437      override suspend fun updateVdotInclusiveLevel(workoutId: S
+           tring, level: Int) {
+      438          overallVdotDao.updateInclusiveLevel(workoutId, level)
+      439      }
+
+⏺ Change 3d: VdotRecalculationService — add recalculateAfterSync + fix 
+  dual-table sync
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/fit/VdotRecalculationSer
+        vice.kt)
+  ⎿  Added 56 lines
+       73              }
+       74  
+       75              repository.updateOverallVdotValue(record.workoutId
+           , newOverallVdot)
+       76 +            repository.updateRunRecordOverallVdot(record.worko
+          +utId, newOverallVdot)                                         
+       77              RLog.d(TAG, "重算: workoutId=${record.workoutId}, 
+           old=${record.value}, new=$newOverallVdot")
+       78          }
+       79  
+       80          RLog.i(TAG, "级联重算完成: ${affectedRecords.size}条记
+           录已更新")
+       81      }
+       82 +                                                              
+       83 +    /**                                                       
+       84 +     * 同步完成后批量重算overallVdot                          
+       85 +     * 消除乱序依赖，保证所有历史数据完整后再计算             
+       86 +     *                                                        
+       87 +     * @param earliestDateMs 本次同步中最早的记录startTime    
+       88 +     */                                                       
+       89 +    suspend fun recalculateAfterSync(earliestDateMs: Long) {  
+       90 +        // 计算范围：[earliestDateMs - 45天, 最新记录]        
+       91 +        val rangeStart = earliestDateMs - WINDOW_DAYS * MS_PER
+          +_DAY                                                          
+       92 +        val rangeEnd = Long.MAX_VALUE                         
+       93 +                                                              
+       94 +        // 查询范围内所有overall_vdot记录（按date ASC，不过滤i
+          +nclusiveLevel）                                               
+       95 +        val allRecords = repository.getAllVdotsByDateRange(ran
+          +geStart, rangeEnd)                                            
+       96 +        if (allRecords.isEmpty()) {                           
+       97 +            RLog.d(TAG, "同步后重算: 无VDOT记录需要重算")     
+       98 +            return                                            
+       99 +        }                                                     
+      100 +                                                              
+      101 +        // 按时间升序排列（getAllVdotsByDateRange返回的可能是 
+          +降序）                                                        
+      102 +        val sortedRecords = allRecords.sortedBy { it.date }   
+      103 +                                                              
+      104 +        RLog.i(TAG, "同步后批量重算: ${sortedRecords.size}条记
+          +录, 范围=$rangeStart-$rangeEnd")                              
+      105 +                                                              
+      106 +        // 按时间顺序逐条重算overallVdot                      
+      107 +        for (record in sortedRecords) {                       
+      108 +            val historyStart = record.date - WINDOW_DAYS * MS_
+          +PER_DAY                                                       
+      109 +            // 获取该记录之前的历史数据（按日期倒序，已过滤inc
+          +lusiveLevel）                                                 
+      110 +            val history = repository.getVdotsByDateRange(histo
+          +ryStart, record.date)                                         
+      111 +                .filter { it.workoutId != record.workoutId }  
+      112 +                                                              
+      113 +            val previousOverall = history.firstOrNull()?.value
+      114 +                                                              
+      115 +            val newOverallVdot = if (record.inclusiveLevel != 
+          +1) {                                                          
+      116 +                record.originValue                            
+      117 +            } else {                                          
+      118 +                VdotCalculator.calculateOverallVdot(          
+      119 +                    hisVdotList = history,                    
+      120 +                    originVdot = record.originValue,          
+      121 +                    currentConfidence = if (record.confidence 
+          +> 0) record.confidence else 0.5,                              
+      122 +                    currentDateMs = record.date,              
+      123 +                    totalDistance = 10.0,                     
+      124 +                    activeDuration = 30.0,                    
+      125 +                    previousOverallVdot = previousOverall     
+      126 +                ) ?: record.originValue                       
+      127 +            }                                                 
+      128 +                                                              
+      129 +            // 同时更新overall_vdot表和run_record表           
+      130 +            repository.updateOverallVdotValue(record.workoutId
+          +, newOverallVdot)                                             
+      131 +            repository.updateRunRecordOverallVdot(record.worko
+          +utId, newOverallVdot)                                         
+      132 +            RLog.d(TAG, "同步重算: workoutId=${record.workoutI
+          +d}, old=${record.value}, new=$newOverallVdot")                
+      133 +        }                                                     
+      134 +                                                              
+      135 +        RLog.i(TAG, "同步后批量重算完成: ${sortedRecords.size}
+          +条记录已更新")                                                
+      136 +    }                                                         
+      137  }
+
+⏺ Change 4: UnifiedSyncService — skipOverallVdot=true + 
+  earliestImportedStartTime + onAfterSync
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/service/sync/UnifiedSyncServi
+        ce.kt)
+  ⎿  Added 1 line
+       5  import com.oterman.rundemo.data.fit.RunSummaryMapper
+       6  import com.oterman.rundemo.data.fit.RunSummaryMerger
+       7  import com.oterman.rundemo.data.fit.UserPhysiologyConfig
+       8 +import com.oterman.rundemo.data.fit.VdotRecalculationService   
+       9  import com.oterman.rundemo.data.local.DataSourcePreferences
+      10  import com.oterman.rundemo.data.local.PreferencesManager
+      11  import com.oterman.rundemo.data.local.dao.RunRecordDao
+
+⏺ Now add the SyncResult import and the member variable + onAfterSync:
+
+⏺ Searched for 1 pattern (ctrl+o to expand)
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/service/sync/UnifiedSyncServi
+        ce.kt)
+  ⎿  Added 1 line
+      20  import com.oterman.rundemo.domain.model.FileInfo
+      21  import com.oterman.rundemo.data.fit.FitParseResult
+      22  import com.oterman.rundemo.domain.model.ImportedRunSummary
+      23 +import com.oterman.rundemo.domain.model.SyncResult             
+      24  import com.oterman.rundemo.domain.model.UnifiedFileInfo
+      25  import com.oterman.rundemo.util.RLog
+      26  import com.oterman.rundemo.util.TimestampUtils
+
+⏺ Now add the earliestImportedStartTime member variable:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/service/sync/UnifiedSyncServi
+        ce.kt)
+  ⎿  Added 3 lines
+      76      /** 缓存UnifiedFileInfo，key=summaryId */
+      77      private val unifiedFileInfoCache = ConcurrentHashMap<String
+          , UnifiedFileInfo>()
+      78  
+      79 +    /** 追踪本次同步中最早的记录时间，用于同步后批量重算VDOT */
+      80 +    private var earliestImportedStartTime: Long = Long.MAX_VALU
+         +E                                                              
+      81 +                                                               
+      82      /** inclusiveLevel 冲突解决器 */
+      83      private val inclusiveLevelResolver: InclusiveLevelResolver 
+          by lazy {
+      84          InclusiveLevelResolver(runDataRepository, dataSourcePre
+          ferences)
+
+⏺ Now add skipOverallVdot = true to the processFitData call:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/service/sync/UnifiedSyncServi
+        ce.kt)
+  ⎿  Added 2 lines, removed 1 line
+      220              originId = fileInfo.summaryId,
+      221              datasource = fileInfo.platformCode,
+      222              userConfig = userConfig,
+      223 -            deviceInfo = fileInfo.deviceName                  
+      223 +            deviceInfo = fileInfo.deviceName,                 
+      224 +            skipOverallVdot = true                            
+      225          ) ?: return null
+      226  
+      227          // 探测并自动更新最大心率
+
+⏺ Now update the earliestImportedStartTime after successful processing, and add
+  onAfterSync:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/service/sync/UnifiedSyncServi
+        ce.kt)
+  ⎿  Added 3 lines
+      254          )
+      255          fitRecordProcessor.saveProcessResult(updatedResult)
+      256  
+      257 +        // 追踪最早导入时间，用于同步后批量重算VDOT           
+      258 +        earliestImportedStartTime = minOf(earliestImportedStar
+          +tTime, resolvedRecord.startTime)                              
+      259 +                                                              
+      260          // Step 7: 服务端无runSummary时异步上传
+      261          if (serverRunSummary == null) {
+      262              // TODO
+
+⏺ Now add the onAfterSync override before the private methods section:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/service/sync/UnifiedSyncServi
+        ce.kt)
+  ⎿  Added 13 lines
+      273          )
+      274      }
+      275  
+      276 +    // ============ 同步后批量重算 ============               
+      277 +                                                              
+      278 +    override suspend fun onAfterSync(result: SyncResult) {    
+      279 +        if (result.importedCount > 0 && earliestImportedStartT
+          +ime != Long.MAX_VALUE) {                                      
+      280 +            RLog.i(logTag, "同步完成，开始批量重算VDOT...")   
+      281 +            val recalcService = VdotRecalculationService(runDa
+          +taRepository)                                                 
+      282 +            recalcService.recalculateAfterSync(earliestImporte
+          +dStartTime)                                                   
+      283 +            RLog.i(logTag, "VDOT批量重算完成")                
+      284 +        }                                                     
+      285 +        // 重置追踪变量                                       
+      286 +        earliestImportedStartTime = Long.MAX_VALUE            
+      287 +    }                                                         
+      288 +                                                              
+      289      // ============ 私有方法 ============
+      290  
+      291      /**
+
+⏺ Now let me build to verify:
+
+⏺ Bash(./gradlew :rundemo:assembleDebug 2>&1 | tail -20)
+  ⎿  w: file:///Users/80268743/0oppo/0code/DemoHub/rundemo/src/main/java/co
+     m/oterman/rundemo/presentation/feature/rundetail/components/RunDetailM
+     apSection.kt:670:47 'fun cameraForCoordinateBounds(bounds: CoordinateB
+     … +20 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+⏺ Build successful. All 4 changes are implemented:
+
+  1. FitRecordProcessor — processFitData() and calculateVdot() now accept
+  skipOverallVdot parameter. When true, skips history query and overallVdot
+  calculation, using single VDOT as placeholder.
+  2. RunSummaryMapper — applyServerValues() no longer overwrites vdot and
+  overallVdot with server values; local FIT-parsed values are preserved.
+  3. VdotRecalculationService — Added recalculateAfterSync(earliestDateMs) for
+  batch recalculation after sync. Fixed onInclusiveLevelChanged() to also update
+   run_record.overallVdot (dual-table sync). Added new DAO method
+  updateOverallVdot + repository interface/impl.
+  4. UnifiedSyncService — Passes skipOverallVdot = true during sync. Tracks
+  earliestImportedStartTime across processed records. Overrides onAfterSync() to
+   trigger batch VDOT recalculation when records were imported.
+
+✻ Baked for 5m 17s

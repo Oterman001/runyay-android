@@ -271,9 +271,14 @@ interface RunDataRepository {
     suspend fun getAllVdotsByDateRange(startDate: Long, endDate: Long): List<OverallVdotEntity>
 
     /**
-     * 更新指定workout的综合VDOT值
+     * 更新指定workout的综合VDOT值（overall_vdot表）
      */
     suspend fun updateOverallVdotValue(workoutId: String, newValue: Double)
+
+    /**
+     * 更新run_record表的overallVdot字段
+     */
+    suspend fun updateRunRecordOverallVdot(workoutId: String, value: Double)
 
     /**
      * 更新指定workout的inclusiveLevel

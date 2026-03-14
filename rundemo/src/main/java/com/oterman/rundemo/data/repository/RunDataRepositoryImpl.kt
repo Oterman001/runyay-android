@@ -430,6 +430,10 @@ class RunDataRepositoryImpl private constructor(
         overallVdotDao.updateOverallValue(workoutId, newValue)
     }
 
+    override suspend fun updateRunRecordOverallVdot(workoutId: String, value: Double) {
+        runRecordDao.updateOverallVdot(workoutId, value)
+    }
+
     override suspend fun updateVdotInclusiveLevel(workoutId: String, level: Int) {
         overallVdotDao.updateInclusiveLevel(workoutId, level)
     }

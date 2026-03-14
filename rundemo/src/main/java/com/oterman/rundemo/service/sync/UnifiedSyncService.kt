@@ -5,6 +5,7 @@ import com.oterman.rundemo.data.fit.InclusiveLevelResolver
 import com.oterman.rundemo.data.fit.RunSummaryMapper
 import com.oterman.rundemo.data.fit.RunSummaryMerger
 import com.oterman.rundemo.data.fit.UserPhysiologyConfig
+import com.oterman.rundemo.data.fit.VdotRecalculationService
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.dao.RunRecordDao
@@ -19,6 +20,7 @@ import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.FileInfo
 import com.oterman.rundemo.data.fit.FitParseResult
 import com.oterman.rundemo.domain.model.ImportedRunSummary
+import com.oterman.rundemo.domain.model.SyncResult
 import com.oterman.rundemo.domain.model.UnifiedFileInfo
 import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.TimestampUtils
@@ -73,6 +75,9 @@ class UnifiedSyncService(
 
     /** 缓存UnifiedFileInfo，key=summaryId */
     private val unifiedFileInfoCache = ConcurrentHashMap<String, UnifiedFileInfo>()
+
+    /** 追踪本次同步中最早的记录时间，用于同步后批量重算VDOT */
+    private var earliestImportedStartTime: Long = Long.MAX_VALUE
 
     /** inclusiveLevel 冲突解决器 */
     private val inclusiveLevelResolver: InclusiveLevelResolver by lazy {
@@ -215,7 +220,8 @@ class UnifiedSyncService(
             originId = fileInfo.summaryId,
             datasource = fileInfo.platformCode,
             userConfig = userConfig,
-            deviceInfo = fileInfo.deviceName
+            deviceInfo = fileInfo.deviceName,
+            skipOverallVdot = true
         ) ?: return null
 
         // 探测并自动更新最大心率
@@ -248,8 +254,12 @@ class UnifiedSyncService(
         )
         fitRecordProcessor.saveProcessResult(updatedResult)
 
+        // 追踪最早导入时间，用于同步后批量重算VDOT
+        earliestImportedStartTime = minOf(earliestImportedStartTime, resolvedRecord.startTime)
+
         // Step 7: 服务端无runSummary时异步上传
         if (serverRunSummary == null) {
+            // TODO
             // asyncUploadRunData(resolvedRecord.workoutId, fileInfo.summaryId)
         }
 
@@ -261,6 +271,19 @@ class UnifiedSyncService(
             duration = resolvedRecord.activeDuration,
             displayText = formatDisplayText(resolvedRecord.startTime, resolvedRecord.totalDistance)
         )
+    }
+
+    // ============ 同步后批量重算 ============
+
+    override suspend fun onAfterSync(result: SyncResult) {
+        if (result.importedCount > 0 && earliestImportedStartTime != Long.MAX_VALUE) {
+            RLog.i(logTag, "同步完成，开始批量重算VDOT...")
+            val recalcService = VdotRecalculationService(runDataRepository)
+            recalcService.recalculateAfterSync(earliestImportedStartTime)
+            RLog.i(logTag, "VDOT批量重算完成")
+        }
+        // 重置追踪变量
+        earliestImportedStartTime = Long.MAX_VALUE
     }
 
     // ============ 私有方法 ============

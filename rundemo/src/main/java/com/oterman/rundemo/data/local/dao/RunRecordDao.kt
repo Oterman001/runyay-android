@@ -115,6 +115,9 @@ interface RunRecordDao {
     @Query("UPDATE run_record SET uploadStatus = :status WHERE workoutId = :workoutId")
     suspend fun updateUploadStatus(workoutId: String, status: Int)
 
+    @Query("UPDATE run_record SET overallVdot = :value WHERE workoutId = :workoutId")
+    suspend fun updateOverallVdot(workoutId: String, value: Double)
+
     @Query("""
         SELECT * FROM run_record
         WHERE userId = :userId

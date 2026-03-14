@@ -157,8 +157,8 @@ object RunSummaryMapper {
             totalCalories = server.activeKilocalories ?: local.totalCalories,
             totalStepCount = server.totalStepCount ?: local.totalStepCount,
             elevationAscended = server.totalElevationGain ?: local.elevationAscended,
-            vdot = server.vdot ?: local.vdot,
-            overallVdot = server.overallVdot ?: local.overallVdot,
+            vdot = local.vdot,            // 本地FIT解析的单次VDOT为准
+            overallVdot = local.overallVdot,  // 批量重算后统一更新
             trainingEffect = server.trainingEffect ?: local.trainingEffect,
             anaerobicTrainingEffect = server.anaerobicTrainingEffect ?: local.anaerobicTrainingEffect,
             trainingLoad = server.trainingLoad ?: local.trainingLoad,

@@ -76,7 +76,8 @@ class FitRecordProcessor(
         datasource: String,
         userConfig: UserPhysiologyConfig = DEFAULT_CONFIG,
         deviceInfo: String? = null,
-        workoutIdFileName: String? = null
+        workoutIdFileName: String? = null,
+        skipOverallVdot: Boolean = false
     ): FitProcessResult? {
         RLog.i(TAG, "========== 开始处理FIT数据 ==========")
         RLog.i(TAG, "originId: $originId, datasource: $datasource")
@@ -152,7 +153,7 @@ class FitRecordProcessor(
 
         // Step 9: 计算VDOT
         var vdotEntity: OverallVdotEntity? = null
-        val vdotCalcResult = calculateVdot(runRecord, segments, maxHR, restHR)
+        val vdotCalcResult = calculateVdot(runRecord, segments, maxHR, restHR, skipOverallVdot)
         if (vdotCalcResult != null) {
             runRecord = runRecord.copy(
                 vdot = vdotCalcResult.vdot,
@@ -280,7 +281,8 @@ class FitRecordProcessor(
         runRecord: RunRecordEntity,
         segments: List<RunSegmentEntity>,
         maxHR: Double,
-        restHR: Double
+        restHR: Double,
+        skipOverallVdot: Boolean = false
     ): VdotCalcResult? {
         // 数据不足检查
         if (runRecord.totalDistance <= 0 || runRecord.activeDuration <= 0 || runRecord.averageHeartRate <= 0) {
@@ -347,6 +349,12 @@ class FitRecordProcessor(
 
         val vdot = vdotResult.vdot
         val confidence = vdotResult.confidence
+
+        // skipOverallVdot模式：跳过历史查询和overallVdot计算，用单次值占位
+        if (skipOverallVdot) {
+            RLog.i(TAG, "跳过OverallVDOT计算(同步模式): vdot=$vdot, confidence=$confidence")
+            return VdotCalcResult(vdot, vdot, confidence)
+        }
 
         // 2. 获取历史45天VDOT数据并计算OverallVDOT
         val historyStartDate = runRecord.startTime - 45L * 24 * 60 * 60 * 1000 // 45天前
