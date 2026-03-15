@@ -52,7 +52,8 @@ import com.oterman.rundemo.ui.theme.RunTheme
  */
 object RunMapPreferences {
     private const val PREFS_NAME = "run_map_prefs"
-    private const val KEY_MAP_STYLE = "map_style"
+    private const val KEY_MAP_STYLE_LIGHT = "map_style_light"
+    private const val KEY_MAP_STYLE_DARK  = "map_style_dark"
     private const val KEY_SHOW_KM_MARKERS = "show_km_markers"
     private const val KEY_KM_MARKER_INTERVAL = "km_marker_interval"
     private const val KEY_MAP_PROVIDER = "map_provider"
@@ -74,20 +75,16 @@ object RunMapPreferences {
     }
 
     fun getMapStyle(context: Context, isDarkTheme: Boolean, renderer: TrackMapRenderer): String {
-        val p = prefs(context)
-        val provider = getMapProvider(context)
-        // 如果供应商不匹配已保存的样式，返回默认
-        if (!p.contains(KEY_MAP_STYLE)) {
-            return renderer.getDefaultStyle(isDarkTheme).styleUri
-        }
-        val saved = p.getString(KEY_MAP_STYLE, null) ?: return renderer.getDefaultStyle(isDarkTheme).styleUri
-        // 检查样式是否属于当前供应商
+        val key = if (isDarkTheme) KEY_MAP_STYLE_DARK else KEY_MAP_STYLE_LIGHT
+        val saved = prefs(context).getString(key, null)
+            ?: return renderer.getDefaultStyle(isDarkTheme).styleUri
         val availableUris = renderer.getAvailableStyles(isDarkTheme).map { it.styleUri }
         return if (saved in availableUris) saved else renderer.getDefaultStyle(isDarkTheme).styleUri
     }
 
-    fun saveMapStyle(context: Context, styleUri: String) {
-        prefs(context).edit().putString(KEY_MAP_STYLE, styleUri).apply()
+    fun saveMapStyle(context: Context, isDarkTheme: Boolean, styleUri: String) {
+        val key = if (isDarkTheme) KEY_MAP_STYLE_DARK else KEY_MAP_STYLE_LIGHT
+        prefs(context).edit().putString(key, styleUri).apply()
     }
 
     fun getShowKmMarkers(context: Context): Boolean {

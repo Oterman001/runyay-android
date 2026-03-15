@@ -223,11 +223,11 @@ fun RunDetailMapSection(
                         RunMapPreferences.saveMapProvider(context, newProvider)
                         val newRenderer = MapRendererFactory.getRenderer(newProvider)
                         currentStyle = newRenderer.getDefaultStyle(isDarkTheme).styleUri
-                        RunMapPreferences.saveMapStyle(context, currentStyle)
+                        RunMapPreferences.saveMapStyle(context, isDarkTheme, currentStyle)
                     },
                     onStyleSelected = { styleUri ->
                         currentStyle = styleUri
-                        RunMapPreferences.saveMapStyle(context, styleUri)
+                        RunMapPreferences.saveMapStyle(context, isDarkTheme, styleUri)
                     },
                     onKmMarkersToggled = { show ->
                         showKmMarkers = show

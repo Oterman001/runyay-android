@@ -31,6 +31,21 @@ object CoordinateConverter {
         return (lat + dLat) to (lon + dLon)
     }
 
+    /**
+     * GCJ-02 → WGS-84（迭代逼近法，5 次迭代可达亚米精度）
+     */
+    fun gcj02ToWgs84(lat: Double, lon: Double): Pair<Double, Double> {
+        if (isOutOfChina(lat, lon)) return lat to lon
+        var wgsLat = lat
+        var wgsLon = lon
+        repeat(5) {
+            val (gcjLat, gcjLon) = wgs84ToGcj02(wgsLat, wgsLon)
+            wgsLat -= gcjLat - lat
+            wgsLon -= gcjLon - lon
+        }
+        return wgsLat to wgsLon
+    }
+
     private fun isOutOfChina(lat: Double, lon: Double): Boolean {
         return lon < 72.004 || lon > 137.8347 || lat < 0.8293 || lat > 55.8271
     }

@@ -51,10 +51,11 @@ class AMapTrackMapRenderer : TrackMapRenderer {
         // 高德 SDK 隐私合规：必须在创建 MapView 前调用，否则报错 555570
         MapsInitializer.updatePrivacyShow(context, true, true)
         MapsInitializer.updatePrivacyAgree(context, true)
-        return MapView(context)
+        return MapView(context).also { it.onCreate(null) }
     }
 
     override fun onStart(mapView: View) {
+        RLog.d(TAG, "onStart → mapView.onResume() 调用")
         (mapView as MapView).onResume()
     }
 
@@ -75,16 +76,14 @@ class AMapTrackMapRenderer : TrackMapRenderer {
     }
 
     override fun setupTouchInterception(mapView: View) {
-        mapView.setOnTouchListener { view, event ->
+        val aMap = getAMap(mapView) ?: return
+        aMap.setOnMapTouchListener { event ->
             when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    (view.parent as? ViewGroup)?.requestDisallowInterceptTouchEvent(true)
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    (view.parent as? ViewGroup)?.requestDisallowInterceptTouchEvent(false)
-                }
+                MotionEvent.ACTION_DOWN ->
+                    (mapView.parent as? ViewGroup)?.requestDisallowInterceptTouchEvent(true)
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                    (mapView.parent as? ViewGroup)?.requestDisallowInterceptTouchEvent(false)
             }
-            false
         }
     }
 
@@ -95,7 +94,10 @@ class AMapTrackMapRenderer : TrackMapRenderer {
     }
 
     override fun loadStyle(mapView: View, styleUri: String, onReady: () -> Unit) {
-        val aMap = getAMap(mapView) ?: return
+        val aMap = getAMap(mapView) ?: run {
+            RLog.e(TAG, "loadStyle: getAMap 返回 null!")
+            return
+        }
         val mapType = when (styleUri) {
             STYLE_URI_NORMAL -> AMap.MAP_TYPE_NORMAL
             STYLE_URI_SATELLITE -> AMap.MAP_TYPE_SATELLITE
@@ -103,15 +105,39 @@ class AMapTrackMapRenderer : TrackMapRenderer {
             STYLE_URI_NAVI -> AMap.MAP_TYPE_NAVI
             else -> AMap.MAP_TYPE_NORMAL
         }
+        RLog.d(TAG, "loadStyle: mapType=$mapType, 注册 OnMapLoadedListener")
         aMap.mapType = mapType
-        onReady()
+
+        var readyCalled = false
+        // 注册 listener（应对异步场景）
+        aMap.setOnMapLoadedListener {
+            if (!readyCalled) {
+                readyCalled = true
+                RLog.d(TAG, "OnMapLoadedListener 触发! 调用 onReady()")
+                onReady()
+            }
+        }
+        // 延迟后备：若 listener 不触发，主动调用 onReady
+        (mapView as? MapView)?.postDelayed({
+            if (!readyCalled) {
+                readyCalled = true
+                RLog.d(TAG, "OnMapLoadedListener 未触发，postDelayed 后备调用 onReady()")
+                onReady()
+            }
+        }, 1000L)
+
+        RLog.d(TAG, "loadStyle: cameraPosition=${aMap.cameraPosition}")
     }
 
     override fun renderTrack(mapView: View, trackPoints: List<TrackPoint>, colors: TrackColorSet) {
-        val aMap = getAMap(mapView) ?: return
+        val aMap = getAMap(mapView) ?: run {
+            RLog.e(TAG, "renderTrack: getAMap 返回 null!")
+            return
+        }
 
         try {
             val validPoints = trackPoints.filter { it.isValidCoordinate() }
+            RLog.d(TAG, "renderTrack: 开始, validPoints=${validPoints.size}")
             if (validPoints.isEmpty()) return
 
             // 转换坐标到 GCJ-02
@@ -203,8 +229,12 @@ class AMapTrackMapRenderer : TrackMapRenderer {
     }
 
     override fun fitTrackBounds(mapView: View, trackPoints: List<TrackPoint>, padding: EdgePadding) {
-        val aMap = getAMap(mapView) ?: return
+        val aMap = getAMap(mapView) ?: run {
+            RLog.e(TAG, "fitTrackBounds: getAMap 返回 null!")
+            return
+        }
         val validPoints = trackPoints.filter { it.isValidCoordinate() }
+        RLog.d(TAG, "fitTrackBounds: validPoints=${validPoints.size}")
         if (validPoints.isEmpty()) return
 
         try {
@@ -242,11 +272,13 @@ class AMapTrackMapRenderer : TrackMapRenderer {
         return try {
             val aMap = getAMap(mapView) ?: return null
             val pos = aMap.cameraPosition
-            // 注意：高德返回的是 GCJ-02，但我们统一用 WGS-84 存储
-            // 简化处理：直接存储，因为偏移量很小，恢复时会再次转换
+            // 高德返回的是 GCJ-02，转回 WGS-84 存储，避免 save/restore 循环中二次偏移
+            val (wgsLat, wgsLon) = CoordinateConverter.gcj02ToWgs84(
+                pos.target.latitude, pos.target.longitude
+            )
             MapCameraState(
-                centerLatitude = pos.target.latitude,
-                centerLongitude = pos.target.longitude,
+                centerLatitude = wgsLat,
+                centerLongitude = wgsLon,
                 zoom = pos.zoom.toDouble(),
                 bearing = pos.bearing.toDouble(),
                 pitch = pos.tilt.toDouble()
