@@ -35,11 +35,23 @@ android {
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(providers.gradleProperty("RUNDEMO_STORE_FILE").get())
+            storePassword = providers.gradleProperty("RUNDEMO_STORE_PASSWORD").get()
+            keyAlias = providers.gradleProperty("RUNDEMO_KEY_ALIAS").get()
+            keyPassword = providers.gradleProperty("RUNDEMO_KEY_PASSWORD").get()
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("release")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
