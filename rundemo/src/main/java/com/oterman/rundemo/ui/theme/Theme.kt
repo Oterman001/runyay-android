@@ -12,6 +12,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 
 val LocalIsDarkTheme = staticCompositionLocalOf { false }
 
@@ -57,9 +59,14 @@ fun ComopseDemoHubTheme(
 
     val runColorScheme = if (darkTheme) DarkRunColorScheme else LightRunColorScheme
 
+    // 禁用系统字体缩放，fontScale 固定为 1f
+    val currentDensity = LocalDensity.current
+    val fixedDensity = Density(density = currentDensity.density, fontScale = 1f)
+
     CompositionLocalProvider(
         LocalIsDarkTheme provides darkTheme,
-        LocalRunColorScheme provides runColorScheme
+        LocalRunColorScheme provides runColorScheme,
+        LocalDensity provides fixedDensity
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
