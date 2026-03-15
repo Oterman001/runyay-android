@@ -1,6 +1,6 @@
 object SecurityProvider {
 
-    // 原始 ASCII 加上 10 后的数组
+    // 原始 ASCII 加上 10 后的数组 iloverunyay
     private val ENCODED_DATA = intArrayOf(115, 118, 121, 128, 111, 124, 127, 120, 131, 107, 131)
 
     fun generateTarget(): String {

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Satellite
 import com.amap.api.maps.AMap
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.MapView
+import com.amap.api.maps.MapsInitializer
 import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.amap.api.maps.model.CameraPosition
 import com.amap.api.maps.model.LatLng
@@ -47,6 +48,9 @@ class AMapTrackMapRenderer : TrackMapRenderer {
     }
 
     override fun createMapView(context: Context): View {
+        // 高德 SDK 隐私合规：必须在创建 MapView 前调用，否则报错 555570
+        MapsInitializer.updatePrivacyShow(context, true, true)
+        MapsInitializer.updatePrivacyAgree(context, true)
         return MapView(context)
     }
 
