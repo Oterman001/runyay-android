@@ -34,6 +34,19 @@ object KilometerSegmentCalculator {
             return emptyList()
         }
 
+        RLog.i(TAG, "开始计算公里分段: records=${records.size}个, startTimeMs=$startTimeMs, pauseList=${pauseList.size}个")
+        val firstRecord = records.firstOrNull()
+        if (firstRecord != null) {
+            val firstTs = FitFileParser.fitTimestampToMillis(firstRecord.timestamp)
+            val firstDist = firstRecord.distance
+            RLog.i(TAG, "首条Record: timestamp=$firstTs, distance=$firstDist, 与startTimeMs差值=${firstTs - startTimeMs}ms (${(firstTs - startTimeMs) / 1000.0}s)")
+        }
+        val lastRecord0 = records.lastOrNull()
+        if (lastRecord0 != null) {
+            val lastTs = FitFileParser.fitTimestampToMillis(lastRecord0.timestamp)
+            RLog.i(TAG, "末条Record: timestamp=$lastTs, distance=${lastRecord0.distance}")
+        }
+
         val segments = mutableListOf<RunSegmentEntity>()
         var currentKm = 1
         var segmentStartIndex = 0
@@ -152,6 +165,12 @@ object KilometerSegmentCalculator {
                 0.0
             }
         }
+
+        RLog.d(TAG, "分段[seq=$seq]: distance=${String.format("%.3f", distanceKm)}km, " +
+            "activeDuration=${String.format("%.2f", activeDurationMin)}min, " +
+            "totalDuration=${String.format("%.2f", totalDurationMin)}min, " +
+            "startMs=$startTimeMs, endMs=$endTimeMs, " +
+            "pauseSec=${String.format("%.1f", pauseDurationSec)}")
 
         return RunSegmentEntity(
             workoutId = workoutId,

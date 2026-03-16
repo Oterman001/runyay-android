@@ -53,6 +53,13 @@ object PBCalculator {
             .filter { it.segmentType == 1 }
             .sortedBy { it.seq }
 
+        RLog.i(TAG, "公里分段详情(${kmSegments.size}个):")
+        kmSegments.forEachIndexed { idx, seg ->
+            RLog.d(TAG, "  [$idx] seq=${seg.seq}, dist=${String.format("%.3f", seg.distance)}km, " +
+                "activeDur=${String.format("%.2f", seg.activeDuration)}min, " +
+                "avgSpeed=${String.format("%.2f", seg.averageSpeed)}min/km")
+        }
+
         // 1k, 3k, 5k, 10k
         for (kilo in listOf(1, 3, 5, 10)) {
             val minTime = calculateMinTimeForKilo(runRecord, kmSegments, kilo)
@@ -139,6 +146,9 @@ object PBCalculator {
                 }
                 endIndex++
             }
+
+            RLog.d(TAG, "  kilo=$kilo, window[$i]: curTime=${String.format("%.2f", curTime)}, " +
+                "curDistance=$curDistance, minTime=${String.format("%.2f", minTime ?: 0.0)}")
 
             if (curDistance >= kilo.toDouble() && curTime != 0.0 && (minTime == null || curTime < minTime)) {
                 // 半马或全马特殊处理
