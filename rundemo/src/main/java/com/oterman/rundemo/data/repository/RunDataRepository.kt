@@ -325,5 +325,10 @@ interface RunDataRepository {
      * 获取与指定时间段冲突的记录（inclusiveLevel != 0）
      */
     suspend fun getConflictingRecords(newStartTime: Long, newEndTime: Long): List<RunRecordEntity>
+
+    /**
+     * 更新指定workout的PB记录inclusiveLevel
+     */
+    suspend fun updatePBInclusiveLevel(workoutId: String, level: Int)
 }
 

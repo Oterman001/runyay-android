@@ -119,7 +119,7 @@ class DashboardTabViewModel(
 
                     val totalStats = calculateTotalStatistics(statsRecords, latestVdot)
 
-                    val pbAbilityList = calculatePBAbilityList(allRecords, abilityPBs, latestVdot)
+                    val pbAbilityList = calculatePBAbilityList(statsRecords, abilityPBs, latestVdot)
                     val pbSpeedList = calculatePBSpeedList(speedPBs)
                     val nextRace = MockDataProvider.getMockNextRace()
                     val dailySentence = MockDataProvider.getRandomDailySentence()
@@ -641,6 +641,7 @@ class DashboardTabViewModel(
             val updatedRecord = record.copy(inclusiveLevel = newLevel, uploadStatus = 0)
             try {
                 repository.updateRunRecord(updatedRecord)
+                repository.updatePBInclusiveLevel(record.workoutId, newLevel)
             } catch (_: Exception) { return@launch }
 
             // 同步到服务器

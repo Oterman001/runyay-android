@@ -481,6 +481,10 @@ class RunDataRepositoryImpl private constructor(
         return runRecordDao.getConflictingRecordsForUser(requireUserId(), newStartTime, newEndTime)
     }
 
+    override suspend fun updatePBInclusiveLevel(workoutId: String, level: Int) {
+        pbRecordDao.updateInclusiveLevelByWorkoutId(workoutId, level)
+    }
+
     // ==================== 扩展函数 ====================
     
     private fun RunSegmentEntity.toRunSegment(): RunSegment {
