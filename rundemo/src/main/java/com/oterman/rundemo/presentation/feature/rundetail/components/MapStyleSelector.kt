@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,6 +48,8 @@ import com.oterman.rundemo.domain.map.MapProvider
 import com.oterman.rundemo.domain.map.MapStyleInfo
 import com.oterman.rundemo.domain.map.TrackMapRenderer
 import com.oterman.rundemo.ui.theme.RunTheme
+
+const val PRIVACY_STYLE_URI = "privacy://track_only"
 
 /**
  * 地图风格偏好设置管理器
@@ -142,9 +146,16 @@ fun RunMapSettingBottomSheet(
     val isDarkTheme = RunTheme.isDark
     val styles = renderer.getAvailableStyles(isDarkTheme)
 
-    var tempPrivacy by remember { mutableStateOf(privacyMode) }
     var tempShowKm by remember { mutableStateOf(showKmMarkers) }
     var tempInterval by remember { mutableFloatStateOf(kmMarkerInterval.toFloat()) }
+
+    val privacyStyleInfo = MapStyleInfo(
+        id = "privacy",
+        name = "隐私",
+        description = "仅显示轨迹",
+        styleUri = PRIVACY_STYLE_URI,
+        icon = Icons.Default.VisibilityOff
+    )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -157,78 +168,47 @@ fun RunMapSettingBottomSheet(
                 .padding(horizontal = 16.dp)
                 .padding(top = 8.dp, bottom = 32.dp)
         ) {
-            // ========== 隐私模式开关 ==========
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "隐私模式",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Switch(
-                    checked = tempPrivacy,
-                    onCheckedChange = { newValue ->
-                        tempPrivacy = newValue
-                        onPrivacyModeToggled(newValue)
-                    },
-                    colors = SwitchDefaults.colors(
-                        checkedTrackColor = RunTheme.colorScheme.blue
-                    )
-                )
-            }
-
-            Text(
-                text = "开启后仅显示轨迹，隐藏地图信息",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            Divider()
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // ========== 地图相关设置（隐私模式下隐藏） ==========
+            // ========== 地图供应商（隐私模式下隐藏） ==========
             AnimatedVisibility(
-                visible = !tempPrivacy,
+                visible = !privacyMode,
                 enter = expandVertically(),
                 exit = shrinkVertically()
             ) {
                 Column {
-            // ========== 第零部分：地图供应商切换 ==========
-            Text(
-                text = "地图供应商",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                MapProvider.entries.forEach { provider ->
-                    FilterChip(
-                        selected = provider == currentProvider,
-                        onClick = {
-                            if (provider != currentProvider) {
-                                onProviderChanged(provider)
-                            }
-                        },
-                        label = { Text(provider.displayName) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = RunTheme.colorScheme.blue.copy(alpha = 0.15f),
-                            selectedLabelColor = RunTheme.colorScheme.blue
-                        )
+                    Text(
+                        text = "地图供应商",
+                        style = MaterialTheme.typography.titleMedium
                     )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        MapProvider.entries.forEach { provider ->
+                            FilterChip(
+                                selected = provider == currentProvider,
+                                onClick = {
+                                    if (provider != currentProvider) {
+                                        onProviderChanged(provider)
+                                    }
+                                },
+                                label = { Text(provider.displayName) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = RunTheme.colorScheme.blue.copy(alpha = 0.15f),
+                                    selectedLabelColor = RunTheme.colorScheme.blue
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Divider()
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // ========== 第一部分：地图风格 ==========
+            // ========== 地图风格（始终可见，隐私卡片在第一位） ==========
             Text(
                 text = "地图风格",
                 style = MaterialTheme.typography.titleMedium
@@ -240,11 +220,23 @@ fun RunMapSettingBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
+                item {
+                    MapStyleCard(
+                        style = privacyStyleInfo,
+                        isSelected = privacyMode,
+                        onClick = { onPrivacyModeToggled(true) }
+                    )
+                }
                 items(styles) { style ->
                     MapStyleCard(
                         style = style,
-                        isSelected = style.styleUri == currentStyleUri,
-                        onClick = { onStyleSelected(style.styleUri) }
+                        isSelected = !privacyMode && style.styleUri == currentStyleUri,
+                        onClick = {
+                            if (privacyMode) {
+                                onPrivacyModeToggled(false)
+                            }
+                            onStyleSelected(style.styleUri)
+                        }
                     )
                 }
             }
@@ -253,7 +245,7 @@ fun RunMapSettingBottomSheet(
             Divider()
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ========== 第二部分：公里点设置 ==========
+            // ========== 公里点设置（始终可见） ==========
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -288,8 +280,6 @@ fun RunMapSettingBottomSheet(
                     }
                 )
             }
-                } // end inner Column
-            } // end AnimatedVisibility (map settings)
         }
     }
 }
