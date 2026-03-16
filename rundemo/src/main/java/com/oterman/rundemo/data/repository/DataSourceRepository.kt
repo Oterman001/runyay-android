@@ -43,20 +43,33 @@ class DataSourceRepository(
     companion object {
         private const val TAG = "DataSourceRepository"
         private const val CONFIG_CACHE_DURATION_MS = 60_000L  // 60秒缓存
+        private const val STATUS_CACHE_DURATION_MS = 300_000L  // 5分钟缓存
     }
 
     // 数据源配置查询缓存
     private var lastConfigQueryTime = 0L
     private var lastConfigQueryResult: Result<DatasourceConfigDto>? = null
+
+    // 平台状态查询缓存
+    private var lastStatusQueryTime = 0L
+    private var lastStatusQueryResult: Result<List<PlatformStatusResponse>>? = null
     
     // ============ 平台状态 ============
     
     /**
      * 查询所有平台的绑定状态
      */
-    suspend fun queryPlatformStatus(): Result<List<PlatformStatusResponse>> = withContext(Dispatchers.IO) {
+    suspend fun queryPlatformStatus(forceRefresh: Boolean = false): Result<List<PlatformStatusResponse>> = withContext(Dispatchers.IO) {
+        // 缓存命中则直接返回
+        val cached = lastStatusQueryResult
+        if (!forceRefresh && cached != null && cached.isSuccess
+            && System.currentTimeMillis() - lastStatusQueryTime < STATUS_CACHE_DURATION_MS) {
+            RLog.d(TAG, "使用缓存的平台状态")
+            return@withContext cached
+        }
+
         try {
-            val userId = preferencesManager.getUserId() 
+            val userId = preferencesManager.getUserId()
                 ?: return@withContext Result.failure(Exception("用户未登录"))
             
             RLog.i(TAG, "开始查询平台绑定状态, userId=$userId")
@@ -87,9 +100,12 @@ class DataSourceRepository(
                     }
                 }
                 dataSourcePreferences.updatePlatformStatus(statusMap)
-                
+
                 RLog.i(TAG, "平台状态查询成功, 共更新${statusMap.size}个平台状态")
-                Result.success(statuses)
+                val result = Result.success(statuses)
+                lastStatusQueryTime = System.currentTimeMillis()
+                lastStatusQueryResult = result
+                result
             } else {
                 RLog.w(TAG, "平台状态查询失败: ${response.msg}")
                 Result.failure(Exception(response.msg))
@@ -212,6 +228,7 @@ class DataSourceRepository(
 
             if (response.isSuccess()) {
                 dataSourcePreferences.setPlatformBound(platform, true)
+                lastStatusQueryTime = 0L  // 失效缓存，确保下次查询走网络
                 RLog.i(TAG, "佳明授权成功，已更新本地绑定状态")
                 Result.success(true)
             } else {
@@ -256,6 +273,7 @@ class DataSourceRepository(
 
             if (response.isSuccess()) {
                 dataSourcePreferences.setPlatformBound(DataSourcePlatform.COROS, true)
+                lastStatusQueryTime = 0L  // 失效缓存，确保下次查询走网络
                 RLog.i(TAG, "高驰授权成功，已更新本地绑定状态")
                 Result.success(true)
             } else {
@@ -297,6 +315,7 @@ class DataSourceRepository(
             if (response.isSuccess()) {
                 // 更新本地绑定状态
                 dataSourcePreferences.setPlatformBound(platform, false)
+                lastStatusQueryTime = 0L  // 失效缓存，确保下次查询走网络
                 // 清除同步时间戳
                 when (platform) {
                     DataSourcePlatform.GARMIN_CHINA, DataSourcePlatform.GARMIN_GLOBAL -> 
