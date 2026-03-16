@@ -239,7 +239,7 @@ fun HearRateZoneScreen(
             item {
                 SectionCard {
                     // 出生日期行
-                    val birthdayText = if (settings.birthdayMillis > 0L) {
+                    val birthdayText = if (settings.birthdayMillis != 0L) {
                         SimpleDateFormat("yyyy年MM月dd日", Locale.CHINA).format(Date(settings.birthdayMillis))
                     } else {
                         "未设置"

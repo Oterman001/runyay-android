@@ -79,7 +79,7 @@ class HearRateZoneViewModel(
             val current = settings.value
             preferencesManager.saveHearRateZoneSettings(current)
             saveSuccess.value = true
-            val birthDate = if (current.birthdayMillis > 0L) {
+            val birthDate = if (current.birthdayMillis != 0L) {
                 SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(current.birthdayMillis))
             } else null
             userRepository.updateBasicInfo(

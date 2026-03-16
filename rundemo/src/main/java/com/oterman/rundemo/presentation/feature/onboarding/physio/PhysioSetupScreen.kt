@@ -164,7 +164,7 @@ fun PhysioSetupScreen(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     // 出生年月
-                    val birthdayText = if (settings.birthdayMillis > 0L) {
+                    val birthdayText = if (settings.birthdayMillis != 0L) {
                         SimpleDateFormat("yyyy年M月", Locale.CHINA).format(Date(settings.birthdayMillis))
                     } else {
                         "未设置"

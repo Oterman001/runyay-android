@@ -20,7 +20,7 @@ fun BirthdayPickerDialog(
     onDismiss: () -> Unit
 ) {
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = if (currentMillis > 0L) currentMillis else null
+        initialSelectedDateMillis = if (currentMillis != 0L) currentMillis else null
     )
     DatePickerDialog(
         onDismissRequest = onDismiss,

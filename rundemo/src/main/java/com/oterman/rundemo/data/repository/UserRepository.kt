@@ -409,7 +409,7 @@ class UserRepository(
      */
     suspend fun saveBasicInfo(settings: HearRateZoneSettings): Result<Boolean> {
         return try {
-            val birthDate = if (settings.birthdayMillis > 0L) {
+            val birthDate = if (settings.birthdayMillis != 0L) {
                 SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(settings.birthdayMillis))
             } else null
             val requestDto = SaveUserBasicInfoRequest(

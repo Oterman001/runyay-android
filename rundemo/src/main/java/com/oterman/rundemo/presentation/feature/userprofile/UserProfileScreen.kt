@@ -397,7 +397,7 @@ private fun UserInfoCard(
     onGenderClick: () -> Unit,
     onBirthdayClick: () -> Unit
 ) {
-    val birthdayText = if (birthdayMillis > 0L)
+    val birthdayText = if (birthdayMillis != 0L)
         SimpleDateFormat("yyyy年M月", Locale.CHINA).format(Date(birthdayMillis))
     else "未设置"
 
