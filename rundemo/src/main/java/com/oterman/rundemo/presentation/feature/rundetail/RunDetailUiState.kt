@@ -42,6 +42,8 @@ data class RunDetailUiState(
     // 头像
     val avatarUrl: String? = null,
     val isLoadingAvatar: Boolean = false,
+    val userName: String? = null,
+    val userName: String? = null,
 
     // VO2Max（来自daily_health表）
     val vo2Max: Double? = null,
@@ -110,6 +112,8 @@ data class RunDetailUiState(
         if (expandedSegmentIds != other.expandedSegmentIds) return false
         if (avatarUrl != other.avatarUrl) return false
         if (isLoadingAvatar != other.isLoadingAvatar) return false
+        if (userName != other.userName) return false
+        if (userName != other.userName) return false
         if (vo2Max != other.vo2Max) return false
         if (previousVo2Max != other.previousVo2Max) return false
         if (isDownloading != other.isDownloading) return false
@@ -159,6 +163,8 @@ data class RunDetailUiState(
         result = 31 * result + expandedSegmentIds.hashCode()
         result = 31 * result + (avatarUrl?.hashCode() ?: 0)
         result = 31 * result + isLoadingAvatar.hashCode()
+        result = 31 * result + (userName?.hashCode() ?: 0)
+        result = 31 * result + (userName?.hashCode() ?: 0)
         result = 31 * result + (vo2Max?.hashCode() ?: 0)
         result = 31 * result + (previousVo2Max?.hashCode() ?: 0)
         result = 31 * result + isDownloading.hashCode()

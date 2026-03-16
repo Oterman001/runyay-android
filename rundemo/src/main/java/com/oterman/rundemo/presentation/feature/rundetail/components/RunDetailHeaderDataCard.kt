@@ -42,6 +42,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,6 +74,7 @@ fun RunDetailHeaderDataCard(
     metrics: List<RunMetricItem>,
     avatarUrl: String? = null,
     isLoadingAvatar: Boolean = false,
+    userName: String? = null,
     inclusiveLevel: Int = 1,
     onInclusiveLevelClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -89,6 +91,8 @@ fun RunDetailHeaderDataCard(
             modifier = Modifier.padding(RunDetailLayoutConstants.HeaderCardPadding.dp)
         ) {
                 // ========== Header 部分（对标 iOS：距离 → 日期 → 设备）==========
+                val avatarSize = RunDetailLayoutConstants.AvatarSize.dp
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -161,10 +165,23 @@ fun RunDetailHeaderDataCard(
                     }
 
                     // 右侧：头像（垂直居中于header三行）
-                    HeaderAvatar(
-                        avatarUrl = avatarUrl,
-                        isLoading = isLoadingAvatar
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        HeaderAvatar(
+                            avatarUrl = avatarUrl,
+                            isLoading = isLoadingAvatar
+                        )
+                        if (!userName.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = userName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.width(avatarSize)
+                            )
+                        }
+                    }
                 }
 
                 // ========== 分隔线 ==========

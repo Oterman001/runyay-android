@@ -59,6 +59,7 @@ class RunDetailViewModel(
     init {
         loadData()
         loadAvatar()
+        loadUserName()
     }
 
     /**
@@ -161,6 +162,14 @@ class RunDetailViewModel(
                 RLog.e(TAG, "头像加载失败: ${it.message}")
                 _uiState.value = _uiState.value.copy(isLoadingAvatar = false)
             }
+        }
+    }
+
+    private fun loadUserName() {
+        if (!preferencesManager.isUserLoggedIn()) return
+        val userName = preferencesManager.getUserName()
+        if (!userName.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(userName = userName)
         }
     }
 

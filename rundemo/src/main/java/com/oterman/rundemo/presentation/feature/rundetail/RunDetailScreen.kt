@@ -458,6 +458,7 @@ fun RunDetailScreen(
                                 metrics = uiState.metrics,
                                 avatarUrl = uiState.avatarUrl,
                                 isLoadingAvatar = uiState.isLoadingAvatar,
+                                userName = uiState.userName,
                                 inclusiveLevel = record.inclusiveLevel,
                                 onInclusiveLevelClick = if (BuildConfig.DEBUG) {
                                     { viewModel.showEditInclusiveLevelDialog() }
