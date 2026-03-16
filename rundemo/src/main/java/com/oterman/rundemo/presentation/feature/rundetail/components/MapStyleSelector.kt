@@ -57,6 +57,7 @@ object RunMapPreferences {
     private const val KEY_SHOW_KM_MARKERS = "show_km_markers"
     private const val KEY_KM_MARKER_INTERVAL = "km_marker_interval"
     private const val KEY_MAP_PROVIDER = "map_provider"
+    private const val KEY_PRIVACY_MODE = "privacy_mode"
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -103,6 +104,14 @@ object RunMapPreferences {
         prefs(context).edit().putInt(KEY_KM_MARKER_INTERVAL, interval.coerceIn(1, 10)).apply()
     }
 
+    fun getPrivacyMode(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_PRIVACY_MODE, false)
+    }
+
+    fun savePrivacyMode(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_PRIVACY_MODE, enabled).apply()
+    }
+
     fun clearAll(context: Context) {
         prefs(context).edit().clear().apply()
     }
@@ -119,11 +128,13 @@ fun RunMapSettingBottomSheet(
     currentStyleUri: String,
     showKmMarkers: Boolean,
     kmMarkerInterval: Int,
+    privacyMode: Boolean,
     renderer: TrackMapRenderer,
     onProviderChanged: (MapProvider) -> Unit,
     onStyleSelected: (String) -> Unit,
     onKmMarkersToggled: (Boolean) -> Unit,
     onKmIntervalChanged: (Int) -> Unit,
+    onPrivacyModeToggled: (Boolean) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -131,6 +142,7 @@ fun RunMapSettingBottomSheet(
     val isDarkTheme = RunTheme.isDark
     val styles = renderer.getAvailableStyles(isDarkTheme)
 
+    var tempPrivacy by remember { mutableStateOf(privacyMode) }
     var tempShowKm by remember { mutableStateOf(showKmMarkers) }
     var tempInterval by remember { mutableFloatStateOf(kmMarkerInterval.toFloat()) }
 
@@ -145,6 +157,45 @@ fun RunMapSettingBottomSheet(
                 .padding(horizontal = 16.dp)
                 .padding(top = 8.dp, bottom = 32.dp)
         ) {
+            // ========== 隐私模式开关 ==========
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "隐私模式",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = tempPrivacy,
+                    onCheckedChange = { newValue ->
+                        tempPrivacy = newValue
+                        onPrivacyModeToggled(newValue)
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedTrackColor = RunTheme.colorScheme.blue
+                    )
+                )
+            }
+
+            Text(
+                text = "开启后仅显示轨迹，隐藏地图信息",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Divider()
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ========== 地图相关设置（隐私模式下隐藏） ==========
+            AnimatedVisibility(
+                visible = !tempPrivacy,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column {
             // ========== 第零部分：地图供应商切换 ==========
             Text(
                 text = "地图供应商",
@@ -237,6 +288,8 @@ fun RunMapSettingBottomSheet(
                     }
                 )
             }
+                } // end inner Column
+            } // end AnimatedVisibility (map settings)
         }
     }
 }

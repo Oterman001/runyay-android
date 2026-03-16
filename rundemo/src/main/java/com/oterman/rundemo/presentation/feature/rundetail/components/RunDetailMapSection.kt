@@ -154,6 +154,7 @@ fun RunDetailMapSection(
     }
     var showKmMarkers by remember { mutableStateOf(RunMapPreferences.getShowKmMarkers(context)) }
     var kmMarkerInterval by remember { mutableIntStateOf(RunMapPreferences.getKmMarkerInterval(context)) }
+    var privacyMode by remember { mutableStateOf(RunMapPreferences.getPrivacyMode(context)) }
     var showSettingSheet by remember { mutableStateOf(false) }
 
     Box(
@@ -162,19 +163,27 @@ fun RunDetailMapSection(
             .height(mapHeight)
     ) {
         if (isOutdoor && trackPoints.isNotEmpty()) {
-            // key(currentProvider) 确保切换供应商时重建地图
-            androidx.compose.runtime.key(currentProvider) {
-                MapViewComposable(
+            if (privacyMode) {
+                PrivacyTrackView(
                     trackPoints = trackPoints,
-                    context = context,
-                    renderer = renderer,
-                    styleUri = currentStyle,
                     showKmMarkers = showKmMarkers,
-                    kmMarkerInterval = kmMarkerInterval,
-                    savedCameraState = savedCameraState,
-                    onCameraChanged = onCameraChanged,
-                    onMapViewReady = onMapViewReady
+                    kmMarkerInterval = kmMarkerInterval
                 )
+            } else {
+                // key(currentProvider) 确保切换供应商时重建地图
+                androidx.compose.runtime.key(currentProvider) {
+                    MapViewComposable(
+                        trackPoints = trackPoints,
+                        context = context,
+                        renderer = renderer,
+                        styleUri = currentStyle,
+                        showKmMarkers = showKmMarkers,
+                        kmMarkerInterval = kmMarkerInterval,
+                        savedCameraState = savedCameraState,
+                        onCameraChanged = onCameraChanged,
+                        onMapViewReady = onMapViewReady
+                    )
+                }
             }
 
             // 底部渐变遮罩
@@ -224,6 +233,7 @@ fun RunDetailMapSection(
                     currentStyleUri = currentStyle,
                     showKmMarkers = showKmMarkers,
                     kmMarkerInterval = kmMarkerInterval,
+                    privacyMode = privacyMode,
                     renderer = renderer,
                     onProviderChanged = { newProvider ->
                         currentProvider = newProvider
@@ -243,6 +253,10 @@ fun RunDetailMapSection(
                     onKmIntervalChanged = { interval ->
                         kmMarkerInterval = interval
                         RunMapPreferences.saveKmMarkerInterval(context, interval)
+                    },
+                    onPrivacyModeToggled = { enabled ->
+                        privacyMode = enabled
+                        RunMapPreferences.savePrivacyMode(context, enabled)
                     },
                     onDismiss = { showSettingSheet = false }
                 )
