@@ -43,7 +43,6 @@ data class RunDetailUiState(
     val avatarUrl: String? = null,
     val isLoadingAvatar: Boolean = false,
     val userName: String? = null,
-    val userName: String? = null,
 
     // VO2Max（来自daily_health表）
     val vo2Max: Double? = null,
