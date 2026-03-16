@@ -53,6 +53,7 @@ import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.util.RLog
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -137,6 +138,7 @@ fun getTrackColors(): TrackColorSet {
 fun RunDetailMapSection(
     trackPoints: List<TrackPoint>,
     isOutdoor: Boolean,
+    actualDistanceKm: Double? = null,
     modifier: Modifier = Modifier,
     savedCameraState: MapCameraState? = null,
     onCameraChanged: (MapCameraState) -> Unit = {},
@@ -167,7 +169,8 @@ fun RunDetailMapSection(
                 PrivacyTrackView(
                     trackPoints = trackPoints,
                     showKmMarkers = showKmMarkers,
-                    kmMarkerInterval = kmMarkerInterval
+                    kmMarkerInterval = kmMarkerInterval,
+                    actualDistanceKm = actualDistanceKm
                 )
             } else {
                 // key(currentProvider) 确保切换供应商时重建地图
@@ -179,6 +182,7 @@ fun RunDetailMapSection(
                         styleUri = currentStyle,
                         showKmMarkers = showKmMarkers,
                         kmMarkerInterval = kmMarkerInterval,
+                        actualDistanceKm = actualDistanceKm,
                         savedCameraState = savedCameraState,
                         onCameraChanged = onCameraChanged,
                         onMapViewReady = onMapViewReady
@@ -308,6 +312,7 @@ private fun MapViewComposable(
     styleUri: String,
     showKmMarkers: Boolean,
     kmMarkerInterval: Int,
+    actualDistanceKm: Double? = null,
     savedCameraState: MapCameraState? = null,
     onCameraChanged: (MapCameraState) -> Unit = {},
     onMapViewReady: (View) -> Unit = {}
@@ -393,7 +398,13 @@ private fun MapViewComposable(
                         RLog.d(TAG, "添加轨迹到地图")
                         renderer.renderTrack(this, trackPoints, trackColors)
                         if (showKmMarkers) {
-                            renderer.renderKmMarkers(this, trackPoints, trackColors, kmMarkerInterval)
+                            renderer.renderKmMarkers(
+                                this,
+                                trackPoints,
+                                trackColors,
+                                kmMarkerInterval,
+                                actualDistanceKm
+                            )
                         }
                         if (savedCameraState != null) {
                             renderer.setCamera(this, savedCameraState)
@@ -421,7 +432,13 @@ private fun MapViewComposable(
                     if (trackPoints.isNotEmpty()) {
                         renderer.renderTrack(view, trackPoints, trackColors)
                         if (showKmMarkers) {
-                            renderer.renderKmMarkers(view, trackPoints, trackColors, kmMarkerInterval)
+                            renderer.renderKmMarkers(
+                                view,
+                                trackPoints,
+                                trackColors,
+                                kmMarkerInterval,
+                                actualDistanceKm
+                            )
                         }
                         renderer.fitTrackBounds(view, trackPoints, defaultPadding)
                     }
@@ -440,12 +457,14 @@ private fun MapViewComposable(
  */
 fun calculateKilometerPositions(
     trackPoints: List<TrackPoint>,
-    interval: Int = 1
+    interval: Int = 1,
+    maxDistanceKm: Double? = null
 ): List<TrackPoint> {
     val validPoints = trackPoints.filter { it.isValidCoordinate() }
     if (validPoints.size < 2) return emptyList()
 
-    val step = interval.coerceIn(1, 10).toDouble()
+    val intervalKm = interval.coerceIn(1, 10)
+    val step = intervalKm.toDouble()
     val kmPositions = mutableListOf<TrackPoint>()
     var accumulatedDistance = 0.0
     var nextKmThreshold = step
@@ -458,6 +477,11 @@ fun calculateKilometerPositions(
             prev.latitude, prev.longitude,
             curr.latitude, curr.longitude
         )
+
+        if (segmentDistance > 0.5) {
+            RLog.w(TAG, "跳过异常大的轨迹段[i=$i]: prev=(${prev.latitude},${prev.longitude}), curr=(${curr.latitude},${curr.longitude}), dist=${String.format("%.3f", segmentDistance)}km, accumulated=${String.format("%.3f", accumulatedDistance)}km, 不计入累积距离")
+            continue
+        }
 
         val prevAccumulated = accumulatedDistance
         accumulatedDistance += segmentDistance
@@ -475,7 +499,26 @@ fun calculateKilometerPositions(
         }
     }
 
-    return kmPositions
+    val filteredPositions = if (maxDistanceKm != null) {
+        val maxKmNumber = floor(maxDistanceKm.coerceAtLeast(0.0)).toInt()
+        kmPositions.filterIndexed { index, _ ->
+            val kmNumber = (index + 1) * intervalKm
+            kmNumber <= maxKmNumber
+        }.also { filtered ->
+            RLog.d(
+                TAG,
+                "公里点上限过滤: actualDistanceKm=${String.format("%.3f", maxDistanceKm)}, maxKmNumber=$maxKmNumber, before=${kmPositions.size}, after=${filtered.size}, interval=$intervalKm"
+            )
+        }
+    } else {
+        kmPositions
+    }
+
+    RLog.d(
+        TAG,
+        "calculateKmPositions完成: totalDist=${String.format("%.3f", accumulatedDistance)}km, positions=${filteredPositions.size}, interval=$intervalKm"
+    )
+    return filteredPositions
 }
 
 /**

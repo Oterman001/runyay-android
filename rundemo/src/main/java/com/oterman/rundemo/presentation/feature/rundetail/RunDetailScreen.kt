@@ -425,6 +425,7 @@ fun RunDetailScreen(
                                 RunDetailMapSection(
                                     trackPoints = uiState.trackPoints,
                                     isOutdoor = uiState.isOutdoor,
+                                    actualDistanceKm = record.totalDistance,
                                     savedCameraState = savedCameraState,
                                     onCameraChanged = { savedCameraState = it },
                                     onMapViewReady = { mapViewRef = it }

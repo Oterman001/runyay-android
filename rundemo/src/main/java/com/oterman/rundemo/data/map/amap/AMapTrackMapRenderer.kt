@@ -194,12 +194,17 @@ class AMapTrackMapRenderer : TrackMapRenderer {
         mapView: View,
         trackPoints: List<TrackPoint>,
         colors: TrackColorSet,
-        interval: Int
+        interval: Int,
+        maxDistanceKm: Double?
     ) {
         val aMap = getAMap(mapView) ?: return
 
         try {
-            val kmPositions = calculateKilometerPositions(trackPoints, interval)
+            val kmPositions = calculateKilometerPositions(
+                trackPoints = trackPoints,
+                interval = interval,
+                maxDistanceKm = maxDistanceKm
+            )
             RLog.d(TAG, "公里标记点数: ${kmPositions.size}, 间隔: ${interval}km")
 
             kmPositions.forEachIndexed { index, point ->

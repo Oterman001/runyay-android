@@ -157,13 +157,18 @@ class MapboxTrackMapRenderer : TrackMapRenderer {
         mapView: View,
         trackPoints: List<TrackPoint>,
         colors: TrackColorSet,
-        interval: Int
+        interval: Int,
+        maxDistanceKm: Double?
     ) {
         val mv = mapView as MapView
         val style = mv.mapboxMap.style ?: return
 
         try {
-            val kmPositions = calculateKilometerPositions(trackPoints, interval)
+            val kmPositions = calculateKilometerPositions(
+                trackPoints = trackPoints,
+                interval = interval,
+                maxDistanceKm = maxDistanceKm
+            )
             RLog.d(TAG, "公里标记点数: ${kmPositions.size}, 间隔: ${interval}km")
 
             kmPositions.forEachIndexed { index, point ->

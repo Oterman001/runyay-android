@@ -20,8 +20,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.util.RLog
 import kotlin.math.max
 import kotlin.math.min
+
+private const val TAG = "PrivacyTrackView"
 
 private const val PADDING_RATIO = 0.12f
 private const val TRACK_WIDTH_RATIO = 0.008f
@@ -33,6 +36,7 @@ fun PrivacyTrackView(
     trackPoints: List<TrackPoint>,
     showKmMarkers: Boolean = true,
     kmMarkerInterval: Int = 1,
+    actualDistanceKm: Double? = null,
     modifier: Modifier = Modifier
 ) {
     val isDark = RunTheme.isDark
@@ -45,10 +49,18 @@ fun PrivacyTrackView(
     val markerStroke = Color.White
 
     val kmPositions = if (showKmMarkers) {
-        calculateKilometerPositions(trackPoints, kmMarkerInterval)
+        calculateKilometerPositions(
+            trackPoints = trackPoints,
+            interval = kmMarkerInterval,
+            maxDistanceKm = actualDistanceKm
+        )
     } else {
         emptyList()
     }
+    RLog.d(
+        TAG,
+        "PrivacyTrackView: trackPoints=${trackPoints.size}, kmPositions=${kmPositions.size}, interval=$kmMarkerInterval, actualDistanceKm=$actualDistanceKm"
+    )
 
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current

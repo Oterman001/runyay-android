@@ -43,7 +43,13 @@ interface TrackMapRenderer {
     fun renderTrack(mapView: View, trackPoints: List<TrackPoint>, colors: TrackColorSet)
 
     /** 渲染公里标记 */
-    fun renderKmMarkers(mapView: View, trackPoints: List<TrackPoint>, colors: TrackColorSet, interval: Int)
+    fun renderKmMarkers(
+        mapView: View,
+        trackPoints: List<TrackPoint>,
+        colors: TrackColorSet,
+        interval: Int,
+        maxDistanceKm: Double? = null
+    )
 
     /** 清除所有轨迹覆盖物 */
     fun clearOverlays(mapView: View)
