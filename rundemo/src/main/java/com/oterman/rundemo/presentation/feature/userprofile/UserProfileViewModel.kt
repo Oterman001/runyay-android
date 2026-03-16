@@ -327,9 +327,12 @@ class UserProfileViewModel(
         preferencesManager.saveHearRateZoneSettings(updated)
         _uiState.update { it.copy(isMale = isMale, showGenderPicker = false) }
         viewModelScope.launch {
-            userRepository.updateBasicInfo(gender = if (isMale) "M" else "F").onFailure { e ->
-                RLog.e(TAG, "同步性别到服务端失败: ${e.message}")
-                _uiState.update { it.copy(errorMessage = "操作失败，请稍后重试") }
+            userRepository.updateBasicInfo(gender = if (isMale) "M" else "F").onFailure {
+                RLog.w(TAG, "update性别失败，尝试save: ${it.message}")
+                userRepository.saveBasicInfo(updated).onFailure { e ->
+                    RLog.e(TAG, "save性别也失败: ${e.message}")
+                    _uiState.update { it.copy(errorMessage = "操作失败，请稍后重试") }
+                }
             }
         }
     }
@@ -342,9 +345,12 @@ class UserProfileViewModel(
         _uiState.update { it.copy(birthdayMillis = millis, showBirthdayPicker = false) }
         viewModelScope.launch {
             val birthDate = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(millis))
-            userRepository.updateBasicInfo(birthDate = birthDate).onFailure { e ->
-                RLog.e(TAG, "同步生日到服务端失败: ${e.message}")
-                _uiState.update { it.copy(errorMessage = "操作失败，请稍后重试") }
+            userRepository.updateBasicInfo(birthDate = birthDate).onFailure {
+                RLog.w(TAG, "update生日失败，尝试save: ${it.message}")
+                userRepository.saveBasicInfo(updated).onFailure { e ->
+                    RLog.e(TAG, "save生日也失败: ${e.message}")
+                    _uiState.update { it.copy(errorMessage = "操作失败，请稍后重试") }
+                }
             }
         }
     }
