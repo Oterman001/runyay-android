@@ -17,7 +17,11 @@ object ShareDataCache {
      * 存入地图截图（由 RunDetailActivity 调用）
      */
     fun putMapSnapshot(bitmap: Bitmap) {
-        mapSnapshot = bitmap
+        mapSnapshot = if (bitmap.config == Bitmap.Config.HARDWARE) {
+            bitmap.copy(Bitmap.Config.ARGB_8888, false)
+        } else {
+            bitmap
+        }
     }
 
     /**

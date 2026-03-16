@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
@@ -425,7 +426,10 @@ private fun HeaderAvatar(
             }
             else -> {
                 SubcomposeAsyncImage(
-                    model = avatarUrl,
+                    model = coil.request.ImageRequest.Builder(LocalContext.current)
+                        .data(avatarUrl)
+                        .allowHardware(false)
+                        .build(),
                     contentDescription = "Avatar",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,

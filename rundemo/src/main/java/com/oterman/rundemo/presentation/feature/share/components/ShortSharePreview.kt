@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -211,7 +212,10 @@ private fun ShareAvatar(
             )
         } else {
             SubcomposeAsyncImage(
-                model = avatarUrl,
+                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                    .data(avatarUrl)
+                    .allowHardware(false)
+                    .build(),
                 contentDescription = "Avatar",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
