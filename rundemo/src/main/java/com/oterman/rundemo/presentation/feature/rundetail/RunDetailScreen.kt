@@ -179,7 +179,7 @@ fun RunDetailScreen(
     // 更新成功反馈
     LaunchedEffect(uiState.updateSuccess) {
         if (uiState.updateSuccess) {
-            snackbarHostState.showSnackbar("已保存，将在下次同步时上传")
+            snackbarHostState.showSnackbar("保存成功")
             viewModel.clearUpdateState()
         }
     }
@@ -261,7 +261,8 @@ fun RunDetailScreen(
                                         val mv = mapViewRef
                                         if (mv != null && uiState.isOutdoor) {
                                             viewModel.setPreparingShare(true)
-                                            val provider = com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getMapProvider(context)
+                                            val provider =
+                                                com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getMapProvider(context)
                                             val renderer = MapRendererFactory.getRenderer(provider)
                                             renderer.snapshot(mv) { bitmap ->
                                                 bitmap?.let { ShareDataCache.putMapSnapshot(it) }
@@ -452,8 +453,10 @@ fun RunDetailScreen(
                                 deviceName = when {
                                     record.datasource == "HK" && record.deviceInfo?.contains("apple watch", ignoreCase = true) == true ->
                                         AppleWatchDeviceUtils.getModelName(record.deviceVersion)
+
                                     record.datasource == DataSourcePlatform.MANUAL.code ->
                                         if (record.deviceInfo.isNullOrBlank()) "Manual" else "Manual-${record.deviceInfo}"
+
                                     else -> record.deviceInfo
                                 },
                                 isOutdoor = uiState.isOutdoor,
@@ -462,9 +465,9 @@ fun RunDetailScreen(
                                 isLoadingAvatar = uiState.isLoadingAvatar,
                                 userName = uiState.userName,
                                 inclusiveLevel = record.inclusiveLevel,
-                                onInclusiveLevelClick = if (BuildConfig.DEBUG) {
-                                    { viewModel.showEditInclusiveLevelDialog() }
-                                } else null,
+                                onInclusiveLevelClick = {
+                                    viewModel.showEditInclusiveLevelDialog()
+                                },
                                 modifier = Modifier
                                     .layout { measurable, constraints ->
                                         val placeable = measurable.measure(constraints)

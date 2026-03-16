@@ -181,8 +181,15 @@ fun RunRecordItem(
                                 modifier = Modifier.size(14.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            val paceValue = if (record.averageSpeed > 0) {
+                                record.averageSpeed
+                            } else if (record.totalDistance > 0 && record.activeDuration > 0) {
+                                record.activeDuration / record.totalDistance
+                            } else {
+                                0.0
+                            }
                             Text(
-                                text = formatPace(record.averageSpeed),
+                                text = formatPace(paceValue),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
