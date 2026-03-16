@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarViewMonth
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.DirectionsRun
 import androidx.compose.material.icons.outlined.Watch
@@ -92,6 +93,7 @@ fun DataTabContent(
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
     var pendingInclusiveLevelRecord by remember { mutableStateOf<RunRecordEntity?>(null) }
+    var showFilterSheet by remember { mutableStateOf(false) }
 
     // Calculate collapse progress based on scroll offset
     val collapseProgress by remember {
@@ -113,6 +115,19 @@ fun DataTabContent(
             currentLevel = rec.inclusiveLevel,
             onDismiss = { pendingInclusiveLevelRecord = null },
             onConfirm = { viewModel.updateInclusiveLevel(rec, it); pendingInclusiveLevelRecord = null }
+        )
+    }
+
+    if (showFilterSheet) {
+        DataTabFilterSheet(
+            selectedInclusiveLevels = uiState.selectedInclusiveLevels,
+            selectedDatasources = uiState.selectedDatasources,
+            availableDatasources = uiState.availableDatasources,
+            onDismiss = { showFilterSheet = false },
+            onApply = { levels, datasources ->
+                viewModel.applyFilter(levels, datasources)
+                showFilterSheet = false
+            }
         )
     }
 
@@ -145,12 +160,21 @@ fun DataTabContent(
                     modifier = Modifier.alpha(collapseProgress)
                 )
 
-                // 模式切换按钮（始终显示，紧凑尺寸）
-                DisplayModeToggleButton(
-                    displayMode = uiState.displayMode,
-                    onClick = { viewModel.toggleDisplayMode() },
-                    modifier = Modifier.size(40.dp)
-                )
+                Row {
+                    // 过滤按钮
+                    FilterButton(
+                        isActive = uiState.isFilterActive,
+                        onClick = { showFilterSheet = true },
+                        modifier = Modifier.size(40.dp)
+                    )
+
+                    // 模式切换按钮（始终显示，紧凑尺寸）
+                    DisplayModeToggleButton(
+                        displayMode = uiState.displayMode,
+                        onClick = { viewModel.toggleDisplayMode() },
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
             }
         }
 
@@ -305,6 +329,36 @@ private fun DisplayModeToggleButton(
             contentDescription = "切换显示模式",
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+/**
+ * 过滤按钮（带激活角标）
+ */
+@Composable
+private fun FilterButton(
+    isActive: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier) {
+        IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+            Icon(
+                imageVector = Icons.Outlined.FilterList,
+                contentDescription = "筛选",
+                tint = if (isActive) MaterialTheme.colorScheme.primary
+                       else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (isActive) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 8.dp, end = 8.dp)
+                    .size(8.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+            )
+        }
     }
 }
 

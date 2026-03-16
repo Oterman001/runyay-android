@@ -38,7 +38,11 @@ data class DataTabUiState(
     val runRecords: List<RunRecordEntity> = emptyList(),     // 保留原有字段兼容
     val totalDistance: Double = 0.0,      // 总跑步距离 (km)
     val totalRunCount: Int = 0,           // 总跑步次数
-    val totalDuration: Double = 0.0       // 总跑步时长 (分钟)
+    val totalDuration: Double = 0.0,      // 总跑步时长 (分钟)
+    val selectedInclusiveLevels: Set<Int> = emptySet(),     // 筛选的统计分析级别，空=全部
+    val selectedDatasources: Set<String> = emptySet(),      // 筛选的数据来源，空=全部
+    val availableDatasources: List<String> = emptyList(),   // 从数据中提取的去重数据来源
+    val isFilterActive: Boolean = false                     // 是否有活跃过滤
 )
 
 /**
@@ -55,6 +59,9 @@ class DataTabViewModel(
 
     private val _uiState = MutableStateFlow(DataTabUiState())
     val uiState: StateFlow<DataTabUiState> = _uiState.asStateFlow()
+
+    // 保存未过滤的完整记录列表
+    private var allRecords: List<RunRecordEntity> = emptyList()
 
     // 轨迹点版本号，用于触发UI重组
     private val _trackPointsVersion = MutableStateFlow(0L)
@@ -123,14 +130,26 @@ class DataTabViewModel(
                     )
                 }
                 .collect { records ->
-                    // 保存当前展开状态
+                    // 保存完整记录
+                    allRecords = records
+
+                    // 提取去重的数据来源
+                    val datasources = records.mapNotNull { it.datasource }
+                        .distinct().sorted()
+
+                    // 保存当前展开状态和过滤状态
                     val currentExpanded = _uiState.value.expandedMonths
+                    val currentInclusiveLevels = _uiState.value.selectedInclusiveLevels
+                    val currentDatasources = _uiState.value.selectedDatasources
+
+                    // 应用过滤
+                    val filteredRecords = applyFilterToRecords(records, currentInclusiveLevels, currentDatasources)
 
                     // 按月分组
-                    val monthGroups = groupRecordsByMonth(records)
+                    val monthGroups = groupRecordsByMonth(filteredRecords)
 
                     // 计算总统计数据（过滤掉 inclusiveLevel == 0 的不纳入统计记录）
-                    val statsRecords = records.filter { it.inclusiveLevel != 0 }
+                    val statsRecords = filteredRecords.filter { it.inclusiveLevel != 0 }
                     val totalDistance = statsRecords.sumOf { it.totalDistance }
                     val totalRunCount = statsRecords.size
                     val totalDuration = statsRecords.sumOf { it.activeDuration }
@@ -138,12 +157,13 @@ class DataTabViewModel(
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         monthGroups = monthGroups,
-                        runRecords = records,
+                        runRecords = filteredRecords,
                         expandedMonths = currentExpanded,
                         error = null,
                         totalDistance = totalDistance,
                         totalRunCount = totalRunCount,
-                        totalDuration = totalDuration
+                        totalDuration = totalDuration,
+                        availableDatasources = datasources
                     )
                 }
         }
@@ -285,6 +305,52 @@ class DataTabViewModel(
         val minutes = paceMinPerKm.toInt()
         val seconds = ((paceMinPerKm - minutes) * 60).toInt()
         return "${minutes}'${seconds.toString().padStart(2, '0')}\""
+    }
+
+    /**
+     * 对记录列表应用过滤条件
+     */
+    private fun applyFilterToRecords(
+        records: List<RunRecordEntity>,
+        inclusiveLevels: Set<Int>,
+        datasources: Set<String>
+    ): List<RunRecordEntity> {
+        var result = records
+        if (inclusiveLevels.isNotEmpty()) {
+            result = result.filter { it.inclusiveLevel in inclusiveLevels }
+        }
+        if (datasources.isNotEmpty()) {
+            result = result.filter { it.datasource in datasources }
+        }
+        return result
+    }
+
+    /**
+     * 应用过滤条件
+     */
+    fun applyFilter(inclusiveLevels: Set<Int>, datasources: Set<String>) {
+        val isActive = inclusiveLevels.isNotEmpty() || datasources.isNotEmpty()
+        val filteredRecords = applyFilterToRecords(allRecords, inclusiveLevels, datasources)
+        val monthGroups = groupRecordsByMonth(filteredRecords)
+        val statsRecords = filteredRecords.filter { it.inclusiveLevel != 0 }
+
+        _uiState.value = _uiState.value.copy(
+            selectedInclusiveLevels = inclusiveLevels,
+            selectedDatasources = datasources,
+            isFilterActive = isActive,
+            runRecords = filteredRecords,
+            monthGroups = monthGroups,
+            totalDistance = statsRecords.sumOf { it.totalDistance },
+            totalRunCount = statsRecords.size,
+            totalDuration = statsRecords.sumOf { it.activeDuration }
+        )
+    }
+
+    /**
+     * 清除过滤条件
+     */
+    fun clearFilter() {
+        applyFilter(emptySet(), emptySet())
     }
 
     /**
