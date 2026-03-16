@@ -640,8 +640,8 @@ class DashboardTabViewModel(
         viewModelScope.launch {
             val updatedRecord = record.copy(inclusiveLevel = newLevel, uploadStatus = 0)
             try {
-                repository.updateRunRecord(updatedRecord)
                 repository.updatePBInclusiveLevel(record.workoutId, newLevel)
+                repository.updateRunRecord(updatedRecord)
             } catch (_: Exception) { return@launch }
 
             // 同步到服务器
