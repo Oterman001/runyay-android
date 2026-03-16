@@ -5,9 +5,8 @@ import com.oterman.rundemo.data.network.api.FitFileApi
 import com.oterman.rundemo.data.network.api.RunDataApi
 import com.oterman.rundemo.data.network.api.UserApi
 import com.oterman.rundemo.data.network.interceptor.AuthInterceptor
-import com.oterman.rundemo.util.RLog
+import com.oterman.rundemo.data.network.interceptor.SmartLoggingInterceptor
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
@@ -32,15 +31,9 @@ object RetrofitClient {
     
     /**
      * 日志拦截器
-     * 使用自定义 Logger 将日志写入 RLog 文件，OkHttp 默认已打印到 logcat，此处不重复输出
+     * 自动识别二进制内容，只打印摘要，避免日志中出现二进制乱码
      */
-    private val loggingInterceptor = HttpLoggingInterceptor(
-        HttpLoggingInterceptor.Logger { message ->
-            RLog.d("OkHttp", message)
-        }
-    ).apply {
-        level = HttpLoggingInterceptor.Level.BODY
-    }
+    private val loggingInterceptor = SmartLoggingInterceptor()
     
     /**
      * OkHttp客户端配置
