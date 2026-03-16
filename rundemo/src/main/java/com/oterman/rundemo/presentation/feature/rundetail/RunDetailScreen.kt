@@ -449,10 +449,12 @@ fun RunDetailScreen(
                                 startTime = record.startTime,
                                 endTime = record.endTime,
                                 duration = record.activeDuration,
-                                deviceName = if (record.datasource == "HK" && record.deviceInfo == "Apple Watch") {
-                                    AppleWatchDeviceUtils.getModelName(record.deviceVersion)
-                                } else {
-                                    record.deviceInfo
+                                deviceName = when {
+                                    record.datasource == "HK" && record.deviceInfo?.contains("apple watch", ignoreCase = true) == true ->
+                                        AppleWatchDeviceUtils.getModelName(record.deviceVersion)
+                                    record.datasource == DataSourcePlatform.MANUAL.code ->
+                                        if (record.deviceInfo.isNullOrBlank()) "Manual" else "Manual-${record.deviceInfo}"
+                                    else -> record.deviceInfo
                                 },
                                 isOutdoor = uiState.isOutdoor,
                                 metrics = uiState.metrics,

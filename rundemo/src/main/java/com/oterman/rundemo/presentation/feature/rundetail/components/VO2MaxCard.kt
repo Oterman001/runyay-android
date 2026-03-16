@@ -65,7 +65,7 @@ fun VO2MaxCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = String.format("%.1f", vo2Max),
+                        text = String.format("%.2f", vo2Max),
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2196F3)

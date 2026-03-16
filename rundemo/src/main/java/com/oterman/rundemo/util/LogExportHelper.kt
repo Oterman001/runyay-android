@@ -28,7 +28,7 @@ object LogExportHelper {
 
         val nn = String.format("%02d", Random.nextInt(0, 100))
         val password = SecurityProvider.generateTarget() + nn
-        val zipFileName = "rundemo_logs_$nn.zip"
+        val zipFileName = "runyay_logs_$nn.zip"
 
         val outDir = File(context.cacheDir, "log_exports").also { it.mkdirs() }
         val destZip = File(outDir, zipFileName)

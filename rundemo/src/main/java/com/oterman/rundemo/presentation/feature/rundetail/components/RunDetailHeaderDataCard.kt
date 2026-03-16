@@ -468,5 +468,8 @@ private fun formatHeaderStartEndTime(startTime: Long, endTime: Long): String {
     val dayOfWeek = arrayOf("日", "一", "二", "三", "四", "五", "六")
     val cal = Calendar.getInstance().apply { time = startDate }
     val weekDay = dayOfWeek[cal.get(Calendar.DAY_OF_WEEK) - 1]
-    return "${dateFormat.format(startDate)}(周$weekDay) ${timeFormat.format(startDate)}-${timeFormat.format(endDate)}"
+    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+    val recordYear = cal.get(Calendar.YEAR)
+    val yearPrefix = if (recordYear != currentYear) "$recordYear." else ""
+    return "${yearPrefix}${dateFormat.format(startDate)}(周$weekDay) ${timeFormat.format(startDate)}-${timeFormat.format(endDate)}"
 }

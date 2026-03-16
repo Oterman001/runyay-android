@@ -1,5 +1,6 @@
 package com.oterman.rundemo.presentation.feature.datasource.records
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,10 +16,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -57,7 +63,19 @@ fun PlatformRecordListScreen(
     val isManual = uiState.platform == DataSourcePlatform.MANUAL
     var pendingInclusiveLevelRecord by remember { mutableStateOf<RunRecordEntity?>(null) }
 
-    val title = if (isManual) "手动导入记录" else "${uiState.platform.displayName} 的数据"
+    val selectedCount = uiState.selectedWorkoutIds.size
+
+    // 选择模式下拦截返回键退出选择模式
+    BackHandler(enabled = uiState.isSelectionMode) {
+        viewModel.exitSelectionMode()
+    }
+
+    val topBarTitle = when {
+        uiState.isSelectionMode && selectedCount > 0 -> "已选 $selectedCount 项"
+        uiState.isSelectionMode -> "选择记录"
+        isManual -> "手动导入记录"
+        else -> "${uiState.platform.displayName} 的数据"
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -65,16 +83,59 @@ fun PlatformRecordListScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = title,
+                        text = topBarTitle,
                         fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
-                        )
+                    if (uiState.isSelectionMode) {
+                        IconButton(onClick = { viewModel.exitSelectionMode() }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "取消选择"
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "返回"
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    if (isManual && uiState.records.isNotEmpty()) {
+                        if (uiState.isSelectionMode) {
+                            // 全选按钮
+                            val allSelected = selectedCount == uiState.records.size
+                            IconButton(onClick = {
+                                if (allSelected) viewModel.exitSelectionMode().also { viewModel.enterSelectionMode() }
+                                else viewModel.selectAll()
+                            }) {
+                                Icon(
+                                    imageVector = if (allSelected) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                                    contentDescription = if (allSelected) "取消全选" else "全选"
+                                )
+                            }
+                            // 删除按钮
+                            TextButton(
+                                onClick = { viewModel.requestBatchDelete() },
+                                enabled = selectedCount > 0 && !uiState.isBatchDeleting
+                            ) {
+                                Text(
+                                    text = if (selectedCount > 0) "删除($selectedCount)" else "删除",
+                                    color = if (selectedCount > 0 && !uiState.isBatchDeleting)
+                                        MaterialTheme.colorScheme.error
+                                    else
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                )
+                            }
+                        } else {
+                            TextButton(onClick = { viewModel.enterSelectionMode() }) {
+                                Text("选择")
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -84,14 +145,24 @@ fun PlatformRecordListScreen(
         }
     ) { paddingValues ->
         when {
-            uiState.isLoading -> {
+            uiState.isLoading || uiState.isBatchDeleting -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(modifier = Modifier.size(36.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(modifier = Modifier.size(36.dp))
+                        if (uiState.isBatchDeleting) {
+                            Text(
+                                text = "正在删除，请稍候...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 12.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -117,7 +188,7 @@ fun PlatformRecordListScreen(
                         .padding(paddingValues)
                 ) {
                     // MANUAL 平台专属：冲突说明紧凑提示条
-                    if (isManual) {
+                    if (isManual && !uiState.isSelectionMode) {
                         item {
                             ConflictNoteBar(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -139,15 +210,42 @@ fun PlatformRecordListScreen(
                         key = { it.workoutId }
                     ) { record ->
                         key(record.workoutId, trackPointsVersion) {
-                            val trackPoints = viewModel.getCachedTrackPoints(record.workoutId)
-                            val isLoading = viewModel.isTrackPointsLoading(record.workoutId)
-                            RunRecordItem(
-                                record = record,
-                                trackPoints = trackPoints,
-                                isTrackPointsLoading = isLoading,
-                                onClick = { onNavigateToRunDetail(record.workoutId) },
-                                onInclusiveLevelClick = { pendingInclusiveLevelRecord = record }
-                            )
+                            if (uiState.isSelectionMode) {
+                                val isSelected = record.workoutId in uiState.selectedWorkoutIds
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { viewModel.toggleSelection(record.workoutId) },
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { viewModel.toggleSelection(record.workoutId) },
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    )
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        val trackPoints = viewModel.getCachedTrackPoints(record.workoutId)
+                                        val isLoading = viewModel.isTrackPointsLoading(record.workoutId)
+                                        RunRecordItem(
+                                            record = record,
+                                            trackPoints = trackPoints,
+                                            isTrackPointsLoading = isLoading,
+                                            onClick = { viewModel.toggleSelection(record.workoutId) },
+                                            onInclusiveLevelClick = null
+                                        )
+                                    }
+                                }
+                            } else {
+                                val trackPoints = viewModel.getCachedTrackPoints(record.workoutId)
+                                val isLoading = viewModel.isTrackPointsLoading(record.workoutId)
+                                RunRecordItem(
+                                    record = record,
+                                    trackPoints = trackPoints,
+                                    isTrackPointsLoading = isLoading,
+                                    onClick = { onNavigateToRunDetail(record.workoutId) },
+                                    onInclusiveLevelClick = { pendingInclusiveLevelRecord = record }
+                                )
+                            }
                         }
                     }
                 }
@@ -166,6 +264,46 @@ fun PlatformRecordListScreen(
             }
         )
     }
+
+    // 批量删除确认对话框
+    if (uiState.showBatchDeleteConfirm) {
+        BatchDeleteConfirmDialog(
+            count = selectedCount,
+            onDismiss = { viewModel.dismissBatchDeleteConfirm() },
+            onConfirm = { viewModel.confirmBatchDelete() }
+        )
+    }
+}
+
+@Composable
+private fun BatchDeleteConfirmDialog(
+    count: Int,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "确认删除")
+        },
+        text = {
+            Text(text = "确定要删除选中的 $count 条记录吗？\n删除后将同步至服务器，此操作不可撤销。")
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    text = "删除",
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
 
 /**

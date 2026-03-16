@@ -21,7 +21,11 @@ data class PlatformRecordListUiState(
     val platform: DataSourcePlatform,
     val records: List<RunRecordEntity> = emptyList(),
     val isLoading: Boolean = true,
-    val pendingDeleteWorkoutId: String? = null
+    val pendingDeleteWorkoutId: String? = null,
+    val isSelectionMode: Boolean = false,
+    val selectedWorkoutIds: Set<String> = emptySet(),
+    val isBatchDeleting: Boolean = false,
+    val showBatchDeleteConfirm: Boolean = false
 )
 
 class PlatformRecordListViewModel(
@@ -69,6 +73,84 @@ class PlatformRecordListViewModel(
                 RLog.e(TAG, "删除记录失败", e)
             } finally {
                 _uiState.update { it.copy(pendingDeleteWorkoutId = null) }
+            }
+        }
+    }
+
+    fun enterSelectionMode() {
+        _uiState.update { it.copy(isSelectionMode = true, selectedWorkoutIds = emptySet()) }
+    }
+
+    fun exitSelectionMode() {
+        _uiState.update {
+            it.copy(
+                isSelectionMode = false,
+                selectedWorkoutIds = emptySet(),
+                showBatchDeleteConfirm = false
+            )
+        }
+    }
+
+    fun toggleSelection(workoutId: String) {
+        _uiState.update { state ->
+            val updated = if (state.selectedWorkoutIds.contains(workoutId)) {
+                state.selectedWorkoutIds - workoutId
+            } else {
+                state.selectedWorkoutIds + workoutId
+            }
+            state.copy(selectedWorkoutIds = updated)
+        }
+    }
+
+    fun selectAll() {
+        _uiState.update { state ->
+            state.copy(selectedWorkoutIds = state.records.map { it.workoutId }.toSet())
+        }
+    }
+
+    fun requestBatchDelete() {
+        if (_uiState.value.selectedWorkoutIds.isEmpty()) return
+        _uiState.update { it.copy(showBatchDeleteConfirm = true) }
+    }
+
+    fun dismissBatchDeleteConfirm() {
+        _uiState.update { it.copy(showBatchDeleteConfirm = false) }
+    }
+
+    fun confirmBatchDelete() {
+        val selectedIds = _uiState.value.selectedWorkoutIds
+        if (selectedIds.isEmpty()) return
+
+        val records = _uiState.value.records.filter { it.workoutId in selectedIds }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBatchDeleting = true, showBatchDeleteConfirm = false) }
+            try {
+                for (record in records) {
+                    try {
+                        if (record.originId != null) {
+                            val result = syncManager.deleteRunSummary(record.originId, record.workoutId)
+                            if (result.isFailure) {
+                                RLog.w(TAG, "服务端删除失败，仍删除本地: workoutId=${record.workoutId}, err=${result.exceptionOrNull()?.message}")
+                                repository.deleteRunRecord(record.workoutId)
+                            }
+                        } else {
+                            repository.deleteRunRecord(record.workoutId)
+                        }
+                        RLog.i(TAG, "批量删除 - 记录已删除: ${record.workoutId}")
+                    } catch (e: Exception) {
+                        RLog.e(TAG, "批量删除 - 单条删除失败: ${record.workoutId}", e)
+                    }
+                }
+                loadRecords()
+            } finally {
+                _uiState.update {
+                    it.copy(
+                        isBatchDeleting = false,
+                        isSelectionMode = false,
+                        selectedWorkoutIds = emptySet()
+                    )
+                }
             }
         }
     }
