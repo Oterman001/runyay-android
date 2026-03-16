@@ -11,10 +11,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.ui.theme.RunTheme
@@ -49,6 +51,7 @@ fun PrivacyTrackView(
     }
 
     val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
 
     Canvas(
         modifier = modifier
@@ -108,7 +111,8 @@ fun PrivacyTrackView(
                     bgColor = kmBadgeBg,
                     textColor = kmBadgeText,
                     strokeColor = markerStroke,
-                    textMeasurer = textMeasurer
+                    textMeasurer = textMeasurer,
+                    density = density
                 )
             }
         }
@@ -132,12 +136,14 @@ private fun DrawScope.drawKmBadge(
     bgColor: Color,
     textColor: Color,
     strokeColor: Color,
-    textMeasurer: TextMeasurer
+    textMeasurer: TextMeasurer,
+    density: Density
 ) {
     drawCircle(color = bgColor, radius = radius, center = center)
     drawCircle(color = strokeColor, radius = radius, center = center, style = Stroke(width = 1.5f))
 
-    val textStyle = TextStyle(color = textColor, fontSize = (radius * 0.9f).sp)
+    val fontSizeSp = (radius * 0.9f / density.density / density.fontScale)
+    val textStyle = TextStyle(color = textColor, fontSize = fontSizeSp.sp)
     val textLayout = textMeasurer.measure("$kmNumber", textStyle)
     drawText(
         textLayoutResult = textLayout,
