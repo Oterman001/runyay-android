@@ -35,23 +35,14 @@ object KilometerSegmentCalculator {
         }
 
         RLog.i(TAG, "开始计算公里分段: records=${records.size}个, startTimeMs=$startTimeMs, pauseList=${pauseList.size}个")
-        val firstRecord = records.firstOrNull()
-        if (firstRecord != null) {
-            val firstTs = FitFileParser.fitTimestampToMillis(firstRecord.timestamp)
-            val firstDist = firstRecord.distance
-            RLog.i(TAG, "首条Record: timestamp=$firstTs, distance=$firstDist, 与startTimeMs差值=${firstTs - startTimeMs}ms (${(firstTs - startTimeMs) / 1000.0}s)")
-        }
-        val lastRecord0 = records.lastOrNull()
-        if (lastRecord0 != null) {
-            val lastTs = FitFileParser.fitTimestampToMillis(lastRecord0.timestamp)
-            RLog.i(TAG, "末条Record: timestamp=$lastTs, distance=${lastRecord0.distance}")
-        }
 
         val segments = mutableListOf<RunSegmentEntity>()
         var currentKm = 1
         var segmentStartIndex = 0
         var segmentStartDistance = 0.0  // 米
-        var segmentStartTimeMs = startTimeMs
+        var segmentStartTimeMs = records.firstOrNull()?.let {
+            FitFileParser.fitTimestampToMillis(it.timestamp)
+        } ?: startTimeMs
 
         for ((index, record) in records.withIndex()) {
             val currentDistance = record.distance?.toDouble() ?: continue
@@ -109,6 +100,21 @@ object KilometerSegmentCalculator {
 
     // ==================== 私有方法 ====================
 
+    /**
+     * 累加分段内相邻Record之间的正向时间差，跳过时间戳倒退的间隔
+     */
+    private fun computeRecordsDurationSec(records: List<FitRecord>, startIndex: Int, endIndex: Int): Double {
+        var totalMs = 0L
+        val safeEnd = minOf(endIndex, records.size - 1)
+        for (i in startIndex until safeEnd) {
+            val t1 = FitFileParser.fitTimestampToMillis(records[i].timestamp)
+            val t2 = FitFileParser.fitTimestampToMillis(records[i + 1].timestamp)
+            val delta = t2 - t1
+            if (delta > 0) totalMs += delta
+        }
+        return totalMs / 1000.0
+    }
+
     private fun createSegment(
         seq: Int,
         startIndex: Int,
@@ -124,12 +130,13 @@ object KilometerSegmentCalculator {
         // 距离（米转公里）
         val distanceKm = (endDistanceM - startDistanceM) / 1000.0
 
-        // 总时长（ms转分钟）
-        val totalDurationMin = (endTimeMs - startTimeMs) / 1000.0 / 60.0
+        // 用Record间正向时间差计算时长，自动跳过时间戳倒退的间隔
+        val segmentDurationSec = computeRecordsDurationSec(records, startIndex, endIndex)
+        val totalDurationMin = segmentDurationSec / 60.0
 
         // 减去暂停时间
         val pauseDurationSec = calculatePauseDuration(startTimeMs, endTimeMs, pauseList)
-        val activeDurationMin = ((endTimeMs - startTimeMs) / 1000.0 - pauseDurationSec) / 60.0
+        val activeDurationMin = (segmentDurationSec - pauseDurationSec) / 60.0
 
         // 收集分段内的数据点
         val safeEndIndex = minOf(endIndex + 1, records.size)

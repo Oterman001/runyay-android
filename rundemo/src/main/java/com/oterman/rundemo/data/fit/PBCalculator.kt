@@ -51,14 +51,10 @@ object PBCalculator {
         // 过滤出公里分段(segmentType=1)并按序号排序
         val kmSegments = segments
             .filter { it.segmentType == 1 }
+            .filter { it.activeDuration > 0 }
             .sortedBy { it.seq }
 
-        RLog.i(TAG, "公里分段详情(${kmSegments.size}个):")
-        kmSegments.forEachIndexed { idx, seg ->
-            RLog.d(TAG, "  [$idx] seq=${seg.seq}, dist=${String.format("%.3f", seg.distance)}km, " +
-                "activeDur=${String.format("%.2f", seg.activeDuration)}min, " +
-                "avgSpeed=${String.format("%.2f", seg.averageSpeed)}min/km")
-        }
+        RLog.i(TAG, "公里分段: ${kmSegments.size}个 (过滤activeDuration>0后)")
 
         // 1k, 3k, 5k, 10k
         for (kilo in listOf(1, 3, 5, 10)) {
@@ -119,9 +115,11 @@ object PBCalculator {
             return null
         }
 
-        // 对于半马/全马，需要额外检查零头
-        if (runRecord.totalDistance < targetDistance || segmentList.size < kilo + 1) {
-            return null
+        // 半马/全马需要额外分段来补零头
+        if (kilo == 21 || kilo == 42) {
+            if (runRecord.totalDistance < targetDistance || segmentList.size < kilo + 1) {
+                return null
+            }
         }
 
         val epsilon = 0.05 // 判断完整公里分段的容差
@@ -147,9 +145,6 @@ object PBCalculator {
                 endIndex++
             }
 
-            RLog.d(TAG, "  kilo=$kilo, window[$i]: curTime=${String.format("%.2f", curTime)}, " +
-                "curDistance=$curDistance, minTime=${String.format("%.2f", minTime ?: 0.0)}")
-
             if (curDistance >= kilo.toDouble() && curTime != 0.0 && (minTime == null || curTime < minTime)) {
                 // 半马或全马特殊处理
                 if ((kilo == 21 || kilo == 42) && endIndex >= segmentList.size - 1) {
@@ -160,11 +155,12 @@ object PBCalculator {
                 // 21或42km的补齐零头
                 if (kilo == 21 || kilo == 42) {
                     val changeKilo = if (kilo == 21) 0.0975 else 0.195
-                    if (segmentList[endIndex].distance < changeKilo) {
+                    if (endIndex + 1 >= segmentList.size) continue
+                    val nextSeg = segmentList[endIndex + 1]
+                    if (nextSeg.distance < changeKilo) {
                         continue
                     }
-                    // 用下一个分段的配速补齐零头时间
-                    curTime += getChangeTime(segmentList[endIndex + 1].averageSpeed, changeKilo)
+                    curTime += getChangeTime(nextSeg.averageSpeed, changeKilo)
                 }
                 minTime = curTime
             }
