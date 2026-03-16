@@ -188,13 +188,19 @@ fun DashboardTabContent(
             }
 
             // Dynamic card rendering based on user configuration
-            dashboardCards.forEach { card ->
+            dashboardCards.forEachIndexed { index, card ->
                 if (card.visible) {
+                    val isFirstVisible = dashboardCards.take(index).none { it.visible }
+                    val cardModifier = if (isFirstVisible) {
+                        Modifier.padding(bottom = 10.dp, top = 10.dp)
+                    } else {
+                        Modifier.padding(bottom = 10.dp)
+                    }
                     when (card.id) {
                         DashboardCardId.TOTAL_VDOT -> {
                             TotalRunVdotCard(
                                 stats = uiState.totalStats,
-                                modifier = Modifier.padding(bottom = 10.dp, top = 10.dp),
+                                modifier = cardModifier,
                                 onDistanceClick = { onSwitchToDataTab() },
                                 onVdotClick = { onNavigateToVdotDetail() }
                             )
@@ -203,7 +209,7 @@ fun DashboardTabContent(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 10.dp),
+                                    .then(cardModifier),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 PeriodStatisticsCard(
@@ -229,7 +235,7 @@ fun DashboardTabContent(
                         DashboardCardId.WEEK -> {
                             WeekStatisticsCard(
                                 stats = uiState.weekStats,
-                                modifier = Modifier.padding(bottom = 10.dp),
+                                modifier = cardModifier,
                                 showTrajectoryMode = showTrajectoryMode,
                                 trajectoryDataMap = trajectoryDataMap,
                                 onToggleTrajectoryMode = { viewModel.toggleTrajectoryMode() },
@@ -259,7 +265,7 @@ fun DashboardTabContent(
                                         primaryColor = MaterialTheme.colorScheme.onSurface,
                                         onClick = { onNavigateToRunDetail(record.workoutId) },
                                         onInclusiveLevelClick = { pendingInclusiveLevelRecord = record },
-                                        modifier = Modifier.padding(bottom = 10.dp)
+                                        modifier = cardModifier
                                     )
                                 }
                             }
@@ -268,7 +274,7 @@ fun DashboardTabContent(
                             if (uiState.pbAbilityList.isNotEmpty()) {
                                 AllPBAbilityCard(
                                     pbList = uiState.pbAbilityList,
-                                    modifier = Modifier.padding(bottom = 10.dp),
+                                    modifier = cardModifier,
                                     onItemClick = { item ->
                                         item.workoutId?.let { workoutId ->
                                             onNavigateToRunDetail(workoutId)
@@ -281,7 +287,7 @@ fun DashboardTabContent(
                             if (uiState.pbSpeedList.isNotEmpty()) {
                                 AllPBSpeedCard(
                                     pbList = uiState.pbSpeedList,
-                                    modifier = Modifier.padding(bottom = 10.dp),
+                                    modifier = cardModifier,
                                     onItemClick = { item ->
                                         item.workoutId?.let { workoutId ->
                                             onNavigateToRunDetail(workoutId)
@@ -294,7 +300,7 @@ fun DashboardTabContent(
                             if (uiState.dailySentence.isNotEmpty()) {
                                 DailySentenceCard(
                                     sentence = uiState.dailySentence,
-                                    modifier = Modifier.padding(bottom = 10.dp)
+                                    modifier = cardModifier
                                 )
                             }
                         }
