@@ -641,6 +641,7 @@ class DashboardTabViewModel(
             val updatedRecord = record.copy(inclusiveLevel = newLevel, uploadStatus = 0)
             try {
                 repository.updatePBInclusiveLevel(record.workoutId, newLevel)
+                repository.updateVdotInclusiveLevel(record.workoutId, newLevel)
                 repository.updateRunRecord(updatedRecord)
             } catch (_: Exception) { return@launch }
 

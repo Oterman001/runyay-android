@@ -665,8 +665,9 @@ class RunDetailViewModel(
         val record = _uiState.value.record ?: return
         viewModelScope.launch {
             try {
-                // 先更新pb_record，确保Dashboard的Flow重新collect时数据已一致
+                // 先更新pb_record和overall_vdot，确保Dashboard的Flow重新collect时数据已一致
                 repository.updatePBInclusiveLevel(record.workoutId, newLevel)
+                repository.updateVdotInclusiveLevel(record.workoutId, newLevel)
 
                 val updatedRecord = record.copy(inclusiveLevel = newLevel, uploadStatus = 0)
                 repository.updateRunRecord(updatedRecord)
