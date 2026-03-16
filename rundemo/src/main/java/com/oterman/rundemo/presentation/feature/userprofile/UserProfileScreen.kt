@@ -51,13 +51,10 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import android.app.DatePickerDialog
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -75,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
+import com.oterman.rundemo.presentation.components.BirthdayPickerDialog
 import java.io.File
 
 /**
@@ -645,29 +643,6 @@ private fun GenderPickerDialog(onSelect: (Boolean) -> Unit, onDismiss: () -> Uni
         confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
     )
-}
-
-/**
- * 出生年月选择对话框
- */
-@Composable
-private fun BirthdayPickerDialog(currentMillis: Long, onSelect: (Long) -> Unit, onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    DisposableEffect(Unit) {
-        val cal = Calendar.getInstance().apply {
-            if (currentMillis > 0L) timeInMillis = currentMillis
-        }
-        val dialog = DatePickerDialog(context, { _, year, month, _ ->
-            val result = Calendar.getInstance().apply {
-                set(year, month, 1, 0, 0, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            onSelect(result.timeInMillis)
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), 1)
-        dialog.setOnCancelListener { onDismiss() }
-        dialog.show()
-        onDispose { dialog.dismiss() }
-    }
 }
 
 /**

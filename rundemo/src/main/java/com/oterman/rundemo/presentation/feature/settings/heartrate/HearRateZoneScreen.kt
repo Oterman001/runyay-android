@@ -20,8 +20,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,7 +35,6 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -56,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.data.fit.AbilityZoneCalculator
 import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.presentation.components.BirthdayPickerDialog
 import com.oterman.rundemo.ui.theme.RunTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -345,25 +343,11 @@ fun HearRateZoneScreen(
 
     // 日期选择器
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = if (settings.birthdayMillis > 0L) settings.birthdayMillis else null
+        BirthdayPickerDialog(
+            currentMillis = settings.birthdayMillis,
+            onSelect = { millis -> viewModel.onBirthdayChanged(Date(millis)) },
+            onDismiss = { showDatePicker = false }
         )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        viewModel.onBirthdayChanged(Date(millis))
-                    }
-                    showDatePicker = false
-                }) { Text("确定") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("取消") }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
     }
 
     // 心率区间说明弹窗
