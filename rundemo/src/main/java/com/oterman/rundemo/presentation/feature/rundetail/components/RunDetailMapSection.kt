@@ -2,6 +2,7 @@ package com.oterman.rundemo.presentation.feature.rundetail.components
 
 import android.content.Context
 import android.view.View
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,13 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.outlined.DirectionsRun
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -192,23 +193,29 @@ fun RunDetailMapSection(
                     )
             )
 
-            SmallFloatingActionButton(
+            Surface(
                 onClick = { showSettingSheet = true },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 12.dp, bottom = 30.dp),
-                contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                elevation = FloatingActionButtonDefaults.elevation(
-                    defaultElevation = 2.dp,
-                    pressedElevation = 4.dp
-                )
+                    .padding(end = 12.dp, bottom = 30.dp)
+                    .size(36.dp),
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.40f),
+                border = BorderStroke(0.8.dp, Color.White.copy(alpha = 0.22f)),
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp
             ) {
-                Icon(
-                    imageVector = Icons.Default.Layers,
-                    contentDescription = "地图设置",
-                    modifier = Modifier.size(18.dp),
-                    tint = RunTheme.colorScheme.blue
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Layers,
+                        contentDescription = "地图设置",
+                        modifier = Modifier.size(18.dp),
+                        tint = Color.White
+                    )
+                }
             }
 
             if (showSettingSheet) {
