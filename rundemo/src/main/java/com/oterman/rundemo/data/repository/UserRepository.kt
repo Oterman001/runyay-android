@@ -612,14 +612,9 @@ class UserRepository(
             
             // 检查响应
             if (response.isSuccess()) {
-                val data = response.data?.setPasswordResponseDto?.firstOrNull()
-                if (data?.isSuccess == true) {
-                    // 更新本地保存的用户名
-                    preferencesManager.updateUserName(nickname)
-                    Result.success(true)
-                } else {
-                    Result.success(true) // 某些接口可能不返回data，只要code成功即可
-                }
+                // 更新本地保存的用户名（只要HTTP请求成功即保存，避免首次进入ProfileTab昵称为空）
+                preferencesManager.updateUserName(nickname)
+                Result.success(true)
             } else {
                 Result.failure(Exception(response.msg))
             }
