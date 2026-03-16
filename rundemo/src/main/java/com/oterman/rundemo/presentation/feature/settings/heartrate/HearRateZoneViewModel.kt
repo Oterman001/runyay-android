@@ -88,9 +88,12 @@ class HearRateZoneViewModel(
                 maxHR = current.maxHeartRate,
                 restHR = current.restingHeartRate
 
-            ).onFailure { e ->
-                RLog.e(TAG, "同步心率区间设置到服务端失败: ${e.message}")
-                serverError.value = "保存数据到服务器失败，请稍后重试"
+            ).onFailure {
+                RLog.w(TAG, "update心率区间设置失败，尝试save: ${it.message}")
+                userRepository.saveBasicInfo(current).onFailure { e ->
+                    RLog.e(TAG, "save心率区间设置也失败: ${e.message}")
+                    serverError.value = "保存数据到服务器失败，请稍后重试"
+                }
             }
         }
     }
