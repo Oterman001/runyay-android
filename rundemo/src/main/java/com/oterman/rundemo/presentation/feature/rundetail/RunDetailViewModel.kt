@@ -111,11 +111,18 @@ class RunDetailViewModel(
                 val heartRate5Zones = repository.getHeartRate5Zones(workoutId)
                 val speedZones = repository.getSpeedZones(workoutId)
 
-                // 从 daily_health 表获取当天 VO2Max
+                // 从 daily_health 表获取当天 VO2Max（同平台比较）
                 val runDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                     .format(Date(record.startTime))
-                val vo2Max = healthRepository.getVo2MaxForDate(runDateStr)
-                val previousVo2Max = if (vo2Max != null) {
+                val platformCode = record.datasource
+                val vo2Max = if (!platformCode.isNullOrBlank()) {
+                    healthRepository.getVo2MaxForDateByPlatform(platformCode, runDateStr)
+                } else {
+                    healthRepository.getVo2MaxForDate(runDateStr)
+                }
+                val previousVo2Max = if (vo2Max != null && !platformCode.isNullOrBlank()) {
+                    healthRepository.getPreviousVo2MaxByPlatform(platformCode, runDateStr)
+                } else if (vo2Max != null) {
                     healthRepository.getPreviousVo2Max(runDateStr)
                 } else null
 

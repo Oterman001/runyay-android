@@ -164,4 +164,24 @@ class HealthRepository(
         val userId = preferencesManager.getUserId() ?: return null
         return dailyHealthDao.getPreviousVo2Max(userId, calendarDateDash)
     }
+
+    /**
+     * 获取指定日期、指定平台的VO2Max（同平台精确匹配）
+     * @param platformCode 平台代码，如 "GCN"、"GGB"、"COROS"
+     * @param calendarDateDash 日期，格式 "yyyy-MM-dd"
+     */
+    suspend fun getVo2MaxForDateByPlatform(platformCode: String, calendarDateDash: String): Double? {
+        val userId = preferencesManager.getUserId() ?: return null
+        return dailyHealthDao.getVo2MaxForDateByPlatform(userId, platformCode, calendarDateDash)
+    }
+
+    /**
+     * 获取指定日期之前、指定平台最近的VO2Max（用于同平台delta计算）
+     * @param platformCode 平台代码，如 "GCN"、"GGB"、"COROS"
+     * @param calendarDateDash 日期，格式 "yyyy-MM-dd"
+     */
+    suspend fun getPreviousVo2MaxByPlatform(platformCode: String, calendarDateDash: String): Double? {
+        val userId = preferencesManager.getUserId() ?: return null
+        return dailyHealthDao.getPreviousVo2MaxByPlatform(userId, platformCode, calendarDateDash)
+    }
 }
