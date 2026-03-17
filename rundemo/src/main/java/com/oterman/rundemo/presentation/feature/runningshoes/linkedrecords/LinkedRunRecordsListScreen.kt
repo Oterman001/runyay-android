@@ -13,9 +13,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.repository.RunningShoeRepository
+import com.oterman.rundemo.presentation.feature.runningshoes.batchlink.BatchLinkRunRecordsSheet
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,9 +53,12 @@ fun LinkedRunRecordsListScreen(
     val repository = remember { RunningShoeRepository(context) }
     var records by remember { mutableStateOf<List<RunRecordEntity>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var refreshTrigger by remember { mutableIntStateOf(0) }
+    var showBatchLinkSheet by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
 
-    LaunchedEffect(shoeId) {
+    LaunchedEffect(shoeId, refreshTrigger) {
+        isLoading = true
         records = repository.getLinkedRecords(shoeId)
         isLoading = false
     }
@@ -66,6 +73,11 @@ fun LinkedRunRecordsListScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showBatchLinkSheet = true }) {
+                Icon(Icons.Default.Add, contentDescription = "关联记录")
+            }
         }
     ) { innerPadding ->
         if (isLoading) {
@@ -132,5 +144,16 @@ fun LinkedRunRecordsListScreen(
                 }
             }
         }
+    }
+
+    if (showBatchLinkSheet) {
+        BatchLinkRunRecordsSheet(
+            shoeId = shoeId,
+            onDismiss = { showBatchLinkSheet = false },
+            onLinkSuccess = {
+                showBatchLinkSheet = false
+                refreshTrigger++
+            }
+        )
     }
 }

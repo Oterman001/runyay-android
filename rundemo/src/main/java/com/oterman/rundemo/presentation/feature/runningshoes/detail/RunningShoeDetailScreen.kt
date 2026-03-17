@@ -61,6 +61,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.oterman.rundemo.domain.model.RunningShoe
 import com.oterman.rundemo.presentation.components.AppCard
+import com.oterman.rundemo.presentation.feature.runningshoes.batchlink.BatchLinkRunRecordsSheet
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -80,6 +81,7 @@ fun RunningShoeDetailScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
+    var showBatchLinkSheet by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -158,7 +160,7 @@ fun RunningShoeDetailScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onNavigateToBatchLink(shoeId) }) {
+            FloatingActionButton(onClick = { showBatchLinkSheet = true }) {
                 Icon(Icons.Default.Add, contentDescription = "批量关联")
             }
         }
@@ -304,6 +306,17 @@ fun RunningShoeDetailScreen(
                 item { Spacer(Modifier.height(80.dp)) } // FAB clearance
             }
         }
+    }
+
+    if (showBatchLinkSheet) {
+        BatchLinkRunRecordsSheet(
+            shoeId = shoeId,
+            onDismiss = { showBatchLinkSheet = false },
+            onLinkSuccess = {
+                showBatchLinkSheet = false
+                viewModel.loadShoe()
+            }
+        )
     }
 
     // Delete confirmation dialog
