@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.DirectionsRun
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Flag
@@ -78,6 +79,7 @@ fun ProfileTabContent(
     onDataSourceManageClick: () -> Unit = {},
     onRunGoalClick: () -> Unit = {},
     onHearRateZoneClick: () -> Unit = {},
+    onRunningShoesClick: () -> Unit = {},
     onDebugClick: () -> Unit = {},
     onContactUsClick: () -> Unit = {},
     onThemeModeChanged: (ThemeMode) -> Unit = {}
@@ -216,8 +218,16 @@ fun ProfileTabContent(
                         title = "数据源管理",
                         subtitle = "绑定佳明、高驰、手动导入等",
                         iconTint = RunTheme.colorScheme.blue,
-                        showDivider = false,
+                        showDivider = true,
                         onClick = onDataSourceManageClick
+                    )
+                    SettingsItem(
+                        icon = Icons.AutoMirrored.Outlined.DirectionsRun,
+                        title = "跑鞋管理",
+                        subtitle = "管理你的跑鞋装备",
+                        iconTint = RunTheme.colorScheme.blue,
+                        onClick = onRunningShoesClick,
+                        showDivider = false
                     )
                 }
             }
@@ -227,6 +237,7 @@ fun ProfileTabContent(
             // Settings Group 1: Training Settings
             item {
                 SettingsCard {
+
                     SettingsItem(
                         icon = Icons.Outlined.Flag,
                         title = "跑步目标",

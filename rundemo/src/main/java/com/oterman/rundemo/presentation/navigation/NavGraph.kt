@@ -72,6 +72,10 @@ import com.oterman.rundemo.presentation.feature.debug.synccontrol.SyncControlVie
 import com.oterman.rundemo.presentation.feature.syncstatus.DataSyncStatusScreen
 import com.oterman.rundemo.presentation.feature.legal.PrivacyPolicyScreen
 import com.oterman.rundemo.presentation.feature.legal.UserTermsScreen
+import com.oterman.rundemo.presentation.feature.runningshoes.RunningShoesManagementScreen
+import com.oterman.rundemo.presentation.feature.runningshoes.detail.RunningShoeDetailScreen
+import com.oterman.rundemo.presentation.feature.runningshoes.addedit.AddEditRunningShoeScreen
+import com.oterman.rundemo.presentation.feature.runningshoes.linkedrecords.LinkedRunRecordsListScreen
 import com.oterman.rundemo.presentation.feature.vdotdetail.VdotDetailScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 import com.oterman.rundemo.ui.theme.ThemeMode
@@ -259,6 +263,9 @@ fun AppNavGraph(
                 },
                 onNavigateToVdotDetail = {
 //                    navController.navigate(Screen.VdotDetail.route)
+                },
+                onNavigateToRunningShoes = {
+                    navController.navigate(Screen.RunningShoes.route)
                 },
                 onThemeModeChanged = onThemeModeChanged,
                 viewModel = homeViewModel
@@ -766,6 +773,83 @@ fun AppNavGraph(
         // VDOT跑力详情页面
         composable(Screen.VdotDetail.route) {
             VdotDetailScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // 跑鞋管理页面
+        composable(Screen.RunningShoes.route) {
+            RunningShoesManagementScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAddShoe = {
+                    navController.navigate(Screen.AddEditRunningShoe.createRoute())
+                },
+                onNavigateToDetail = { shoeId ->
+                    navController.navigate(Screen.RunningShoeDetail.createRoute(shoeId))
+                }
+            )
+        }
+
+        // 跑鞋详情页面
+        composable(
+            route = Screen.RunningShoeDetail.route,
+            arguments = listOf(
+                navArgument("shoeId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val shoeId = backStackEntry.arguments?.getString("shoeId") ?: return@composable
+            RunningShoeDetailScreen(
+                shoeId = shoeId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToEdit = { id ->
+                    navController.navigate(Screen.AddEditRunningShoe.createRoute(id))
+                },
+                onNavigateToLinkedRecords = { id ->
+                    navController.navigate(Screen.LinkedRunRecords.createRoute(id))
+                },
+                onNavigateToBatchLink = { _ ->
+                    // BatchLink is handled as a BottomSheet within the detail screen
+                    // This callback is kept for potential future navigation
+                }
+            )
+        }
+
+        // 添加/编辑跑鞋页面
+        composable(
+            route = Screen.AddEditRunningShoe.route,
+            arguments = listOf(
+                navArgument("shoeId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val shoeId = backStackEntry.arguments?.getString("shoeId")
+            AddEditRunningShoeScreen(
+                shoeId = shoeId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // 跑鞋关联记录列表页面
+        composable(
+            route = Screen.LinkedRunRecords.route,
+            arguments = listOf(
+                navArgument("shoeId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val shoeId = backStackEntry.arguments?.getString("shoeId") ?: return@composable
+            LinkedRunRecordsListScreen(
+                shoeId = shoeId,
                 onNavigateBack = {
                     navController.popBackStack()
                 }

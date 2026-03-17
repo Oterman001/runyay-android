@@ -73,6 +73,7 @@ fun HomeScreen(
     onNavigateToContactUs: () -> Unit = {},
     onNavigateToSyncStatus: () -> Unit = {},
     onNavigateToVdotDetail: () -> Unit = {},
+    onNavigateToRunningShoes: () -> Unit = {},
     onThemeModeChanged: (ThemeMode) -> Unit = {},
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(LocalContext.current)
@@ -173,6 +174,7 @@ fun HomeScreen(
                     onDataSourceManageClick = onNavigateToDataSourceManage,
                     onRunGoalClick = onNavigateToRunGoalSet,
                     onHearRateZoneClick = onNavigateToHearRateZoneSet,
+                    onRunningShoesClick = onNavigateToRunningShoes,
                     onDebugClick = onNavigateToDebug,
                     onContactUsClick = onNavigateToContactUs,
                     onThemeModeChanged = onThemeModeChanged

@@ -447,5 +447,13 @@ class PreferencesManager(context: Context) {
             ThemeMode.AUTO
         }
     }
+
+    fun saveLongValue(key: String, value: Long) {
+        prefs.edit().putLong(key, value).apply()
+    }
+
+    fun getLongValue(key: String, defaultValue: Long = 0L): Long {
+        return prefs.getLong(key, defaultValue)
+    }
 }
 

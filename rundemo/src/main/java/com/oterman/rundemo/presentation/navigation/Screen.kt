@@ -209,5 +209,32 @@ sealed class Screen(val route: String) {
      * 展示VDOT趋势图、预测成绩和训练配速
      */
     object VdotDetail : Screen("vdot_detail")
+
+    /**
+     * 跑鞋管理页面
+     */
+    object RunningShoes : Screen("running_shoes")
+
+    /**
+     * 跑鞋详情页面
+     */
+    object RunningShoeDetail : Screen("running_shoe_detail/{shoeId}") {
+        fun createRoute(shoeId: String) = "running_shoe_detail/$shoeId"
+    }
+
+    /**
+     * 添加/编辑跑鞋页面
+     */
+    object AddEditRunningShoe : Screen("add_edit_shoe?shoeId={shoeId}") {
+        fun createRoute(shoeId: String? = null) =
+            if (shoeId != null) "add_edit_shoe?shoeId=$shoeId" else "add_edit_shoe"
+    }
+
+    /**
+     * 跑鞋关联记录列表页面
+     */
+    object LinkedRunRecords : Screen("linked_run_records/{shoeId}") {
+        fun createRoute(shoeId: String) = "linked_run_records/$shoeId"
+    }
 }
 
