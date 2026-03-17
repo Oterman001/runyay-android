@@ -47,6 +47,7 @@ class AddEditShoeViewModel(
                     notes = shoe.notes ?: "",
                     isDefault = shoe.isDefault,
                     existingImageUrl = shoe.imageUrl,
+                    existingImagePath = shoe.imagePath,
                     isEditMode = true
                 )
             }
@@ -91,6 +92,8 @@ class AddEditShoeViewModel(
                     firstUseDate = state.firstUseDate,
                     notes = state.notes.trim().takeIf { it.isNotEmpty() },
                     isDefault = state.isDefault,
+                    imageUrl = if (state.selectedImageUri == null) state.existingImageUrl else null,
+                    imagePath = if (state.selectedImageUri == null) state.existingImagePath else null,
                     syncStatus = "localOnly"
                 )
 

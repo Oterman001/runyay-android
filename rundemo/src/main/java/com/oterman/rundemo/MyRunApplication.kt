@@ -2,6 +2,11 @@ package com.oterman.rundemo
 
 import android.app.Application
 import android.content.Context
+import coil.Coil
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
+import coil.request.CachePolicy
 import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.util.RLog
 import com.umeng.commonsdk.UMConfigure
@@ -11,6 +16,8 @@ class MyRunApplication: Application() {
     override fun onCreate() {
         super.onCreate()
         RLog.i("MyRunApplication","onCreate")
+
+        initCoilImageLoader()
 
         /**
          * 注意: 即使您已经在AndroidManifest.xml中配置过appkey和channel值，也需要在App代码中调
@@ -22,5 +29,24 @@ class MyRunApplication: Application() {
 
         //初始化组件化基础库, 所有友盟业务SDK都必须调用此初始化接口。
         UMConfigure.init(this, "69a930fe6f259537c76ddab0", BuildConfig.UMENG_CHANNEL, UMConfigure.DEVICE_TYPE_PHONE, "");
+    }
+
+    private fun initCoilImageLoader() {
+        val imageLoader = ImageLoader.Builder(this)
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.25)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve("shoe_images"))
+                    .maxSizeBytes(50 * 1024 * 1024L)
+                    .build()
+            }
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .build()
+        Coil.setImageLoader(imageLoader)
     }
 }

@@ -15,6 +15,7 @@ data class AddEditShoeUiState(
     val isDefault: Boolean = false,
     val selectedImageUri: Uri? = null,
     val existingImageUrl: String? = null,
+    val existingImagePath: String? = null,
     val isEditMode: Boolean = false,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,

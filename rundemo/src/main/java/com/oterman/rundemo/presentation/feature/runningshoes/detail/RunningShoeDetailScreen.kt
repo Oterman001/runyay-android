@@ -57,7 +57,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.oterman.rundemo.domain.model.RunningShoe
 import com.oterman.rundemo.presentation.components.AppCard
 import java.text.SimpleDateFormat
@@ -187,13 +188,35 @@ fun RunningShoeDetailScreen(
                             .clickable { imagePickerLauncher.launch("image/*") },
                         contentAlignment = Alignment.Center
                     ) {
-                        val imageUrl = shoe.imageUrl ?: shoe.imagePath
-                        if (imageUrl != null) {
-                            AsyncImage(
-                                model = imageUrl,
+                        val imageDisplayUrl = shoe.imagePath
+                        if (imageDisplayUrl != null) {
+                            SubcomposeAsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(imageDisplayUrl)
+                                    .memoryCacheKey(shoe.imageUrl ?: imageDisplayUrl)
+                                    .diskCacheKey(shoe.imageUrl ?: imageDisplayUrl)
+                                    .build(),
                                 contentDescription = shoe.displayName,
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                                contentScale = ContentScale.Crop,
+                                loading = {
+                                    Box(
+                                        modifier = Modifier.matchParentSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                                    }
+                                },
+                                error = {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            Icons.Outlined.DirectionsRun,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(48.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                             )
                         } else {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {

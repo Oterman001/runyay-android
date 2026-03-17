@@ -55,7 +55,12 @@ class RunningShoeRepository(
 
     suspend fun updateShoe(shoe: RunningShoe): Result<RunningShoe> {
         return try {
-            val entity = shoe.toEntity().copy(updatedAt = System.currentTimeMillis())
+            val existing = dao.getById(shoe.id)
+            val entity = shoe.toEntity().copy(
+                updatedAt = System.currentTimeMillis(),
+                imagePath = shoe.imagePath ?: existing?.imagePath,
+                imageUrl = shoe.imageUrl ?: existing?.imageUrl
+            )
             dao.update(entity)
             Result.success(entity.toDomainModel())
         } catch (e: Exception) {
@@ -331,12 +336,21 @@ class RunningShoeRepository(
                     totalDistance = dto.totalDistance ?: existing.totalDistance,
                     totalDuration = dto.totalDuration ?: existing.totalDuration,
                     totalRuns = dto.totalRuns ?: existing.totalRuns,
+                    imagePath = dto.imagePath ?: existing.imagePath,
                     imageUrl = dto.imageUrl ?: existing.imageUrl,
                     isActive = dto.isActive ?: existing.isActive,
                     isDefault = dto.isDefault ?: existing.isDefault,
                     lastSyncAt = now,
                     updatedAt = now
                 ))
+            } else {
+                // Local-only or pending sync: only update image fields from server
+                if (dto.imagePath != null || dto.imageUrl != null) {
+                    dao.update(existing.copy(
+                        imagePath = dto.imagePath ?: existing.imagePath,
+                        imageUrl = dto.imageUrl ?: existing.imageUrl
+                    ))
+                }
             }
         }
     }
@@ -380,10 +394,11 @@ class RunningShoeRepository(
             if (response.isSuccess()) {
                 val imageUrl = response.data?.uploadResponse?.firstOrNull()?.imageUrl
                 if (imageUrl != null) {
-                    // Update local entity with server URL
+                    // Update local entity: imagePath stores the accessible image URL from server
+                    // imageUrl stores the original (non-signed) URL as a stable cache key
                     dao.getById(shoeId)?.let { entity ->
                         dao.update(entity.copy(
-                            imagePath = localPath,
+                            imagePath = imageUrl,
                             imageUrl = imageUrl,
                             updatedAt = System.currentTimeMillis()
                         ))

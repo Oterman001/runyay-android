@@ -33,10 +33,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.oterman.rundemo.domain.model.RunningShoe
 import com.oterman.rundemo.ui.theme.CardBgDark
 import com.oterman.rundemo.ui.theme.CardBgLight
@@ -92,13 +94,36 @@ fun ShoeCard(
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                val imageUrl = shoe.imageUrl ?: shoe.imagePath
-                if (imageUrl != null) {
-                    AsyncImage(
-                        model = imageUrl,
+                val imageDisplayUrl = shoe.imagePath
+                if (imageDisplayUrl != null) {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageDisplayUrl)
+                            .memoryCacheKey(shoe.imageUrl ?: imageDisplayUrl)
+                            .diskCacheKey(shoe.imageUrl ?: imageDisplayUrl)
+                            .build(),
                         contentDescription = shoe.displayName,
                         modifier = Modifier.size(72.dp),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(
+                                modifier = Modifier.matchParentSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                androidx.compose.material3.CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        },
+                        error = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.DirectionsRun,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     )
                 } else {
                     Icon(
