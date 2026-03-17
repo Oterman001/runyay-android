@@ -72,4 +72,16 @@ interface RunningShoeDao {
 
     @Query("SELECT * FROM running_shoe WHERE userId = :userId AND deletedAt IS NULL")
     suspend fun getAllShoesSync(userId: String): List<RunningShoeEntity>
+
+    // 获取默认跑鞋（用于自动关联）
+    @Query("SELECT * FROM running_shoe WHERE userId = :userId AND isDefault = 1 AND isActive = 1 AND deletedAt IS NULL LIMIT 1")
+    suspend fun getDefaultShoe(userId: String): RunningShoeEntity?
+
+    // 批量获取跑鞋（用于列表显示跑鞋名称）
+    @Query("SELECT * FROM running_shoe WHERE id IN (:shoeIds) AND deletedAt IS NULL")
+    suspend fun getShoesByIds(shoeIds: List<String>): List<RunningShoeEntity>
+
+    // 更新单条记录的跑鞋关联
+    @Query("UPDATE run_record SET shoeId = :shoeId WHERE workoutId = :recordId")
+    suspend fun updateRecordShoeId(recordId: String, shoeId: String?)
 }

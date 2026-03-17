@@ -181,20 +181,56 @@ class RunningShoeRepository(
         try {
             val records = dao.getLinkedRunRecords(shoeId)
             val shoe = dao.getById(shoeId) ?: return
-            val totalDistance = records.sumOf { it.totalDistance }
-            val totalDuration = records.sumOf { it.duration }
-            val totalRuns = records.size
+            val localDistance = records.sumOf { it.totalDistance }
+            val localDuration = records.sumOf { it.duration }
+            val localRuns = records.size
+            // 取大值防回退：部分同步场景下本地记录不全，服务端值更准确
+            val finalDistance = maxOf(localDistance, shoe.totalDistance)
+            val finalDuration = maxOf(localDuration, shoe.totalDuration)
+            val finalRuns = maxOf(localRuns, shoe.totalRuns)
             val now = System.currentTimeMillis()
             dao.update(shoe.copy(
-                totalDistance = totalDistance,
-                totalDuration = totalDuration,
-                totalRuns = totalRuns,
+                totalDistance = finalDistance,
+                totalDuration = finalDuration,
+                totalRuns = finalRuns,
                 updatedAt = now,
                 syncStatus = "pending"
             ))
         } catch (e: Exception) {
             RLog.e("RunningShoeRepo", "recalculateShoeStats failed", e)
         }
+    }
+
+    // ==================== Single Record Shoe Change ====================
+
+    suspend fun getDefaultShoe(): RunningShoe? {
+        return dao.getDefaultShoe(getUserId())?.toDomainModel()
+    }
+
+    suspend fun getShoesByIds(ids: List<String>): Map<String, RunningShoe> {
+        if (ids.isEmpty()) return emptyMap()
+        return dao.getShoesByIds(ids).associate { it.id to it.toDomainModel() }
+    }
+
+    /**
+     * 切换跑步记录的关联跑鞋，同时重算新旧跑鞋统计
+     */
+    suspend fun changeRecordShoe(recordId: String, oldShoeId: String?, newShoeId: String?): Result<Unit> {
+        return try {
+            dao.updateRecordShoeId(recordId, newShoeId)
+            oldShoeId?.let { recalculateShoeStats(it) }
+            newShoeId?.let { recalculateShoeStats(it) }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            RLog.e("RunningShoeRepo", "changeRecordShoe failed", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getActiveShoesSync(): List<RunningShoe> {
+        return dao.getAllShoesSync(getUserId())
+            .filter { it.isActive && it.deletedAt == null }
+            .map { it.toDomainModel() }
     }
 
     // ==================== Search & Sort ====================

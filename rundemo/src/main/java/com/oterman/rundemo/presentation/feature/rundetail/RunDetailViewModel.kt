@@ -14,6 +14,7 @@ import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.fit.VdotRecalculationService
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
+import com.oterman.rundemo.data.repository.RunningShoeRepository
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.network.dto.request.toUpdateRequest
 import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
@@ -42,7 +43,8 @@ class RunDetailViewModel(
     private val avatarManager: AvatarManager,
     private val preferencesManager: PreferencesManager,
     private val healthRepository: HealthRepository,
-    private val syncManager: UnifiedDataSyncManager
+    private val syncManager: UnifiedDataSyncManager,
+    private val shoeRepository: RunningShoeRepository
 ) : ViewModel() {
 
     companion object {
@@ -126,6 +128,9 @@ class RunDetailViewModel(
                     healthRepository.getPreviousVo2Max(runDateStr)
                 } else null
 
+                // 加载关联跑鞋
+                val linkedShoe = record.shoeId?.let { shoeRepository.getShoe(it) }
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = null,
@@ -149,7 +154,8 @@ class RunDetailViewModel(
                     mergedTrainingSegments = mergedTrainingSegments,
                     expandedSegmentIds = _expandedSegmentIds.toSet(),
                     vo2Max = vo2Max,
-                    previousVo2Max = previousVo2Max
+                    previousVo2Max = previousVo2Max,
+                    linkedShoe = linkedShoe
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "加载失败")
@@ -712,6 +718,60 @@ class RunDetailViewModel(
         }
     }
 
+    // ==================== 跑鞋关联 ====================
+
+    fun showShoeSelector() {
+        viewModelScope.launch {
+            try {
+                val shoes = shoeRepository.getActiveShoesSync()
+                _uiState.value = _uiState.value.copy(
+                    availableShoes = shoes,
+                    showShoeSelector = true
+                )
+            } catch (e: Exception) {
+                RLog.e(TAG, "加载跑鞋列表失败: ${e.message}")
+            }
+        }
+    }
+
+    fun dismissShoeSelector() {
+        _uiState.value = _uiState.value.copy(showShoeSelector = false)
+    }
+
+    fun changeShoe(newShoeId: String?) {
+        val record = _uiState.value.record ?: return
+        val oldShoeId = record.shoeId
+        if (oldShoeId == newShoeId) {
+            _uiState.value = _uiState.value.copy(showShoeSelector = false)
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                shoeRepository.changeRecordShoe(workoutId, oldShoeId, newShoeId).getOrThrow()
+                // 同步 shoeId 到服务端
+                val updatedRecord = record.copy(shoeId = newShoeId, uploadStatus = 0)
+                repository.updateRunRecord(updatedRecord)
+                uploadToServer(updatedRecord)
+                _uiState.value = _uiState.value.copy(
+                    showShoeSelector = false,
+                    updateSuccess = true
+                )
+                loadData()
+            } catch (e: Exception) {
+                RLog.e(TAG, "切换跑鞋失败: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    showShoeSelector = false,
+                    updateError = e.message ?: "切换跑鞋失败"
+                )
+            }
+        }
+    }
+
+    fun removeShoe() {
+        changeShoe(null)
+    }
+
     fun clearUpdateState() {
         _uiState.value = _uiState.value.copy(updateSuccess = false, updateError = null)
     }
@@ -749,7 +809,8 @@ class RunDetailViewModelFactory(
             val dataSourceRepository = DataSourceRepository(dataSourcePreferences, preferencesManager)
             val healthRepository = HealthRepository(database.dailyHealthDao(), dataSourceRepository, preferencesManager)
             val syncManager = UnifiedDataSyncManager.getInstance(context)
-            return RunDetailViewModel(workoutId, repository, fitDownloadRepository, avatarManager, preferencesManager, healthRepository, syncManager) as T
+            val shoeRepository = RunningShoeRepository(context)
+            return RunDetailViewModel(workoutId, repository, fitDownloadRepository, avatarManager, preferencesManager, healthRepository, syncManager, shoeRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

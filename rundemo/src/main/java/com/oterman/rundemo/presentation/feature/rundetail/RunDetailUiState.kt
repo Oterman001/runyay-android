@@ -5,6 +5,7 @@ import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.ChartDataPoint
 import com.oterman.rundemo.domain.model.MergedRunSegment
 import com.oterman.rundemo.domain.model.RunSegment
+import com.oterman.rundemo.domain.model.RunningShoe
 import com.oterman.rundemo.domain.model.TrackPoint
 
 /**
@@ -72,6 +73,11 @@ data class RunDetailUiState(
     // 修改 inclusiveLevel
     val showEditInclusiveLevelDialog: Boolean = false,
 
+    // 关联跑鞋
+    val linkedShoe: RunningShoe? = null,
+    val availableShoes: List<RunningShoe> = emptyList(),
+    val showShoeSelector: Boolean = false,
+
     // 通用更新反馈
     val updateSuccess: Boolean = false,
     val updateError: String? = null
@@ -132,6 +138,9 @@ data class RunDetailUiState(
         if (editDistanceInput != other.editDistanceInput) return false
         if (editDistanceError != other.editDistanceError) return false
         if (showEditInclusiveLevelDialog != other.showEditInclusiveLevelDialog) return false
+        if (linkedShoe != other.linkedShoe) return false
+        if (availableShoes != other.availableShoes) return false
+        if (showShoeSelector != other.showShoeSelector) return false
         if (updateSuccess != other.updateSuccess) return false
         if (updateError != other.updateError) return false
 
@@ -180,6 +189,9 @@ data class RunDetailUiState(
         result = 31 * result + editDistanceInput.hashCode()
         result = 31 * result + (editDistanceError?.hashCode() ?: 0)
         result = 31 * result + showEditInclusiveLevelDialog.hashCode()
+        result = 31 * result + (linkedShoe?.hashCode() ?: 0)
+        result = 31 * result + availableShoes.hashCode()
+        result = 31 * result + showShoeSelector.hashCode()
         result = 31 * result + updateSuccess.hashCode()
         result = 31 * result + (updateError?.hashCode() ?: 0)
         return result

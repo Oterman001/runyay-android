@@ -74,6 +74,8 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailTr
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailWeatherOverlay
 import com.oterman.rundemo.presentation.feature.rundetail.components.StrideLengthChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.TrainingEffectCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailShoeCard
+import com.oterman.rundemo.presentation.feature.rundetail.components.ShoeSelectionSheet
 import com.oterman.rundemo.presentation.feature.rundetail.components.VO2MaxCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.VerticalOscillationChartCard
 import com.oterman.rundemo.presentation.feature.share.ShareActivity
@@ -100,7 +102,8 @@ import com.oterman.rundemo.BuildConfig
  * 12. 触地时间图表（条件显示）
  * 13. 垂直振幅图表（条件显示）
  * 14. 功率图表（条件显示）
- * 15. 数据来源标签
+ * 15. 关联跑鞋卡片
+ * 16. 数据来源标签
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -365,6 +368,16 @@ fun RunDetailScreen(
                 },
                 confirmButton = { TextButton(onClick = { viewModel.confirmEditDistance() }) { Text("确认") } },
                 dismissButton = { TextButton(onClick = { viewModel.dismissEditDistanceDialog() }) { Text("取消") } }
+            )
+        }
+
+        // 跑鞋选择 BottomSheet
+        if (uiState.showShoeSelector) {
+            ShoeSelectionSheet(
+                shoes = uiState.availableShoes,
+                currentShoeId = uiState.record?.shoeId,
+                onSelect = { viewModel.changeShoe(it) },
+                onDismiss = { viewModel.dismissShoeSelector() }
             )
         }
 
@@ -650,7 +663,19 @@ fun RunDetailScreen(
                             }
                         }
 
-                        // ==================== 15. 数据来源标签 ====================
+                        // ==================== 15. 关联跑鞋 ====================
+                        item {
+                            RunDetailShoeCard(
+                                shoe = uiState.linkedShoe,
+                                onClick = { viewModel.showShoeSelector() },
+                                onRemove = { viewModel.removeShoe() }
+                            )
+                        }
+                        item {
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+                        }
+
+                        // ==================== 16. 数据来源标签 ====================
                         item {
                             DataSourceLabel(
                                 datasource = record.datasource

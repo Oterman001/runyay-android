@@ -77,6 +77,8 @@ object RunSummaryMerger {
         trackDiff(diffs, "outdoor", local.outdoor, merged.outdoor, server.outdoor)
         trackDiff(diffs, "note", local.note, merged.note, server.note)
         trackDiff(diffs, "feelingLevel", local.feelingLevel, merged.feelingLevel, server.feelingLevel)
+        trackDiff(diffs, "shoeId", local.shoeId, merged.shoeId, server.shoeId)
+        trackDiff(diffs, "trainPlanId", local.trainPlanId, merged.trainPlanId, server.trainPlanId)
 
         // 打印差异日志
         if (diffs.isNotEmpty()) {

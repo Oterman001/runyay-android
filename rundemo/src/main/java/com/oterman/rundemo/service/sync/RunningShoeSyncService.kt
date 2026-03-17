@@ -17,14 +17,30 @@ class RunningShoeSyncService(
     }
 
     /**
-     * Full sync: pull from server then push local changes
+     * Full sync: pull from server then push local changes, then recalculate stats
      */
     suspend fun fullSync() {
         try {
             pullFromServer()
             syncToServer()
+            recalculateAffectedShoeStats()
         } catch (e: Exception) {
             RLog.e(TAG, "fullSync failed", e)
+        }
+    }
+
+    /**
+     * Recalculate stats for shoes that have linked run records
+     */
+    private suspend fun recalculateAffectedShoeStats() {
+        try {
+            val userId = preferencesManager.getUserId() ?: return
+            val allShoes = repository.getActiveShoesSync()
+            allShoes.filter { repository.getLinkedRecordsCount(it.id) > 0 }
+                .forEach { repository.recalculateShoeStats(it.id) }
+            RLog.d(TAG, "recalculateAffectedShoeStats complete")
+        } catch (e: Exception) {
+            RLog.e(TAG, "recalculateAffectedShoeStats failed", e)
         }
     }
 
