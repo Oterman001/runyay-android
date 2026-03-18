@@ -52,8 +52,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.oterman.rundemo.presentation.components.ImagePickerDialog
 import com.oterman.rundemo.presentation.components.LoadingButton
 import com.yalantis.ucrop.UCrop
 import java.io.File
@@ -117,11 +119,27 @@ fun AddEditRunningShoeScreen(
     }
 
     // 图片选择器 - 选择后启动裁剪
-    val imagePickerLauncher = rememberLauncherForActivityResult(
+    val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { launchCrop(it) }
     }
+
+    // 相机拍照
+    val tempImageUri = remember {
+        val tempFile = File.createTempFile("shoe_", ".jpg", context.cacheDir)
+        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", tempFile)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        if (success) {
+            launchCrop(tempImageUri)
+        }
+    }
+
+    var showImagePickerDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) onNavigateBack()
@@ -169,7 +187,7 @@ fun AddEditRunningShoeScreen(
                     .aspectRatio(1f)
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { imagePickerLauncher.launch("image/*") },
+                    .clickable { showImagePickerDialog = true },
                 contentAlignment = Alignment.Center
             ) {
                 val imageModel = uiState.selectedImageUri ?: uiState.existingImageUrl
@@ -352,5 +370,21 @@ fun AddEditRunningShoeScreen(
 
             Spacer(Modifier.height(32.dp))
         }
+    }
+
+    if (showImagePickerDialog) {
+        ImagePickerDialog(
+            title = "选择跑鞋图片",
+            onDismiss = { showImagePickerDialog = false },
+            onTakePhoto = {
+                showImagePickerDialog = false
+                cameraLauncher.launch(tempImageUri)
+            },
+            onChooseFromGallery = {
+                showImagePickerDialog = false
+                galleryLauncher.launch("image/*")
+            },
+            galleryHint = "\uD83D\uDCA1 可在电商平台保存跑鞋图片后从相册选择，效果更好"
+        )
     }
 }

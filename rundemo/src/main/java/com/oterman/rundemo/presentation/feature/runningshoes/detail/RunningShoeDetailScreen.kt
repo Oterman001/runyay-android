@@ -7,6 +7,10 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -68,7 +72,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.oterman.rundemo.domain.model.RunningShoe
+import androidx.core.content.FileProvider
 import com.oterman.rundemo.presentation.components.AppCard
+import com.oterman.rundemo.presentation.components.ImagePickerDialog
 import com.oterman.rundemo.presentation.feature.runningshoes.batchlink.BatchLinkRunRecordsSheet
 import com.yalantis.ucrop.UCrop
 import java.io.File
@@ -137,11 +143,27 @@ fun RunningShoeDetailScreen(
     }
 
     // 图片选择器 - 选择后启动裁剪
-    val imagePickerLauncher = rememberLauncherForActivityResult(
+    val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { launchCrop(it) }
     }
+
+    // 相机拍照
+    val tempImageUri = remember {
+        val tempFile = File.createTempFile("shoe_detail_", ".jpg", context.cacheDir)
+        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", tempFile)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        if (success) {
+            launchCrop(tempImageUri)
+        }
+    }
+
+    var showImagePickerDialog by remember { mutableStateOf(false) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner) {
@@ -226,145 +248,151 @@ fun RunningShoeDetailScreen(
             }
         }
     ) { innerPadding ->
-        if (uiState.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            val shoe = uiState.shoe ?: return@Scaffold
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Image section
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable { imagePickerLauncher.launch("image/*") },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val imageSource = shoe.displayImageSource
-                        if (imageSource != null) {
-                            SubcomposeAsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(imageSource)
-                                    .memoryCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
-                                    .diskCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
-                                    .build(),
-                                contentDescription = shoe.displayName,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit,
-                                loading = {
-                                    Box(
-                                        modifier = Modifier.matchParentSize(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(modifier = Modifier.size(32.dp))
-                                    }
-                                },
-                                error = {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Icon(
-                                            Icons.Outlined.DirectionsRun,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(48.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            )
-                        } else {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    Icons.Outlined.CameraAlt,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text("点击添加图片", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
+        AnimatedContent(
+            targetState = uiState.isLoading,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label = "detail-loading"
+        ) { loading ->
+            if (loading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
+            } else {
+                val shoe = uiState.shoe ?: return@AnimatedContent
 
-                // Name + Status badges
-                item {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = shoe.displayName,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        if (shoe.isDefault) {
-                            StatusBadge("默认", MaterialTheme.colorScheme.primary)
-                        }
-                        if (shoe.isRetired) {
-                            StatusBadge("已退役", MaterialTheme.colorScheme.error)
-                        }
-                    }
-                }
-
-                // Wear progress bar
-                item {
-                    WearProgressSection(shoe)
-                }
-
-                // Statistics grid
-                item {
-                    StatisticsCard(shoe)
-                }
-
-                // Detail info
-                item {
-                    DetailInfoCard(shoe)
-                }
-
-                // Notes
-                if (!shoe.notes.isNullOrBlank()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Image section
                     item {
-                        AppCard {
-                            Column(Modifier.padding(16.dp)) {
-                                Text("备注", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                                Spacer(Modifier.height(8.dp))
-                                Text(shoe.notes, style = MaterialTheme.typography.bodyMedium)
-                            }
-                        }
-                    }
-                }
-
-                // Linked records
-                item {
-                    AppCard(
-                        modifier = Modifier.clickable { onNavigateToLinkedRecords(shoeId) }
-                    ) {
-                        Row(
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clickable { showImagePickerDialog = true },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text("关联记录", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                "${uiState.linkedRecordsCount} 条",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            val imageSource = shoe.displayImageSource
+                            if (imageSource != null) {
+                                SubcomposeAsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(imageSource)
+                                        .memoryCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
+                                        .diskCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
+                                        .build(),
+                                    contentDescription = shoe.displayName,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit,
+                                    loading = {
+                                        Box(
+                                            modifier = Modifier.matchParentSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                                        }
+                                    },
+                                    error = {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Icon(
+                                                Icons.Outlined.DirectionsRun,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(48.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                )
+                            } else {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        Icons.Outlined.CameraAlt,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(48.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text("点击添加图片", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
                         }
                     }
-                }
 
-                item { Spacer(Modifier.height(80.dp)) } // FAB clearance
+                    // Name + Status badges
+                    item {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = shoe.displayName,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            if (shoe.isDefault) {
+                                StatusBadge("默认", MaterialTheme.colorScheme.primary)
+                            }
+                            if (shoe.isRetired) {
+                                StatusBadge("已退役", MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+
+                    // Wear progress bar
+                    item {
+                        WearProgressSection(shoe)
+                    }
+
+                    // Statistics grid
+                    item {
+                        StatisticsCard(shoe)
+                    }
+
+                    // Detail info
+                    item {
+                        DetailInfoCard(shoe)
+                    }
+
+                    // Notes
+                    if (!shoe.notes.isNullOrBlank()) {
+                        item {
+                            AppCard {
+                                Column(Modifier.padding(16.dp)) {
+                                    Text("备注", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(shoe.notes, style = MaterialTheme.typography.bodyMedium)
+                                }
+                            }
+                        }
+                    }
+
+                    // Linked records
+                    item {
+                        AppCard(
+                            modifier = Modifier.clickable { onNavigateToLinkedRecords(shoeId) }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("关联记录", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "${uiState.linkedRecordsCount} 条",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    item { Spacer(Modifier.height(80.dp)) } // FAB clearance
+                }
             }
         }
     }
@@ -396,6 +424,22 @@ fun RunningShoeDetailScreen(
                     Text("取消")
                 }
             }
+        )
+    }
+
+    if (showImagePickerDialog) {
+        ImagePickerDialog(
+            title = "选择跑鞋图片",
+            onDismiss = { showImagePickerDialog = false },
+            onTakePhoto = {
+                showImagePickerDialog = false
+                cameraLauncher.launch(tempImageUri)
+            },
+            onChooseFromGallery = {
+                showImagePickerDialog = false
+                galleryLauncher.launch("image/*")
+            },
+            galleryHint = "\uD83D\uDCA1 可在电商平台保存跑鞋图片后从相册选择，效果更好"
         )
     }
 }

@@ -26,7 +26,10 @@ class RunningShoeDetailViewModel(
 
     fun loadShoe() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            // 首次加载才显示 loading，后续刷新静默更新
+            if (_uiState.value.shoe == null) {
+                _uiState.update { it.copy(isLoading = true) }
+            }
             val shoe = repository.getShoe(shoeId)
             val count = repository.getLinkedRecordsCount(shoeId)
             _uiState.update {
