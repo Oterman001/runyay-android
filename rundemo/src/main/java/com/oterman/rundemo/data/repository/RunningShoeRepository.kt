@@ -43,6 +43,11 @@ class RunningShoeRepository(
 
     private fun getUserId(): String = preferencesManager.getUserId() ?: ""
 
+    private fun RunningShoe.withLocalImage(): RunningShoe {
+        val localPath = imageManager.getImagePath(this.id)
+        return if (localPath != null) this.copy(localImagePath = localPath) else this
+    }
+
     // ==================== Local CRUD ====================
 
     suspend fun createShoe(shoe: RunningShoe): Result<RunningShoe> {
@@ -83,24 +88,24 @@ class RunningShoeRepository(
     }
 
     suspend fun getShoe(shoeId: String): RunningShoe? {
-        return dao.getById(shoeId)?.toDomainModel()
+        return dao.getById(shoeId)?.toDomainModel()?.withLocalImage()
     }
 
     fun getActiveShoes(): Flow<List<RunningShoe>> {
         return dao.getActiveShoes(getUserId()).map { list ->
-            list.map { it.toDomainModel() }
+            list.map { it.toDomainModel().withLocalImage() }
         }
     }
 
     fun getRetiredShoes(): Flow<List<RunningShoe>> {
         return dao.getRetiredShoes(getUserId()).map { list ->
-            list.map { it.toDomainModel() }
+            list.map { it.toDomainModel().withLocalImage() }
         }
     }
 
     fun getAllShoes(): Flow<List<RunningShoe>> {
         return dao.getAllShoes(getUserId()).map { list ->
-            list.map { it.toDomainModel() }
+            list.map { it.toDomainModel().withLocalImage() }
         }
     }
 
@@ -223,12 +228,12 @@ class RunningShoeRepository(
     // ==================== Single Record Shoe Change ====================
 
     suspend fun getDefaultShoe(): RunningShoe? {
-        return dao.getDefaultShoe(getUserId())?.toDomainModel()
+        return dao.getDefaultShoe(getUserId())?.toDomainModel()?.withLocalImage()
     }
 
     suspend fun getShoesByIds(ids: List<String>): Map<String, RunningShoe> {
         if (ids.isEmpty()) return emptyMap()
-        return dao.getShoesByIds(ids).associate { it.id to it.toDomainModel() }
+        return dao.getShoesByIds(ids).associate { it.id to it.toDomainModel().withLocalImage() }
     }
 
     /**
@@ -249,13 +254,13 @@ class RunningShoeRepository(
     suspend fun getActiveShoesSync(): List<RunningShoe> {
         return dao.getAllShoesSync(getUserId())
             .filter { it.isActive && it.deletedAt == null }
-            .map { it.toDomainModel() }
+            .map { it.toDomainModel().withLocalImage() }
     }
 
     // ==================== Search & Sort ====================
 
     suspend fun searchShoes(keyword: String): List<RunningShoe> {
-        return dao.searchShoes(getUserId(), keyword).map { it.toDomainModel() }
+        return dao.searchShoes(getUserId(), keyword).map { it.toDomainModel().withLocalImage() }
     }
 
     fun sortShoes(shoes: List<RunningShoe>, sortType: ShoeSortType): List<RunningShoe> {
@@ -434,9 +439,36 @@ class RunningShoeRepository(
             val localPath = imageManager.saveImage(shoeId, imageUri)
                 ?: return Result.failure(Exception("图片保存失败"))
 
-            // Upload to server
+            // Immediately update updatedAt to trigger UI refresh (local image via displayImageSource)
+            dao.getById(shoeId)?.let { entity ->
+                dao.update(entity.copy(updatedAt = System.currentTimeMillis()))
+            }
+
+            // Upload to server in best-effort manner
+            val serverUrl = uploadImageToServer(shoeId, localPath)
+            if (serverUrl != null) {
+                // Only store in imageUrl (as server identifier), not imagePath
+                dao.getById(shoeId)?.let { entity ->
+                    dao.update(entity.copy(
+                        imageUrl = serverUrl,
+                        updatedAt = System.currentTimeMillis()
+                    ))
+                }
+                // Best-effort pull to get correct imagePath from list API
+                try { pullFromServer() } catch (_: Exception) {}
+            }
+            // Return success regardless — local image is already saved and displayed
+            Result.success(localPath)
+        } catch (e: Exception) {
+            RLog.e("RunningShoeRepo", "uploadImage failed", e)
+            Result.failure(e)
+        }
+    }
+
+    private suspend fun uploadImageToServer(shoeId: String, localPath: String): String? {
+        return try {
             val file = java.io.File(localPath)
-            if (!file.exists()) return Result.failure(Exception("图片文件不存在"))
+            if (!file.exists()) return null
 
             val requestBody = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
             val imagePart = okhttp3.MultipartBody.Part.createFormData("avatar", file.name, requestBody)
@@ -447,27 +479,33 @@ class RunningShoeRepository(
 
             val response = api.uploadShoeImage(imagePart, jsonBody)
             if (response.isSuccess()) {
-                val imageUrl = response.data?.uploadResponse?.firstOrNull()?.imageUrl
-                if (imageUrl != null) {
-                    // Update local entity: imagePath stores the accessible image URL from server
-                    // imageUrl stores the original (non-signed) URL as a stable cache key
-                    dao.getById(shoeId)?.let { entity ->
-                        dao.update(entity.copy(
-                            imagePath = imageUrl,
-                            imageUrl = imageUrl,
+                response.data?.uploadResponse?.firstOrNull()?.imageUrl
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            RLog.w("RunningShoeRepo", "uploadImageToServer failed: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun retryPendingImageUploads() {
+        try {
+            val unsyncedShoes = dao.getUnsyncedShoes(getUserId())
+            for (shoe in unsyncedShoes) {
+                val localPath = imageManager.getImagePath(shoe.id)
+                // Has local image but no server imageUrl → needs upload
+                if (localPath != null && shoe.imageUrl == null) {
+                    uploadImageToServer(shoe.id, localPath)?.let { serverUrl ->
+                        dao.update(shoe.copy(
+                            imageUrl = serverUrl,
                             updatedAt = System.currentTimeMillis()
                         ))
                     }
-                    Result.success(imageUrl)
-                } else {
-                    Result.failure(Exception("未获取到图片URL"))
                 }
-            } else {
-                Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
-            RLog.e("RunningShoeRepo", "uploadImage failed", e)
-            Result.failure(e)
+            RLog.w("RunningShoeRepo", "retryPendingImageUploads failed: ${e.message}")
         }
     }
 

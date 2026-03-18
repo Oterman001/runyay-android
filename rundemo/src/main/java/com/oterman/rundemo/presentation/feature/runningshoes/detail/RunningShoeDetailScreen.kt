@@ -2,7 +2,7 @@ package com.oterman.rundemo.presentation.feature.runningshoes.detail
 
 import android.app.Activity
 import android.graphics.Bitmap
-import android.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -111,6 +111,11 @@ fun RunningShoeDetailScreen(
         }
     }
 
+    // 从 Compose 主题获取颜色，用于 UCrop toolbar
+    val toolbarColor = MaterialTheme.colorScheme.background.toArgb()
+    val toolbarWidgetColor = MaterialTheme.colorScheme.onBackground.toArgb()
+    val statusBarColor = MaterialTheme.colorScheme.background.toArgb()
+
     // 启动裁剪的辅助函数
     fun launchCrop(sourceUri: Uri) {
         val options = UCrop.Options().apply {
@@ -119,9 +124,9 @@ fun RunningShoeDetailScreen(
             setToolbarTitle("裁剪跑鞋图片")
             setShowCropFrame(true)
             setShowCropGrid(true)
-            setStatusBarColor(Color.BLACK)
-            setToolbarColor(Color.parseColor("#FF6200EE"))
-            setToolbarWidgetColor(Color.WHITE)
+            setStatusBarColor(statusBarColor)
+            setToolbarColor(toolbarColor)
+            setToolbarWidgetColor(toolbarWidgetColor)
         }
         val intent = UCrop.of(sourceUri, croppedImageUri)
             .withAspectRatio(1f, 1f)
@@ -246,13 +251,13 @@ fun RunningShoeDetailScreen(
                             .clickable { imagePickerLauncher.launch("image/*") },
                         contentAlignment = Alignment.Center
                     ) {
-                        val imageDisplayUrl = shoe.imagePath
-                        if (imageDisplayUrl != null) {
+                        val imageSource = shoe.displayImageSource
+                        if (imageSource != null) {
                             SubcomposeAsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
-                                    .data(imageDisplayUrl)
-                                    .memoryCacheKey("${shoe.imageUrl ?: imageDisplayUrl}_${shoe.updatedAt}")
-                                    .diskCacheKey("${shoe.imageUrl ?: imageDisplayUrl}_${shoe.updatedAt}")
+                                    .data(imageSource)
+                                    .memoryCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
+                                    .diskCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
                                     .build(),
                                 contentDescription = shoe.displayName,
                                 modifier = Modifier.fillMaxSize(),

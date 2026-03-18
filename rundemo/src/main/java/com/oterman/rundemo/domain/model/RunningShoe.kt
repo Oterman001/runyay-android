@@ -29,8 +29,13 @@ data class RunningShoe(
     val syncStatus: String = "localOnly",
     val serverShoeId: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val localImagePath: String? = null
 ) {
+    val displayImageSource: Any?
+        get() = localImagePath?.let { java.io.File(it) }?.takeIf { it.exists() }
+            ?: imagePath
+
     val displayName: String
         get() = nickname?.takeIf { it.isNotBlank() }
             ?: listOfNotNull(brand, model).joinToString(" ").takeIf { it.isNotBlank() }

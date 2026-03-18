@@ -92,13 +92,13 @@ fun ShoeCard(
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                val imageDisplayUrl = shoe.imagePath
-                if (imageDisplayUrl != null) {
+                val imageSource = shoe.displayImageSource
+                if (imageSource != null) {
                     SubcomposeAsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(imageDisplayUrl)
-                            .memoryCacheKey(shoe.imageUrl ?: imageDisplayUrl)
-                            .diskCacheKey(shoe.imageUrl ?: imageDisplayUrl)
+                            .data(imageSource)
+                            .memoryCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
+                            .diskCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
                             .build(),
                         contentDescription = shoe.displayName,
                         modifier = Modifier.size(90.dp),

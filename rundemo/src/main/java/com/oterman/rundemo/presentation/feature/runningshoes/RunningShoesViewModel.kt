@@ -40,6 +40,11 @@ class RunningShoesViewModel(
             } catch (e: Exception) {
                 RLog.e("RunningShoesVM", "syncToServer failed", e)
             }
+            try {
+                repository.retryPendingImageUploads()
+            } catch (e: Exception) {
+                RLog.e("RunningShoesVM", "retryPendingImageUploads failed", e)
+            }
         }
     }
 

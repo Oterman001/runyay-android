@@ -70,10 +70,10 @@ private fun LinkedShoeContent(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 跑鞋图片
-        val imageUrl = shoe.imagePath ?: shoe.imageUrl
-        if (imageUrl != null) {
+        val imageSource = shoe.displayImageSource
+        if (imageSource != null) {
             AsyncImage(
-                model = imageUrl,
+                model = imageSource,
                 contentDescription = shoe.displayName,
                 modifier = Modifier
                     .size(90.dp)
