@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -110,6 +110,12 @@ fun UserProfileScreen(
         }
     }
 
+    // 从 Compose 主题获取颜色，用于 UCrop toolbar
+    val toolbarColor = MaterialTheme.colorScheme.background.toArgb()
+    val toolbarWidgetColor = MaterialTheme.colorScheme.onBackground.toArgb()
+    val statusBarColor = MaterialTheme.colorScheme.background.toArgb()
+    val activeWidgetColor = MaterialTheme.colorScheme.primary.toArgb()
+
     // 启动裁剪的辅助函数
     fun launchCrop(sourceUri: Uri) {
         val options = UCrop.Options().apply {
@@ -119,11 +125,10 @@ fun UserProfileScreen(
             setCircleDimmedLayer(true)
             setShowCropFrame(true)
             setShowCropGrid(true)
-            // 配置状态栏和工具栏颜色，避免与状态栏重叠
-            setStatusBarColor(Color.BLACK)
-            setToolbarColor(Color.parseColor("#FF6200EE"))
-            setToolbarWidgetColor(Color.WHITE)
-            setActiveControlsWidgetColor(Color.parseColor("#FF6200EE"))
+            setStatusBarColor(statusBarColor)
+            setToolbarColor(toolbarColor)
+            setToolbarWidgetColor(toolbarWidgetColor)
+            setActiveControlsWidgetColor(activeWidgetColor)
         }
         val intent = UCrop.of(sourceUri, croppedImageUri)
             .withAspectRatio(1f, 1f)
