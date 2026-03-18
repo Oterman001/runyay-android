@@ -42,6 +42,7 @@ data class DataTabUiState(
     val selectedInclusiveLevels: Set<Int> = emptySet(),     // 筛选的统计分析级别，空=全部
     val selectedDatasources: Set<String> = emptySet(),      // 筛选的数据来源，空=全部
     val availableDatasources: List<String> = emptyList(),   // 从数据中提取的去重数据来源
+    val hideEmptyMonths: Boolean = false,                   // 隐藏无数据月份
     val isFilterActive: Boolean = false                     // 是否有活跃过滤
 )
 
@@ -147,6 +148,8 @@ class DataTabViewModel(
 
                     // 按月分组
                     val monthGroups = groupRecordsByMonth(filteredRecords)
+                    val currentHideEmpty = _uiState.value.hideEmptyMonths
+                    val finalGroups = applyHideEmptyMonths(monthGroups, currentHideEmpty)
 
                     // 计算总统计数据（过滤掉 inclusiveLevel == 0 的不纳入统计记录）
                     val statsRecords = filteredRecords.filter { it.inclusiveLevel != 0 }
@@ -156,7 +159,7 @@ class DataTabViewModel(
 
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        monthGroups = monthGroups,
+                        monthGroups = finalGroups,
                         runRecords = filteredRecords,
                         expandedMonths = currentExpanded,
                         error = null,
@@ -328,18 +331,20 @@ class DataTabViewModel(
     /**
      * 应用过滤条件
      */
-    fun applyFilter(inclusiveLevels: Set<Int>, datasources: Set<String>) {
-        val isActive = inclusiveLevels.isNotEmpty() || datasources.isNotEmpty()
+    fun applyFilter(inclusiveLevels: Set<Int>, datasources: Set<String>, hideEmptyMonths: Boolean = _uiState.value.hideEmptyMonths) {
+        val isActive = inclusiveLevels.isNotEmpty() || datasources.isNotEmpty() || hideEmptyMonths
         val filteredRecords = applyFilterToRecords(allRecords, inclusiveLevels, datasources)
         val monthGroups = groupRecordsByMonth(filteredRecords)
+        val finalGroups = applyHideEmptyMonths(monthGroups, hideEmptyMonths)
         val statsRecords = filteredRecords.filter { it.inclusiveLevel != 0 }
 
         _uiState.value = _uiState.value.copy(
             selectedInclusiveLevels = inclusiveLevels,
             selectedDatasources = datasources,
+            hideEmptyMonths = hideEmptyMonths,
             isFilterActive = isActive,
             runRecords = filteredRecords,
-            monthGroups = monthGroups,
+            monthGroups = finalGroups,
             totalDistance = statsRecords.sumOf { it.totalDistance },
             totalRunCount = statsRecords.size,
             totalDuration = statsRecords.sumOf { it.activeDuration }
@@ -350,7 +355,17 @@ class DataTabViewModel(
      * 清除过滤条件
      */
     fun clearFilter() {
-        applyFilter(emptySet(), emptySet())
+        applyFilter(emptySet(), emptySet(), hideEmptyMonths = false)
+    }
+
+    /**
+     * 过滤空月份
+     */
+    private fun applyHideEmptyMonths(monthGroups: List<MonthRangeData>, hide: Boolean): List<MonthRangeData> {
+        if (!hide) return monthGroups
+        return monthGroups.filter { month ->
+            month.dailyRecords.any { !it.isPlaceholder && it.workoutIds.isNotEmpty() }
+        }
     }
 
     /**

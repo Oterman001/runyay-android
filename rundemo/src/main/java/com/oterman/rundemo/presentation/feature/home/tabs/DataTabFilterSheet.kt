@@ -18,6 +18,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.presentation.components.InclusiveLevelIndicator
@@ -61,12 +63,14 @@ fun DataTabFilterSheet(
     selectedInclusiveLevels: Set<Int>,
     selectedDatasources: Set<String>,
     availableDatasources: List<String>,
+    hideEmptyMonths: Boolean,
     onDismiss: () -> Unit,
-    onApply: (inclusiveLevels: Set<Int>, datasources: Set<String>) -> Unit
+    onApply: (inclusiveLevels: Set<Int>, datasources: Set<String>, hideEmptyMonths: Boolean) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var tempLevels by remember(selectedInclusiveLevels) { mutableStateOf(selectedInclusiveLevels) }
     var tempDatasources by remember(selectedDatasources) { mutableStateOf(selectedDatasources) }
+    var tempHideEmpty by remember(hideEmptyMonths) { mutableStateOf(hideEmptyMonths) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -148,6 +152,25 @@ fun DataTabFilterSheet(
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
+            // 隐藏无数据月份
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "隐藏无数据月份",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Switch(
+                    checked = tempHideEmpty,
+                    onCheckedChange = { tempHideEmpty = it }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
             // 底部按钮
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -157,14 +180,15 @@ fun DataTabFilterSheet(
                     onClick = {
                         tempLevels = emptySet()
                         tempDatasources = emptySet()
-                        onApply(emptySet(), emptySet())
+                        tempHideEmpty = false
+                        onApply(emptySet(), emptySet(), false)
                     },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("重置")
                 }
                 Button(
-                    onClick = { onApply(tempLevels, tempDatasources) },
+                    onClick = { onApply(tempLevels, tempDatasources, tempHideEmpty) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("确认")
