@@ -1,11 +1,9 @@
 package com.oterman.rundemo.presentation.feature.runningshoes.batchlink
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -32,9 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +44,6 @@ fun BatchLinkRunRecordsSheet(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
     LaunchedEffect(uiState.linkSuccess) {
         if (uiState.linkSuccess) {
@@ -114,40 +109,23 @@ fun BatchLinkRunRecordsSheet(
                     items(uiState.unlinkedRecords, key = { it.workoutId }) { record ->
                         val isSelected = uiState.selectedIds.contains(record.workoutId)
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.toggleSelection(record.workoutId) }
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
                                 checked = isSelected,
-                                onCheckedChange = { viewModel.toggleSelection(record.workoutId) }
+                                onCheckedChange = { viewModel.toggleSelection(record.workoutId) },
+                                modifier = Modifier.padding(start = 8.dp)
                             )
-                            Column(
+                            RunRecordItem(
+                                record = record,
+                                trackPoints = null,
+                                onClick = { viewModel.toggleSelection(record.workoutId) },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .padding(start = 8.dp)
-                            ) {
-                                Text(
-                                    dateFormat.format(Date(record.startTime)),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Text(
-                                        "%.2f km".format(record.totalDistance),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        "%.0f min".format(record.duration),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
+                                    .padding(end = 16.dp, top = 6.dp, bottom = 6.dp)
+                            )
                         }
-                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                     }
                 }
             }
