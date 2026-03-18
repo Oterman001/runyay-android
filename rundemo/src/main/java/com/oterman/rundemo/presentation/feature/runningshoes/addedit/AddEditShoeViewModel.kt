@@ -46,6 +46,7 @@ class AddEditShoeViewModel(
                     firstUseDate = shoe.firstUseDate,
                     notes = shoe.notes ?: "",
                     isDefault = shoe.isDefault,
+                    existingLocalImagePath = shoe.localImagePath,
                     existingImageUrl = shoe.imageUrl,
                     existingImagePath = shoe.imagePath,
                     isEditMode = true

@@ -190,7 +190,10 @@ fun AddEditRunningShoeScreen(
                     .clickable { showImagePickerDialog = true },
                 contentAlignment = Alignment.Center
             ) {
-                val imageModel = uiState.selectedImageUri ?: uiState.existingImageUrl
+                val imageModel = uiState.selectedImageUri
+                    ?: uiState.existingLocalImagePath?.let { File(it) }?.takeIf { it.exists() }
+                    ?: uiState.existingImagePath
+                    ?: uiState.existingImageUrl
                 if (imageModel != null) {
                     AsyncImage(
                         model = imageModel,

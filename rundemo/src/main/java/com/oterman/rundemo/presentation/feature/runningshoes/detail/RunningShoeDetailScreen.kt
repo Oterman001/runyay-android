@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
@@ -244,7 +245,7 @@ fun RunningShoeDetailScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showBatchLinkSheet = true }) {
-                Icon(Icons.Default.Add, contentDescription = "批量关联")
+                Icon(Icons.Default.Link, contentDescription = "批量关联")
             }
         }
     ) { innerPadding ->
