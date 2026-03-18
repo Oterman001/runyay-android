@@ -1,5 +1,9 @@
 package com.oterman.rundemo.presentation.feature.runningshoes.detail
 
+import android.app.Activity
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -65,6 +70,8 @@ import coil.request.ImageRequest
 import com.oterman.rundemo.domain.model.RunningShoe
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.runningshoes.batchlink.BatchLinkRunRecordsSheet
+import com.yalantis.ucrop.UCrop
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -86,10 +93,49 @@ fun RunningShoeDetailScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showBatchLinkSheet by remember { mutableStateOf(false) }
 
+    // 裁剪后的目标Uri
+    val croppedImageUri = remember {
+        Uri.fromFile(File(context.cacheDir, "cropped_shoe_detail.jpg"))
+    }
+
+    // uCrop 裁剪结果处理
+    val cropLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.let { data ->
+                UCrop.getOutput(data)?.let { croppedUri ->
+                    viewModel.uploadImage(croppedUri)
+                }
+            }
+        }
+    }
+
+    // 启动裁剪的辅助函数
+    fun launchCrop(sourceUri: Uri) {
+        val options = UCrop.Options().apply {
+            setCompressionFormat(Bitmap.CompressFormat.JPEG)
+            setCompressionQuality(90)
+            setToolbarTitle("裁剪跑鞋图片")
+            setShowCropFrame(true)
+            setShowCropGrid(true)
+            setStatusBarColor(Color.BLACK)
+            setToolbarColor(Color.parseColor("#FF6200EE"))
+            setToolbarWidgetColor(Color.WHITE)
+        }
+        val intent = UCrop.of(sourceUri, croppedImageUri)
+            .withAspectRatio(1f, 1f)
+            .withMaxResultSize(1024, 1024)
+            .withOptions(options)
+            .getIntent(context)
+        cropLauncher.launch(intent)
+    }
+
+    // 图片选择器 - 选择后启动裁剪
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { viewModel.uploadImage(it) }
+        uri?.let { launchCrop(it) }
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -194,8 +240,8 @@ fun RunningShoeDetailScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(16.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                             .clickable { imagePickerLauncher.launch("image/*") },
                         contentAlignment = Alignment.Center
@@ -210,7 +256,7 @@ fun RunningShoeDetailScreen(
                                     .build(),
                                 contentDescription = shoe.displayName,
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop,
+                                contentScale = ContentScale.Fit,
                                 loading = {
                                     Box(
                                         modifier = Modifier.matchParentSize(),

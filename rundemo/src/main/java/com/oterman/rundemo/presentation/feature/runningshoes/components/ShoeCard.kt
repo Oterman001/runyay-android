@@ -81,16 +81,14 @@ fun ShoeCard(
         tonalElevation = 0.dp
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Shoe image or placeholder
+            // Shoe image or placeholder - flush with card left edge
             Box(
                 modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .size(90.dp)
+                    .clip(RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
@@ -103,7 +101,7 @@ fun ShoeCard(
                             .diskCacheKey(shoe.imageUrl ?: imageDisplayUrl)
                             .build(),
                         contentDescription = shoe.displayName,
-                        modifier = Modifier.size(72.dp),
+                        modifier = Modifier.size(90.dp),
                         contentScale = ContentScale.Crop,
                         loading = {
                             Box(
@@ -139,7 +137,9 @@ fun ShoeCard(
 
             // Info column
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -194,6 +194,8 @@ fun ShoeCard(
                 percentage = shoe.wearPercentage,
                 color = shoe.wearStatusColor
             )
+
+            Spacer(modifier = Modifier.width(12.dp))
         }
 
         // Context menu

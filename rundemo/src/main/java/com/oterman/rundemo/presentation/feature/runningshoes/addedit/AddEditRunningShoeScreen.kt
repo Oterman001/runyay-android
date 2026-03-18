@@ -1,5 +1,9 @@
 package com.oterman.rundemo.presentation.feature.runningshoes.addedit
 
+import android.app.Activity
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -50,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.oterman.rundemo.presentation.components.LoadingButton
+import com.yalantis.ucrop.UCrop
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -66,10 +72,49 @@ fun AddEditRunningShoeScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
+    // 裁剪后的目标Uri
+    val croppedImageUri = remember {
+        Uri.fromFile(File(context.cacheDir, "cropped_shoe.jpg"))
+    }
+
+    // uCrop 裁剪结果处理
+    val cropLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.let { data ->
+                UCrop.getOutput(data)?.let { croppedUri ->
+                    viewModel.onImageSelected(croppedUri)
+                }
+            }
+        }
+    }
+
+    // 启动裁剪的辅助函数
+    fun launchCrop(sourceUri: Uri) {
+        val options = UCrop.Options().apply {
+            setCompressionFormat(Bitmap.CompressFormat.JPEG)
+            setCompressionQuality(90)
+            setToolbarTitle("裁剪跑鞋图片")
+            setShowCropFrame(true)
+            setShowCropGrid(true)
+            setStatusBarColor(Color.BLACK)
+            setToolbarColor(Color.parseColor("#FF6200EE"))
+            setToolbarWidgetColor(Color.WHITE)
+        }
+        val intent = UCrop.of(sourceUri, croppedImageUri)
+            .withAspectRatio(16f, 9f)
+            .withMaxResultSize(1024, 576)
+            .withOptions(options)
+            .getIntent(context)
+        cropLauncher.launch(intent)
+    }
+
+    // 图片选择器 - 选择后启动裁剪
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { viewModel.onImageSelected(it) }
+        uri?.let { launchCrop(it) }
     }
 
     LaunchedEffect(uiState.saveSuccess) {
