@@ -49,6 +49,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -87,6 +90,13 @@ fun RunningShoeDetailScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { viewModel.uploadImage(it) }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.loadShoe()
+        }
     }
 
     LaunchedEffect(uiState.navigateBack) {
@@ -195,8 +205,8 @@ fun RunningShoeDetailScreen(
                             SubcomposeAsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data(imageDisplayUrl)
-                                    .memoryCacheKey(shoe.imageUrl ?: imageDisplayUrl)
-                                    .diskCacheKey(shoe.imageUrl ?: imageDisplayUrl)
+                                    .memoryCacheKey("${shoe.imageUrl ?: imageDisplayUrl}_${shoe.updatedAt}")
+                                    .diskCacheKey("${shoe.imageUrl ?: imageDisplayUrl}_${shoe.updatedAt}")
                                     .build(),
                                 contentDescription = shoe.displayName,
                                 modifier = Modifier.fillMaxSize(),
