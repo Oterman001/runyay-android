@@ -377,8 +377,8 @@ class RunningShoeRepository(
                     totalDistance = dto.totalDistance ?: 0.0,
                     totalDuration = dto.totalDuration ?: 0.0,
                     totalRuns = dto.totalRuns ?: 0,
-                    imagePath = dto.imagePath,
-                    imageUrl = dto.imageUrl,
+                    imagePath = dto.imagePath?.takeIf { it.isNotBlank() },
+                    imageUrl = dto.imageUrl?.takeIf { it.isNotBlank() },
                     notes = dto.notes,
                     isActive = dto.isActive ?: true,
                     isDefault = dto.isDefault ?: false,
@@ -396,8 +396,8 @@ class RunningShoeRepository(
                     totalDistance = dto.totalDistance ?: existing.totalDistance,
                     totalDuration = dto.totalDuration ?: existing.totalDuration,
                     totalRuns = dto.totalRuns ?: existing.totalRuns,
-                    imagePath = dto.imagePath ?: existing.imagePath,
-                    imageUrl = dto.imageUrl ?: existing.imageUrl,
+                    imagePath = dto.imagePath?.takeIf { it.isNotBlank() } ?: existing.imagePath,
+                    imageUrl = dto.imageUrl?.takeIf { it.isNotBlank() } ?: existing.imageUrl,
                     isActive = dto.isActive ?: existing.isActive,
                     isDefault = dto.isDefault ?: existing.isDefault,
                     lastSyncAt = now,
@@ -405,10 +405,12 @@ class RunningShoeRepository(
                 ))
             } else {
                 // Local-only or pending sync: only update image fields from server
-                if (dto.imagePath != null || dto.imageUrl != null) {
+                val serverImagePath = dto.imagePath?.takeIf { it.isNotBlank() }
+                val serverImageUrl = dto.imageUrl?.takeIf { it.isNotBlank() }
+                if (serverImagePath != null || serverImageUrl != null) {
                     dao.update(existing.copy(
-                        imagePath = dto.imagePath ?: existing.imagePath,
-                        imageUrl = dto.imageUrl ?: existing.imageUrl
+                        imagePath = serverImagePath ?: existing.imagePath,
+                        imageUrl = serverImageUrl ?: existing.imageUrl
                     ))
                 }
             }
@@ -439,9 +441,13 @@ class RunningShoeRepository(
             val localPath = imageManager.saveImage(shoeId, imageUri)
                 ?: return Result.failure(Exception("图片保存失败"))
 
-            // Immediately update updatedAt to trigger UI refresh (local image via displayImageSource)
+            // Update updatedAt to trigger UI refresh, and set imagePath as fallback
+            // so the image is still available even if local file is later cleaned up
             dao.getById(shoeId)?.let { entity ->
-                dao.update(entity.copy(updatedAt = System.currentTimeMillis()))
+                dao.update(entity.copy(
+                    imagePath = entity.imagePath?.takeIf { it.isNotBlank() } ?: localPath,
+                    updatedAt = System.currentTimeMillis()
+                ))
             }
 
             // Upload to server in best-effort manner

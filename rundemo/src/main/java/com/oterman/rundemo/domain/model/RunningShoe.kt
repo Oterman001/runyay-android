@@ -34,7 +34,7 @@ data class RunningShoe(
 ) {
     val displayImageSource: Any?
         get() = localImagePath?.let { java.io.File(it) }?.takeIf { it.exists() }
-            ?: imagePath
+            ?: imagePath?.takeIf { it.isNotBlank() }
 
     val displayName: String
         get() = nickname?.takeIf { it.isNotBlank() }
