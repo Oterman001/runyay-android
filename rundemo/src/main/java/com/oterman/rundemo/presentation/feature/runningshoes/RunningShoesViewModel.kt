@@ -26,14 +26,24 @@ class RunningShoesViewModel(
     val uiState: StateFlow<RunningShoesUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
+    private var hasInitialRefreshed = false
 
     fun initialize() {
         observeShoes()
+        if (!hasInitialRefreshed) {
+            hasInitialRefreshed = true
+            refresh()
+        }
+    }
+
+    fun refresh() {
         viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
             try {
                 repository.pullFromServer()
             } catch (e: Exception) {
                 RLog.e("RunningShoesVM", "pullFromServer failed", e)
+                _uiState.update { it.copy(toastMessage = "同步失败，请检查网络") }
             }
             try {
                 repository.syncToServer()
@@ -45,6 +55,7 @@ class RunningShoesViewModel(
             } catch (e: Exception) {
                 RLog.e("RunningShoesVM", "retryPendingImageUploads failed", e)
             }
+            _uiState.update { it.copy(isRefreshing = false) }
         }
     }
 

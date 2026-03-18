@@ -11,5 +11,6 @@ data class RunningShoesUiState(
     val searchKeyword: String = "",
     val sortType: ShoeSortType = ShoeSortType.updateTime,
     val toastMessage: String? = null,
-    val selectedTabIndex: Int = 0
+    val selectedTabIndex: Int = 0,
+    val isRefreshing: Boolean = false
 )

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -111,32 +112,38 @@ fun RunningShoesManagementScreen(
 
             val shoes = if (uiState.selectedTabIndex == 0) uiState.activeShoes else uiState.retiredShoes
 
-            if (shoes.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (uiState.selectedTabIndex == 0) "还没有跑鞋\n点击 + 添加你的第一双跑鞋" else "没有已退役的跑鞋",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(shoes, key = { it.id }) { shoe ->
-                        ShoeCard(
-                            shoe = shoe,
-                            onClick = { onNavigateToDetail(shoe.id) },
-                            onSetDefault = { viewModel.setDefaultShoe(shoe.id) },
-                            onDelete = { viewModel.deleteShoe(shoe.id) }
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = { viewModel.refresh() },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (shoes.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (uiState.selectedTabIndex == 0) "还没有跑鞋\n点击 + 添加你的第一双跑鞋" else "没有已退役的跑鞋",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
                         )
+                    }
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(shoes, key = { it.id }) { shoe ->
+                            ShoeCard(
+                                shoe = shoe,
+                                onClick = { onNavigateToDetail(shoe.id) },
+                                onSetDefault = { viewModel.setDefaultShoe(shoe.id) },
+                                onDelete = { viewModel.deleteShoe(shoe.id) }
+                            )
+                        }
                     }
                 }
             }
