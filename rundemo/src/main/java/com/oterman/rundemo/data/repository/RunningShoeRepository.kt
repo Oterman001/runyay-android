@@ -3,6 +3,7 @@ package com.oterman.rundemo.data.repository
 import android.content.Context
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.RunningShoeImageManager
+import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunningShoeDao
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunningShoeEntity
@@ -33,7 +34,9 @@ class RunningShoeRepository(
     private val dao: RunningShoeDao = RunDatabase.getInstance(context).runningShoeDao(),
     private val api: RunningShoeApi = RetrofitClient.runningShoeApi,
     private val preferencesManager: PreferencesManager = PreferencesManager(context),
-    private val imageManager: RunningShoeImageManager = RunningShoeImageManager(context)
+    private val imageManager: RunningShoeImageManager = RunningShoeImageManager(context),
+    private val runRecordDao: RunRecordDao = RunDatabase.getInstance(context).runRecordDao(),
+    private val remoteRepository: RunDataRemoteRepository = RunDataRemoteRepository(PreferencesManager(context))
 ) {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val serverDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
@@ -153,6 +156,8 @@ class RunningShoeRepository(
         return try {
             dao.batchLinkRecords(shoeId, recordIds)
             recalculateShoeStats(shoeId)
+            // 同步到服务器
+            syncLinkedRecordsToServer(recordIds)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -163,6 +168,8 @@ class RunningShoeRepository(
         return try {
             dao.unlinkRecord(recordId)
             recalculateShoeStats(shoeId)
+            // 同步到服务器
+            syncLinkedRecordsToServer(listOf(recordId))
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -198,6 +205,18 @@ class RunningShoeRepository(
             ))
         } catch (e: Exception) {
             RLog.e("RunningShoeRepo", "recalculateShoeStats failed", e)
+        }
+    }
+
+    private suspend fun syncLinkedRecordsToServer(recordIds: List<String>) {
+        for (recordId in recordIds) {
+            try {
+                val record = runRecordDao.getByWorkoutId(recordId) ?: continue
+                if (record.originId == null) continue  // 没有 originId 的记录无法同步
+                remoteRepository.syncRunRecord(record)
+            } catch (e: Exception) {
+                RLog.w("RunningShoeRepo", "同步记录到服务器失败: $recordId, ${e.message}")
+            }
         }
     }
 

@@ -9,11 +9,14 @@ import com.oterman.rundemo.data.network.api.RunDataApi
 import com.oterman.rundemo.data.network.dto.RunSummaryBasicInfoDto
 import com.oterman.rundemo.data.network.dto.request.ActivityFileListRequest
 import com.oterman.rundemo.data.network.dto.request.FitFileUploadRequestDto
+import com.oterman.rundemo.data.fit.RunSummaryMapper
+import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.network.dto.request.RunRecordUploadItemDto
 import com.oterman.rundemo.data.network.dto.request.RunRecordUploadRequest
 import com.oterman.rundemo.data.network.dto.request.RunSummaryDeleteRequest
 import com.oterman.rundemo.data.network.dto.request.RunSummaryQueryRequest
 import com.oterman.rundemo.data.network.dto.request.RunSummaryUpdateRequest
+import com.oterman.rundemo.data.network.dto.request.toUpdateRequest
 import com.oterman.rundemo.data.network.dto.response.RunDataUploadResponse
 import com.oterman.rundemo.data.network.dto.response.RunSummaryDeleteResponse
 import com.oterman.rundemo.data.network.dto.response.RunSummaryUpdateResponse
@@ -255,6 +258,30 @@ class RunDataRemoteRepository(
         } catch (e: Exception) {
             RLog.e(TAG, "FIT文件上传异常", e)
             Result.failure(e)
+        }
+    }
+
+    /**
+     * 同步跑步记录到服务器：先 update，失败则回退 save
+     */
+    suspend fun syncRunRecord(entity: RunRecordEntity): Result<Unit> {
+        // 先尝试 update
+        val updateResult = updateRunSummary(entity.toUpdateRequest())
+        if (updateResult.isSuccess) {
+            RLog.i(TAG, "syncRunRecord update成功: ${entity.workoutId}")
+            return Result.success(Unit)
+        }
+
+        // update 失败，回退 save
+        RLog.w(TAG, "syncRunRecord update失败，回退save: ${entity.workoutId}, ${updateResult.exceptionOrNull()?.message}")
+        val uploadDto = RunSummaryMapper.toUploadItemDto(entity)
+        val saveResult = uploadRunRecords(listOf(uploadDto))
+        return if (saveResult.isSuccess) {
+            RLog.i(TAG, "syncRunRecord save成功: ${entity.workoutId}")
+            Result.success(Unit)
+        } else {
+            RLog.e(TAG, "syncRunRecord save也失败: ${entity.workoutId}")
+            Result.failure(saveResult.exceptionOrNull() ?: Exception("sync failed"))
         }
     }
 
