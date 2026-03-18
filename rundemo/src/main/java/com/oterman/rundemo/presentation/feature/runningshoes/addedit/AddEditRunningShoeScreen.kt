@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -103,8 +104,8 @@ fun AddEditRunningShoeScreen(
             setToolbarWidgetColor(Color.WHITE)
         }
         val intent = UCrop.of(sourceUri, croppedImageUri)
-            .withAspectRatio(16f, 9f)
-            .withMaxResultSize(1024, 576)
+            .withAspectRatio(1f, 1f)
+            .withMaxResultSize(1024, 1024)
             .withOptions(options)
             .getIntent(context)
         cropLauncher.launch(intent)
@@ -160,7 +161,7 @@ fun AddEditRunningShoeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .aspectRatio(1f)
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable { imagePickerLauncher.launch("image/*") },
