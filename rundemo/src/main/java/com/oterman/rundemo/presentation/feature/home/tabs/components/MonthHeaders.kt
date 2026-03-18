@@ -50,7 +50,7 @@ fun HeatmapMonthHeader(
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = monthData.getFormattedDistance(),
+                    text = String.format("%.2f", monthData.totalDistance),
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -139,7 +139,7 @@ fun SimpleMonthHeader(
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = monthData.getFormattedDistance(),
+                    text = String.format("%.2f", monthData.totalDistance),
                     fontSize = 32.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
