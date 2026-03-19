@@ -43,12 +43,14 @@ class HomeViewModel(
 
     companion object {
         private const val TAG = "HomeViewModel"
+        private const val AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000L // 5分钟自动同步间隔
     }
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private var syncIconDelayJob: Job? = null
+    private var lastAutoSyncTime: Long = 0L
 
     init {
         loadAuthState()
@@ -154,6 +156,12 @@ class HomeViewModel(
             return
         }
 
+        val now = System.currentTimeMillis()
+        if (now - lastAutoSyncTime < AUTO_SYNC_INTERVAL_MS) {
+            RLog.d(TAG, "距上次自动同步不足5分钟，跳过")
+            return
+        }
+
         // 检查通知权限（API 33+）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val granted = ContextCompat.checkSelfPermission(
@@ -170,7 +178,21 @@ class HomeViewModel(
         }
 
         // 无论权限状态如何，都正常启动同步
+        lastAutoSyncTime = now
         RLog.i(TAG, "首页触发自动同步")
+        DataSyncForegroundService.start(context)
+    }
+
+    /**
+     * 手动触发同步（下拉刷新调用），不受自动同步间隔限制
+     */
+    fun manualSync() {
+        if (_uiState.value.isSyncing) {
+            RLog.d(TAG, "已在同步中，跳过手动同步")
+            return
+        }
+        lastAutoSyncTime = System.currentTimeMillis()
+        RLog.i(TAG, "手动触发同步")
         DataSyncForegroundService.start(context)
     }
 

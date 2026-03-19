@@ -141,6 +141,8 @@ fun HomeScreen(
                 HomeTab.DASHBOARD -> DashboardTabContent(
                     showSyncIcon = uiState.showSyncIcon,
                     isSyncing = uiState.isSyncing,
+                    isRefreshing = uiState.isSyncing,
+                    onPullToRefresh = viewModel::manualSync,
                     onSyncIconClick = onNavigateToSyncStatus,
                     onSetGoalClick = onNavigateToRunGoalSet,
                     onNavigateToRunDetail = onNavigateToRunDetail,

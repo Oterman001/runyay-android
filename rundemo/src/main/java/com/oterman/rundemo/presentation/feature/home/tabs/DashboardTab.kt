@@ -20,9 +20,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -67,6 +69,7 @@ import com.oterman.rundemo.presentation.feature.home.components.WeekStatisticsCa
  * Large title collapses to small title when scrolling
  * Corresponds to iOS Tab1Page
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardTabContent(
     viewModel: DashboardTabViewModel = viewModel(
@@ -74,6 +77,8 @@ fun DashboardTabContent(
     ),
     showSyncIcon: Boolean = false,
     isSyncing: Boolean = false,
+    isRefreshing: Boolean = false,
+    onPullToRefresh: () -> Unit = {},
     onSyncIconClick: () -> Unit = {},
     onSetGoalClick: () -> Unit = {},
     onNavigateToRunDetail: (workoutId: String) -> Unit = {},
@@ -115,7 +120,9 @@ fun DashboardTabContent(
         }
     }
 
-    Box(
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onPullToRefresh,
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
