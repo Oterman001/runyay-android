@@ -6,6 +6,7 @@ import com.oterman.rundemo.data.local.dao.RunAbilityZoneDao
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
+import com.oterman.rundemo.data.local.dao.RunningShoeDao
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.OverallVdotEntity
 import com.oterman.rundemo.data.local.entity.PBRecordEntity
@@ -60,6 +61,7 @@ class RunDataRepositoryImpl private constructor(
     private val abilityZoneDao: RunAbilityZoneDao = database.runAbilityZoneDao()
     private val pbRecordDao: PBRecordDao = database.pbRecordDao()
     private val overallVdotDao: OverallVdotDao = database.overallVdotDao()
+    private val runningShoeDao: RunningShoeDao = database.runningShoeDao()
 
     // ==================== 用户隔离状态 ====================
 
@@ -445,17 +447,50 @@ class RunDataRepositoryImpl private constructor(
     // ==================== 删除操作 ====================
     
     override suspend fun deleteRunRecord(workoutId: String) {
+        // 删除前收集关联的 shoeId，删除后重算跑鞋统计
+        val shoeId = runRecordDao.getByWorkoutId(workoutId)?.shoeId
         runRecordDao.deleteByWorkoutId(workoutId)
         pbRecordDao.deleteByWorkoutId(workoutId)
         overallVdotDao.deleteByWorkoutId(workoutId)
+        if (!shoeId.isNullOrBlank()) {
+            recalculateShoeStats(shoeId)
+        }
     }
 
     override suspend fun deleteRunRecords(workoutIds: List<String>) {
         if (workoutIds.isEmpty()) return
+        // 删除前收集所有关联的 shoeId
+        val affectedShoeIds = workoutIds.mapNotNull { runRecordDao.getByWorkoutId(it)?.shoeId }
+            .filter { it.isNotBlank() }
+            .toSet()
         runRecordDao.deleteByWorkoutIds(workoutIds)
         workoutIds.forEach { workoutId ->
             pbRecordDao.deleteByWorkoutId(workoutId)
             overallVdotDao.deleteByWorkoutId(workoutId)
+        }
+        // 重算受影响跑鞋的统计
+        for (shoeId in affectedShoeIds) {
+            recalculateShoeStats(shoeId)
+        }
+    }
+
+    /**
+     * 重算跑鞋统计（基于本地关联记录）
+     */
+    private suspend fun recalculateShoeStats(shoeId: String) {
+        try {
+            val records = runningShoeDao.getLinkedRunRecords(shoeId)
+            val shoe = runningShoeDao.getById(shoeId) ?: return
+            val now = System.currentTimeMillis()
+            runningShoeDao.update(shoe.copy(
+                totalDistance = records.sumOf { it.totalDistance },
+                totalDuration = records.sumOf { it.duration },
+                totalRuns = records.size,
+                updatedAt = now,
+                syncStatus = "pending"
+            ))
+        } catch (e: Exception) {
+            Log.w("RunDataRepositoryImpl", "recalculateShoeStats failed for $shoeId: ${e.message}")
         }
     }
 

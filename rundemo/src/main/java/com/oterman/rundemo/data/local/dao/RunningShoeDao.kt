@@ -84,4 +84,8 @@ interface RunningShoeDao {
     // 更新单条记录的跑鞋关联
     @Query("UPDATE run_record SET shoeId = :shoeId WHERE workoutId = :recordId")
     suspend fun updateRecordShoeId(recordId: String, shoeId: String?)
+
+    // 清空指定跑鞋的所有关联记录（删除跑鞋时使用）
+    @Query("UPDATE run_record SET shoeId = NULL WHERE shoeId = :shoeId")
+    suspend fun clearShoeIdForShoe(shoeId: String)
 }

@@ -79,6 +79,7 @@ class RunningShoeRepository(
 
     suspend fun deleteShoe(shoeId: String): Result<Unit> {
         return try {
+            dao.clearShoeIdForShoe(shoeId)  // 先清理关联记录的 shoeId
             dao.softDelete(shoeId)
             Result.success(Unit)
         } catch (e: Exception) {
@@ -196,10 +197,10 @@ class RunningShoeRepository(
             val localDistance = records.sumOf { it.totalDistance }
             val localDuration = records.sumOf { it.duration }
             val localRuns = records.size
-            // 取大值防回退：部分同步场景下本地记录不全，服务端值更准确
-            val finalDistance = maxOf(localDistance, shoe.totalDistance)
-            val finalDuration = maxOf(localDuration, shoe.totalDuration)
-            val finalRuns = maxOf(localRuns, shoe.totalRuns)
+            // 直接使用本地关联记录计算，确保删除记录后统计能正确减少
+            val finalDistance = localDistance
+            val finalDuration = localDuration
+            val finalRuns = localRuns
             val now = System.currentTimeMillis()
             dao.update(shoe.copy(
                 totalDistance = finalDistance,

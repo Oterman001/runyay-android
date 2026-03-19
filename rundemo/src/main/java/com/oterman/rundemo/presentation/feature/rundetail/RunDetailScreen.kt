@@ -668,7 +668,7 @@ fun RunDetailScreen(
                             RunDetailShoeCard(
                                 shoe = uiState.linkedShoe,
                                 onClick = { viewModel.showShoeSelector() },
-                                onRemove = { viewModel.removeShoe() }
+                                onReplace = { viewModel.showShoeSelector() }
                             )
                         }
                         item {

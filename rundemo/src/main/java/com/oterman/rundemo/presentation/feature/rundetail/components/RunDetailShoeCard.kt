@@ -1,7 +1,9 @@
 package com.oterman.rundemo.presentation.feature.rundetail.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,22 +14,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.automirrored.outlined.DirectionsRun
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.oterman.rundemo.domain.model.RunningShoe
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
@@ -40,7 +45,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstan
 fun RunDetailShoeCard(
     shoe: RunningShoe?,
     onClick: () -> Unit,
-    onRemove: () -> Unit,
+    onReplace: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     AppCard(
@@ -50,7 +55,7 @@ fun RunDetailShoeCard(
     ) {
         if (shoe != null) {
             // 已关联状态
-            LinkedShoeContent(shoe = shoe, onRemove = onRemove)
+            LinkedShoeContent(shoe = shoe, onReplace = onReplace)
         } else {
             // 未关联状态
             UnlinkedShoeContent()
@@ -61,7 +66,7 @@ fun RunDetailShoeCard(
 @Composable
 private fun LinkedShoeContent(
     shoe: RunningShoe,
-    onRemove: () -> Unit
+    onReplace: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -69,24 +74,53 @@ private fun LinkedShoeContent(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 跑鞋图片
-        val imageSource = shoe.displayImageSource
-        if (imageSource != null) {
-            AsyncImage(
-                model = imageSource,
-                contentDescription = shoe.displayName,
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
-                contentDescription = null,
-                modifier = Modifier.size(90.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-            )
+        // 跑鞋图片 - 对齐跑鞋列表 ShoeCard 的样式
+        Box(
+            modifier = Modifier
+                .size(90.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            val imageSource = shoe.displayImageSource
+            if (imageSource != null) {
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imageSource)
+                        .memoryCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
+                        .diskCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
+                        .build(),
+                    contentDescription = shoe.displayName,
+                    modifier = Modifier.size(90.dp),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            modifier = Modifier.matchParentSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    },
+                    error = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.DirectionsRun,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.DirectionsRun,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -124,16 +158,12 @@ private fun LinkedShoeContent(
             }
         }
 
-        // 移除按钮
-        IconButton(
-            onClick = onRemove,
-            modifier = Modifier.size(32.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Close,
-                contentDescription = "解除关联",
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        // "更换"按钮
+        TextButton(onClick = onReplace) {
+            Text(
+                text = "更换",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
