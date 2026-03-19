@@ -67,7 +67,14 @@ class RunningShoeRepository(
             val entity = shoe.toEntity().copy(
                 updatedAt = System.currentTimeMillis(),
                 imagePath = shoe.imagePath ?: existing?.imagePath,
-                imageUrl = shoe.imageUrl ?: existing?.imageUrl
+                imageUrl = shoe.imageUrl ?: existing?.imageUrl,
+                // 保留编辑页面不涉及的字段，避免被默认值覆盖
+                totalDistance = existing?.totalDistance ?: shoe.totalDistance,
+                totalDuration = existing?.totalDuration ?: shoe.totalDuration,
+                totalRuns = existing?.totalRuns ?: shoe.totalRuns,
+                shoeType = existing?.shoeType ?: shoe.shoeType,
+                color = existing?.color ?: shoe.color,
+                createdAt = existing?.createdAt ?: shoe.createdAt,
             )
             dao.update(entity)
             Result.success(entity.toDomainModel())
