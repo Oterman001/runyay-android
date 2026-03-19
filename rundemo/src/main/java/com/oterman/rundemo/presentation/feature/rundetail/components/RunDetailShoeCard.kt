@@ -20,7 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,14 +71,14 @@ private fun LinkedShoeContent(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(start = 0.dp, end = 16.dp, top = 0.dp, bottom = 0.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 跑鞋图片 - 对齐跑鞋列表 ShoeCard 的样式
         Box(
             modifier = Modifier
                 .size(90.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
@@ -159,11 +159,10 @@ private fun LinkedShoeContent(
         }
 
         // "更换"按钮
-        TextButton(onClick = onReplace) {
+        FilledTonalButton(onClick = onReplace) {
             Text(
                 text = "更换",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.labelSmall
             )
         }
     }
