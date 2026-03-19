@@ -204,7 +204,6 @@ fun RunningShoeDetailScreen(
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                         DropdownMenuItem(
                             text = { Text("编辑") },
-                            leadingIcon = { Icon(Icons.Default.Edit, null) },
                             onClick = {
                                 showMenu = false
                                 onNavigateToEdit(shoeId)
@@ -231,9 +230,6 @@ fun RunningShoeDetailScreen(
                         )
                         DropdownMenuItem(
                             text = { Text("删除", color = MaterialTheme.colorScheme.error) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error)
-                            },
                             onClick = {
                                 showMenu = false
                                 viewModel.showDeleteDialog()
