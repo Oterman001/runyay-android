@@ -1,5 +1,6 @@
 package com.oterman.rundemo.presentation.feature.runningshoes.linkedrecords
 
+import kotlin.coroutines.cancellation.CancellationException
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -139,7 +140,8 @@ fun LinkedRunRecordsListScreen(
                                 }
                                 trackPointsCache[record.workoutId] = points
                                 trackPointsVersion++
-                            } catch (_: Exception) {
+                            } catch (e: Exception) {
+                                if (e is CancellationException) throw e
                                 trackPointsCache[record.workoutId] = emptyList()
                                 trackPointsVersion++
                             } finally {
