@@ -454,15 +454,17 @@ class RunningShoeRepository(
             // Upload to server in best-effort manner
             val serverUrl = uploadImageToServer(shoeId, localPath)
             if (serverUrl != null) {
-                // Only store in imageUrl (as server identifier), not imagePath
+                // Store imageUrl and mark pending so pullFromServer won't overwrite,
+                // and syncToServer will push the new imageUrl to server
                 dao.getById(shoeId)?.let { entity ->
                     dao.update(entity.copy(
                         imageUrl = serverUrl,
+                        syncStatus = "pending",
                         updatedAt = System.currentTimeMillis()
                     ))
                 }
-                // Best-effort pull to get correct imagePath from list API
-                try { pullFromServer() } catch (_: Exception) {}
+                // Push shoe data (with new imageUrl) to server
+                try { syncToServer() } catch (_: Exception) {}
             }
             // Return success regardless — local image is already saved and displayed
             Result.success(localPath)
