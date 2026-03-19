@@ -856,10 +856,14 @@ fun AppNavGraph(
             )
         ) { backStackEntry ->
             val shoeId = backStackEntry.arguments?.getString("shoeId") ?: return@composable
+            val context = LocalContext.current
             LinkedRunRecordsListScreen(
                 shoeId = shoeId,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToRunDetail = { workoutId ->
+                    context.startActivity(RunDetailActivity.createIntent(context, workoutId))
                 }
             )
         }

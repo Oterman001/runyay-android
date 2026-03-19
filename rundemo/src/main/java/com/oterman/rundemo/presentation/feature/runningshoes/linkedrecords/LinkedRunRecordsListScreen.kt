@@ -29,23 +29,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.repository.RunningShoeRepository
+import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
 import com.oterman.rundemo.presentation.feature.runningshoes.batchlink.BatchLinkRunRecordsSheet
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LinkedRunRecordsListScreen(
     shoeId: String,
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onNavigateToRunDetail: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val repository = remember { RunningShoeRepository(context) }
+    val runDataRepository = remember {
+        RunDataRepositoryImpl.getInstance(RunDatabase.getInstance(context))
+    }
     var records by remember { mutableStateOf<List<RunRecordEntity>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var refreshTrigger by remember { mutableIntStateOf(0) }
     var showBatchLinkSheet by remember { mutableStateOf(false) }
+
+    // 轨迹点缓存
+    val trackPointsCache = remember { mutableMapOf<String, List<TrackPoint>>() }
+    val loadingSet = remember { mutableSetOf<String>() }
+    var trackPointsVersion by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(shoeId, refreshTrigger) {
         isLoading = true
@@ -89,10 +103,32 @@ fun LinkedRunRecordsListScreen(
                 contentPadding = PaddingValues(vertical = 8.dp)
             ) {
                 items(records, key = { it.workoutId }) { record ->
+                    // 读取版本号以触发重组
+                    val version = trackPointsVersion
+                    val trackPoints = trackPointsCache[record.workoutId]
+
+                    if (trackPoints == null && !loadingSet.contains(record.workoutId)) {
+                        LaunchedEffect(record.workoutId) {
+                            loadingSet.add(record.workoutId)
+                            try {
+                                val points = withContext(Dispatchers.IO) {
+                                    runDataRepository.getTrackPoints(record.workoutId)
+                                }
+                                trackPointsCache[record.workoutId] = points
+                                trackPointsVersion++
+                            } catch (_: Exception) {
+                                trackPointsCache[record.workoutId] = emptyList()
+                                trackPointsVersion++
+                            } finally {
+                                loadingSet.remove(record.workoutId)
+                            }
+                        }
+                    }
+
                     RunRecordItem(
                         record = record,
-                        trackPoints = null,
-                        onClick = {}
+                        trackPoints = trackPoints,
+                        onClick = { onNavigateToRunDetail(record.workoutId) }
                     )
                 }
             }
