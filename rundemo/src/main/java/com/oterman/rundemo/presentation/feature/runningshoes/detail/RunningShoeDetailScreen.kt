@@ -69,6 +69,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
@@ -502,27 +503,50 @@ private fun StatisticsCard(shoe: RunningShoe) {
     AppCard {
         Column(Modifier.padding(16.dp)) {
             Text("统计数据", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                StatItem("总距离", "%.1f km".format(shoe.effectiveDistance))
-                StatItem("总次数", "${shoe.totalRuns} 次")
-                StatItem("使用天数", "${shoe.usageDays} 天")
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth()) {
+                StatItem("总距离", "%.1f".format(shoe.effectiveDistance), "km")
+                StatItem("总次数", "${shoe.totalRuns}", "次")
+                StatItem("使用天数", "${shoe.usageDays}", "天")
             }
-            Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                StatItem("总时长", "%.0f min".format(shoe.totalDuration))
-                StatItem("均距/次", "%.1f km".format(shoe.averageDistancePerRun))
-                StatItem("每公里", shoe.costPerKm?.let { "%.2f 元".format(it) } ?: "-")
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth()) {
+                StatItem("总时长", "%.0f".format(shoe.totalDuration), "min")
+                StatItem("均距/次", "%.1f".format(shoe.averageDistancePerRun), "km")
+                StatItem("每公里", shoe.costPerKm?.let { "%.2f".format(it) } ?: "-", shoe.costPerKm?.let { "元" })
             }
         }
     }
 }
 
 @Composable
-private fun StatItem(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun androidx.compose.foundation.layout.RowScope.StatItem(label: String, value: String, unit: String? = null) {
+    Column(
+        modifier = Modifier.weight(1f),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = value,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (!unit.isNullOrBlank()) {
+                Text(
+                    text = " $unit",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 2.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -549,10 +573,11 @@ private fun InfoRow(label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(vertical = 7.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }
