@@ -26,6 +26,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -36,6 +39,7 @@ import com.oterman.rundemo.data.repository.RunningShoeRepository
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
 import com.oterman.rundemo.presentation.feature.runningshoes.batchlink.BatchLinkRunRecordsSheet
+import androidx.compose.runtime.DisposableEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -60,6 +64,25 @@ fun LinkedRunRecordsListScreen(
     val trackPointsCache = remember { mutableMapOf<String, List<TrackPoint>>() }
     val loadingSet = remember { mutableSetOf<String>() }
     var trackPointsVersion by remember { mutableIntStateOf(0) }
+
+    // 监听生命周期，从其他 Activity 返回时刷新列表
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        var isFirstResume = true
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (isFirstResume) {
+                    isFirstResume = false
+                } else {
+                    refreshTrigger++
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     LaunchedEffect(shoeId, refreshTrigger) {
         isLoading = true
