@@ -421,8 +421,9 @@ private fun MapViewComposable(
             val styleChanged = styleUri != lastStyleUri
             val kmChanged = showKmMarkers != lastShowKmMarkers || kmMarkerInterval != lastKmMarkerInterval
 
-            if (styleChanged || kmChanged) {
-                RLog.d(TAG, "地图参数变化, styleChanged=$styleChanged, kmChanged=$kmChanged")
+            if (styleChanged) {
+                // 样式变化：全量重加载，重置镜头
+                RLog.d(TAG, "地图样式变化, 全量重加载")
                 lastStyleUri = styleUri
                 lastShowKmMarkers = showKmMarkers
                 lastKmMarkerInterval = kmMarkerInterval
@@ -441,6 +442,25 @@ private fun MapViewComposable(
                             )
                         }
                         renderer.fitTrackBounds(view, trackPoints, defaultPadding)
+                    }
+                }
+            } else if (kmChanged) {
+                // 仅公里标记变化：直接清除并重渲染，不走 loadStyle 回调链，保留当前镜头位置
+                RLog.d(TAG, "公里标记参数变化, 直接重渲染, showKmMarkers=$showKmMarkers, interval=$kmMarkerInterval")
+                lastShowKmMarkers = showKmMarkers
+                lastKmMarkerInterval = kmMarkerInterval
+
+                renderer.clearOverlays(view)
+                if (trackPoints.isNotEmpty()) {
+                    renderer.renderTrack(view, trackPoints, trackColors)
+                    if (showKmMarkers) {
+                        renderer.renderKmMarkers(
+                            view,
+                            trackPoints,
+                            trackColors,
+                            kmMarkerInterval,
+                            actualDistanceKm
+                        )
                     }
                 }
             }

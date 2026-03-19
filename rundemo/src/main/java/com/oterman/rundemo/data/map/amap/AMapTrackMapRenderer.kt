@@ -98,18 +98,25 @@ class AMapTrackMapRenderer : TrackMapRenderer {
             RLog.e(TAG, "loadStyle: getAMap 返回 null!")
             return
         }
-        val mapType = when (styleUri) {
+        val newMapType = when (styleUri) {
             STYLE_URI_NORMAL -> AMap.MAP_TYPE_NORMAL
             STYLE_URI_SATELLITE -> AMap.MAP_TYPE_SATELLITE
             STYLE_URI_NIGHT -> AMap.MAP_TYPE_NIGHT
             STYLE_URI_NAVI -> AMap.MAP_TYPE_NAVI
             else -> AMap.MAP_TYPE_NORMAL
         }
-        RLog.d(TAG, "loadStyle: mapType=$mapType, 注册 OnMapLoadedListener")
-        aMap.mapType = mapType
+
+        // 若 mapType 未变化，地图已就绪，直接回调，无需等待 OnMapLoadedListener
+        if (aMap.mapType == newMapType) {
+            RLog.d(TAG, "loadStyle: mapType 未变($newMapType)，直接调用 onReady()")
+            onReady()
+            return
+        }
+
+        RLog.d(TAG, "loadStyle: mapType 变化 ${aMap.mapType} -> $newMapType，注册 OnMapLoadedListener")
+        aMap.mapType = newMapType
 
         var readyCalled = false
-        // 注册 listener（应对异步场景）
         aMap.setOnMapLoadedListener {
             if (!readyCalled) {
                 readyCalled = true

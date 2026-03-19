@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.DirectionsRun
+import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -345,7 +346,7 @@ private fun FilterButton(
     Box(modifier = modifier) {
         IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
             Icon(
-                imageVector = Icons.Outlined.FilterList,
+                imageVector = Icons.Outlined.FilterAlt,
                 contentDescription = "筛选",
                 tint = if (isActive) MaterialTheme.colorScheme.primary
                        else MaterialTheme.colorScheme.onSurfaceVariant
