@@ -30,6 +30,8 @@ class RunningShoeDetailViewModel(
             if (_uiState.value.shoe == null) {
                 _uiState.update { it.copy(isLoading = true) }
             }
+            // 先重新计算统计数据，确保从关联记录动态获取最新值
+            repository.recalculateShoeStats(shoeId)
             val shoe = repository.getShoe(shoeId)
             val count = repository.getLinkedRecordsCount(shoeId)
             _uiState.update {
