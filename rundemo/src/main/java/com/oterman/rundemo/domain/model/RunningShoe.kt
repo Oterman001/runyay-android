@@ -41,6 +41,15 @@ data class RunningShoe(
             ?: listOfNotNull(brand, model).joinToString(" ").takeIf { it.isNotBlank() }
             ?: "未命名跑鞋"
 
+    val displaySubtitle: String?
+        get() {
+            val brandModel = listOfNotNull(brand, model).joinToString(" ").takeIf { it.isNotBlank() }
+            return when {
+                !nickname.isNullOrBlank() -> brandModel
+                else -> null
+            }
+        }
+
     val effectiveDistance: Double
         get() = totalDistance + initialDistance
 

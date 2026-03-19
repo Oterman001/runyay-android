@@ -138,9 +138,9 @@ private fun LinkedShoeContent(
                 overflow = TextOverflow.Ellipsis
             )
 
-            if (!shoe.brand.isNullOrBlank()) {
+            if (!shoe.displaySubtitle.isNullOrBlank()) {
                 Text(
-                    text = shoe.brand,
+                    text = shoe.displaySubtitle!!,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

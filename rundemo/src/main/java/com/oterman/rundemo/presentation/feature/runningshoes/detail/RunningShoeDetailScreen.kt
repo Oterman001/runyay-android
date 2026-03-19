@@ -326,18 +326,27 @@ fun RunningShoeDetailScreen(
 
                     // Name + Status badges
                     item {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = shoe.displayName,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            if (shoe.isDefault) {
-                                StatusBadge("默认", MaterialTheme.colorScheme.primary)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = shoe.displayName,
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                if (shoe.isDefault) {
+                                    StatusBadge("默认", MaterialTheme.colorScheme.primary)
+                                }
+                                if (shoe.isRetired) {
+                                    StatusBadge("已退役", MaterialTheme.colorScheme.error)
+                                }
                             }
-                            if (shoe.isRetired) {
-                                StatusBadge("已退役", MaterialTheme.colorScheme.error)
+                            if (!shoe.displaySubtitle.isNullOrBlank()) {
+                                Text(
+                                    text = shoe.displaySubtitle!!,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }

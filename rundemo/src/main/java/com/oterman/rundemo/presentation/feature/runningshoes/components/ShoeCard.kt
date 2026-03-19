@@ -167,6 +167,16 @@ fun ShoeCard(
                     }
                 }
 
+                if (!shoe.displaySubtitle.isNullOrBlank()) {
+                    Text(
+                        text = shoe.displaySubtitle!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
                 Text(
                     text = "%.1f km".format(shoe.effectiveDistance),
                     style = MaterialTheme.typography.bodyMedium,
