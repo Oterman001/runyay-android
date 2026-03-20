@@ -129,7 +129,17 @@ class RunDetailViewModel(
                 } else null
 
                 // 加载关联跑鞋
-                val linkedShoe = record.shoeId?.let { shoeRepository.getShoe(it) }
+                var linkedShoe = record.shoeId?.let { shoeRepository.getShoe(it) }
+
+                // 新设备场景：shoeId 存在但本地无数据，尝试从服务端拉取后重试
+                if (record.shoeId != null && linkedShoe == null) {
+                    try {
+                        shoeRepository.pullFromServer()
+                        linkedShoe = shoeRepository.getShoe(record.shoeId!!)
+                    } catch (e: Exception) {
+                        RLog.e(TAG, "Failed to pull shoe data from server", e)
+                    }
+                }
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
