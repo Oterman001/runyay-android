@@ -288,6 +288,10 @@ class RunningShoeRepository(
             val unsyncedShoes = dao.getUnsyncedShoes(getUserId())
             if (unsyncedShoes.isEmpty()) return Result.success(Unit)
 
+            unsyncedShoes.forEach { shoe ->
+                RLog.i("RunningShoeRepo", "syncToServer shoe: id=${shoe.id}, imageUrl=${shoe.imageUrl}, imagePath=${shoe.imagePath}, syncStatus=${shoe.syncStatus}")
+            }
+
             val saveDtos = unsyncedShoes.map { shoe ->
                 RunningShoeSaveDto(
                     shoeId = shoe.id,
@@ -364,11 +368,14 @@ class RunningShoeRepository(
     private suspend fun mergeServerShoes(serverShoes: List<RunningShoeDto>) {
         val userId = getUserId()
         val now = System.currentTimeMillis()
+        RLog.i("RunningShoeRepo", "mergeServerShoes: received ${serverShoes.size} shoes from server")
         serverShoes.forEach { dto ->
             val shoeId = dto.shoeId ?: return@forEach
+            RLog.i("RunningShoeRepo", "mergeServerShoes: shoeId=$shoeId, server imagePath=${dto.imagePath}, server imageUrl=${dto.imageUrl}")
             val existing = dao.getById(shoeId)
             if (existing == null) {
                 // New shoe from server
+                RLog.i("RunningShoeRepo", "mergeServerShoes: NEW shoe $shoeId, inserting with imagePath=${dto.imagePath?.takeIf { it.isNotBlank() }}, imageUrl=${dto.imageUrl?.takeIf { it.isNotBlank() }}")
                 dao.insert(RunningShoeEntity(
                     id = shoeId,
                     userId = dto.userId ?: userId,
@@ -398,6 +405,7 @@ class RunningShoeRepository(
                 ))
             } else if (existing.syncStatus == "synced") {
                 // Update from server only if local hasn't been modified
+                RLog.i("RunningShoeRepo", "mergeServerShoes: SYNCED shoe $shoeId, updating. local imagePath=${existing.imagePath}, local imageUrl=${existing.imageUrl}")
                 dao.update(existing.copy(
                     brand = dto.brand ?: existing.brand,
                     model = dto.model ?: existing.model,
@@ -422,6 +430,7 @@ class RunningShoeRepository(
                 ))
             } else {
                 // Local-only or pending sync: only update image fields from server
+                RLog.i("RunningShoeRepo", "mergeServerShoes: PENDING shoe $shoeId, local imagePath=${existing.imagePath}, local imageUrl=${existing.imageUrl}")
                 val serverImagePath = dto.imagePath?.takeIf { it.isNotBlank() }
                 val serverImageUrl = dto.imageUrl?.takeIf { it.isNotBlank() }
                 if (serverImagePath != null || serverImageUrl != null) {
@@ -469,10 +478,12 @@ class RunningShoeRepository(
 
             // Upload to server in best-effort manner
             val serverUrl = uploadImageToServer(shoeId, localPath)
+            RLog.i("RunningShoeRepo", "uploadImage: shoeId=$shoeId, localPath=$localPath, serverUrl=$serverUrl")
             if (serverUrl != null) {
                 // Store imageUrl and mark pending so pullFromServer won't overwrite,
                 // and syncToServer will push the new imageUrl to server
                 dao.getById(shoeId)?.let { entity ->
+                    RLog.i("RunningShoeRepo", "uploadImage: updating entity imageUrl=$serverUrl, existing imagePath=${entity.imagePath}, existing imageUrl=${entity.imageUrl}")
                     dao.update(entity.copy(
                         imageUrl = serverUrl,
                         syncStatus = "pending",
