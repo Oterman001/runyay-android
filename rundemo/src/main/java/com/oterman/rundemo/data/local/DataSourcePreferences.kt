@@ -40,6 +40,7 @@ class DataSourcePreferences(context: Context) {
 
         // Debug: 同步开关（仅Debug版本使用）
         private const val KEY_DEBUG_SYNC_DISABLED_PLATFORMS = "debug_sync_disabled_platforms"
+        private const val KEY_DEBUG_SYNC_INITIALIZED = "debug_sync_initialized"
 
         // 默认同步开始时间 (格式: yyyyMMddHHmmssSSS，17位)
         const val DEFAULT_SYNC_START_TIME = TimestampUtils.DEFAULT_SYNC_START_TIME
@@ -413,6 +414,20 @@ class DataSourcePreferences(context: Context) {
      */
     fun isDebugSyncEnabled(platform: DataSourcePlatform): Boolean {
         return !getDebugDisabledPlatforms().contains(platform.code)
+    }
+
+    /**
+     * 是否已完成 Debug 同步开关初始化（防止重复覆盖用户手动修改的值）
+     */
+    fun hasDebugSyncInitialized(): Boolean {
+        return prefs.getBoolean(KEY_DEBUG_SYNC_INITIALIZED, false)
+    }
+
+    /**
+     * 标记 Debug 同步开关已完成初始化
+     */
+    fun setDebugSyncInitialized() {
+        prefs.edit().putBoolean(KEY_DEBUG_SYNC_INITIALIZED, true).apply()
     }
 
     // ============ 清理 ============

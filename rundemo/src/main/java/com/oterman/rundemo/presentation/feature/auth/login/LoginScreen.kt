@@ -1,5 +1,6 @@
 package com.oterman.rundemo.presentation.feature.auth.login
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -38,9 +40,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.presentation.components.GradientButton
 import com.oterman.rundemo.presentation.components.PasswordTextField
 import com.oterman.rundemo.presentation.components.ShakeBox
@@ -132,6 +138,20 @@ fun LoginScreen(
                 onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
                 errorMessage = uiState.passwordError
             )
+
+            // Debug版本预置账号快速切换
+            if (BuildConfig.DEBUG) {
+                DebugAccountSelector(
+                    accounts = listOf(
+                        "17512081100" to "mrtian",
+                        "17512099302" to "querty",
+                        "19183959302" to "querty"
+                    ),
+                    onSelect = { phone, password ->
+                        viewModel.fillDebugAccount(phone, password)
+                    }
+                )
+            }
 
             // 协议勾选框（带抖动效果）
             ShakeBox(shouldShake = uiState.shouldShake) {
@@ -337,3 +357,58 @@ private fun LoginErrorDialog(
     )
 }
 
+/**
+ * Debug 预置账号快速选择面板（仅 Debug 构建可见）
+ */
+@Composable
+private fun DebugAccountSelector(
+    accounts: List<Pair<String, String>>,
+    onSelect: (String, String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = Color(0xFFFF9800),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = "DEBUG 账号",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFFFF9800)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            accounts.forEachIndexed { index, (phone, password) ->
+                OutlinedButton(
+                    onClick = { onSelect(phone, password) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(6.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 4.dp,
+                        vertical = 4.dp
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        Color(0xFFFF9800).copy(alpha = 0.6f)
+                    )
+                ) {
+                    Text(
+                        text = "账号${index + 1}",
+                        fontSize = 12.sp,
+                        color = Color(0xFFFF9800),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}

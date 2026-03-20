@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
@@ -86,7 +87,17 @@ class SyncControlViewModel(
                 val platforms = DataSourcePlatform.getSortablePlatforms()
                     .filter { it.isEnabled }
                     .sortedBy { savedOrder[it.code] ?: Int.MAX_VALUE }
-                    .map { platform ->
+
+                // 首次进入时初始化 Debug 同步开关默认值：只开启手动导入
+                if (BuildConfig.DEBUG && !dataSourcePreferences.hasDebugSyncInitialized()) {
+                    DataSourcePlatform.getEnabledPlatforms().forEach { platform ->
+                        val shouldEnable = platform == DataSourcePlatform.MANUAL
+                        dataSourcePreferences.setDebugSyncEnabled(platform, shouldEnable)
+                    }
+                    dataSourcePreferences.setDebugSyncInitialized()
+                }
+
+                val platformInfos = platforms.map { platform ->
                         val records = withContext(Dispatchers.IO) {
                             runDataRepository.getByDatasource(platform.code)
                         }
@@ -97,7 +108,7 @@ class SyncControlViewModel(
                             lastSyncTime = dataSourcePreferences.getLastSyncTime(platform)
                         )
                     }
-                _uiState.update { it.copy(isLoading = false, platforms = platforms) }
+                _uiState.update { it.copy(isLoading = false, platforms = platformInfos) }
             } catch (e: Exception) {
                 RLog.e(TAG, "加载平台信息失败", e)
                 _uiState.update { it.copy(isLoading = false, message = "加载失败: ${e.message}") }

@@ -154,7 +154,6 @@ private fun LinkedShoeContent(
             ) {
                 StatItem(value = "%.1f km".format(shoe.effectiveDistance), label = "总里程")
                 StatItem(value = "${shoe.totalRuns}次", label = "总次数")
-                StatItem(value = "${shoe.usageDays}天", label = "使用天数")
             }
         }
 

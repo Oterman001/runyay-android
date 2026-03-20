@@ -209,5 +209,20 @@ class LoginViewModel(
             state.copy(loginSuccess = false)
         }
     }
+
+    /**
+     * 填充 Debug 预置账号（仅 Debug 构建使用）
+     */
+    fun fillDebugAccount(phone: String, password: String) {
+        _uiState.update { state ->
+            state.copy(
+                phoneNumber = phone,
+                password = password,
+                phoneNumberError = null,
+                passwordError = null,
+                hasAgreedToTerms = true
+            )
+        }
+    }
 }
 
