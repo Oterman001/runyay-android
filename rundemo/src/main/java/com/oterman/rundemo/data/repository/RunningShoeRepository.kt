@@ -208,14 +208,22 @@ class RunningShoeRepository(
             val finalDistance = localDistance
             val finalDuration = localDuration
             val finalRuns = localRuns
-            val now = System.currentTimeMillis()
-            dao.update(shoe.copy(
-                totalDistance = finalDistance,
-                totalDuration = finalDuration,
-                totalRuns = finalRuns,
-                updatedAt = now,
-                syncStatus = "pending"
-            ))
+
+            // 仅在统计数据实际变化时才更新，避免覆盖已同步的 syncStatus
+            val statsChanged = shoe.totalDistance != finalDistance
+                    || shoe.totalDuration != finalDuration
+                    || shoe.totalRuns != finalRuns
+
+            if (statsChanged) {
+                val now = System.currentTimeMillis()
+                dao.update(shoe.copy(
+                    totalDistance = finalDistance,
+                    totalDuration = finalDuration,
+                    totalRuns = finalRuns,
+                    updatedAt = now,
+                    syncStatus = "pending"
+                ))
+            }
         } catch (e: Exception) {
             RLog.e("RunningShoeRepo", "recalculateShoeStats failed", e)
         }
