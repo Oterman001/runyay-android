@@ -210,7 +210,7 @@ fun RunDetailMapSection(
                 onClick = { showSettingSheet = true },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 12.dp, bottom = 30.dp)
+                    .padding(end = 12.dp, bottom = 40.dp)
                     .size(36.dp),
                 shape = CircleShape,
                 color = Color.Black.copy(alpha = 0.40f),

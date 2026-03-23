@@ -86,7 +86,7 @@ fun ShortShareEditSheet(
 
             // 提示
             Text(
-                text = "选择 3-9 个指标显示在分享图中",
+                text = "选择 3-12 个指标显示在分享图中",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)

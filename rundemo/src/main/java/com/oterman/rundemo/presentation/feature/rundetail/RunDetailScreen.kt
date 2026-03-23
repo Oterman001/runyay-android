@@ -467,7 +467,7 @@ fun RunDetailScreen(
                                         humidity = record.weatherHumidity,
                                         modifier = Modifier
                                             .align(Alignment.BottomStart)
-                                            .padding(start = 12.dp, bottom = 25.dp)
+                                            .padding(start = 12.dp, bottom = 35.dp)
                                     )
                                 }
                             }
