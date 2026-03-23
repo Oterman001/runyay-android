@@ -101,6 +101,7 @@ data class ShareUiState(
 
     // 头像
     val avatarUrl: String? = null,
+    val userName: String? = null,
 
     // 短图编辑设置
     val selectedMetrics: List<ShareMetricType> = defaultShortMetrics,

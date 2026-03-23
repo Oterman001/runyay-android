@@ -495,7 +495,7 @@ fun RunDetailScreen(
                                         val placeable = measurable.measure(constraints)
                                         val invasionPx = RunDetailLayoutConstants.HeaderInvasionOffset.dp
                                             .roundToPx().let { kotlin.math.abs(it) }
-                                        layout(placeable.width, placeable.height - invasionPx) {
+                                        layout(placeable.width, (placeable.height - invasionPx).coerceAtLeast(0)) {
                                             placeable.placeRelative(0, -invasionPx)
                                         }
                                     }

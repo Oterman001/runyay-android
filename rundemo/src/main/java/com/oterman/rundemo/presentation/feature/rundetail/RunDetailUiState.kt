@@ -235,7 +235,7 @@ object RunDetailLayoutConstants {
     val MapGradientHeight = 60 // dp
 
     // Header卡片
-    val HeaderInvasionOffset = -25 // dp，卡片向上侵入地图的偏移
+    val HeaderInvasionOffset = -35 // dp，卡片向上侵入地图的偏移
     val HeaderCardRadius = 16 // dp
     val HeaderCardPadding = 20 // dp
     val HeaderCardMargin = 12 // dp

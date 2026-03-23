@@ -143,7 +143,8 @@ fun ShareScreen(
                                         deviceName = uiState.customDeviceName
                                             ?: DeviceNameUtils.resolveDisplayName(uiState.record!!),
                                         brandText = uiState.brandText,
-                                        avatarUrl = uiState.avatarUrl
+                                        avatarUrl = uiState.avatarUrl,
+                                        userName = uiState.userName
                                     )
                                 }
 

@@ -60,6 +60,11 @@ class ShareViewModel(
         val userId = preferencesManager.getUserId() ?: return
         if (!preferencesManager.isUserLoggedIn()) return
 
+        val userName = preferencesManager.getUserName()
+        if (!userName.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(userName = userName)
+        }
+
         viewModelScope.launch {
             avatarManager.getAvatarUrl(userId).onSuccess { url ->
                 _uiState.value = _uiState.value.copy(avatarUrl = url)
@@ -269,7 +274,8 @@ class ShareViewModel(
                                 showDate = state.showDate,
                                 deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
                                 brandText = state.brandText,
-                                avatarUrl = state.avatarUrl
+                                avatarUrl = state.avatarUrl,
+                                userName = state.userName
                             )
                         }
                         ShareMode.LONG -> ShareImageGenerator.renderToBitmap(context, widthPx) {

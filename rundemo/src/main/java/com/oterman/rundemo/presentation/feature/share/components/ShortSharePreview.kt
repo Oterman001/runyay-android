@@ -60,6 +60,7 @@ fun ShortSharePreview(
     deviceName: String?,
     brandText: String,
     avatarUrl: String? = null,
+    userName: String? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -123,7 +124,7 @@ fun ShortSharePreview(
                     val invasionPx = kotlin.math.abs(
                         RunDetailLayoutConstants.HeaderInvasionOffset.dp.roundToPx()
                     )
-                    layout(placeable.width, placeable.height - invasionPx) {
+                    layout(placeable.width, (placeable.height - invasionPx).coerceAtLeast(0)) {
                         placeable.placeRelative(0, -invasionPx)
                     }
                 }
@@ -190,8 +191,20 @@ fun ShortSharePreview(
                     }
                 }
 
-                // 头像
-                ShareAvatar(avatarUrl = avatarUrl)
+                // 头像 + 昵称
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    ShareAvatar(avatarUrl = avatarUrl)
+                    if (!userName.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = userName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            modifier = Modifier.width(RunDetailLayoutConstants.AvatarSize.dp)
+                        )
+                    }
+                }
             }
 
             // 分隔线
