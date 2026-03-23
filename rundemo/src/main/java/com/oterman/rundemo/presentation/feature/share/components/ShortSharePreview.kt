@@ -64,7 +64,9 @@ fun ShortSharePreview(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // 1. 地图 + 底部渐变
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -228,6 +230,8 @@ fun ShortSharePreview(
             // 品牌区
             AppBrandingSection(brandText = brandText)
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
