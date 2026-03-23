@@ -1,11 +1,8 @@
 package com.oterman.rundemo.presentation.feature.share
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,12 +10,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -234,20 +232,19 @@ private fun ShareModeSelector(
     onModeSelected: (ShareMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.Start
-    ) {
-        ShareMode.entries.forEach { mode ->
-            FilterChip(
+    val modes = ShareMode.entries
+    SingleChoiceSegmentedButtonRow(modifier = modifier) {
+        modes.forEachIndexed { index, mode ->
+            SegmentedButton(
                 selected = currentMode == mode,
                 onClick = { onModeSelected(mode) },
-                label = { Text(mode.displayName) },
-                modifier = Modifier.padding(horizontal = 4.dp),
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = RunBlue.copy(alpha = 0.15f),
-                    selectedLabelColor = RunBlue
-                )
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                colors = SegmentedButtonDefaults.colors(
+                    activeContainerColor = RunBlue.copy(alpha = 0.15f),
+                    activeContentColor = RunBlue,
+                    activeBorderColor = RunBlue
+                ),
+                label = { Text(mode.displayName) }
             )
         }
     }
