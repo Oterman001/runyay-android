@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.presentation.feature.share.ShareMetricType
+import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunYayFontFamily
 import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 
 /**
@@ -69,6 +71,7 @@ private fun ShareMetricCell(
     modifier: Modifier = Modifier
 ) {
     val (value, unit) = getMetricValueAndUnit(metricType, record)
+    val isVdot = metricType == ShareMetricType.VDOT
 
     Column(
         modifier = modifier,
@@ -77,10 +80,10 @@ private fun ShareMetricCell(
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 text = value,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontFamily = RunYayFontFamily4
+                fontSize = if (isVdot) 26.sp else 20.sp,
+                fontWeight = if (isVdot) FontWeight.Bold else FontWeight.SemiBold,
+                color = if (isVdot) RunBlue else MaterialTheme.colorScheme.onSurface,
+                fontFamily = if (isVdot) RunYayFontFamily else RunYayFontFamily4
             )
             unit?.let {
                 Text(

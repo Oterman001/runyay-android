@@ -3,6 +3,7 @@ package com.oterman.rundemo.presentation.feature.share
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -69,10 +70,15 @@ fun ShareScreen(
             TopAppBar(
                 title = {
                     if (uiState.record != null) {
-                        ShareModeSelector(
-                            currentMode = uiState.shareMode,
-                            onModeSelected = { viewModel.setShareMode(it) }
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            ShareModeSelector(
+                                currentMode = uiState.shareMode,
+                                onModeSelected = { viewModel.setShareMode(it) }
+                            )
+                        }
                     } else {
                         Text("分享跑步")
                     }
