@@ -44,6 +44,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.Image
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -66,6 +67,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -297,12 +299,16 @@ fun RunningShoeDetailScreen(
                                         }
                                     },
                                     error = {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Icon(
+                                        Box(
+                                            modifier = Modifier.matchParentSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Image(
                                                 painter = painterResource(R.drawable.svg_setting_shoes),
                                                 contentDescription = null,
-                                                modifier = Modifier.size(48.dp),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                modifier = Modifier.size(96.dp),
+                                                contentScale = ContentScale.Fit,
+                                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
                                             )
                                         }
                                     }
