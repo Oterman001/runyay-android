@@ -18,6 +18,7 @@ import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.presentation.feature.rundetail.PerformTagType
 import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
 import com.oterman.rundemo.presentation.feature.rundetail.RunPerformanceTag
+import com.oterman.rundemo.util.DeviceNameUtils
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -266,7 +267,7 @@ class ShareViewModel(
                                 mapSnapshot = state.mapSnapshot,
                                 selectedMetrics = state.selectedMetrics,
                                 showDate = state.showDate,
-                                deviceName = state.customDeviceName ?: record.deviceVersion,
+                                deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
                                 brandText = state.brandText,
                                 avatarUrl = state.avatarUrl
                             )
@@ -294,7 +295,7 @@ class ShareViewModel(
                                 vo2Max = state.vo2Max,
                                 previousVo2Max = state.previousVo2Max,
                                 showDate = state.showDate,
-                                deviceName = state.customDeviceName ?: record.deviceVersion,
+                                deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
                                 brandText = state.brandText,
                                 avatarUrl = state.avatarUrl
                             )

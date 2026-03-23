@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,24 +63,33 @@ fun ShortSharePreview(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .shadow(
+                RunDetailLayoutConstants.HeaderShadowElevation.dp,
+                RoundedCornerShape(RunDetailLayoutConstants.HeaderCardRadius.dp)
+            )
             .clip(RoundedCornerShape(RunDetailLayoutConstants.HeaderCardRadius.dp))
             .background(MaterialTheme.colorScheme.surface)
     ) {
         // 1. 地图截图区域
         if (mapSnapshot != null) {
+            val bitmapAspectRatio = mapSnapshot.width.toFloat() / mapSnapshot.height.toFloat()
             Image(
                 bitmap = mapSnapshot.asImageBitmap(),
                 contentDescription = "运动轨迹",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(16f / 10f),
-                contentScale = ContentScale.Crop
+                    .aspectRatio(bitmapAspectRatio),
+                contentScale = ContentScale.Fit
             )
         } else {
+            // 室内跑：用屏幕宽高比模拟地图区域比例
+            val configuration = LocalConfiguration.current
+            val placeholderRatio = configuration.screenWidthDp.toFloat() /
+                (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(16f / 10f)
+                    .aspectRatio(placeholderRatio)
                     .background(Color(0xFFF0F0F0)),
                 contentAlignment = Alignment.Center
             ) {
@@ -133,7 +143,7 @@ fun ShortSharePreview(
                 }
 
                 // 设备信息
-                val displayDevice = deviceName ?: record.deviceVersion
+                val displayDevice = deviceName ?: com.oterman.rundemo.util.DeviceNameUtils.resolveDisplayName(record)
                 if (!displayDevice.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {

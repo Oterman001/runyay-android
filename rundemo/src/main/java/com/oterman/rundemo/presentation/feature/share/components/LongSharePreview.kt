@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
@@ -87,19 +88,24 @@ fun LongSharePreview(
     ) {
         // 1. 地图截图
         if (mapSnapshot != null) {
+            val bitmapAspectRatio = mapSnapshot.width.toFloat() / mapSnapshot.height.toFloat()
             Image(
                 bitmap = mapSnapshot.asImageBitmap(),
                 contentDescription = "运动轨迹",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(16f / 10f),
-                contentScale = ContentScale.Crop
+                    .aspectRatio(bitmapAspectRatio),
+                contentScale = ContentScale.Fit
             )
         } else {
+            // 室内跑：用屏幕宽高比模拟地图区域比例
+            val configuration = LocalConfiguration.current
+            val placeholderRatio = configuration.screenWidthDp.toFloat() /
+                (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(16f / 10f)
+                    .aspectRatio(placeholderRatio)
                     .background(Color(0xFFF0F0F0)),
                 contentAlignment = Alignment.Center
             ) {
@@ -114,7 +120,7 @@ fun LongSharePreview(
                 startTime = record.startTime,
                 endTime = record.endTime,
                 duration = record.activeDuration,
-                deviceName = deviceName ?: record.deviceVersion,
+                deviceName = deviceName ?: com.oterman.rundemo.util.DeviceNameUtils.resolveDisplayName(record),
                 isOutdoor = mapSnapshot != null,
                 metrics = metrics,
                 avatarUrl = avatarUrl,

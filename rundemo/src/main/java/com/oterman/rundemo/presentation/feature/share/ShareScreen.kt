@@ -39,6 +39,7 @@ import com.oterman.rundemo.presentation.feature.share.components.ShareBottomBar
 import com.oterman.rundemo.presentation.feature.share.components.ShortShareEditSheet
 import com.oterman.rundemo.presentation.feature.share.components.ShortSharePreview
 import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.util.DeviceNameUtils
 
 /**
  * 分享主页面
@@ -130,7 +131,7 @@ fun ShareScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .verticalScroll(rememberScrollState())
-                                .padding(vertical = 8.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             when (uiState.shareMode) {
                                 ShareMode.SHORT -> {
@@ -140,7 +141,7 @@ fun ShareScreen(
                                         selectedMetrics = uiState.selectedMetrics,
                                         showDate = uiState.showDate,
                                         deviceName = uiState.customDeviceName
-                                            ?: uiState.record!!.deviceVersion,
+                                            ?: DeviceNameUtils.resolveDisplayName(uiState.record!!),
                                         brandText = uiState.brandText,
                                         avatarUrl = uiState.avatarUrl
                                     )
@@ -170,7 +171,7 @@ fun ShareScreen(
                                         previousVo2Max = uiState.previousVo2Max,
                                         showDate = uiState.showDate,
                                         deviceName = uiState.customDeviceName
-                                            ?: uiState.record!!.deviceVersion,
+                                            ?: DeviceNameUtils.resolveDisplayName(uiState.record!!),
                                         brandText = uiState.brandText,
                                         avatarUrl = uiState.avatarUrl
                                     )
@@ -191,7 +192,7 @@ fun ShareScreen(
                     selectedMetrics = uiState.selectedMetrics,
                     availableMetrics = uiState.availableMetrics,
                     deviceName = uiState.customDeviceName
-                        ?: uiState.record!!.deviceVersion ?: "",
+                        ?: DeviceNameUtils.resolveDisplayName(uiState.record!!) ?: "",
                     showDate = uiState.showDate,
                     brandText = uiState.brandText,
                     onMetricsChanged = { viewModel.updateSelectedMetrics(it) },
@@ -207,7 +208,7 @@ fun ShareScreen(
                     enabledCards = uiState.enabledCards,
                     availableCards = viewModel.getAvailableCards(),
                     deviceName = uiState.customDeviceName
-                        ?: uiState.record!!.deviceVersion ?: "",
+                        ?: DeviceNameUtils.resolveDisplayName(uiState.record!!) ?: "",
                     showDate = uiState.showDate,
                     brandText = uiState.brandText,
                     onCardToggle = { type, enabled -> viewModel.toggleCard(type, enabled) },

@@ -81,6 +81,7 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.VerticalOsc
 import com.oterman.rundemo.presentation.feature.share.ShareActivity
 import com.oterman.rundemo.presentation.feature.share.ShareDataCache
 import com.oterman.rundemo.util.AppleWatchDeviceUtils
+import com.oterman.rundemo.util.DeviceNameUtils
 import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.RunningShoeDetailActivity
 
@@ -479,15 +480,7 @@ fun RunDetailScreen(
                                 startTime = record.startTime,
                                 endTime = record.endTime,
                                 duration = record.activeDuration,
-                                deviceName = when {
-                                    record.datasource == "HK" && record.deviceInfo?.contains("apple watch", ignoreCase = true) == true ->
-                                        AppleWatchDeviceUtils.getModelName(record.deviceVersion)
-
-                                    record.datasource == DataSourcePlatform.MANUAL.code ->
-                                        if (record.deviceInfo.isNullOrBlank()) "Manual" else "Manual-${record.deviceInfo}"
-
-                                    else -> record.deviceInfo
-                                },
+                                deviceName = DeviceNameUtils.resolveDisplayName(record),
                                 isOutdoor = uiState.isOutdoor,
                                 metrics = uiState.metrics,
                                 avatarUrl = uiState.avatarUrl,
