@@ -43,6 +43,7 @@ data class DataTabUiState(
     val selectedDatasources: Set<String> = emptySet(),      // 筛选的数据来源，空=全部
     val availableDatasources: List<String> = emptyList(),   // 从数据中提取的去重数据来源
     val hideEmptyMonths: Boolean = false,                   // 隐藏无数据月份
+    val selectedOutdoorTypes: Set<Int> = emptySet(),        // 筛选的室内/室外类型，空=全部；{0}=仅室外；{1}=仅室内
     val isFilterActive: Boolean = false                     // 是否有活跃过滤
 )
 
@@ -142,9 +143,10 @@ class DataTabViewModel(
                     val currentExpanded = _uiState.value.expandedMonths
                     val currentInclusiveLevels = _uiState.value.selectedInclusiveLevels
                     val currentDatasources = _uiState.value.selectedDatasources
+                    val currentOutdoorTypes = _uiState.value.selectedOutdoorTypes
 
                     // 应用过滤
-                    val filteredRecords = applyFilterToRecords(records, currentInclusiveLevels, currentDatasources)
+                    val filteredRecords = applyFilterToRecords(records, currentInclusiveLevels, currentDatasources, currentOutdoorTypes)
 
                     // 按月分组
                     val monthGroups = groupRecordsByMonth(filteredRecords)
@@ -316,7 +318,8 @@ class DataTabViewModel(
     private fun applyFilterToRecords(
         records: List<RunRecordEntity>,
         inclusiveLevels: Set<Int>,
-        datasources: Set<String>
+        datasources: Set<String>,
+        outdoorTypes: Set<Int> = emptySet()
     ): List<RunRecordEntity> {
         var result = records
         if (inclusiveLevels.isNotEmpty()) {
@@ -325,15 +328,23 @@ class DataTabViewModel(
         if (datasources.isNotEmpty()) {
             result = result.filter { it.datasource in datasources }
         }
+        if (outdoorTypes.isNotEmpty()) {
+            result = result.filter { it.outdoor in outdoorTypes }
+        }
         return result
     }
 
     /**
      * 应用过滤条件
      */
-    fun applyFilter(inclusiveLevels: Set<Int>, datasources: Set<String>, hideEmptyMonths: Boolean = _uiState.value.hideEmptyMonths) {
-        val isActive = inclusiveLevels.isNotEmpty() || datasources.isNotEmpty() || hideEmptyMonths
-        val filteredRecords = applyFilterToRecords(allRecords, inclusiveLevels, datasources)
+    fun applyFilter(
+        inclusiveLevels: Set<Int>,
+        datasources: Set<String>,
+        hideEmptyMonths: Boolean = _uiState.value.hideEmptyMonths,
+        outdoorTypes: Set<Int> = _uiState.value.selectedOutdoorTypes
+    ) {
+        val isActive = inclusiveLevels.isNotEmpty() || datasources.isNotEmpty() || hideEmptyMonths || outdoorTypes.isNotEmpty()
+        val filteredRecords = applyFilterToRecords(allRecords, inclusiveLevels, datasources, outdoorTypes)
         val monthGroups = groupRecordsByMonth(filteredRecords)
         val finalGroups = applyHideEmptyMonths(monthGroups, hideEmptyMonths)
         val statsRecords = filteredRecords.filter { it.inclusiveLevel != 0 }
@@ -342,6 +353,7 @@ class DataTabViewModel(
             selectedInclusiveLevels = inclusiveLevels,
             selectedDatasources = datasources,
             hideEmptyMonths = hideEmptyMonths,
+            selectedOutdoorTypes = outdoorTypes,
             isFilterActive = isActive,
             runRecords = filteredRecords,
             monthGroups = finalGroups,
@@ -355,7 +367,7 @@ class DataTabViewModel(
      * 清除过滤条件
      */
     fun clearFilter() {
-        applyFilter(emptySet(), emptySet(), hideEmptyMonths = false)
+        applyFilter(emptySet(), emptySet(), hideEmptyMonths = false, outdoorTypes = emptySet())
     }
 
     /**

@@ -64,13 +64,15 @@ fun DataTabFilterSheet(
     selectedDatasources: Set<String>,
     availableDatasources: List<String>,
     hideEmptyMonths: Boolean,
+    selectedOutdoorTypes: Set<Int>,
     onDismiss: () -> Unit,
-    onApply: (inclusiveLevels: Set<Int>, datasources: Set<String>, hideEmptyMonths: Boolean) -> Unit
+    onApply: (inclusiveLevels: Set<Int>, datasources: Set<String>, hideEmptyMonths: Boolean, outdoorTypes: Set<Int>) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var tempLevels by remember(selectedInclusiveLevels) { mutableStateOf(selectedInclusiveLevels) }
     var tempDatasources by remember(selectedDatasources) { mutableStateOf(selectedDatasources) }
     var tempHideEmpty by remember(hideEmptyMonths) { mutableStateOf(hideEmptyMonths) }
+    var tempOutdoorTypes by remember(selectedOutdoorTypes) { mutableStateOf(selectedOutdoorTypes) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -152,6 +154,36 @@ fun DataTabFilterSheet(
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
+            // 室内/室外
+            Text(
+                text = "室内/室外",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                val outdoorSelected = 0 in tempOutdoorTypes
+                FilterChip(
+                    selected = outdoorSelected,
+                    onClick = {
+                        tempOutdoorTypes = if (outdoorSelected) tempOutdoorTypes - 0 else tempOutdoorTypes + 0
+                    },
+                    label = { Text("室外跑") }
+                )
+                val indoorSelected = 1 in tempOutdoorTypes
+                FilterChip(
+                    selected = indoorSelected,
+                    onClick = {
+                        tempOutdoorTypes = if (indoorSelected) tempOutdoorTypes - 1 else tempOutdoorTypes + 1
+                    },
+                    label = { Text("室内跑") }
+                )
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+
             // 隐藏无数据月份
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -181,14 +213,15 @@ fun DataTabFilterSheet(
                         tempLevels = emptySet()
                         tempDatasources = emptySet()
                         tempHideEmpty = false
-                        onApply(emptySet(), emptySet(), false)
+                        tempOutdoorTypes = emptySet()
+                        onApply(emptySet(), emptySet(), false, emptySet())
                     },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("重置")
                 }
                 Button(
-                    onClick = { onApply(tempLevels, tempDatasources, tempHideEmpty) },
+                    onClick = { onApply(tempLevels, tempDatasources, tempHideEmpty, tempOutdoorTypes) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("确认")

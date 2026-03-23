@@ -125,9 +125,10 @@ fun DataTabContent(
             selectedDatasources = uiState.selectedDatasources,
             availableDatasources = uiState.availableDatasources,
             hideEmptyMonths = uiState.hideEmptyMonths,
+            selectedOutdoorTypes = uiState.selectedOutdoorTypes,
             onDismiss = { showFilterSheet = false },
-            onApply = { levels, datasources, hideEmpty ->
-                viewModel.applyFilter(levels, datasources, hideEmpty)
+            onApply = { levels, datasources, hideEmpty, outdoorTypes ->
+                viewModel.applyFilter(levels, datasources, hideEmpty, outdoorTypes)
                 showFilterSheet = false
             }
         )
