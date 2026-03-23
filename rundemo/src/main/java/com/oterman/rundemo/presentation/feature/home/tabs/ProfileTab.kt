@@ -17,7 +17,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.automirrored.outlined.DirectionsRun
+import com.oterman.rundemo.R
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Flag
@@ -222,7 +222,7 @@ fun ProfileTabContent(
                         onClick = onDataSourceManageClick
                     )
                     SettingsItem(
-                        icon = Icons.AutoMirrored.Outlined.DirectionsRun,
+                        iconResId = R.drawable.svg_setting_shoes,
                         title = "跑鞋管理",
                         subtitle = "管理你的跑鞋装备",
                         iconTint = RunTheme.colorScheme.blue,

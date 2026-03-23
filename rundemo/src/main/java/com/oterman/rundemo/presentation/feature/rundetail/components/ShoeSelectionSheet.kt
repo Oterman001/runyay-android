@@ -16,7 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.ui.res.painterResource
+import com.oterman.rundemo.R
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -119,10 +120,10 @@ fun ShoeSelectionSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // 跑鞋图片
-                        val imageUrl = shoe.imagePath ?: shoe.imageUrl
-                        if (imageUrl != null) {
+                        val imageSource = shoe.displayImageSource
+                        if (imageSource != null) {
                             AsyncImage(
-                                model = imageUrl,
+                                model = imageSource,
                                 contentDescription = shoe.displayName,
                                 modifier = Modifier
                                     .size(40.dp)
@@ -131,7 +132,7 @@ fun ShoeSelectionSheet(
                             )
                         } else {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
+                                painter = painterResource(R.drawable.svg_setting_shoes),
                                 contentDescription = null,
                                 modifier = Modifier.size(40.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)

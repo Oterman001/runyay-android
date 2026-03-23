@@ -13,9 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
-import androidx.compose.material.icons.automirrored.outlined.DirectionsRun
+import androidx.compose.ui.res.painterResource
+import com.oterman.rundemo.R
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -106,7 +105,7 @@ private fun LinkedShoeContent(
                     },
                     error = {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.DirectionsRun,
+                            painter = painterResource(R.drawable.svg_setting_shoes),
                             contentDescription = null,
                             modifier = Modifier.size(32.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -115,7 +114,7 @@ private fun LinkedShoeContent(
                 )
             } else {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.DirectionsRun,
+                    painter = painterResource(R.drawable.svg_setting_shoes),
                     contentDescription = null,
                     modifier = Modifier.size(32.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -176,7 +175,7 @@ private fun UnlinkedShoeContent() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.AutoMirrored.Filled.DirectionsRun,
+            painter = painterResource(R.drawable.svg_setting_shoes),
             contentDescription = null,
             modifier = Modifier.size(48.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)

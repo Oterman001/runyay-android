@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.DirectionsRun
+import androidx.compose.ui.res.painterResource
+import com.oterman.rundemo.R
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -116,7 +116,7 @@ fun ShoeCard(
                         },
                         error = {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.DirectionsRun,
+                                painter = painterResource(R.drawable.svg_setting_shoes),
                                 contentDescription = null,
                                 modifier = Modifier.size(32.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -125,7 +125,7 @@ fun ShoeCard(
                     )
                 } else {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.DirectionsRun,
+                        painter = painterResource(R.drawable.svg_setting_shoes),
                         contentDescription = null,
                         modifier = Modifier.size(32.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant

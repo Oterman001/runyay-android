@@ -35,7 +35,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.CameraAlt
-import androidx.compose.material.icons.outlined.DirectionsRun
+import androidx.compose.ui.res.painterResource
+import com.oterman.rundemo.R
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -298,7 +299,7 @@ fun RunningShoeDetailScreen(
                                     error = {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             Icon(
-                                                Icons.Outlined.DirectionsRun,
+                                                painter = painterResource(R.drawable.svg_setting_shoes),
                                                 contentDescription = null,
                                                 modifier = Modifier.size(48.dp),
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
