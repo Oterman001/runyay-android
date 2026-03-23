@@ -40,6 +40,7 @@ class RunningShoeRepository(
 ) {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val serverDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
+    private val firstUseDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
 
     private fun getUserId(): String = preferencesManager.getUserId() ?: ""
 
@@ -311,7 +312,7 @@ class RunningShoeRepository(
                     color = shoe.color,
                     price = shoe.price,
                     expectedLifespan = shoe.expectedLifespan,
-                    firstUseDate = shoe.firstUseDate?.let { dateFormat.format(Date(it)) },
+                    firstUseDate = shoe.firstUseDate?.let { firstUseDateFormat.format(Date(it)) },
                     retireDate = shoe.retireDate?.let { dateFormat.format(Date(it)) },
                     initialDistance = shoe.initialDistance,
                     totalDistance = shoe.totalDistance,
@@ -559,9 +560,13 @@ class RunningShoeRepository(
 
     private fun parseDate(dateStr: String): Long? {
         return try {
-            dateFormat.parse(dateStr)?.time
+            firstUseDateFormat.parse(dateStr)?.time
         } catch (e: Exception) {
-            null
+            try {
+                dateFormat.parse(dateStr)?.time
+            } catch (e2: Exception) {
+                null
+            }
         }
     }
 
