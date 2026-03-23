@@ -382,6 +382,20 @@ fun RunDetailScreen(
             )
         }
 
+        // 无跑鞋引导对话框
+        if (uiState.showNoShoesGuide) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissNoShoesGuide() },
+                title = { Text("暂无跑鞋") },
+                text = { Text("你还没有添加跑鞋，请先前往「我的 → 跑鞋管理」添加跑鞋后再关联。") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.dismissNoShoesGuide() }) {
+                        Text("知道了")
+                    }
+                }
+            )
+        }
+
         // 修改 inclusiveLevel 对话框
         if (uiState.showEditInclusiveLevelDialog) {
             EditInclusiveLevelDialog(

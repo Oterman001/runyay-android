@@ -95,6 +95,7 @@ fun RunningShoeDetailScreen(
     onNavigateToEdit: (String) -> Unit = {},
     onNavigateToLinkedRecords: (String) -> Unit = {},
     onNavigateToBatchLink: (String) -> Unit = {},
+    showActions: Boolean = true,
     viewModel: RunningShoeDetailViewModel = viewModel(
         factory = RunningShoeDetailViewModelFactory(LocalContext.current, shoeId)
     )
@@ -202,51 +203,55 @@ fun RunningShoeDetailScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
                 actions = {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "更多")
-                    }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(
-                            text = { Text("编辑") },
-                            onClick = {
-                                showMenu = false
-                                onNavigateToEdit(shoeId)
-                            }
-                        )
-                        // TODO: 暂时隐藏"设为默认"菜单项，后续恢复
-//                        if (uiState.shoe?.isDefault != true) {
-//                            DropdownMenuItem(
-//                                text = { Text("设为默认") },
-//                                onClick = {
-//                                    showMenu = false
-//                                    viewModel.setAsDefault()
-//                                }
-//                            )
-//                        }
-                        DropdownMenuItem(
-                            text = {
-                                Text(if (uiState.shoe?.isActive == true) "退役" else "恢复使用")
-                            },
-                            onClick = {
-                                showMenu = false
-                                if (uiState.shoe?.isActive == true) viewModel.retireShoe()
-                                else viewModel.reactivateShoe()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("删除", color = MaterialTheme.colorScheme.error) },
-                            onClick = {
-                                showMenu = false
-                                viewModel.showDeleteDialog()
-                            }
-                        )
+                    if (showActions) {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "更多")
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("编辑") },
+                                onClick = {
+                                    showMenu = false
+                                    onNavigateToEdit(shoeId)
+                                }
+                            )
+                            // TODO: 暂时隐藏"设为默认"菜单项，后续恢复
+//                            if (uiState.shoe?.isDefault != true) {
+//                                DropdownMenuItem(
+//                                    text = { Text("设为默认") },
+//                                    onClick = {
+//                                        showMenu = false
+//                                        viewModel.setAsDefault()
+//                                    }
+//                                )
+//                            }
+                            DropdownMenuItem(
+                                text = {
+                                    Text(if (uiState.shoe?.isActive == true) "退役" else "恢复使用")
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    if (uiState.shoe?.isActive == true) viewModel.retireShoe()
+                                    else viewModel.reactivateShoe()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("删除", color = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.showDeleteDialog()
+                                }
+                            )
+                        }
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showBatchLinkSheet = true }) {
-                Icon(Icons.Default.Link, contentDescription = "批量关联")
+            if (showActions) {
+                FloatingActionButton(onClick = { showBatchLinkSheet = true }) {
+                    Icon(Icons.Default.Link, contentDescription = "批量关联")
+                }
             }
         }
     ) { innerPadding ->

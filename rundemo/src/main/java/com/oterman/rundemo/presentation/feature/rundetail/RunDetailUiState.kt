@@ -77,6 +77,7 @@ data class RunDetailUiState(
     val linkedShoe: RunningShoe? = null,
     val availableShoes: List<RunningShoe> = emptyList(),
     val showShoeSelector: Boolean = false,
+    val showNoShoesGuide: Boolean = false,
 
     // 通用更新反馈
     val updateSuccess: Boolean = false,

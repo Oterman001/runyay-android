@@ -734,18 +734,27 @@ class RunDetailViewModel(
         viewModelScope.launch {
             try {
                 val shoes = shoeRepository.getActiveShoesSync()
-                _uiState.value = _uiState.value.copy(
-                    availableShoes = shoes,
-                    showShoeSelector = true
-                )
+                if (shoes.isEmpty()) {
+                    _uiState.value = _uiState.value.copy(showNoShoesGuide = true)
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        availableShoes = shoes,
+                        showShoeSelector = true
+                    )
+                }
             } catch (e: Exception) {
                 RLog.e(TAG, "加载跑鞋列表失败: ${e.message}")
+                _uiState.value = _uiState.value.copy(showNoShoesGuide = true)
             }
         }
     }
 
     fun dismissShoeSelector() {
         _uiState.value = _uiState.value.copy(showShoeSelector = false)
+    }
+
+    fun dismissNoShoesGuide() {
+        _uiState.value = _uiState.value.copy(showNoShoesGuide = false)
     }
 
     fun changeShoe(newShoeId: String?) {

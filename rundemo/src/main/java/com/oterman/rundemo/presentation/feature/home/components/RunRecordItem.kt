@@ -151,6 +151,17 @@ fun RunRecordItem(
                                 .alignByBaseline()
 //                                .padding(bottom = 4.dp)
                         )
+                        if (!record.shoeId.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                painter = painterResource(id = R.drawable.svg_setting_shoes),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .padding(bottom = 2.dp)
+                                    .size(width = 16.dp, height = 8.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(

@@ -59,9 +59,7 @@ class RunningShoeDetailActivity : ComponentActivity() {
                     RunningShoeDetailScreen(
                         shoeId = shoeId,
                         onNavigateBack = { finish() },
-                        onNavigateToEdit = { finish() },
-                        onNavigateToLinkedRecords = { finish() },
-                        onNavigateToBatchLink = { finish() }
+                        showActions = false
                     )
                 }
             }
