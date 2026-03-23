@@ -575,7 +575,7 @@ private fun DetailInfoCard(shoe: RunningShoe) {
             Text("详细信息", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             // TODO: 暂时隐藏首次使用日期，后续恢复
-//            InfoRow("首次使用", shoe.firstUseDate?.let { dateFormat.format(Date(it)) } ?: "-")
+            InfoRow("首次使用", shoe.firstUseDate?.let { dateFormat.format(Date(it)) } ?: "-")
             InfoRow("预期寿命", "%.0f km".format(shoe.expectedLifespan))
             InfoRow("剩余距离", "%.1f km".format(shoe.remainingDistance))
             InfoRow("初始距离", "%.1f km".format(shoe.initialDistance))

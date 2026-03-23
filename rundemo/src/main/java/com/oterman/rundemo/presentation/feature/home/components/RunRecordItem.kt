@@ -140,7 +140,8 @@ fun RunRecordItem(
                             fontSize = 26.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = distanceColor,
-                            fontFamily = RunYayFontFamily
+                            fontFamily = RunYayFontFamily,
+                            modifier = Modifier.alignByBaseline()
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
@@ -157,7 +158,7 @@ fun RunRecordItem(
                                 painter = painterResource(id = R.drawable.svg_setting_shoes),
                                 contentDescription = null,
                                 modifier = Modifier
-                                    .padding(bottom = 2.dp)
+                                    .padding(bottom = 6.dp)
                                     .size(width = 16.dp, height = 8.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )

@@ -297,46 +297,46 @@ fun AddEditRunningShoeScreen(
                     }
 
                     // TODO: 暂时隐藏首次使用日期、日期选择器和默认开关，后续恢复
-//                    // First use date
-//                    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
-//                    var showDatePicker by remember { mutableStateOf(false) }
-//                    OutlinedTextField(
-//                        value = uiState.firstUseDate?.let { dateFormat.format(Date(it)) } ?: "",
-//                        onValueChange = {},
-//                        label = { Text("首次使用日期") },
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .clickable { showDatePicker = true },
-//                        readOnly = true,
-//                        enabled = false
-//                    )
-//
-//                    // Date picker dialog
-//                    if (showDatePicker) {
-//                        androidx.compose.material3.DatePickerDialog(
-//                            onDismissRequest = { showDatePicker = false },
-//                            confirmButton = {
-//                                TextButton(onClick = { showDatePicker = false }) {
-//                                    Text("确定")
-//                                }
-//                            },
-//                            dismissButton = {
-//                                TextButton(onClick = { showDatePicker = false }) {
-//                                    Text("取消")
-//                                }
-//                            }
-//                        ) {
-//                            val datePickerState = androidx.compose.material3.rememberDatePickerState(
-//                                initialSelectedDateMillis = uiState.firstUseDate
-//                            )
-//                            androidx.compose.material3.DatePicker(state = datePickerState)
-//                            LaunchedEffect(datePickerState.selectedDateMillis) {
-//                                datePickerState.selectedDateMillis?.let {
-//                                    viewModel.onFirstUseDateChange(it)
-//                                }
-//                            }
-//                        }
-//                    }
+                    // First use date
+                    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+                    var showDatePicker by remember { mutableStateOf(false) }
+                    OutlinedTextField(
+                        value = uiState.firstUseDate?.let { dateFormat.format(Date(it)) } ?: "",
+                        onValueChange = {},
+                        label = { Text("首次使用日期") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDatePicker = true },
+                        readOnly = true,
+                        enabled = false
+                    )
+
+                    // Date picker dialog
+                    if (showDatePicker) {
+                        androidx.compose.material3.DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text("确定")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text("取消")
+                                }
+                            }
+                        ) {
+                            val datePickerState = androidx.compose.material3.rememberDatePickerState(
+                                initialSelectedDateMillis = uiState.firstUseDate
+                            )
+                            androidx.compose.material3.DatePicker(state = datePickerState)
+                            LaunchedEffect(datePickerState.selectedDateMillis) {
+                                datePickerState.selectedDateMillis?.let {
+                                    viewModel.onFirstUseDateChange(it)
+                                }
+                            }
+                        }
+                    }
 //
 //                    // Default switch
 //                    Row(
