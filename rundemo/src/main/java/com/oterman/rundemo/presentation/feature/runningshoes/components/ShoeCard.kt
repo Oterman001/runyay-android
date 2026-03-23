@@ -154,20 +154,21 @@ fun ShoeCard(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    if (shoe.isDefault) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "默认",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                    RoundedCornerShape(4.dp)
-                                )
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
+                    // TODO: 暂时隐藏默认徽章，后续恢复
+//                    if (shoe.isDefault) {
+//                        Spacer(modifier = Modifier.width(6.dp))
+//                        Text(
+//                            text = "默认",
+//                            style = MaterialTheme.typography.labelSmall,
+//                            color = MaterialTheme.colorScheme.primary,
+//                            modifier = Modifier
+//                                .background(
+//                                    MaterialTheme.colorScheme.primaryContainer,
+//                                    RoundedCornerShape(4.dp)
+//                                )
+//                                .padding(horizontal = 6.dp, vertical = 2.dp)
+//                        )
+//                    }
                 }
 
                 if (!shoe.displaySubtitle.isNullOrBlank()) {
@@ -216,15 +217,16 @@ fun ShoeCard(
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
         ) {
-            if (!shoe.isDefault) {
-                DropdownMenuItem(
-                    text = { Text("设为默认") },
-                    onClick = {
-                        showMenu = false
-                        onSetDefault()
-                    }
-                )
-            }
+            // TODO: 暂时隐藏"设为默认"菜单项，后续恢复
+//            if (!shoe.isDefault) {
+//                DropdownMenuItem(
+//                    text = { Text("设为默认") },
+//                    onClick = {
+//                        showMenu = false
+//                        onSetDefault()
+//                    }
+//                )
+//            }
             DropdownMenuItem(
                 text = { Text("删除", color = MaterialTheme.colorScheme.error) },
                 onClick = {

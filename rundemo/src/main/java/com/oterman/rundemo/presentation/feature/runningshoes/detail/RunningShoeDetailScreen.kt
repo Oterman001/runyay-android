@@ -213,15 +213,16 @@ fun RunningShoeDetailScreen(
                                 onNavigateToEdit(shoeId)
                             }
                         )
-                        if (uiState.shoe?.isDefault != true) {
-                            DropdownMenuItem(
-                                text = { Text("设为默认") },
-                                onClick = {
-                                    showMenu = false
-                                    viewModel.setAsDefault()
-                                }
-                            )
-                        }
+                        // TODO: 暂时隐藏"设为默认"菜单项，后续恢复
+//                        if (uiState.shoe?.isDefault != true) {
+//                            DropdownMenuItem(
+//                                text = { Text("设为默认") },
+//                                onClick = {
+//                                    showMenu = false
+//                                    viewModel.setAsDefault()
+//                                }
+//                            )
+//                        }
                         DropdownMenuItem(
                             text = {
                                 Text(if (uiState.shoe?.isActive == true) "退役" else "恢复使用")
@@ -348,9 +349,10 @@ fun RunningShoeDetailScreen(
                                     )
                                 }
                                 Spacer(Modifier.width(8.dp))
-                                if (shoe.isDefault) {
-                                    StatusBadge("默认", MaterialTheme.colorScheme.primary)
-                                }
+                                // TODO: 暂时隐藏默认徽章，后续恢复
+//                                if (shoe.isDefault) {
+//                                    StatusBadge("默认", MaterialTheme.colorScheme.primary)
+//                                }
                                 if (shoe.isRetired) {
                                     StatusBadge("已退役", MaterialTheme.colorScheme.error)
                                 }
@@ -567,7 +569,8 @@ private fun DetailInfoCard(shoe: RunningShoe) {
         Column(Modifier.padding(16.dp)) {
             Text("详细信息", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
-            InfoRow("首次使用", shoe.firstUseDate?.let { dateFormat.format(Date(it)) } ?: "-")
+            // TODO: 暂时隐藏首次使用日期，后续恢复
+//            InfoRow("首次使用", shoe.firstUseDate?.let { dateFormat.format(Date(it)) } ?: "-")
             InfoRow("预期寿命", "%.0f km".format(shoe.expectedLifespan))
             InfoRow("剩余距离", "%.1f km".format(shoe.remainingDistance))
             InfoRow("初始距离", "%.1f km".format(shoe.initialDistance))
