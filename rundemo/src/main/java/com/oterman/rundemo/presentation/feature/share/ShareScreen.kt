@@ -21,7 +21,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,18 +67,13 @@ fun ShareScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     if (uiState.record != null) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ShareModeSelector(
-                                currentMode = uiState.shareMode,
-                                onModeSelected = { viewModel.setShareMode(it) }
-                            )
-                        }
+                        ShareModeSelector(
+                            currentMode = uiState.shareMode,
+                            onModeSelected = { viewModel.setShareMode(it) }
+                        )
                     } else {
                         Text("分享跑步")
                     }
