@@ -105,7 +105,7 @@ fun ShortShareEditSheet(
             ) {
                 availableMetrics.forEach { metric ->
                     val isSelected = selectedMetrics.contains(metric)
-                    val canSelect = isSelected || selectedMetrics.size < 9
+                    val canSelect = isSelected || selectedMetrics.size < 12
 
                     MetricSelectChip(
                         label = metric.displayName,
@@ -117,7 +117,7 @@ fun ShortShareEditSheet(
                                     selectedMetrics - metric
                                 } else selectedMetrics
                             } else {
-                                if (selectedMetrics.size < 9) {
+                                if (selectedMetrics.size < 12) {
                                     selectedMetrics + metric
                                 } else selectedMetrics
                             }
