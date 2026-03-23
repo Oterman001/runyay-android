@@ -331,20 +331,20 @@ fun RunningShoeDetailScreen(
                     // Name + Status badges
                     item {
                         Column {
-                            Row(
-                                verticalAlignment = Alignment.Bottom
-                            ) {
+                            Row {
                                 Text(
                                     text = shoe.displayName,
                                     style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.alignByBaseline()
                                 )
                                 if (!shoe.displaySubtitle.isNullOrBlank()) {
                                     Spacer(Modifier.width(8.dp))
                                     Text(
                                         text = shoe.displaySubtitle!!,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.alignByBaseline()
                                     )
                                 }
                                 Spacer(Modifier.width(8.dp))
