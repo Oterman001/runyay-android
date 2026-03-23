@@ -142,6 +142,7 @@ data class RunDetailUiState(
         if (linkedShoe != other.linkedShoe) return false
         if (availableShoes != other.availableShoes) return false
         if (showShoeSelector != other.showShoeSelector) return false
+        if (showNoShoesGuide != other.showNoShoesGuide) return false
         if (updateSuccess != other.updateSuccess) return false
         if (updateError != other.updateError) return false
 
@@ -193,6 +194,7 @@ data class RunDetailUiState(
         result = 31 * result + (linkedShoe?.hashCode() ?: 0)
         result = 31 * result + availableShoes.hashCode()
         result = 31 * result + showShoeSelector.hashCode()
+        result = 31 * result + showNoShoesGuide.hashCode()
         result = 31 * result + updateSuccess.hashCode()
         result = 31 * result + (updateError?.hashCode() ?: 0)
         return result
