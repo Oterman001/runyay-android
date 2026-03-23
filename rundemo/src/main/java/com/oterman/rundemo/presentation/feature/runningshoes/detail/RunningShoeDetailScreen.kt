@@ -330,13 +330,23 @@ fun RunningShoeDetailScreen(
 
                     // Name + Status badges
                     item {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column {
+                            Row(
+                                verticalAlignment = Alignment.Bottom
+                            ) {
                                 Text(
                                     text = shoe.displayName,
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.Bold
                                 )
+                                if (!shoe.displaySubtitle.isNullOrBlank()) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = shoe.displaySubtitle!!,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                                 Spacer(Modifier.width(8.dp))
                                 if (shoe.isDefault) {
                                     StatusBadge("默认", MaterialTheme.colorScheme.primary)
@@ -344,13 +354,6 @@ fun RunningShoeDetailScreen(
                                 if (shoe.isRetired) {
                                     StatusBadge("已退役", MaterialTheme.colorScheme.error)
                                 }
-                            }
-                            if (!shoe.displaySubtitle.isNullOrBlank()) {
-                                Text(
-                                    text = shoe.displaySubtitle!!,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
                             }
                         }
                     }
