@@ -104,6 +104,13 @@
             android:parentActivityName=".MainActivity" />
 
         <activity
+            android:name=".RunningShoeDetailActivity"
+            android:exported="false"
+            android:label="跑鞋详情"
+            android:theme="@style/Theme.ComopseDemoHub"
+            android:parentActivityName=".RunDetailActivity" />
+
+        <activity
             android:name=".presentation.feature.share.ShareActivity"
             android:exported="false"
             android:label="分享跑步"

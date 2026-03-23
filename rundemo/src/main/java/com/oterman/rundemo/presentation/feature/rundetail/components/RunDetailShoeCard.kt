@@ -40,18 +40,27 @@ import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstan
 /**
  * 跑步详情页关联跑鞋卡片
  * 两种状态：已关联 / 未关联
+ *
+ * 已关联时：点击卡片导航到跑鞋详情页，点击"更换"按钮触发跑鞋选择弹窗
+ * 未关联时：点击卡片触发跑鞋选择弹窗
  */
 @Composable
 fun RunDetailShoeCard(
     shoe: RunningShoe?,
-    onClick: () -> Unit,
+    onNavigateToDetail: (shoeId: String) -> Unit,
     onReplace: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     AppCard(
         modifier = modifier
             .padding(horizontal = RunDetailLayoutConstants.HeaderCardMargin.dp)
-            .clickable { onClick() }
+            .clickable {
+                if (shoe != null) {
+                    onNavigateToDetail(shoe.id)
+                } else {
+                    onReplace()
+                }
+            }
     ) {
         if (shoe != null) {
             // 已关联状态
@@ -125,37 +134,57 @@ private fun LinkedShoeContent(
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
-        // 跑鞋信息
+        // 跑鞋信息 - 对齐 ShoeCard 样式
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = shoe.displayName,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            // 名称行
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = shoe.displayName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+            }
 
+            // 副标题行
             if (!shoe.displaySubtitle.isNullOrBlank()) {
                 Text(
                     text = shoe.displaySubtitle!!,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            // 距离行
+            Text(
+                text = "%.1f km".format(shoe.effectiveDistance),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-            // 统计信息
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatItem(value = "%.1f km".format(shoe.effectiveDistance), label = "总里程")
-                StatItem(value = "${shoe.totalRuns}次", label = "总次数")
+            // 次数 + 天数行
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "${shoe.totalRuns} 次",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "${shoe.usageDays} 天",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
@@ -200,23 +229,5 @@ private fun UnlinkedShoeContent() {
                 fontSize = 12.sp
             )
         }
-    }
-}
-
-@Composable
-private fun StatItem(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Medium,
-            fontSize = 12.sp
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 10.sp
-        )
     }
 }

@@ -82,6 +82,7 @@ import com.oterman.rundemo.presentation.feature.share.ShareActivity
 import com.oterman.rundemo.presentation.feature.share.ShareDataCache
 import com.oterman.rundemo.util.AppleWatchDeviceUtils
 import com.oterman.rundemo.BuildConfig
+import com.oterman.rundemo.RunningShoeDetailActivity
 
 /**
  * 跑步详情页面
@@ -667,7 +668,11 @@ fun RunDetailScreen(
                         item {
                             RunDetailShoeCard(
                                 shoe = uiState.linkedShoe,
-                                onClick = { viewModel.showShoeSelector() },
+                                onNavigateToDetail = { shoeId ->
+                                    context.startActivity(
+                                        RunningShoeDetailActivity.createIntent(context, shoeId)
+                                    )
+                                },
                                 onReplace = { viewModel.showShoeSelector() }
                             )
                         }
