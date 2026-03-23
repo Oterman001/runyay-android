@@ -131,7 +131,7 @@ fun ShareScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .padding(vertical = 8.dp)
                         ) {
                             when (uiState.shareMode) {
                                 ShareMode.SHORT -> {

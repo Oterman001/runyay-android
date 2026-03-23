@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.HorizontalDivider
@@ -28,9 +27,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.presentation.feature.share.ShareMetricType
 import com.oterman.rundemo.ui.theme.RunYayFontFamily
@@ -61,132 +63,158 @@ fun ShortSharePreview(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                RunDetailLayoutConstants.HeaderShadowElevation.dp,
-                RoundedCornerShape(RunDetailLayoutConstants.HeaderCardRadius.dp)
-            )
-            .clip(RoundedCornerShape(RunDetailLayoutConstants.HeaderCardRadius.dp))
-            .background(MaterialTheme.colorScheme.surface)
+        modifier = modifier.fillMaxWidth()
     ) {
-        // 1. 地图截图区域
-        if (mapSnapshot != null) {
-            val bitmapAspectRatio = mapSnapshot.width.toFloat() / mapSnapshot.height.toFloat()
-            Image(
-                bitmap = mapSnapshot.asImageBitmap(),
-                contentDescription = "运动轨迹",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(bitmapAspectRatio),
-                contentScale = ContentScale.Fit
-            )
-        } else {
-            // 室内跑：用屏幕宽高比模拟地图区域比例
-            val configuration = LocalConfiguration.current
-            val placeholderRatio = configuration.screenWidthDp.toFloat() /
-                (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
+        // 1. 地图 + 底部渐变
+        Box(modifier = Modifier.fillMaxWidth()) {
+            if (mapSnapshot != null) {
+                val bitmapAspectRatio = mapSnapshot.width.toFloat() / mapSnapshot.height.toFloat()
+                Image(
+                    bitmap = mapSnapshot.asImageBitmap(),
+                    contentDescription = "运动轨迹",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(bitmapAspectRatio),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                // 室内跑：用屏幕宽高比模拟地图区域比例
+                val configuration = LocalConfiguration.current
+                val placeholderRatio = configuration.screenWidthDp.toFloat() /
+                    (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(placeholderRatio)
+                        .background(Color(0xFFF0F0F0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "室内跑步",
+                        color = Color.Gray,
+                        fontSize = 16.sp
+                    )
+                }
+            }
+
+            // 底部渐变遮罩
             Box(
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .aspectRatio(placeholderRatio)
-                    .background(Color(0xFFF0F0F0)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "室内跑步",
-                    color = Color.Gray,
-                    fontSize = 16.sp
-                )
-            }
+                    .height(RunDetailLayoutConstants.MapGradientHeight.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.background
+                            )
+                        )
+                    )
+            )
         }
 
-        // 2. Header: 距离 + 日期 + 设备 + 头像
-        Row(
+        // 2. 数据卡片（向上侵入地图）
+        AppCard(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp,
-                    vertical = 16.dp
-                ),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = RunDetailLayoutConstants.HeaderCardMargin.dp)
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    val invasionPx = kotlin.math.abs(
+                        RunDetailLayoutConstants.HeaderInvasionOffset.dp.roundToPx()
+                    )
+                    layout(placeable.width, placeable.height - invasionPx) {
+                        placeable.placeRelative(0, -invasionPx)
+                    }
+                }
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                // 距离
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = String.format("%.2f", record.totalDistance),
-                        fontSize = RunDetailLayoutConstants.DistanceFontSize.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontFamily = RunYayFontFamily
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "km",
-                        fontSize = RunDetailLayoutConstants.DistanceUnitFontSize.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // 日期 + 时间段
-                if (showDate) {
-                    Text(
-                        text = formatShareDateTime(record.startTime, record.endTime),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-
-                // 设备信息
-                val displayDevice = deviceName ?: com.oterman.rundemo.util.DeviceNameUtils.resolveDisplayName(record)
-                if (!displayDevice.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Outlined.Watch,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            // Header: 距离 + 日期 + 设备 + 头像
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp,
+                        vertical = 16.dp
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    // 距离
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = String.format("%.2f", record.totalDistance),
+                            fontSize = RunDetailLayoutConstants.DistanceFontSize.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontFamily = RunYayFontFamily
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = displayDevice,
+                            text = "km",
+                            fontSize = RunDetailLayoutConstants.DistanceUnitFontSize.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // 日期 + 时间段
+                    if (showDate) {
+                        Text(
+                            text = formatShareDateTime(record.startTime, record.endTime),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+                    // 设备信息
+                    val displayDevice = deviceName ?: com.oterman.rundemo.util.DeviceNameUtils.resolveDisplayName(record)
+                    if (!displayDevice.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Outlined.Watch,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = displayDevice,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
+
+                // 头像
+                ShareAvatar(avatarUrl = avatarUrl)
             }
 
-            // 头像
-            ShareAvatar(avatarUrl = avatarUrl)
+            // 分隔线
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+
+            // 指标网格
+            ShareMetricsGrid(
+                record = record,
+                selectedMetrics = selectedMetrics
+            )
+
+            // 分隔线
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+
+            // 品牌区
+            AppBrandingSection(brandText = brandText)
         }
-
-        // 3. 分隔线
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp),
-            color = MaterialTheme.colorScheme.outlineVariant
-        )
-
-        // 4. 指标网格
-        ShareMetricsGrid(
-            record = record,
-            selectedMetrics = selectedMetrics
-        )
-
-        // 5. 分隔线
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardPadding.dp),
-            color = MaterialTheme.colorScheme.outlineVariant
-        )
-
-        // 6. 品牌区
-        AppBrandingSection(brandText = brandText)
     }
 }
 
