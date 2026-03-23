@@ -126,9 +126,12 @@ data class ShareUiState(
     companion object {
         val defaultShortMetrics = listOf(
             ShareMetricType.DURATION,
+            ShareMetricType.VDOT,
             ShareMetricType.PACE,
+            ShareMetricType.TRAINING_LOAD,
             ShareMetricType.AVG_HEART_RATE,
             ShareMetricType.MAX_HEART_RATE,
+            ShareMetricType.AVG_STRIDE_LENGTH,
             ShareMetricType.AVG_CADENCE,
             ShareMetricType.ELEVATION
         )
