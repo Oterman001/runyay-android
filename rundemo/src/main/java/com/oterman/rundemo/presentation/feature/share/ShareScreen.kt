@@ -1,5 +1,6 @@
 package com.oterman.rundemo.presentation.feature.share
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,6 +57,7 @@ fun ShareScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val isDark = isSystemInDarkTheme()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // 错误提示
@@ -92,7 +94,7 @@ fun ShareScreen(
             ShareBottomBar(
                 isGenerating = uiState.isGenerating,
                 onEditClick = { viewModel.showEditSheet() },
-                onShareClick = { viewModel.generateAndShare(context) }
+                onShareClick = { viewModel.generateAndShare(context, isDark) }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }

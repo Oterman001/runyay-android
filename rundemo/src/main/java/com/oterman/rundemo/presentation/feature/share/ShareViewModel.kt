@@ -261,7 +261,7 @@ class ShareViewModel(
 
     // ==================== 分享图片生成 ====================
 
-    fun generateAndShare(context: Context) {
+    fun generateAndShare(context: Context, darkTheme: Boolean = false) {
         val state = _uiState.value
         val record = state.record ?: return
 
@@ -274,7 +274,7 @@ class ShareViewModel(
 
                 val bitmap = withContext(Dispatchers.Main) {
                     when (state.shareMode) {
-                        ShareMode.SHORT -> ShareImageGenerator.renderToBitmap(context, widthPx) {
+                        ShareMode.SHORT -> ShareImageGenerator.renderToBitmap(context, widthPx, darkTheme) {
                             com.oterman.rundemo.presentation.feature.share.components.ShortSharePreview(
                                 record = record,
                                 mapSnapshot = state.mapSnapshot,
@@ -288,7 +288,7 @@ class ShareViewModel(
                                 trackPoints = state.trackPoints
                             )
                         }
-                        ShareMode.LONG -> ShareImageGenerator.renderToBitmap(context, widthPx) {
+                        ShareMode.LONG -> ShareImageGenerator.renderToBitmap(context, widthPx, darkTheme) {
                             com.oterman.rundemo.presentation.feature.share.components.LongSharePreview(
                                 record = record,
                                 mapSnapshot = state.mapSnapshot,

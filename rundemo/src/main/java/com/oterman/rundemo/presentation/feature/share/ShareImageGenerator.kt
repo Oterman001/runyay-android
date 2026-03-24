@@ -48,6 +48,7 @@ object ShareImageGenerator {
     suspend fun renderToBitmap(
         context: Context,
         widthPx: Int,
+        darkTheme: Boolean = false,
         content: @Composable () -> Unit
     ): Bitmap = suspendCancellableCoroutine { cont ->
         try {
@@ -57,7 +58,7 @@ object ShareImageGenerator {
 
             val composeView = ComposeView(activity).apply {
                 setContent {
-                    ComopseDemoHubTheme(darkTheme = false, dynamicColor = false) {
+                    ComopseDemoHubTheme(darkTheme = darkTheme, dynamicColor = false) {
                         content()
                     }
                 }
