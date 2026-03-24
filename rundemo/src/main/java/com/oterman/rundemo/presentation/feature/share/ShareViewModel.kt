@@ -19,6 +19,7 @@ import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.presentation.feature.rundetail.PerformTagType
 import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
 import com.oterman.rundemo.presentation.feature.rundetail.RunPerformanceTag
+import com.oterman.rundemo.presentation.feature.share.components.*
 import com.oterman.rundemo.util.DeviceNameUtils
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.Dispatchers
@@ -84,10 +85,7 @@ class ShareViewModel(
         val savedMetrics = sharePreferences.getSelectedMetrics()
         val savedCards = sharePreferences.getEnabledCards()
         val showDate = sharePreferences.getShowDate()
-        val savedBrandText = sharePreferences.getBrandText()
-        val brandText = savedBrandText.ifBlank {
-            com.oterman.rundemo.presentation.feature.share.components.getRandomBrandText()
-        }
+        val brandText = com.oterman.rundemo.presentation.feature.share.components.getRandomBrandText()
         val customDevice = sharePreferences.getCustomDeviceName()
 
         _uiState.value = _uiState.value.copy(
@@ -244,6 +242,10 @@ class ShareViewModel(
         sharePreferences.saveShowDate(show)
     }
 
+    fun updateHeartRateZoneMode(show7: Boolean) {
+        _uiState.value = _uiState.value.copy(heartRateZone7Selected = show7)
+    }
+
     fun updateDeviceName(name: String) {
         _uiState.value = _uiState.value.copy(customDeviceName = name.ifBlank { null })
         sharePreferences.saveCustomDeviceName(name.ifBlank { null })
@@ -254,7 +256,7 @@ class ShareViewModel(
             com.oterman.rundemo.presentation.feature.share.components.getRandomBrandText()
         }
         _uiState.value = _uiState.value.copy(brandText = resolvedText)
-        sharePreferences.saveBrandText(text) // 保存原始意图：空=下次随机，非空=持久化
+        // 不持久化自定义文案，下次进入时仍从内置文案随机选择
     }
 
     fun showEditSheet() {
@@ -281,7 +283,7 @@ class ShareViewModel(
                 val bitmap = withContext(Dispatchers.Main) {
                     when (state.shareMode) {
                         ShareMode.SHORT -> ShareImageGenerator.renderToBitmap(context, widthPx, darkTheme) {
-                            com.oterman.rundemo.presentation.feature.share.components.ShortSharePreview(
+                            ShortSharePreview(
                                 record = record,
                                 mapSnapshot = state.mapSnapshot,
                                 selectedMetrics = state.selectedMetrics,
@@ -295,7 +297,7 @@ class ShareViewModel(
                             )
                         }
                         ShareMode.LONG -> ShareImageGenerator.renderToBitmap(context, widthPx, darkTheme) {
-                            com.oterman.rundemo.presentation.feature.share.components.LongSharePreview(
+                            LongSharePreview(
                                 record = record,
                                 mapSnapshot = state.mapSnapshot,
                                 metrics = state.metrics,
@@ -320,12 +322,20 @@ class ShareViewModel(
                                 deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
                                 brandText = state.brandText,
                                 avatarUrl = state.avatarUrl,
+                                userName = state.userName,
                                 linkedShoe = state.linkedShoe,
                                 isPrivacyMode = state.isPrivacyMode,
-                                trackPoints = state.trackPoints
+                                trackPoints = state.trackPoints,
+                                heartRateZone7Selected = state.heartRateZone7Selected
                             )
                         }
+                        ShareMode.CUSTOM -> null
                     }
+                }
+
+                if (bitmap == null) {
+                    _uiState.value = _uiState.value.copy(isGenerating = false)
+                    return@launch
                 }
 
                 // 创建分享 Intent

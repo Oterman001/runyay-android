@@ -94,9 +94,12 @@ fun LongSharePreview(
     deviceName: String?,
     brandText: String,
     avatarUrl: String? = null,
+    userName: String? = null,
     linkedShoe: RunningShoe? = null,
     isPrivacyMode: Boolean = false,
     trackPoints: List<TrackPoint> = emptyList(),
+    heartRateZone7Selected: Boolean = true,
+    onHeartRateZoneChanged: ((Boolean) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     fun isCardEnabled(type: ShareCardType): Boolean = enabledCards[type] != false
@@ -177,6 +180,7 @@ fun LongSharePreview(
                 isOutdoor = mapSnapshot != null || isPrivacyMode,
                 metrics = metrics,
                 avatarUrl = avatarUrl,
+                userName = userName,
                 inclusiveLevel = record.inclusiveLevel,
                 modifier = Modifier.layout { measurable, constraints ->
                     val placeable = measurable.measure(constraints)
@@ -232,7 +236,9 @@ fun LongSharePreview(
                 heartRate5Zones = heartRate5Zones,
                 avgHeartRate = record.averageHeartRate,
                 maxHeartRate = record.maxHeartRate,
-                minHeartRate = record.minHeartRate
+                minHeartRate = record.minHeartRate,
+                initialShow7Zone = heartRateZone7Selected,
+                onZoneChanged = onHeartRateZoneChanged
             )
             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }

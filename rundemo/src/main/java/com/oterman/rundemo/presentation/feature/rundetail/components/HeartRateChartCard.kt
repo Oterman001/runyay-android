@@ -47,12 +47,14 @@ fun HeartRateChartCard(
     avgHeartRate: Double,
     maxHeartRate: Double,
     minHeartRate: Double,
+    initialShow7Zone: Boolean = true,
+    onZoneChanged: ((Boolean) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     if (heartRateSeries.isEmpty()) return
 
     // 区间显示模式: true = 7区间, false = 5区间
-    var show7Zone by remember { mutableStateOf(true) }
+    var show7Zone by remember { mutableStateOf(initialShow7Zone) }
     val displayedZones = if (show7Zone) heartRate7Zones else heartRate5Zones
     val hasAnyZones = heartRate7Zones.isNotEmpty() || heartRate5Zones.isNotEmpty()
 
@@ -120,7 +122,10 @@ fun HeartRateChartCard(
                 if (heartRate7Zones.isNotEmpty() && heartRate5Zones.isNotEmpty()) {
                     HeartRateZoneToggle(
                         show7Zone = show7Zone,
-                        onToggle = { show7Zone = it }
+                        onToggle = {
+                            show7Zone = it
+                            onZoneChanged?.invoke(it)
+                        }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }

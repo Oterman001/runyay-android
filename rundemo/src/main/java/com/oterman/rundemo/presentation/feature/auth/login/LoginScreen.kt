@@ -145,7 +145,7 @@ fun LoginScreen(
                     accounts = listOf(
                         "17512081100" to "mrtian",
                         "17512099302" to "querty",
-                        "19183959302" to "querty"
+                        "19183959302" to "mrtian"
                     ),
                     onSelect = { phone, password ->
                         viewModel.fillDebugAccount(phone, password)

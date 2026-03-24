@@ -15,7 +15,8 @@ import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
  */
 enum class ShareMode(val displayName: String) {
     SHORT("短图"),
-    LONG("长图")
+    LONG("长图"),
+    CUSTOM("其他")
 }
 
 /**
@@ -122,6 +123,7 @@ data class ShareUiState(
     val showDate: Boolean = true,
     val customDeviceName: String? = null,
     val brandText: String = "",
+    val heartRateZone7Selected: Boolean = true,
 
     // 编辑面板
     val showEditSheet: Boolean = false,

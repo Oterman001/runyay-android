@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -225,6 +226,45 @@ fun RunDetailScreen(
                 actions = {
                     // 三点菜单按钮
                     if (uiState.record != null && !uiState.isLoading) {
+                        // 独立分享按钮（位于三点菜单左边）
+                        IconButton(
+                            onClick = {
+                                val isPrivacyMode = com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getPrivacyMode(context)
+                                if (uiState.isOutdoor && !isPrivacyMode) {
+                                    viewModel.setPreparingShare(true)
+                                    val mv = mapViewRef
+                                    if (mv != null) {
+                                        val provider = com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getMapProvider(context)
+                                        val renderer = MapRendererFactory.getRenderer(provider)
+                                        renderer.snapshot(mv) { bitmap ->
+                                            bitmap?.let { ShareDataCache.putMapSnapshot(it) }
+                                            viewModel.prepareShareData()
+                                        }
+                                    } else {
+                                        viewModel.prepareShareData()
+                                    }
+                                } else {
+                                    viewModel.prepareShareData()
+                                }
+                            },
+                            enabled = !uiState.isPreparingShare
+                        ) {
+                            if (uiState.isPreparingShare) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = if (scrollOffset < 0.5f) Color.White
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "分享",
+                                    tint = if (scrollOffset < 0.5f) Color.White
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
