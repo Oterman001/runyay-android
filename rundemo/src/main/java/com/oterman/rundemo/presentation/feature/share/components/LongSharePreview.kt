@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -44,6 +45,7 @@ import com.oterman.rundemo.domain.model.ChartDataPoint
 import com.oterman.rundemo.domain.model.MergedRunSegment
 import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.domain.model.RunningShoe
+import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
@@ -93,6 +95,8 @@ fun LongSharePreview(
     brandText: String,
     avatarUrl: String? = null,
     linkedShoe: RunningShoe? = null,
+    isPrivacyMode: Boolean = false,
+    trackPoints: List<TrackPoint> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     fun isCardEnabled(type: ShareCardType): Boolean = enabledCards[type] != false
@@ -115,6 +119,20 @@ fun LongSharePreview(
                         .aspectRatio(bitmapAspectRatio),
                     contentScale = ContentScale.Fit
                 )
+            } else if (isPrivacyMode && trackPoints.isNotEmpty()) {
+                val configuration = LocalConfiguration.current
+                val placeholderRatio = configuration.screenWidthDp.toFloat() /
+                    (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(placeholderRatio)
+                ) {
+                    com.oterman.rundemo.presentation.feature.rundetail.components.PrivacyTrackView(
+                        trackPoints = trackPoints,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             } else {
                 // 室内跑：用屏幕宽高比模拟地图区域比例
                 val configuration = LocalConfiguration.current
@@ -156,7 +174,7 @@ fun LongSharePreview(
                 endTime = record.endTime,
                 duration = record.activeDuration,
                 deviceName = deviceName ?: com.oterman.rundemo.util.DeviceNameUtils.resolveDisplayName(record),
-                isOutdoor = mapSnapshot != null,
+                isOutdoor = mapSnapshot != null || isPrivacyMode,
                 metrics = metrics,
                 avatarUrl = avatarUrl,
                 inclusiveLevel = record.inclusiveLevel,

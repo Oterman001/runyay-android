@@ -101,6 +101,9 @@ data class ShareUiState(
     // 地图截图
     val mapSnapshot: Bitmap? = null,
 
+    // 隐私模式
+    val isPrivacyMode: Boolean = false,
+
     // 头像
     val avatarUrl: String? = null,
     val userName: String? = null,

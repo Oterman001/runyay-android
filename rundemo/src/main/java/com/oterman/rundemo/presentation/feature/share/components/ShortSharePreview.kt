@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.presentation.feature.share.ShareMetricType
@@ -61,6 +62,8 @@ fun ShortSharePreview(
     brandText: String,
     avatarUrl: String? = null,
     userName: String? = null,
+    isPrivacyMode: Boolean = false,
+    trackPoints: List<TrackPoint> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -80,6 +83,20 @@ fun ShortSharePreview(
                         .aspectRatio(bitmapAspectRatio),
                     contentScale = ContentScale.Fit
                 )
+            } else if (isPrivacyMode && trackPoints.isNotEmpty()) {
+                val configuration = LocalConfiguration.current
+                val placeholderRatio = configuration.screenWidthDp.toFloat() /
+                    (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(placeholderRatio)
+                ) {
+                    com.oterman.rundemo.presentation.feature.rundetail.components.PrivacyTrackView(
+                        trackPoints = trackPoints,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             } else {
                 // 室内跑：用屏幕宽高比模拟地图区域比例
                 val configuration = LocalConfiguration.current

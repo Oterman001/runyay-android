@@ -264,7 +264,8 @@ fun RunDetailScreen(
                                     onClick = {
                                         showMenu = false
                                         val mv = mapViewRef
-                                        if (mv != null && uiState.isOutdoor) {
+                                        val isPrivacyMode = com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getPrivacyMode(context)
+                                        if (mv != null && uiState.isOutdoor && !isPrivacyMode) {
                                             viewModel.setPreparingShare(true)
                                             val provider =
                                                 com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getMapProvider(context)

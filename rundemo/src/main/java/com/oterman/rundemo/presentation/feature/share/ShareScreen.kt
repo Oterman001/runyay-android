@@ -145,7 +145,9 @@ fun ShareScreen(
                                             ?: DeviceNameUtils.resolveDisplayName(uiState.record!!),
                                         brandText = uiState.brandText,
                                         avatarUrl = uiState.avatarUrl,
-                                        userName = uiState.userName
+                                        userName = uiState.userName,
+                                        isPrivacyMode = uiState.isPrivacyMode,
+                                        trackPoints = uiState.trackPoints
                                     )
                                 }
 
@@ -176,7 +178,9 @@ fun ShareScreen(
                                             ?: DeviceNameUtils.resolveDisplayName(uiState.record!!),
                                         brandText = uiState.brandText,
                                         avatarUrl = uiState.avatarUrl,
-                                        linkedShoe = uiState.linkedShoe
+                                        linkedShoe = uiState.linkedShoe,
+                                        isPrivacyMode = uiState.isPrivacyMode,
+                                        trackPoints = uiState.trackPoints
                                     )
                                 }
                             }
