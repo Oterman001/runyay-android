@@ -20,21 +20,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -50,7 +43,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.oterman.rundemo.R
 import com.oterman.rundemo.data.map.MapRendererFactory
 import com.oterman.rundemo.domain.map.EdgePadding
-import com.oterman.rundemo.domain.map.MapCameraState
 import com.oterman.rundemo.domain.map.MapProvider
 import com.oterman.rundemo.domain.map.TrackColorSet
 import com.oterman.rundemo.domain.map.TrackMapRenderer
@@ -147,10 +139,7 @@ fun RunDetailMapSection(
     isOutdoor: Boolean,
     actualDistanceKm: Double? = null,
     modifier: Modifier = Modifier,
-    savedCameraState: MapCameraState? = null,
-    onCameraChanged: (MapCameraState) -> Unit = {},
-    onMapViewReady: (View) -> Unit = {},
-    onSnapshotReady: ((Bitmap?) -> Unit)? = null
+    onMapViewReady: (View) -> Unit = {}
 ) {
     val context = LocalContext.current
     val isDarkTheme = RunTheme.isDark
@@ -191,10 +180,7 @@ fun RunDetailMapSection(
                         showKmMarkers = showKmMarkers,
                         kmMarkerInterval = kmMarkerInterval,
                         actualDistanceKm = actualDistanceKm,
-                        savedCameraState = savedCameraState,
-                        onCameraChanged = onCameraChanged,
-                        onMapViewReady = onMapViewReady,
-                        onSnapshotReady = onSnapshotReady
+                        onMapViewReady = onMapViewReady
                     )
                 }
             }
@@ -322,14 +308,9 @@ private fun MapViewComposable(
     showKmMarkers: Boolean,
     kmMarkerInterval: Int,
     actualDistanceKm: Double? = null,
-    savedCameraState: MapCameraState? = null,
-    onCameraChanged: (MapCameraState) -> Unit = {},
-    onMapViewReady: (View) -> Unit = {},
-    onSnapshotReady: ((Bitmap?) -> Unit)? = null
+    onMapViewReady: (View) -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val coroutineScope = rememberCoroutineScope()
-    var snapshotJob by remember { mutableStateOf<Job?>(null) }
 
     val trackColors by rememberUpdatedState(getTrackColors())
 
@@ -381,16 +362,6 @@ private fun MapViewComposable(
         onDispose {
             val startTime = System.currentTimeMillis()
             RLog.d("RunDetailPerf", "MapView onDispose START")
-            snapshotJob?.cancel()
-            snapshotJob = null
-            // 保存相机状态，以便地图重建时恢复
-            try {
-                renderer.getCameraState(mapView)?.let { state ->
-                    onCameraChanged(state)
-                }
-            } catch (e: Exception) {
-                RLog.e("RunDetailPerf", "保存相机状态失败", e)
-            }
             lifecycleOwner.lifecycle.removeObserver(observer)
             if (!isDestroyed) {
                 isDestroyed = true
@@ -406,7 +377,7 @@ private fun MapViewComposable(
     AndroidView(
         factory = {
             mapView.apply {
-                RLog.d(TAG, "初始化地图样式: $styleUri, 有保存的相机状态: ${savedCameraState != null}")
+                RLog.d(TAG, "初始化地图样式: $styleUri")
                 renderer.loadStyle(this, styleUri) {
                     if (trackPoints.isNotEmpty()) {
                         RLog.d(TAG, "添加轨迹到地图")
@@ -420,24 +391,7 @@ private fun MapViewComposable(
                                 actualDistanceKm
                             )
                         }
-                        if (savedCameraState != null) {
-                            renderer.setCamera(this, savedCameraState)
-                        } else {
-                            renderer.fitTrackBounds(this, trackPoints, defaultPadding)
-                        }
-                        // 预缓存截图：轨迹渲染后延迟取图，避免分享时 MapView 已被回收
-                        if (onSnapshotReady != null) {
-                            val captureView = this
-                            snapshotJob?.cancel()
-                            snapshotJob = coroutineScope.launch {
-                                delay(1500L)
-                                withContext(Dispatchers.Main) {
-                                    renderer.snapshot(captureView) { bitmap ->
-                                        onSnapshotReady.invoke(bitmap)
-                                    }
-                                }
-                            }
-                        }
+                        renderer.fitTrackBounds(this, trackPoints, defaultPadding)
                     } else {
                         RLog.w(TAG, "轨迹点为空")
                     }

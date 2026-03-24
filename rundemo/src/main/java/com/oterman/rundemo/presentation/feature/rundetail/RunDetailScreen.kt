@@ -19,8 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import com.oterman.rundemo.presentation.components.EditInclusiveLevelDialog
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -66,7 +66,6 @@ import com.oterman.rundemo.presentation.feature.rundetail.components.HeartRateCh
 import com.oterman.rundemo.presentation.feature.rundetail.components.PaceChartCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.PowerChartCard
 import com.oterman.rundemo.data.map.MapRendererFactory
-import com.oterman.rundemo.domain.map.MapCameraState
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailHeaderDataCard
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailMapSection
 import com.oterman.rundemo.presentation.feature.rundetail.components.RunDetailSegmentTable
@@ -118,14 +117,11 @@ fun RunDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val lazyListState = rememberLazyListState()
+    val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // 持有 MapView 引用用于分享时截图（View 类型，供应商无关）
     var mapViewRef by remember { mutableStateOf<android.view.View?>(null) }
-
-    // 预缓存的地图截图，轨迹渲染完成后自动触发，避免分享时 MapView 已被 LazyColumn 回收
-    var cachedMapSnapshot by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
 
     // 右上角三点菜单展开状态
     var showMenu by remember { mutableStateOf(false) }
@@ -203,11 +199,7 @@ fun RunDetailScreen(
     // 根据滚动位置决定导航栏透明度
     val scrollOffset by remember {
         derivedStateOf {
-            if (lazyListState.firstVisibleItemIndex > 0) {
-                1f
-            } else {
-                (lazyListState.firstVisibleItemScrollOffset / 300f).coerceIn(0f, 1f)
-            }
+            (scrollState.value / 300f).coerceIn(0f, 1f)
         }
     }
 
@@ -269,25 +261,16 @@ fun RunDetailScreen(
                                         val isPrivacyMode = com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getPrivacyMode(context)
                                         if (uiState.isOutdoor && !isPrivacyMode) {
                                             viewModel.setPreparingShare(true)
-                                            val snapshot = cachedMapSnapshot
-                                            if (snapshot != null) {
-                                                // 使用预缓存截图，无需访问可能已被回收的 MapView
-                                                ShareDataCache.putMapSnapshot(snapshot)
-                                                viewModel.prepareShareData()
-                                            } else {
-                                                // 兜底：尝试实时截图（地图仍可见时）
-                                                val mv = mapViewRef
-                                                if (mv != null) {
-                                                    val provider =
-                                                        com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getMapProvider(context)
-                                                    val renderer = MapRendererFactory.getRenderer(provider)
-                                                    renderer.snapshot(mv) { bitmap ->
-                                                        bitmap?.let { ShareDataCache.putMapSnapshot(it) }
-                                                        viewModel.prepareShareData()
-                                                    }
-                                                } else {
+                                            val mv = mapViewRef
+                                            if (mv != null) {
+                                                val provider = com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getMapProvider(context)
+                                                val renderer = MapRendererFactory.getRenderer(provider)
+                                                renderer.snapshot(mv) { bitmap ->
+                                                    bitmap?.let { ShareDataCache.putMapSnapshot(it) }
                                                     viewModel.prepareShareData()
                                                 }
+                                            } else {
+                                                viewModel.prepareShareData()
                                             }
                                         } else {
                                             viewModel.prepareShareData()
@@ -456,265 +439,197 @@ fun RunDetailScreen(
                     // 成功状态 - 显示详情内容
                     val record = uiState.record!!
 
-                    // 保存地图相机状态，在 LazyColumn 外部 remember，
-                    // 避免地图 item 被 dispose 后相机状态丢失
-                    var savedCameraState by remember { mutableStateOf<MapCameraState?>(null) }
-
-                    LazyColumn(
-                        state = lazyListState,
-                        modifier = Modifier.fillMaxSize()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
                     ) {
                         // ==================== 1. 地图区域 + 天气 ====================
-                        item {
-                            Box {
-                                RunDetailMapSection(
-                                    trackPoints = uiState.trackPoints,
-                                    isOutdoor = uiState.isOutdoor,
-                                    actualDistanceKm = record.totalDistance,
-                                    savedCameraState = savedCameraState,
-                                    onCameraChanged = { savedCameraState = it },
-                                    onMapViewReady = { mapViewRef = it },
-                                    onSnapshotReady = { bitmap -> cachedMapSnapshot = bitmap }
-                                )
+                        Box {
+                            RunDetailMapSection(
+                                trackPoints = uiState.trackPoints,
+                                isOutdoor = uiState.isOutdoor,
+                                actualDistanceKm = record.totalDistance,
+                                onMapViewReady = { mapViewRef = it }
+                            )
 
-                                // 天气覆盖层（左下角）
-                                if (record.weatherTemperature != 0.0 || record.weatherHumidity > 0) {
-                                    RunDetailWeatherOverlay(
-                                        temperature = record.weatherTemperature,
-                                        humidity = record.weatherHumidity,
-                                        modifier = Modifier
-                                            .align(Alignment.BottomStart)
-                                            .padding(start = 12.dp, bottom = 35.dp)
-                                    )
-                                }
+                            // 天气覆盖层（左下角）
+                            if (record.weatherTemperature != 0.0 || record.weatherHumidity > 0) {
+                                RunDetailWeatherOverlay(
+                                    temperature = record.weatherTemperature,
+                                    humidity = record.weatherHumidity,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomStart)
+                                        .padding(start = 12.dp, bottom = 35.dp)
+                                )
                             }
                         }
 
                         // ==================== 2. Header + DataGrid 合并卡片 ====================
-                        item {
-                            RunDetailHeaderDataCard(
-                                distance = record.totalDistance,
-                                startTime = record.startTime,
-                                endTime = record.endTime,
-                                duration = record.activeDuration,
-                                deviceName = DeviceNameUtils.resolveDisplayName(record),
-                                isOutdoor = uiState.isOutdoor,
-                                metrics = uiState.metrics,
-                                avatarUrl = uiState.avatarUrl,
-                                isLoadingAvatar = uiState.isLoadingAvatar,
-                                userName = uiState.userName,
-                                inclusiveLevel = record.inclusiveLevel,
-                                onInclusiveLevelClick = {
-                                    viewModel.showEditInclusiveLevelDialog()
-                                },
-                                modifier = Modifier
-                                    .layout { measurable, constraints ->
-                                        val placeable = measurable.measure(constraints)
-                                        val invasionPx = RunDetailLayoutConstants.HeaderInvasionOffset.dp
-                                            .roundToPx().let { kotlin.math.abs(it) }
-                                        layout(placeable.width, (placeable.height - invasionPx).coerceAtLeast(0)) {
-                                            placeable.placeRelative(0, -invasionPx)
-                                        }
+                        RunDetailHeaderDataCard(
+                            distance = record.totalDistance,
+                            startTime = record.startTime,
+                            endTime = record.endTime,
+                            duration = record.activeDuration,
+                            deviceName = DeviceNameUtils.resolveDisplayName(record),
+                            isOutdoor = uiState.isOutdoor,
+                            metrics = uiState.metrics,
+                            avatarUrl = uiState.avatarUrl,
+                            isLoadingAvatar = uiState.isLoadingAvatar,
+                            userName = uiState.userName,
+                            inclusiveLevel = record.inclusiveLevel,
+                            onInclusiveLevelClick = {
+                                viewModel.showEditInclusiveLevelDialog()
+                            },
+                            modifier = Modifier
+                                .layout { measurable, constraints ->
+                                    val placeable = measurable.measure(constraints)
+                                    val invasionPx = RunDetailLayoutConstants.HeaderInvasionOffset.dp
+                                        .roundToPx().let { kotlin.math.abs(it) }
+                                    layout(placeable.width, (placeable.height - invasionPx).coerceAtLeast(0)) {
+                                        placeable.placeRelative(0, -invasionPx)
                                     }
-                            )
-                        }
+                                }
+                        )
 
                         // 间距
-                        item {
-                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                        }
+                        Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
 
                         // ==================== 3. 最大摄氧量卡片 ====================
                         val vo2Max = uiState.vo2Max
                         if (vo2Max != null && vo2Max > 0) {
-                            item {
-                                VO2MaxCard(
-                                    vo2Max = vo2Max,
-                                    previousVo2Max = uiState.previousVo2Max
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            VO2MaxCard(
+                                vo2Max = vo2Max,
+                                previousVo2Max = uiState.previousVo2Max
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 4. 训练效果卡片 ====================
                         if (record.trainingEffect > 0 || record.anaerobicTrainingEffect > 0) {
-                            item {
-                                TrainingEffectCard(
-                                    aerobicEffect = record.trainingEffect,
-                                    anaerobicEffect = record.anaerobicTrainingEffect
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            TrainingEffectCard(
+                                aerobicEffect = record.trainingEffect,
+                                anaerobicEffect = record.anaerobicTrainingEffect
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 5. 公里分段表格 ====================
                         if (uiState.segments.isNotEmpty()) {
-                            item {
-                                RunDetailSegmentTable(
-                                    segments = uiState.segments
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            RunDetailSegmentTable(
+                                segments = uiState.segments
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 6. 训练分段表格 ====================
                         if (uiState.trainingSegments.isNotEmpty()) {
-                            item {
-                                RunDetailTrainingSegmentTable(
-                                    segments = uiState.trainingSegments,
-                                    mergedSegments = uiState.mergedTrainingSegments,
-                                    expandedSegmentIds = uiState.expandedSegmentIds,
-                                    onToggleExpansion = { viewModel.toggleSegmentExpansion(it) }
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            RunDetailTrainingSegmentTable(
+                                segments = uiState.trainingSegments,
+                                mergedSegments = uiState.mergedTrainingSegments,
+                                expandedSegmentIds = uiState.expandedSegmentIds,
+                                onToggleExpansion = { viewModel.toggleSegmentExpansion(it) }
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 7. 心率图表 + 区间（单卡 + 5/7区间切换） ====================
                         if (uiState.heartRateSeries.isNotEmpty()) {
-                            item {
-                                HeartRateChartCard(
-                                    heartRateSeries = uiState.heartRateSeries,
-                                    heartRate7Zones = uiState.heartRate7Zones,
-                                    heartRate5Zones = uiState.heartRate5Zones,
-                                    avgHeartRate = record.averageHeartRate,
-                                    maxHeartRate = record.maxHeartRate,
-                                    minHeartRate = record.minHeartRate
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            HeartRateChartCard(
+                                heartRateSeries = uiState.heartRateSeries,
+                                heartRate7Zones = uiState.heartRate7Zones,
+                                heartRate5Zones = uiState.heartRate5Zones,
+                                avgHeartRate = record.averageHeartRate,
+                                maxHeartRate = record.maxHeartRate,
+                                minHeartRate = record.minHeartRate
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 8. 配速图表 + 区间（单卡） ====================
                         if (uiState.speedSeries.isNotEmpty()) {
-                            item {
-                                PaceChartCard(
-                                    speedSeries = uiState.speedSeries,
-                                    speedZones = uiState.speedZones,
-                                    avgSpeed = record.averageSpeed,
-                                    maxSpeed = record.maxSpeed
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            PaceChartCard(
+                                speedSeries = uiState.speedSeries,
+                                speedZones = uiState.speedZones,
+                                avgSpeed = record.averageSpeed,
+                                maxSpeed = record.maxSpeed
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 9. 海拔图表 ====================
                         if (uiState.altitudeSeries.isNotEmpty()) {
-                            item {
-                                AltitudeChartCard(
-                                    altitudeSeries = uiState.altitudeSeries,
-                                    elevationAscended = record.elevationAscended
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            AltitudeChartCard(
+                                altitudeSeries = uiState.altitudeSeries,
+                                elevationAscended = record.elevationAscended
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 10. 步幅图表 ====================
                         if (uiState.strideLengthSeries.isNotEmpty()) {
-                            item {
-                                StrideLengthChartCard(
-                                    strideLengthSeries = uiState.strideLengthSeries,
-                                    avgStrideLength = record.averageStrideLength
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            StrideLengthChartCard(
+                                strideLengthSeries = uiState.strideLengthSeries,
+                                avgStrideLength = record.averageStrideLength
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 11. 步频图表 ====================
                         if (uiState.cadenceSeries.isNotEmpty()) {
-                            item {
-                                CadenceChartCard(
-                                    cadenceSeries = uiState.cadenceSeries,
-                                    avgCadence = record.averageCadence
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            CadenceChartCard(
+                                cadenceSeries = uiState.cadenceSeries,
+                                avgCadence = record.averageCadence
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 12. 触地时间图表 ====================
                         if (uiState.contactTimeSeries.isNotEmpty()) {
-                            item {
-                                ContactTimeChartCard(
-                                    contactTimeSeries = uiState.contactTimeSeries,
-                                    avgContactTime = record.averageContactTime
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            ContactTimeChartCard(
+                                contactTimeSeries = uiState.contactTimeSeries,
+                                avgContactTime = record.averageContactTime
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 13. 垂直振幅图表 ====================
                         if (uiState.verticalOscillationSeries.isNotEmpty()) {
-                            item {
-                                VerticalOscillationChartCard(
-                                    verticalOscillationSeries = uiState.verticalOscillationSeries,
-                                    avgVerticalOscillation = record.averageVerticalOscillation
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
+                            VerticalOscillationChartCard(
+                                verticalOscillationSeries = uiState.verticalOscillationSeries,
+                                avgVerticalOscillation = record.averageVerticalOscillation
+                            )
+                            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
                         // ==================== 14. 功率图表 ====================
                         if (uiState.powerSeries.isNotEmpty()) {
-                            item {
-                                PowerChartCard(
-                                    powerSeries = uiState.powerSeries,
-                                    avgPower = record.averagePower
-                                )
-                            }
-                            item {
-                                Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
-                            }
-                        }
-
-                        // ==================== 15. 关联跑鞋 ====================
-                        item {
-                            RunDetailShoeCard(
-                                shoe = uiState.linkedShoe,
-                                onNavigateToDetail = { shoeId ->
-                                    context.startActivity(
-                                        RunningShoeDetailActivity.createIntent(context, shoeId)
-                                    )
-                                },
-                                onReplace = { viewModel.showShoeSelector() }
+                            PowerChartCard(
+                                powerSeries = uiState.powerSeries,
+                                avgPower = record.averagePower
                             )
-                        }
-                        item {
                             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }
 
+                        // ==================== 15. 关联跑鞋 ====================
+                        RunDetailShoeCard(
+                            shoe = uiState.linkedShoe,
+                            onNavigateToDetail = { shoeId ->
+                                context.startActivity(
+                                    RunningShoeDetailActivity.createIntent(context, shoeId)
+                                )
+                            },
+                            onReplace = { viewModel.showShoeSelector() }
+                        )
+                        Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+
                         // ==================== 16. 数据来源标签 ====================
-                        item {
-                            DataSourceLabel(
-                                datasource = record.datasource
-                            )
-                        }
+                        DataSourceLabel(
+                            datasource = record.datasource
+                        )
 
                         // 底部留白
-                        item {
-                            Spacer(modifier = Modifier.height(40.dp))
-                        }
+                        Spacer(modifier = Modifier.height(40.dp))
                     }
                 }
             }
