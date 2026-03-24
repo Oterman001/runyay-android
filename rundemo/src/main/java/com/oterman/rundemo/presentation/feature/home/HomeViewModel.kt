@@ -14,6 +14,7 @@ import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.AvatarManager
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
+import com.oterman.rundemo.data.repository.TokenRefreshManager
 import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.service.sync.DataSyncForegroundService
 import com.oterman.rundemo.service.sync.SyncUiState
@@ -55,6 +56,29 @@ class HomeViewModel(
     init {
         loadAuthState()
         observeSyncState()
+        performDailyTokenRefresh()
+        observeTokenExpired()
+    }
+
+    /**
+     * 启动时触发每日 Token 刷新
+     */
+    private fun performDailyTokenRefresh() {
+        viewModelScope.launch {
+            TokenRefreshManager.getInstance(context).performDailyTokenRefreshIfNeeded()
+        }
+    }
+
+    /**
+     * 监听 Token 过期事件，触发退出到欢迎页
+     */
+    private fun observeTokenExpired() {
+        viewModelScope.launch {
+            TokenRefreshManager.getInstance(context).tokenExpiredEvent.collect {
+                RLog.w(TAG, "Token 已过期，强制登出")
+                _uiState.update { it.copy(navigateToWelcome = true) }
+            }
+        }
     }
 
     /**

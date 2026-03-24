@@ -72,6 +72,10 @@ object Constants {
 
         // Notification permission dialog
         const val KEY_NOTIFICATION_DENIED_DATE = "notification_denied_date"
+
+        // Token refresh
+        const val KEY_LAST_DAILY_TOKEN_REFRESH_DATE = "last_daily_token_refresh_date"
+        const val KEY_LAST_LOGIN_DATE = "last_login_date"
     }
     
     /**

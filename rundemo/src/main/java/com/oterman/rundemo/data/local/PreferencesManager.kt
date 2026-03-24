@@ -456,5 +456,23 @@ class PreferencesManager(context: Context) {
     fun getLongValue(key: String, defaultValue: Long = 0L): Long {
         return prefs.getLong(key, defaultValue)
     }
+
+    // ==================== Token Refresh ====================
+
+    fun saveLastDailyRefreshDate(date: String) {
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_LAST_DAILY_TOKEN_REFRESH_DATE, date).apply()
+    }
+
+    fun getLastDailyRefreshDate(): String? {
+        return prefs.getString(Constants.PreferenceKeys.KEY_LAST_DAILY_TOKEN_REFRESH_DATE, null)
+    }
+
+    fun saveLastLoginDate(date: String) {
+        prefs.edit().putString(Constants.PreferenceKeys.KEY_LAST_LOGIN_DATE, date).apply()
+    }
+
+    fun getLastLoginDate(): String? {
+        return prefs.getString(Constants.PreferenceKeys.KEY_LAST_LOGIN_DATE, null)
+    }
 }
 

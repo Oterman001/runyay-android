@@ -7,6 +7,7 @@ import com.oterman.rundemo.data.network.dto.request.SendVerificationCodeRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordAndNameRequest
 import com.oterman.rundemo.data.network.dto.request.SetPasswordRequest
 import com.oterman.rundemo.data.network.dto.request.SaveUserBasicInfoRequest
+import com.oterman.rundemo.data.network.dto.request.TokenRefreshRequest
 import com.oterman.rundemo.data.network.dto.request.UpdateNicknameRequest
 import com.oterman.rundemo.data.network.dto.request.UserDeactivateRequest
 import com.oterman.rundemo.data.network.dto.request.UserLoginRequest
@@ -18,6 +19,7 @@ import com.oterman.rundemo.data.network.dto.response.ResetPasswordResponse
 import com.oterman.rundemo.data.network.dto.response.ResponseData
 import com.oterman.rundemo.data.network.dto.response.SendVerificationCodeResponse
 import com.oterman.rundemo.data.network.dto.response.SetPasswordResponse
+import com.oterman.rundemo.data.network.dto.response.TokenRefreshResponseData
 import com.oterman.rundemo.data.network.dto.response.UpdateAvatarResponseData
 import com.oterman.rundemo.data.network.dto.response.UpdateNicknameResponseData
 import com.oterman.rundemo.data.network.dto.response.UserBasicInfoResponseData
@@ -161,5 +163,14 @@ interface UserApi {
      */
     @POST("api/user/basic-info/update")
     suspend fun updateBasicInfo(@Body request: BaseRequest<SaveUserBasicInfoRequest>): BaseResponse<UserBasicInfoResponseData>
+
+    /**
+     * 刷新Token
+     * 对应iOS的AccountManager.refreshTokenIfNeeded
+     */
+    @POST("api/user/login/refreshToken")
+    suspend fun refreshToken(
+        @Body request: BaseRequest<TokenRefreshRequest>
+    ): BaseResponse<TokenRefreshResponseData>
 }
 

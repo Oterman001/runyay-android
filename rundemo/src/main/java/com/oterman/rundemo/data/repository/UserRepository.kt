@@ -154,6 +154,8 @@ class UserRepository(
                     imageUrl = response.imageUrl,
                     expireDay = response.expireDay
                 )
+                // 记录登录日期，当天不触发每日刷新
+                preferencesManager.saveLastLoginDate(java.time.LocalDate.now().toString())
             }
         }
     }

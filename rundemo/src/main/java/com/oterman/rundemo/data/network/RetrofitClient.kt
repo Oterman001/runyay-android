@@ -1,5 +1,6 @@
 package com.oterman.rundemo.data.network
 
+import android.content.Context
 import com.oterman.rundemo.data.network.api.DataSourceApi
 import com.oterman.rundemo.data.network.api.FitFileApi
 import com.oterman.rundemo.data.network.api.RunDataApi
@@ -7,6 +8,7 @@ import com.oterman.rundemo.data.network.api.RunningShoeApi
 import com.oterman.rundemo.data.network.api.UserApi
 import com.oterman.rundemo.data.network.interceptor.AuthInterceptor
 import com.oterman.rundemo.data.network.interceptor.SmartLoggingInterceptor
+import com.oterman.rundemo.data.repository.TokenRefreshManager
 import com.oterman.rundemo.util.RLog
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -24,13 +26,24 @@ object RetrofitClient {
 //    private const val BASE_URL = "http://192.168.31.31:8080"
 
     private var tokenProvider: (() -> String?)? = null
-    
+    private var appContext: Context? = null
+
     /**
      * 设置token提供者
      */
     fun setTokenProvider(provider: () -> String?) {
         tokenProvider = provider
     }
+
+    /**
+     * 设置 Application Context（用于懒加载 TokenRefreshManager）
+     */
+    fun setContext(context: Context) {
+        appContext = context.applicationContext
+    }
+
+    private val tokenRefreshManager: TokenRefreshManager?
+        get() = appContext?.let { TokenRefreshManager.getInstance(it) }
     
     /**
      * 日志拦截器
@@ -57,7 +70,10 @@ object RetrofitClient {
      */
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .addInterceptor(AuthInterceptor { tokenProvider?.invoke() })
+            .addInterceptor(AuthInterceptor(
+                tokenProvider = { tokenProvider?.invoke() },
+                tokenRefreshManager = tokenRefreshManager
+            ))
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

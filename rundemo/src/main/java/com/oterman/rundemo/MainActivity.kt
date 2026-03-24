@@ -64,6 +64,7 @@ class MainActivity : ComponentActivity() {
         RetrofitClient.setTokenProvider {
             preferencesManager.getUserToken()
         }
+        RetrofitClient.setContext(this)
 
         // 初始化跑步数据仓库的userId
         initRunDataUserId()
