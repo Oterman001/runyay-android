@@ -15,7 +15,7 @@ import okhttp3.Response
  */
 class AuthInterceptor(
     private val tokenProvider: () -> String?,
-    private val tokenRefreshManager: TokenRefreshManager? = null
+    private val tokenRefreshManagerProvider: (() -> TokenRefreshManager?)? = null
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -24,9 +24,8 @@ class AuthInterceptor(
 
         // 等待进行中的 Token 刷新完成，确保拿到最新 token
         if (!isRefreshTokenRequest) {
-            tokenRefreshManager?.let { manager ->
-                runBlocking { manager.waitForOngoingRefresh() }
-            }
+            val manager = tokenRefreshManagerProvider?.invoke()
+            manager?.let { runBlocking { it.waitForOngoingRefresh() } }
         }
 
         val originalRequest = chain.request()

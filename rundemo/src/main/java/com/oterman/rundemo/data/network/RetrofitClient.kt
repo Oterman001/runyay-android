@@ -72,7 +72,7 @@ object RetrofitClient {
         OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor(
                 tokenProvider = { tokenProvider?.invoke() },
-                tokenRefreshManager = tokenRefreshManager
+                tokenRefreshManagerProvider = { tokenRefreshManager }
             ))
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
