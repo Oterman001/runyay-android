@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.repository.AvatarManager
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.util.RLog
@@ -31,6 +32,8 @@ class UserProfileViewModel(
     private val preferencesManager: PreferencesManager = PreferencesManager(context),
     private val userRepository: UserRepository = UserRepository(context)
 ) : ViewModel() {
+
+    private val avatarManager: AvatarManager = AvatarManager.getInstance(context)
 
     companion object {
         private const val TAG = "UserProfileViewModel"
@@ -74,7 +77,7 @@ class UserProfileViewModel(
     }
 
     /**
-     * 加载头像URL
+     * 加载头像URL（复用缓存，不强制刷新）
      */
     private fun loadAvatarUrl(userId: String) {
         viewModelScope.launch {
@@ -82,7 +85,7 @@ class UserProfileViewModel(
 
             RLog.d(TAG, "开始加载头像URL: userId=$userId")
 
-            val result = userRepository.getAvatarUrl(userId)
+            val result = avatarManager.getAvatarUrl(userId)
 
             result.onSuccess { url ->
                 RLog.d(TAG, "头像URL加载成功: $url")
@@ -90,6 +93,22 @@ class UserProfileViewModel(
             }.onFailure { e ->
                 RLog.e(TAG, "头像URL加载失败: ${e.message}")
                 _uiState.update { it.copy(avatarUrl = null, isLoadingAvatar = false) }
+            }
+        }
+    }
+
+    /**
+     * 下拉刷新头像（强制从API获取）
+     */
+    fun refreshAvatar() {
+        val userId = _uiState.value.userId.takeIf { it.isNotEmpty() } ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingAvatar = true) }
+            val result = avatarManager.getAvatarUrl(userId, forceRefresh = true)
+            result.onSuccess { url ->
+                _uiState.update { it.copy(avatarUrl = url, isLoadingAvatar = false) }
+            }.onFailure {
+                _uiState.update { it.copy(isLoadingAvatar = false) }
             }
         }
     }
@@ -148,8 +167,14 @@ class UserProfileViewModel(
 
                 result.onSuccess { newUrl ->
                     RLog.d(TAG, "头像上传成功: $newUrl")
-                    // 重新加载头像URL以获取带签名的临时URL
-                    _uiState.value.userId.takeIf { it.isNotEmpty() }?.let { loadAvatarUrl(it) }
+                    // 清除缓存并强制获取最新头像URL
+                    _uiState.value.userId.takeIf { it.isNotEmpty() }?.let { userId ->
+                        avatarManager.clearCache()
+                        val result2 = avatarManager.getAvatarUrl(userId, forceRefresh = true)
+                        result2.onSuccess { freshUrl ->
+                            _uiState.update { s -> s.copy(avatarUrl = freshUrl) }
+                        }
+                    }
                     _uiState.update {
                         it.copy(
                             isUploadingAvatar = false,

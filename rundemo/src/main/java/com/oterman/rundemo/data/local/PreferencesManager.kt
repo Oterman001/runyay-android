@@ -208,23 +208,24 @@ class PreferencesManager(context: Context) {
 
     // ==================== Avatar Cache ====================
 
-    fun saveCachedAvatarUrl(url: String, expirationTime: Long) {
+    fun saveCachedAvatarUrl(url: String) {
         prefs.edit()
             .putString(Constants.PreferenceKeys.KEY_CACHED_AVATAR_URL, url)
-            .putLong(Constants.PreferenceKeys.KEY_CACHED_AVATAR_EXPIRATION, expirationTime)
+            .putLong(Constants.PreferenceKeys.KEY_CACHED_AVATAR_LAST_FETCH, System.currentTimeMillis())
             .apply()
     }
 
     fun getCachedAvatarUrl(): String? =
         prefs.getString(Constants.PreferenceKeys.KEY_CACHED_AVATAR_URL, null)
 
-    fun getCachedAvatarExpiration(): Long =
-        prefs.getLong(Constants.PreferenceKeys.KEY_CACHED_AVATAR_EXPIRATION, 0L)
+    fun getCachedAvatarLastFetch(): Long =
+        prefs.getLong(Constants.PreferenceKeys.KEY_CACHED_AVATAR_LAST_FETCH, 0L)
 
     fun clearCachedAvatar() {
         prefs.edit()
             .remove(Constants.PreferenceKeys.KEY_CACHED_AVATAR_URL)
             .remove(Constants.PreferenceKeys.KEY_CACHED_AVATAR_EXPIRATION)
+            .remove(Constants.PreferenceKeys.KEY_CACHED_AVATAR_LAST_FETCH)
             .apply()
     }
 

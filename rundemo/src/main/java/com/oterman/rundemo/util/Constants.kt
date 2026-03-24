@@ -57,6 +57,7 @@ object Constants {
         // Avatar cache
         const val KEY_CACHED_AVATAR_URL = "cached_avatar_url"
         const val KEY_CACHED_AVATAR_EXPIRATION = "cached_avatar_expiration"
+        const val KEY_CACHED_AVATAR_LAST_FETCH = "cached_avatar_last_fetch"
 
         // Heart rate zone settings
         const val KEY_HR_MANUAL_ENABLED = "hr_manual_enabled"

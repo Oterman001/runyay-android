@@ -22,11 +22,11 @@ class AvatarManager private constructor(
     @Volatile
     private var cachedUrl: String? = null
     @Volatile
-    private var cacheExpiration: Long = 0L
+    private var lastFetchTime: Long = 0L
 
     companion object {
         private const val TAG = "AvatarManager"
-        private const val EARLY_REFRESH_MS = 5 * 60 * 1000L // 提前5分钟刷新
+        private const val MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000L // 24小时
 
         @Volatile
         private var instance: AvatarManager? = null
@@ -47,7 +47,7 @@ class AvatarManager private constructor(
         if (!forceRefresh) {
             // 1. 内存缓存命中
             cachedUrl?.let { url ->
-                if (isCacheValid(cacheExpiration)) {
+                if (isCacheValid(lastFetchTime)) {
                     RLog.d(TAG, "内存缓存命中: $url")
                     return Result.success(url)
                 }
@@ -55,11 +55,11 @@ class AvatarManager private constructor(
 
             // 2. 磁盘缓存命中
             val diskUrl = preferencesManager.getCachedAvatarUrl()
-            val diskExpiration = preferencesManager.getCachedAvatarExpiration()
-            if (diskUrl != null && isCacheValid(diskExpiration)) {
+            val diskLastFetch = preferencesManager.getCachedAvatarLastFetch()
+            if (diskUrl != null && isCacheValid(diskLastFetch)) {
                 RLog.d(TAG, "磁盘缓存命中: $diskUrl")
                 cachedUrl = diskUrl
-                cacheExpiration = diskExpiration
+                lastFetchTime = diskLastFetch
                 return Result.success(diskUrl)
             }
         }
@@ -68,8 +68,8 @@ class AvatarManager private constructor(
         return fetchAndCache(userId)
     }
 
-    private fun isCacheValid(expiration: Long): Boolean {
-        return System.currentTimeMillis() < (expiration - EARLY_REFRESH_MS)
+    private fun isCacheValid(fetchTime: Long): Boolean {
+        return System.currentTimeMillis() - fetchTime < MAX_CACHE_AGE_MS
     }
 
     private suspend fun fetchAndCache(userId: String): Result<String?> {
@@ -88,15 +88,14 @@ class AvatarManager private constructor(
             if (response.isSuccess()) {
                 val avatarData = response.data?.avatarUrlResponseDto?.firstOrNull()
                 val url = avatarData?.avatarUrl
-                val expiration = avatarData?.expirationTime ?: 0L
 
-                if (url != null && expiration > 0) {
+                if (url != null) {
                     // 更新内存缓存
                     cachedUrl = url
-                    cacheExpiration = expiration
+                    lastFetchTime = System.currentTimeMillis()
                     // 更新磁盘缓存
-                    preferencesManager.saveCachedAvatarUrl(url, expiration)
-                    RLog.d(TAG, "头像URL已缓存, 过期时间: $expiration")
+                    preferencesManager.saveCachedAvatarUrl(url)
+                    RLog.d(TAG, "头像URL已缓存, fetchTime: $lastFetchTime")
                 }
 
                 Result.success(url)
@@ -112,7 +111,7 @@ class AvatarManager private constructor(
 
     fun clearCache() {
         cachedUrl = null
-        cacheExpiration = 0L
+        lastFetchTime = 0L
         preferencesManager.clearCachedAvatar()
         RLog.d(TAG, "头像缓存已清除")
     }

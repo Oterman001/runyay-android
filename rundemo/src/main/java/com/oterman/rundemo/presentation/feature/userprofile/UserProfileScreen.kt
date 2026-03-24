@@ -51,6 +51,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -200,46 +202,55 @@ fun UserProfileScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
+        val pullRefreshState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            isRefreshing = uiState.isLoadingAvatar,
+            onRefresh = { viewModel.refreshAvatar() },
+            state = pullRefreshState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // 头像区域
-            AvatarSection(
-                avatarUrl = uiState.avatarUrl,
-                isLoading = uiState.isLoadingAvatar || uiState.isUploadingAvatar,
-                onClick = viewModel::showAvatarPicker
-            )
+                // 头像区域
+                AvatarSection(
+                    avatarUrl = uiState.avatarUrl,
+                    isLoading = uiState.isLoadingAvatar || uiState.isUploadingAvatar,
+                    onClick = viewModel::showAvatarPicker
+                )
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-            // 用户信息卡片
-            UserInfoCard(
-                userName = uiState.userName,
-                phoneNumber = uiState.maskedPhoneNumber,
-                isMale = uiState.isMale,
-                birthdayMillis = uiState.birthdayMillis,
-                onNicknameClick = viewModel::showNicknameEditor,
-                onGenderClick = viewModel::showGenderPicker,
-                onBirthdayClick = viewModel::showBirthdayPicker
-            )
+                // 用户信息卡片
+                UserInfoCard(
+                    userName = uiState.userName,
+                    phoneNumber = uiState.maskedPhoneNumber,
+                    isMale = uiState.isMale,
+                    birthdayMillis = uiState.birthdayMillis,
+                    onNicknameClick = viewModel::showNicknameEditor,
+                    onGenderClick = viewModel::showGenderPicker,
+                    onBirthdayClick = viewModel::showBirthdayPicker
+                )
 
-            Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.weight(1f))
 
-            // 底部按钮区域
-            BottomButtonsSection(
-                isLoggingOut = uiState.isLoggingOut,
-                onLogoutClick = viewModel::showLogoutConfirm,
-                onDeactivateClick = viewModel::showDeactivateConfirm
-            )
+                // 底部按钮区域
+                BottomButtonsSection(
+                    isLoggingOut = uiState.isLoggingOut,
+                    onLogoutClick = viewModel::showLogoutConfirm,
+                    onDeactivateClick = viewModel::showDeactivateConfirm
+                )
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
     }
 

@@ -237,10 +237,10 @@ class HomeViewModel(
             )
         }
 
-        // 强制刷新头像URL（绕过AvatarManager缓存）
+        // 复用缓存头像URL（upload后缓存已更新，无需强制刷新）
         if (userId != null) {
             viewModelScope.launch {
-                val result = avatarManager.getAvatarUrl(userId, forceRefresh = true)
+                val result = avatarManager.getAvatarUrl(userId, forceRefresh = false)
                 result.onSuccess { url ->
                     _uiState.update { it.copy(avatarUrl = url) }
                 }.onFailure { e ->
