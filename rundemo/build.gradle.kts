@@ -65,6 +65,30 @@ android {
             dimension = "channel"
             buildConfigField("String", "UMENG_CHANNEL", "\"fir\"")
         }
+        create("xiaomi") {
+            dimension = "channel"
+            buildConfigField("String", "UMENG_CHANNEL", "\"xiaomi\"")
+        }
+        create("oppo") {
+            dimension = "channel"
+            buildConfigField("String", "UMENG_CHANNEL", "\"oppo\"")
+        }
+        create("vivo") {
+            dimension = "channel"
+            buildConfigField("String", "UMENG_CHANNEL", "\"vivo\"")
+        }
+        create("huawei") {
+            dimension = "channel"
+            buildConfigField("String", "UMENG_CHANNEL", "\"huawei\"")
+        }
+        create("google") {
+            dimension = "channel"
+            buildConfigField("String", "UMENG_CHANNEL", "\"google\"")
+        }
+        create("tencent") {
+            dimension = "channel"
+            buildConfigField("String", "UMENG_CHANNEL", "\"tencent\"")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
