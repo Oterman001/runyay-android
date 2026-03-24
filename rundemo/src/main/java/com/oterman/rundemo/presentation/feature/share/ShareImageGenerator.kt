@@ -80,9 +80,13 @@ object ShareImageGenerator {
                     composeView.measure(widthSpec, heightSpec)
                     composeView.layout(0, 0, composeView.measuredWidth, composeView.measuredHeight)
 
-                    // 延迟等待 Composition 完成渲染
+                    // 延迟等待 Composition 完成渲染（长图复杂，600ms）
                     composeView.postDelayed({
                         try {
+                            // 重新测量，确保拿到 composition 完成后的真实尺寸
+                            composeView.measure(widthSpec, heightSpec)
+                            composeView.layout(0, 0, composeView.measuredWidth, composeView.measuredHeight)
+
                             val w = composeView.measuredWidth
                             val h = composeView.measuredHeight
                             if (w <= 0 || h <= 0) {
@@ -108,7 +112,7 @@ object ShareImageGenerator {
                             rootView.removeView(composeView)
                             if (cont.isActive) cont.resumeWithException(e)
                         }
-                    }, 300)
+                    }, 600)
                 } catch (e: Exception) {
                     rootView.removeView(composeView)
                     if (cont.isActive) cont.resumeWithException(e)

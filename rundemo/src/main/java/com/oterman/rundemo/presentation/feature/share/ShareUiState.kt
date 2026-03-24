@@ -7,6 +7,7 @@ import com.oterman.rundemo.domain.model.ChartDataPoint
 import com.oterman.rundemo.domain.model.MergedRunSegment
 import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.domain.model.TrackPoint
+import com.oterman.rundemo.domain.model.RunningShoe
 import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
 
 /**
@@ -52,7 +53,8 @@ enum class ShareCardType(val displayName: String) {
     CADENCE("步频"),
     CONTACT_TIME("触地时间"),
     VERTICAL_OSCILLATION("垂直振幅"),
-    POWER("功率")
+    POWER("功率"),
+    LINKED_SHOE("关联跑鞋")
 }
 
 /**
@@ -102,6 +104,9 @@ data class ShareUiState(
     // 头像
     val avatarUrl: String? = null,
     val userName: String? = null,
+
+    // 关联跑鞋
+    val linkedShoe: RunningShoe? = null,
 
     // 短图编辑设置
     val selectedMetrics: List<ShareMetricType> = defaultShortMetrics,

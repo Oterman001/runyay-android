@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.DataSourceRepository
+import com.oterman.rundemo.data.repository.RunningShoeRepository
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
@@ -40,7 +41,8 @@ class ShareViewModel(
     private val sharePreferences: SharePreferences,
     private val healthRepository: HealthRepository,
     private val avatarManager: com.oterman.rundemo.data.repository.AvatarManager,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val shoeRepository: RunningShoeRepository
 ) : ViewModel() {
 
     companion object {
@@ -141,6 +143,9 @@ class ShareViewModel(
                 // 根据数据可用性构建可选指标列表
                 val availableMetrics = buildAvailableMetrics(record)
 
+                // 关联跑鞋
+                val linkedShoe = record.shoeId?.let { shoeRepository.getShoe(it) }
+
                 // 从缓存获取地图截图
                 val mapSnapshot = ShareDataCache.takeMapSnapshot()
 
@@ -167,7 +172,8 @@ class ShareViewModel(
                     vo2Max = vo2Max,
                     previousVo2Max = previousVo2Max,
                     mapSnapshot = mapSnapshot,
-                    availableMetrics = availableMetrics
+                    availableMetrics = availableMetrics,
+                    linkedShoe = linkedShoe
                 )
             } catch (e: Exception) {
                 RLog.e(TAG, "加载数据失败: ${e.message}")
@@ -222,6 +228,7 @@ class ShareViewModel(
                 ShareCardType.CONTACT_TIME -> state.contactTimeSeries.isNotEmpty()
                 ShareCardType.VERTICAL_OSCILLATION -> state.verticalOscillationSeries.isNotEmpty()
                 ShareCardType.POWER -> state.powerSeries.isNotEmpty()
+                ShareCardType.LINKED_SHOE -> state.linkedShoe != null
             }
         }
     }
@@ -303,7 +310,8 @@ class ShareViewModel(
                                 showDate = state.showDate,
                                 deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
                                 brandText = state.brandText,
-                                avatarUrl = state.avatarUrl
+                                avatarUrl = state.avatarUrl,
+                                linkedShoe = state.linkedShoe
                             )
                         }
                     }
@@ -508,7 +516,8 @@ class ShareViewModelFactory(
             val dataSourceRepository = DataSourceRepository(dataSourcePreferences, preferencesManager)
             val healthRepository = HealthRepository(database.dailyHealthDao(), dataSourceRepository, preferencesManager)
             val avatarManager = com.oterman.rundemo.data.repository.AvatarManager.getInstance(context)
-            return ShareViewModel(workoutId, repository, sharePreferences, healthRepository, avatarManager, preferencesManager) as T
+            val shoeRepository = RunningShoeRepository(context)
+            return ShareViewModel(workoutId, repository, sharePreferences, healthRepository, avatarManager, preferencesManager, shoeRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

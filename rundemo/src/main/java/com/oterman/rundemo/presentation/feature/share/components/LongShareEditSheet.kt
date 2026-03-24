@@ -82,32 +82,20 @@ fun LongShareEditSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 卡片网格（2列）
-            val chunked = availableCards.chunked(2)
-            chunked.forEach { rowCards ->
-                Row(
+            // 卡片列表（单列）
+            availableCards.forEach { cardType ->
+                val isHeader = cardType == ShareCardType.HEADER
+                val isEnabled = enabledCards[cardType] != false
+                CardToggleItem(
+                    label = cardType.displayName,
+                    isEnabled = isEnabled,
+                    isRequired = isHeader,
+                    onToggle = { enabled -> onCardToggle(cardType, enabled) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    rowCards.forEach { cardType ->
-                        val isHeader = cardType == ShareCardType.HEADER
-                        val isEnabled = enabledCards[cardType] != false
-
-                        CardToggleItem(
-                            label = cardType.displayName,
-                            isEnabled = isEnabled,
-                            isRequired = isHeader,
-                            onToggle = { enabled -> onCardToggle(cardType, enabled) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    if (rowCards.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
+                        .padding(horizontal = 16.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -159,43 +147,38 @@ private fun CardToggleItem(
     val bgColor = if (isEnabled) RunBlue.copy(alpha = 0.08f)
     else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
 
-    Column(
+    Row(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(bgColor)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = label,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (isRequired) {
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = label,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "必选",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(RunBlue)
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
                 )
-                if (isRequired) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "必选",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(RunBlue)
-                            .padding(horizontal = 5.dp, vertical = 2.dp)
-                    )
-                }
             }
         }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
         Switch(
             checked = isEnabled,
             onCheckedChange = { if (!isRequired) onToggle(it) },

@@ -3,32 +3,48 @@ package com.oterman.rundemo.presentation.feature.share.components
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
+import com.oterman.rundemo.R
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.ChartDataPoint
 import com.oterman.rundemo.domain.model.MergedRunSegment
 import com.oterman.rundemo.domain.model.RunSegment
+import com.oterman.rundemo.domain.model.RunningShoe
+import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
 import com.oterman.rundemo.presentation.feature.rundetail.components.AltitudeChartCard
@@ -76,6 +92,7 @@ fun LongSharePreview(
     deviceName: String?,
     brandText: String,
     avatarUrl: String? = null,
+    linkedShoe: RunningShoe? = null,
     modifier: Modifier = Modifier
 ) {
     fun isCardEnabled(type: ShareCardType): Boolean = enabledCards[type] != false
@@ -86,31 +103,49 @@ fun LongSharePreview(
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // 1. 地图截图
-        if (mapSnapshot != null) {
-            val bitmapAspectRatio = mapSnapshot.width.toFloat() / mapSnapshot.height.toFloat()
-            Image(
-                bitmap = mapSnapshot.asImageBitmap(),
-                contentDescription = "运动轨迹",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(bitmapAspectRatio),
-                contentScale = ContentScale.Fit
-            )
-        } else {
-            // 室内跑：用屏幕宽高比模拟地图区域比例
-            val configuration = LocalConfiguration.current
-            val placeholderRatio = configuration.screenWidthDp.toFloat() /
-                (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
+        // 1. 地图截图 + 底部渐变遮罩
+        Box(modifier = Modifier.fillMaxWidth()) {
+            if (mapSnapshot != null) {
+                val bitmapAspectRatio = mapSnapshot.width.toFloat() / mapSnapshot.height.toFloat()
+                Image(
+                    bitmap = mapSnapshot.asImageBitmap(),
+                    contentDescription = "运动轨迹",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(bitmapAspectRatio),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                // 室内跑：用屏幕宽高比模拟地图区域比例
+                val configuration = LocalConfiguration.current
+                val placeholderRatio = configuration.screenWidthDp.toFloat() /
+                    (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(placeholderRatio)
+                        .background(Color(0xFFF0F0F0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("室内跑步", color = Color.Gray, fontSize = 16.sp)
+                }
+            }
+
+            // 底部渐变遮罩（与短图一致，但使用 surface 色）
             Box(
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .aspectRatio(placeholderRatio)
-                    .background(Color(0xFFF0F0F0)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("室内跑步", color = Color.Gray, fontSize = 16.sp)
-            }
+                    .height(RunDetailLayoutConstants.MapGradientHeight.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.surface
+                            )
+                        )
+                    )
+            )
         }
 
         // 2. Header + DataGrid（始终显示）
@@ -124,7 +159,16 @@ fun LongSharePreview(
                 isOutdoor = mapSnapshot != null,
                 metrics = metrics,
                 avatarUrl = avatarUrl,
-                inclusiveLevel = record.inclusiveLevel
+                inclusiveLevel = record.inclusiveLevel,
+                modifier = Modifier.layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    val invasionPx = kotlin.math.abs(
+                        RunDetailLayoutConstants.HeaderInvasionOffset.dp.roundToPx()
+                    )
+                    layout(placeable.width, (placeable.height - invasionPx).coerceAtLeast(0)) {
+                        placeable.placeRelative(0, -invasionPx)
+                    }
+                }
             )
             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
@@ -240,11 +284,130 @@ fun LongSharePreview(
             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 
-        // 底部分隔线 + 品牌区
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 20.dp),
-            color = MaterialTheme.colorScheme.outlineVariant
-        )
-        AppBrandingSection(brandText = brandText)
+        // 关联跑鞋卡片（所有图表之后）
+        if (linkedShoe != null && isCardEnabled(ShareCardType.LINKED_SHOE)) {
+            ShareLinkedShoeCard(shoe = linkedShoe)
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+        }
+
+        // 品牌卡片
+        AppCard(
+            modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardMargin.dp)
+        ) {
+            AppBrandingSection(brandText = brandText)
+        }
+        Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+    }
+}
+
+/**
+ * 长图中的跑鞋展示卡片（只读，不含"更换"按钮）
+ */
+@Composable
+private fun ShareLinkedShoeCard(shoe: RunningShoe) {
+    AppCard(
+        modifier = Modifier.padding(horizontal = RunDetailLayoutConstants.HeaderCardMargin.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 0.dp, end = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 跑鞋图片
+            Box(
+                modifier = Modifier
+                    .size(90.dp)
+                    .clip(RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                val imageSource = shoe.displayImageSource
+                if (imageSource != null) {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageSource)
+                            .allowHardware(false)
+                            .memoryCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
+                            .diskCacheKey("shoe_${shoe.id}_${shoe.updatedAt}")
+                            .build(),
+                        contentDescription = shoe.displayName,
+                        modifier = Modifier.size(90.dp),
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(
+                                modifier = Modifier.matchParentSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        },
+                        error = {
+                            Image(
+                                painter = painterResource(R.drawable.svg_setting_shoes),
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                contentScale = ContentScale.Fit,
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+                            )
+                        }
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(R.drawable.svg_setting_shoes),
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        contentScale = ContentScale.Fit,
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = shoe.displayName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!shoe.displaySubtitle.isNullOrBlank()) {
+                    Text(
+                        text = shoe.displaySubtitle!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Text(
+                    text = "%.1f km".format(shoe.effectiveDistance),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "${shoe.totalRuns} 次",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${shoe.usageDays} 天",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
