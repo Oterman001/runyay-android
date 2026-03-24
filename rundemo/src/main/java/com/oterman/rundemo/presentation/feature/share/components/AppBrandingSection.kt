@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,7 +57,7 @@ fun AppBrandingSection(
             // 左侧：图标 + 名称 + 描述
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // 图标 + 应用名称
                 Row(
@@ -66,14 +68,15 @@ fun AppBrandingSection(
                         painter = painterResource(id = R.drawable.run_demo),
                         contentDescription = null,
                         modifier = Modifier
-                            .size(18.dp)
+                            .size(16.dp)
                             .clip(RoundedCornerShape(4.dp))
                     )
                     Text(
-                        text = "呀呀跑",
+                        text = "跑鸭·RunYay",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = onSurface
+                        color = onSurface,
+                        style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
                     )
                 }
                 // 品牌文案
@@ -81,7 +84,8 @@ fun AppBrandingSection(
                     text = displayText,
                     fontSize = 11.sp,
                     color = onSurfaceVariant,
-                    maxLines = 2
+                    maxLines = 2,
+                    style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
                 )
             }
 
@@ -93,15 +97,15 @@ fun AppBrandingSection(
                 contentDescription = "QR Code",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .border(1.dp, dividerColor, RoundedCornerShape(6.dp))
+                    .size(50.dp)
+//                    .clip(RoundedCornerShape(6.dp))
+//                    .border(1.dp, dividerColor, RoundedCornerShape(6.dp))
             )
         }
     }
 }
 
-private val brandTexts = listOf(
+internal val brandTexts = listOf(
     "每一步都算数",
     "跑出自己的节奏",
     "用脚步丈量世界",
@@ -140,6 +144,6 @@ private val brandTexts = listOf(
     "不为别人，只为更强的自己。"
 )
 
-private fun getRandomBrandText(): String {
+internal fun getRandomBrandText(): String {
     return brandTexts.random()
 }

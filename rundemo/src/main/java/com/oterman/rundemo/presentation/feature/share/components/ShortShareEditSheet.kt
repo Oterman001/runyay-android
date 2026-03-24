@@ -140,6 +140,7 @@ fun ShortShareEditSheet(
                 showDate = showDate,
                 brandText = brandText,
                 onDeviceNameEdit = { showDeviceDialog = true },
+                onDeviceNameReset = { onDeviceNameChanged("") },
                 onShowDateToggle = onShowDateChanged,
                 onBrandTextEdit = { showBrandDialog = true },
                 onBrandTextRefresh = { onBrandTextChanged("") }

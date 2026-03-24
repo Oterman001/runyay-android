@@ -84,7 +84,10 @@ class ShareViewModel(
         val savedMetrics = sharePreferences.getSelectedMetrics()
         val savedCards = sharePreferences.getEnabledCards()
         val showDate = sharePreferences.getShowDate()
-        val brandText = sharePreferences.getBrandText()
+        val savedBrandText = sharePreferences.getBrandText()
+        val brandText = savedBrandText.ifBlank {
+            com.oterman.rundemo.presentation.feature.share.components.getRandomBrandText()
+        }
         val customDevice = sharePreferences.getCustomDeviceName()
 
         _uiState.value = _uiState.value.copy(
@@ -247,8 +250,11 @@ class ShareViewModel(
     }
 
     fun updateBrandText(text: String) {
-        _uiState.value = _uiState.value.copy(brandText = text)
-        sharePreferences.saveBrandText(text)
+        val resolvedText = text.ifBlank {
+            com.oterman.rundemo.presentation.feature.share.components.getRandomBrandText()
+        }
+        _uiState.value = _uiState.value.copy(brandText = resolvedText)
+        sharePreferences.saveBrandText(text) // 保存原始意图：空=下次随机，非空=持久化
     }
 
     fun showEditSheet() {
