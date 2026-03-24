@@ -124,6 +124,9 @@ fun RunDetailScreen(
     // 持有 MapView 引用用于分享时截图（View 类型，供应商无关）
     var mapViewRef by remember { mutableStateOf<android.view.View?>(null) }
 
+    // 预缓存的地图截图，轨迹渲染完成后自动触发，避免分享时 MapView 已被 LazyColumn 回收
+    var cachedMapSnapshot by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+
     // 右上角三点菜单展开状态
     var showMenu by remember { mutableStateOf(false) }
 
@@ -263,16 +266,28 @@ fun RunDetailScreen(
                                     enabled = !uiState.isPreparingShare,
                                     onClick = {
                                         showMenu = false
-                                        val mv = mapViewRef
                                         val isPrivacyMode = com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getPrivacyMode(context)
-                                        if (mv != null && uiState.isOutdoor && !isPrivacyMode) {
+                                        if (uiState.isOutdoor && !isPrivacyMode) {
                                             viewModel.setPreparingShare(true)
-                                            val provider =
-                                                com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getMapProvider(context)
-                                            val renderer = MapRendererFactory.getRenderer(provider)
-                                            renderer.snapshot(mv) { bitmap ->
-                                                bitmap?.let { ShareDataCache.putMapSnapshot(it) }
+                                            val snapshot = cachedMapSnapshot
+                                            if (snapshot != null) {
+                                                // 使用预缓存截图，无需访问可能已被回收的 MapView
+                                                ShareDataCache.putMapSnapshot(snapshot)
                                                 viewModel.prepareShareData()
+                                            } else {
+                                                // 兜底：尝试实时截图（地图仍可见时）
+                                                val mv = mapViewRef
+                                                if (mv != null) {
+                                                    val provider =
+                                                        com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getMapProvider(context)
+                                                    val renderer = MapRendererFactory.getRenderer(provider)
+                                                    renderer.snapshot(mv) { bitmap ->
+                                                        bitmap?.let { ShareDataCache.putMapSnapshot(it) }
+                                                        viewModel.prepareShareData()
+                                                    }
+                                                } else {
+                                                    viewModel.prepareShareData()
+                                                }
                                             }
                                         } else {
                                             viewModel.prepareShareData()
@@ -458,7 +473,8 @@ fun RunDetailScreen(
                                     actualDistanceKm = record.totalDistance,
                                     savedCameraState = savedCameraState,
                                     onCameraChanged = { savedCameraState = it },
-                                    onMapViewReady = { mapViewRef = it }
+                                    onMapViewReady = { mapViewRef = it },
+                                    onSnapshotReady = { bitmap -> cachedMapSnapshot = bitmap }
                                 )
 
                                 // 天气覆盖层（左下角）
