@@ -40,6 +40,12 @@ object VdotCalculator {
 
     private const val TAG = "VdotCalculator"
 
+    // 合理 VDOT 范围
+    private const val VDOT_MIN = 10.0   // 极慢跑者
+    private const val VDOT_MAX = 85.0   // 世界顶级水平（Kipchoge ≈ 85）
+
+    private fun clampVdot(vdot: Double): Double = vdot.coerceIn(VDOT_MIN, VDOT_MAX)
+
     // ==================== 核心VDOT计算 ====================
 
     /**
@@ -67,36 +73,28 @@ object VdotCalculator {
             return null
         }
 
-        // 1. 体感温度修正
-        val tempEffect = getTemperatureEffect(temperature, humidity, timeMinute)
-        val adjustedTime = if (timeMinute - tempEffect < 0) timeMinute else timeMinute - tempEffect
-
-        // 2. 计算原始VDOT（无环境修正）
+        // 1. 计算原始VDOT（温湿度数据精度不足，暂时屏蔽环境修正，直接使用原始时间）
         val rawVdot = getVDot(distanceMeters, timeMinute)
         if (rawVdot < 0) return null
+        RLog.d(TAG, "原始VDOT: $rawVdot")
 
-        // 3. 计算环境修正后的VDOT
-        val envAdjustedVdot = getVDot(distanceMeters, adjustedTime)
-        if (envAdjustedVdot < 0) return null
-        RLog.d(TAG, "原始VDOT: $rawVdot, 环境修正后: $envAdjustedVdot")
+        // 2. 心率调整
+        val finalVdot = clampVdot(adjustWithHeartRate(heartRate, rawVdot, maxHR, restHR))
 
-        // 4. 心率调整
-        val finalVdot = adjustWithHeartRate(heartRate, envAdjustedVdot, maxHR, restHR)
-
-        // 5. 计算置信度
+        // 3. 计算置信度（温度不再影响结果，hasTemperature 始终传 false）
         val zone = getHeartRateZone(heartRate, maxHR, restHR)
         val confidence = calculateConfidence(
             distanceMeters = distanceMeters,
             timeMinute = timeMinute,
             heartRateZone = zone,
-            hasTemperature = temperature != null && temperature != 0.0
+            hasTemperature = false
         )
 
         return VdotResult(
             vdot = finalVdot,
             confidence = confidence,
             rawVdot = rawVdot,
-            environmentalAdjustmentMinutes = tempEffect
+            environmentalAdjustmentMinutes = 0.0
         )
     }
 
@@ -251,6 +249,8 @@ object VdotCalculator {
      */
     private fun getHeartRateZone(heartRate: Double, maxHR: Double, restHR: Double): Int {
         if (heartRate <= 0) return 0
+        // heartRate >= maxHR 时直接返回 zone 5，避免区间计算器产生异常结果
+        if (heartRate >= maxHR) return 5
         val heartRateRanges = AbilityZoneCalculator.calculateHeartRate7Ranges(restHR, maxHR)
         return AbilityZoneCalculator.getZoneByHeartRate(heartRate, heartRateRanges)
     }
@@ -265,6 +265,18 @@ object VdotCalculator {
         restHR: Double
     ): Double {
         if (heartRate <= 0) {
+            return originalVdot
+        }
+
+        // maxHR 合理性校验：不在合理范围内则跳过心率调整
+        if (maxHR < 150 || maxHR > 220) {
+            RLog.w(TAG, "maxHR不合理($maxHR)，跳过心率调整")
+            return originalVdot
+        }
+
+        // 如果平均心率超过maxHR，说明maxHR配置偏低，跳过调整避免负向畸变
+        if (heartRate >= maxHR) {
+            RLog.w(TAG, "heartRate($heartRate) >= maxHR($maxHR)，跳过心率调整")
             return originalVdot
         }
 
@@ -369,6 +381,8 @@ object VdotCalculator {
                 RLog.d(TAG, "钳制生效: delta=$delta, clamped to $result")
             }
         }
+
+        result = clampVdot(result)
 
         RLog.d(TAG, "Overall VDOT: origin=$originVdot, overall=$result, " +
                 "historyCount=${includedList.size}, outliers=${outlierFlags.count { it }}")
@@ -577,11 +591,7 @@ object VdotCalculator {
         // 取中位数
         val medianRawVdot = calculateMedian(perIntervalVdots)
 
-        // 温度修正：用总工作时间计算温度影响
-        val tempEffect = getTemperatureEffect(temperature, humidity, totalWorkTime)
-        val adjustedTime = if (totalWorkTime - tempEffect < 0) totalWorkTime else totalWorkTime - tempEffect
-        val timeRatio = if (totalWorkTime > 0) adjustedTime / totalWorkTime else 1.0
-        val envAdjustedVdot = medianRawVdot * timeRatio + medianRawVdot * (1 - timeRatio) * 0.5
+        // 温湿度数据精度不足，暂时屏蔽环境修正，直接使用原始中位数
 
         // 用工作段的加权平均心率做心率修正
         var sumHRxTime = 0.0
@@ -594,11 +604,11 @@ object VdotCalculator {
         }
         val avgWorkHR = if (sumWorkTime > 0) sumHRxTime / sumWorkTime else 0.0
 
-        val finalVdot = if (avgWorkHR > 0) {
-            adjustWithHeartRate(avgWorkHR, envAdjustedVdot, maxHR, restHR)
+        val finalVdot = clampVdot(if (avgWorkHR > 0) {
+            adjustWithHeartRate(avgWorkHR, medianRawVdot, maxHR, restHR)
         } else {
-            envAdjustedVdot
-        }
+            medianRawVdot
+        })
 
         // 间歇训练的置信度：基于工作段数量和心率区间
         val zone = if (avgWorkHR > 0) getHeartRateZone(avgWorkHR, maxHR, restHR) else 0
@@ -619,7 +629,7 @@ object VdotCalculator {
             totalWorkTime >= 2 -> 0.15
             else -> 0.10
         }
-        val envScore = if (temperature != null && temperature != 0.0) 0.10 else 0.05
+        val envScore = 0.05 // 温度不再影响结果
         val confidence = countScore + hrZoneScore + durationScore + envScore
 
         RLog.i(TAG, "间歇VDOT: 中位数rawVDOT=$medianRawVdot, avgWorkHR=$avgWorkHR, " +
@@ -629,7 +639,7 @@ object VdotCalculator {
             vdot = finalVdot,
             confidence = confidence,
             rawVdot = medianRawVdot,
-            environmentalAdjustmentMinutes = tempEffect
+            environmentalAdjustmentMinutes = 0.0
         )
     }
 
