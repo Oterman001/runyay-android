@@ -491,8 +491,10 @@ fun RunDetailScreen(
                                 onMapViewReady = { mapViewRef = it }
                             )
 
-                            // 天气覆盖层（左下角）
-                            if (record.weatherTemperature != 0.0 || record.weatherHumidity > 0) {
+                            // 天气覆盖层（左下角）- 仅 Apple Watch 数据源展示
+                            val isAppleWatch = record.datasource == DataSourcePlatform.APPLE_HEALTH.code
+                                && record.deviceInfo?.contains("apple watch", ignoreCase = true) == true
+                            if (isAppleWatch && (record.weatherTemperature != 0.0 || record.weatherHumidity > 0)) {
                                 RunDetailWeatherOverlay(
                                     temperature = record.weatherTemperature,
                                     humidity = record.weatherHumidity,
