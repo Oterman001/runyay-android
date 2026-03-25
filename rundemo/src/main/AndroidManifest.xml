@@ -48,6 +48,22 @@
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
 
+            <!-- 接收"打开方式"：.fit 文件，MIME type 为 null（微信等 App 不识别扩展名时） -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:pathPattern=".*\\.fit" />
+                <data android:scheme="file" android:pathPattern=".*\\.fit" />
+            </intent-filter>
+
+            <!-- 接收"打开方式"：.fit 文件，MIME type 为任意非 null 值（含 */*） -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:mimeType="*/*" android:pathPattern=".*\\.fit" />
+                <data android:scheme="file" android:mimeType="*/*" android:pathPattern=".*\\.fit" />
+            </intent-filter>
+
             <!-- 接收"打开方式"：.zip 压缩包 -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
