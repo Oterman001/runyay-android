@@ -282,21 +282,22 @@ fun ProfileTabContent(
                         icon = Icons.Outlined.Email,
                         title = "联系我们",
                         iconTint = RunTheme.colorScheme.blue,
+                        showDivider = false,
                         onClick = onContactUsClick
                     )
-                    SettingsItem(
-                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                        title = "帮助与反馈",
-                        iconTint = RunTheme.colorScheme.blue,
-                        onClick = { /* TODO: Navigate to help page */ }
-                    )
-                    SettingsItem(
-                        icon = Icons.Outlined.Star,
-                        title = "给个好评",
-                        iconTint = RunTheme.colorScheme.blue,
-                        showDivider = false,
-                        onClick = { /* TODO: Open app store rating */ }
-                    )
+//                    SettingsItem(
+//                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
+//                        title = "帮助与反馈",
+//                        iconTint = RunTheme.colorScheme.blue,
+//                        onClick = { /* TODO: Navigate to help page */ }
+//                    )
+//                    SettingsItem(
+//                        icon = Icons.Outlined.Star,
+//                        title = "给个好评",
+//                        iconTint = RunTheme.colorScheme.blue,
+//                        showDivider = false,
+//                        onClick = { /* TODO: Open app store rating */ }
+//                    )
                 }
             }
 
