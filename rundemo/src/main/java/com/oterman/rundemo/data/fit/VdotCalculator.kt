@@ -295,8 +295,20 @@ object VdotCalculator {
             else -> 1.0
         }
 
-        val adjustedVdot = originalVdot + (maxHR / heartRate * factor - 1) * (originalVdot - 3.5)
-        RLog.d(TAG, "心率调整VDOT: original=$originalVdot, adjusted=$adjustedVdot, factor=$factor")
+        // 每个区间的最大调整比例上限，防止低心率区间过度放大
+        val maxBoostRatio = when (zone) {
+            1 -> 0.25
+            2 -> 0.20
+            3 -> 0.15
+            4 -> 0.08
+            else -> 0.0
+        }
+
+        val rawAdjustment = (maxHR / heartRate * factor - 1) * (originalVdot - 3.5)
+        val maxAdjustment = originalVdot * maxBoostRatio
+        val adjustment = min(rawAdjustment, maxAdjustment)
+        val adjustedVdot = originalVdot + adjustment
+        RLog.d(TAG, "心率调整VDOT: original=$originalVdot, adjusted=$adjustedVdot, factor=$factor, rawAdj=$rawAdjustment, maxAdj=$maxAdjustment")
         return adjustedVdot
     }
 
