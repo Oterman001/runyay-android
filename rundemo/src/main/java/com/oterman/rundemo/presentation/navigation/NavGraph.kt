@@ -21,6 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.compose.ui.platform.LocalContext
+import com.oterman.rundemo.MainActivity
 import com.oterman.rundemo.RunDetailActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.domain.model.DataSourcePlatform
@@ -228,6 +229,16 @@ fun AppNavGraph(
                             backStackEntry.savedStateHandle["profile_updated"] = false
                         }
                     }
+            }
+
+            // 未登录时从微信打开 .fit 文件，登录后进入首页时检查是否有待导入 URI。
+            // StateFlow 保留了登录前存储的值，此处一次性消费并跳转到 ManualImport。
+            LaunchedEffect(Unit) {
+                if (MainActivity.pendingShareUris.value.isNotEmpty()) {
+                    navController.navigate(Screen.ManualImport.route) {
+                        launchSingleTop = true
+                    }
+                }
             }
 
             HomeScreen(

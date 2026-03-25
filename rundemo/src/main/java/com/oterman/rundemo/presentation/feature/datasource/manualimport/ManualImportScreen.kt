@@ -90,6 +90,7 @@ fun ManualImportScreen(
         MainActivity.pendingShareUris.collect { uris ->
             if (uris.isNotEmpty()) {
                 viewModel.importFitFiles(uris)
+                MainActivity.clearPendingShareUris()
             }
         }
     }

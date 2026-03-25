@@ -37,7 +37,7 @@ class UserProfileViewModel(
 
     companion object {
         private const val TAG = "UserProfileViewModel"
-        private const val MAX_IMAGE_SIZE = 300 * 1024 // 300KB (裁剪后压缩目标)
+        private const val MAX_IMAGE_SIZE = 200 * 1024 // 200KB (裁剪后压缩目标)
         private const val MAX_DIMENSION = 512 // 最大边长
         private const val JPEG_QUALITY = 85
     }
@@ -205,7 +205,7 @@ class UserProfileViewModel(
     /**
      * 压缩图片到目标大小
      * @param uri 图片Uri
-     * @param targetSize 目标大小(字节)，默认300KB
+     * @param targetSize 目标大小(字节)，目标200KB
      * @return 压缩后的图片数据，如果失败返回null
      */
     private fun compressToTargetSize(uri: Uri, targetSize: Int): ByteArray? {
@@ -216,28 +216,44 @@ class UserProfileViewModel(
 
             if (bitmap == null) return null
 
-            // 1. 先缩放到合适尺寸
+            // 1. 先缩放到初始合适尺寸
             bitmap = scaleBitmapIfNeeded(bitmap, MAX_DIMENSION)
 
-            // 2. 逐步降低质量直到满足大小要求
-            var quality = JPEG_QUALITY
-            var outputStream: ByteArrayOutputStream
+            var lastResult: ByteArray? = null
 
-            do {
-                outputStream = ByteArrayOutputStream()
-                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
-                if (outputStream.size() <= targetSize) break
-                quality -= 5
-            } while (quality > 10)
+            // 2. 外层循环：尺寸缩减（当质量压缩无法满足时，按0.75比例缩小图片）
+            while (minOf(bitmap.width, bitmap.height) >= 64) {
+                var quality = JPEG_QUALITY
+                var outputStream: ByteArrayOutputStream
 
-            val result = outputStream.toByteArray()
-            RLog.d(TAG, "图片压缩完成: ${result.size / 1024}KB, quality=$quality")
+                // 3. 内层循环：逐步降低质量直到满足大小要求
+                do {
+                    outputStream = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+                    if (outputStream.size() <= targetSize) {
+                        val result = outputStream.toByteArray()
+                        RLog.d(TAG, "图片压缩完成: ${result.size / 1024}KB, quality=$quality, size=${bitmap.width}x${bitmap.height}")
+                        bitmap.recycle()
+                        outputStream.close()
+                        return result
+                    }
+                    lastResult = outputStream.toByteArray()
+                    quality -= 5
+                } while (quality > 10)
 
-            // 清理资源
+                // 内层质量降到最低仍超标，缩小尺寸后重试
+                val newWidth = (bitmap.width * 0.75f).toInt()
+                val newHeight = (bitmap.height * 0.75f).toInt()
+                RLog.d(TAG, "质量压缩不足，缩小尺寸: ${bitmap.width}x${bitmap.height} -> ${newWidth}x${newHeight}")
+                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+                bitmap.recycle()
+                bitmap = scaledBitmap
+            }
+
+            // 兜底：返回最后一次压缩结果（已尽最大努力压缩）
             bitmap.recycle()
-            outputStream.close()
-
-            result
+            RLog.w(TAG, "图片压缩已达极限，最终大小: ${lastResult?.size?.div(1024)}KB")
+            lastResult
         } catch (e: Exception) {
             RLog.e(TAG, "图片压缩失败: ${e.message}")
             null
