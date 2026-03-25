@@ -335,7 +335,7 @@ fun ProfileTabContent(
                                             updateInfo = info
                                             showUpdateDialog = true
                                         } else {
-                                            Toast.makeText(context, "已是最新版本", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "暂无新版本", Toast.LENGTH_SHORT).show()
                                         }
                                     }.onFailure {
                                         Toast.makeText(context, "检查更新失败，请稍后重试", Toast.LENGTH_SHORT).show()

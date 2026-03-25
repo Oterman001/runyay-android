@@ -21,7 +21,7 @@ object AppUpdateRepository {
     suspend fun checkLatestVersion(): Result<GetLatestVersionResponse?> {
         return try {
             val request = RequestBuilder.createRequest(
-                dtoName = "GetLatestVersionRequestDto",
+                dtoName = "GetLatestVersionRequest",
                 data = GetLatestVersionRequest(),
                 token = "",
                 userId = ""
@@ -38,7 +38,7 @@ object AppUpdateRepository {
                     Result.success(null)
                 }
             } else {
-                Result.failure(Exception(response.msg))
+                Result.success(null)   // 业务层无可用版本，等同于"已是最新"
             }
         } catch (e: Exception) {
             RLog.e(TAG, "检查更新失败", e)
