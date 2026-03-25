@@ -39,6 +39,9 @@ data class ResponseData<T>(
     val setPasswordResponseDto: List<T>? = null,
     
     @SerializedName("ResetPasswordResponseDto")
-    val resetPasswordResponseDto: List<T>? = null
+    val resetPasswordResponseDto: List<T>? = null,
+
+    @SerializedName("GetLatestVersionResponseDto")
+    val getLatestVersionResponseDto: List<T>? = null
 )
 

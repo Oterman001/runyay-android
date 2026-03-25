@@ -14,4 +14,9 @@
     <cache-path
         name="log_exports"
         path="log_exports" />
+
+    <!-- External files directory for APK downloads -->
+    <external-files-path
+        name="apk_downloads"
+        path="Downloads" />
 </paths>

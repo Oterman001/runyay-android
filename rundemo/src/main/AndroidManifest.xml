@@ -13,6 +13,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- APK 安装权限 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/run_demo"
@@ -158,6 +161,12 @@
         <!-- 数据同步前台服务 -->
         <service
             android:name=".service.sync.DataSyncForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- APK 下载前台服务 -->
+        <service
+            android:name=".service.update.ApkDownloadService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
     </application>

@@ -6,6 +6,7 @@ import com.oterman.rundemo.data.network.api.FitFileApi
 import com.oterman.rundemo.data.network.api.RunDataApi
 import com.oterman.rundemo.data.network.api.RunningShoeApi
 import com.oterman.rundemo.data.network.api.UserApi
+import com.oterman.rundemo.data.network.api.VersionApi
 import com.oterman.rundemo.data.network.interceptor.AuthInterceptor
 import com.oterman.rundemo.data.network.interceptor.SmartLoggingInterceptor
 import com.oterman.rundemo.data.repository.TokenRefreshManager
@@ -125,6 +126,13 @@ object RetrofitClient {
      */
     val runningShoeApi: RunningShoeApi by lazy {
         retrofit.create(RunningShoeApi::class.java)
+    }
+
+    /**
+     * 版本检测API接口实例
+     */
+    val versionApi: VersionApi by lazy {
+        retrofit.create(VersionApi::class.java)
     }
 }
 

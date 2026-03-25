@@ -1,5 +1,8 @@
 package com.oterman.rundemo.presentation.feature.home.tabs
 
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -33,12 +37,15 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,12 +59,19 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.network.dto.response.GetLatestVersionResponse
+import com.oterman.rundemo.data.repository.AppUpdateRepository
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryColorMode
+import com.oterman.rundemo.service.update.ApkDownloadService
+import com.oterman.rundemo.service.update.ApkDownloadState
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
 import com.oterman.rundemo.presentation.components.settings.SettingsItem
 import com.oterman.rundemo.presentation.components.settings.UserProfileCard
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Profile/Settings tab content with iOS-style NavigationTitle effect
@@ -87,8 +101,25 @@ fun ProfileTabContent(
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
     val backgroundColor = MaterialTheme.colorScheme.background
+    val coroutineScope = rememberCoroutineScope()
 
     val preferencesManager = remember { PreferencesManager(context) }
+
+    // App update state
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<GetLatestVersionResponse?>(null) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var showWifiWarning by remember { mutableStateOf(false) }
+    val downloadState by ApkDownloadService.downloadState.collectAsState()
+
+    LaunchedEffect(downloadState) {
+        when (val state = downloadState) {
+            is ApkDownloadState.Failed -> {
+                Toast.makeText(context, "下载失败: ${state.message}", Toast.LENGTH_LONG).show()
+            }
+            else -> {}
+        }
+    }
 
     // Trajectory color mode state
     var showTrajectoryColorSheet by remember { mutableStateOf(false) }
@@ -282,8 +313,36 @@ fun ProfileTabContent(
                         icon = Icons.Outlined.Email,
                         title = "联系我们",
                         iconTint = RunTheme.colorScheme.blue,
-                        showDivider = false,
+                        showDivider = true,
                         onClick = onContactUsClick
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.SystemUpdate,
+                        title = "检查更新",
+                        subtitle = if (isCheckingUpdate) "检查中..." else null,
+                        iconTint = RunTheme.colorScheme.blue,
+                        showDivider = false,
+                        onClick = {
+                            if (!isCheckingUpdate) {
+                                coroutineScope.launch {
+                                    isCheckingUpdate = true
+                                    val result = withContext(Dispatchers.IO) {
+                                        AppUpdateRepository.checkLatestVersion()
+                                    }
+                                    isCheckingUpdate = false
+                                    result.onSuccess { info ->
+                                        if (info != null) {
+                                            updateInfo = info
+                                            showUpdateDialog = true
+                                        } else {
+                                            Toast.makeText(context, "已是最新版本", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }.onFailure {
+                                        Toast.makeText(context, "检查更新失败，请稍后重试", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        }
                     )
 //                    SettingsItem(
 //                        icon = Icons.AutoMirrored.Outlined.HelpOutline,
@@ -331,6 +390,42 @@ fun ProfileTabContent(
             item { Footer(onDebugClick = onDebugClick) }
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
+        }
+
+        // App update dialogs
+        if (showUpdateDialog && updateInfo != null) {
+            UpdateAvailableDialog(
+                info = updateInfo!!,
+                onUpdate = {
+                    showUpdateDialog = false
+                    val connectivityManager = context.getSystemService(ConnectivityManager::class.java)
+                    val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+                    val isWifi = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+                    if (isWifi) {
+                        val url = updateInfo?.downloadUrl ?: return@UpdateAvailableDialog
+                        ApkDownloadService.start(context, url)
+                    } else {
+                        showWifiWarning = true
+                    }
+                },
+                onDismiss = { showUpdateDialog = false }
+            )
+        }
+
+        if (showWifiWarning) {
+            WifiWarningDialog(
+                onConfirm = {
+                    showWifiWarning = false
+                    val url = updateInfo?.downloadUrl ?: return@WifiWarningDialog
+                    ApkDownloadService.start(context, url)
+                },
+                onDismiss = { showWifiWarning = false }
+            )
+        }
+
+        val currentDownloadState = downloadState
+        if (currentDownloadState is ApkDownloadState.Downloading) {
+            DownloadProgressDialog(progress = currentDownloadState.progress)
         }
 
         // Trajectory color mode bottom sheet
