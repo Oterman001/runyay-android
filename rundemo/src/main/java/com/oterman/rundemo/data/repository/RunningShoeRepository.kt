@@ -96,8 +96,24 @@ class RunningShoeRepository(
         }
     }
 
-    suspend fun getShoe(shoeId: String): RunningShoe? {
-        return dao.getById(shoeId)?.toDomainModel()?.withLocalImage()
+    suspend fun getShoe(shoeId: String, forceRefresh: Boolean = false): RunningShoe? {
+        val shoe = dao.getById(shoeId)?.toDomainModel()?.withLocalImage() ?: return null
+        return downloadShoeImageIfNeeded(shoe, forceRefresh)
+    }
+
+    private suspend fun downloadShoeImageIfNeeded(shoe: RunningShoe, forceRefresh: Boolean): RunningShoe {
+        val url = shoe.imageUrl ?: return shoe
+        if (forceRefresh) imageManager.deleteImage(shoe.id)
+        val existing = imageManager.getImagePath(shoe.id)
+        if (existing != null && !forceRefresh) return shoe
+        val path = imageManager.downloadFromUrl(shoe.id, url)
+        if (path != null) {
+            dao.getById(shoe.id)?.let { entity ->
+                dao.update(entity.copy(updatedAt = System.currentTimeMillis()))
+            }
+            return shoe.copy(localImagePath = path)
+        }
+        return shoe
     }
 
     fun getActiveShoes(): Flow<List<RunningShoe>> {

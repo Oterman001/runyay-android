@@ -6,6 +6,10 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class RunningShoeImageManager(private val context: Context) {
 
@@ -58,7 +62,7 @@ class RunningShoeImageManager(private val context: Context) {
             )
         } else bitmap
 
-        // Compress to under 300KB
+        // Compress to under 200KB
         var quality = 65
         var output: FileOutputStream
         do {
@@ -67,8 +71,24 @@ class RunningShoeImageManager(private val context: Context) {
             output.flush()
             output.close()
             quality -= 10
-        } while (file.length() > 300 * 1024 && quality > 10)
+        } while (file.length() > 200 * 1024 && quality > 10)
 
         if (scaled !== bitmap) scaled.recycle()
+    }
+
+    suspend fun downloadFromUrl(shoeId: String, url: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val connection = URL(url).openConnection() as HttpURLConnection
+            connection.connectTimeout = 15_000
+            connection.readTimeout = 15_000
+            connection.connect()
+            val bitmap = BitmapFactory.decodeStream(connection.inputStream) ?: return@withContext null
+            val file = File(shoeImageDir, "${shoeId}.jpg")
+            compressAndSave(bitmap, file)
+            bitmap.recycle()
+            file.absolutePath
+        } catch (e: Exception) {
+            null
+        }
     }
 }

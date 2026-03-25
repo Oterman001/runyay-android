@@ -17,16 +17,10 @@ class AvatarManager private constructor(
 ) {
     private val userApi: UserApi = RetrofitClient.userApi
     private val preferencesManager = PreferencesManager(context)
-
-    // 内存缓存
-    @Volatile
-    private var cachedUrl: String? = null
-    @Volatile
-    private var lastFetchTime: Long = 0L
+    private val ossImageCache = OssImageCache(context, "oss_cache_avatar", 24 * 60 * 60 * 1000L)
 
     companion object {
         private const val TAG = "AvatarManager"
-        private const val MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000L // 24小时
 
         @Volatile
         private var instance: AvatarManager? = null
@@ -45,31 +39,14 @@ class AvatarManager private constructor(
      */
     suspend fun getAvatarUrl(userId: String, forceRefresh: Boolean = false): Result<String?> {
         if (!forceRefresh) {
-            // 1. 内存缓存命中
-            cachedUrl?.let { url ->
-                if (isCacheValid(lastFetchTime)) {
-                    RLog.d(TAG, "内存缓存命中: $url")
-                    return Result.success(url)
-                }
-            }
-
-            // 2. 磁盘缓存命中
-            val diskUrl = preferencesManager.getCachedAvatarUrl()
-            val diskLastFetch = preferencesManager.getCachedAvatarLastFetch()
-            if (diskUrl != null && isCacheValid(diskLastFetch)) {
-                RLog.d(TAG, "磁盘缓存命中: $diskUrl")
-                cachedUrl = diskUrl
-                lastFetchTime = diskLastFetch
-                return Result.success(diskUrl)
+            ossImageCache.getCachedUrl(userId)?.let { url ->
+                RLog.d(TAG, "缓存命中: $url")
+                return Result.success(url)
             }
         }
 
-        // 3. 缓存失效，调用 API 获取
+        // 缓存失效，调用 API 获取
         return fetchAndCache(userId)
-    }
-
-    private fun isCacheValid(fetchTime: Long): Boolean {
-        return System.currentTimeMillis() - fetchTime < MAX_CACHE_AGE_MS
     }
 
     private suspend fun fetchAndCache(userId: String): Result<String?> {
@@ -90,12 +67,8 @@ class AvatarManager private constructor(
                 val url = avatarData?.avatarUrl
 
                 if (url != null) {
-                    // 更新内存缓存
-                    cachedUrl = url
-                    lastFetchTime = System.currentTimeMillis()
-                    // 更新磁盘缓存
-                    preferencesManager.saveCachedAvatarUrl(url)
-                    RLog.d(TAG, "头像URL已缓存, fetchTime: $lastFetchTime")
+                    ossImageCache.setCachedUrl(userId, url)
+                    RLog.d(TAG, "头像URL已缓存: $url")
                 }
 
                 Result.success(url)
@@ -110,9 +83,7 @@ class AvatarManager private constructor(
     }
 
     fun clearCache() {
-        cachedUrl = null
-        lastFetchTime = 0L
-        preferencesManager.clearCachedAvatar()
+        ossImageCache.clearAll()
         RLog.d(TAG, "头像缓存已清除")
     }
 }

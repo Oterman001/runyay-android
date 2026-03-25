@@ -42,6 +42,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.Image
@@ -267,10 +268,14 @@ fun RunningShoeDetailScreen(
             } else {
                 val shoe = uiState.shoe ?: return@AnimatedContent
 
+                PullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = { viewModel.refresh() },
+                    modifier = Modifier.fillMaxSize().padding(innerPadding)
+                ) {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
@@ -417,6 +422,7 @@ fun RunningShoeDetailScreen(
 
                     item { Spacer(Modifier.height(80.dp)) } // FAB clearance
                 }
+                } // PullToRefreshBox
             }
         }
     }

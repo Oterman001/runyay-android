@@ -24,7 +24,7 @@ class RunningShoeDetailViewModel(
         loadShoe()
     }
 
-    fun loadShoe() {
+    fun loadShoe(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             // 首次加载才显示 loading，后续刷新静默更新
             if (_uiState.value.shoe == null) {
@@ -32,17 +32,23 @@ class RunningShoeDetailViewModel(
             }
             // 先重新计算统计数据，确保从关联记录动态获取最新值
             repository.recalculateShoeStats(shoeId)
-            val shoe = repository.getShoe(shoeId)
+            val shoe = repository.getShoe(shoeId, forceRefresh)
             val count = repository.getLinkedRecordsCount(shoeId)
             _uiState.update {
                 it.copy(
                     shoe = shoe,
                     linkedRecordsCount = count,
                     isLoading = false,
+                    isRefreshing = false,
                     errorMessage = if (shoe == null) "跑鞋不存在" else null
                 )
             }
         }
+    }
+
+    fun refresh() {
+        _uiState.update { it.copy(isRefreshing = true) }
+        viewModelScope.launch { loadShoe(forceRefresh = true) }
     }
 
     fun retireShoe() {
