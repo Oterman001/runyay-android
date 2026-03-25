@@ -1,9 +1,9 @@
 package com.oterman.rundemo.presentation.feature.rundetail
 
-import android.net.Uri
+import android.content.Intent
 import com.oterman.rundemo.domain.model.DataSourcePlatform
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
+import java.io.File
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -126,22 +126,20 @@ fun RunDetailScreen(
     // 右上角三点菜单展开状态
     var showMenu by remember { mutableStateOf(false) }
 
-    // SAF文件选择器 - 使用 */* 确保文件名后缀被保留
-    val createDocumentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("*/*")
-    ) { uri ->
-        uri?.let {
-            uiState.downloadedFitData?.let { data ->
-                saveFitFile(context, uri, data)
-                viewModel.clearDownloadState()
-            }
-        } ?: viewModel.clearDownloadState()
-    }
-
-    // 下载完成后触发文件选择
+    // 下载完成后触发系统分享弹窗
     LaunchedEffect(uiState.downloadSuccess, uiState.downloadedFitData) {
         if (uiState.downloadSuccess && uiState.downloadedFitData != null) {
-            createDocumentLauncher.launch(viewModel.getDefaultFileName())
+            val fileName = viewModel.getDefaultFileName()
+            val file = File(context.cacheDir, fileName)
+            file.writeBytes(uiState.downloadedFitData!!)
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/octet-stream"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(shareIntent, "分享FIT文件"))
+            viewModel.clearDownloadState()
         }
     }
 
@@ -285,7 +283,7 @@ fun RunDetailScreen(
                                         if (uiState.isDownloading) {
                                             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                         } else {
-                                            Text("下载FIT")
+                                            Text("分享FIT")
                                         }
                                     },
                                     enabled = !uiState.isDownloading,
@@ -679,12 +677,3 @@ private fun DataSourceLabel(
 /**
  * 保存FIT文件到用户选择的位置
  */
-private fun saveFitFile(context: android.content.Context, uri: Uri, data: ByteArray) {
-    try {
-        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-            outputStream.write(data)
-        }
-    } catch (e: Exception) {
-        // 错误处理 - 静默失败，因为用户已经选择了位置
-    }
-}
