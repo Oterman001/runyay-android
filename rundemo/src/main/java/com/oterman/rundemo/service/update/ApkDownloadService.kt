@@ -159,19 +159,22 @@ class ApkDownloadService : Service() {
 
             RLog.i(TAG, "下载完成: ${downloadedFile.absolutePath}")
 
-            // 若是 zip 包，解压出 APK
+            // 若文件是 ZIP 格式（包含 APK 本身，因为 APK 也基于 ZIP），尝试从内部提取 .apk
+            // 若内部没有 .apk 条目，说明该文件本身就是 APK（只是扩展名被改成了 zip），直接当 APK 使用
             val apkFile = if (isZipFile(downloadedFile)) {
-                RLog.i(TAG, "检测到 zip 包，开始解压")
+                RLog.i(TAG, "检测到 ZIP 格式文件，尝试提取内部 APK")
                 val extracted = extractApkFromZip(downloadedFile, downloadsDir)
-                if (extracted == null) {
-                    val msg = "解压失败：zip 内未找到 APK 文件"
-                    RLog.e(TAG, msg)
-                    _downloadState.value = ApkDownloadState.Failed(msg)
-                    stopSelf()
-                    return
+                if (extracted != null) {
+                    // 真正的 zip 包，提取成功
+                    downloadedFile.delete()
+                    extracted
+                } else {
+                    // 内部无 .apk 条目，文件本身即为 APK（扩展名为 zip）
+                    RLog.i(TAG, "ZIP 内无 APK 条目，将文件本身作为 APK 处理")
+                    val renamedApk = File(downloadsDir, downloadedFile.nameWithoutExtension + ".apk")
+                    downloadedFile.renameTo(renamedApk)
+                    renamedApk
                 }
-                downloadedFile.delete()
-                extracted
             } else {
                 downloadedFile
             }
