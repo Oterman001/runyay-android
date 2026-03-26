@@ -67,7 +67,6 @@ import com.oterman.rundemo.presentation.feature.home.tabs.DashboardTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.ProfileTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.UpdateAvailableDialog
 import com.oterman.rundemo.presentation.feature.home.tabs.WifiWarningDialog
-import com.oterman.rundemo.service.update.ApkDownloadService
 
 /**
  * Main Home screen with bottom navigation
@@ -106,6 +105,13 @@ fun HomeScreen(
         viewModel.dismissNotificationPermissionRequest(saveDenial = !granted)
     }
 
+    // APK 下载通知权限请求 launcher
+    val downloadNotificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        viewModel.dismissDownloadPermissionRequest()
+    }
+
     // 进入首页时自动触发同步 + 检查强制更新
     LaunchedEffect(Unit) {
         viewModel.startSyncIfNeeded()
@@ -130,6 +136,22 @@ fun HomeScreen(
             job.cancel()
             snackbarHostState.currentSnackbarData?.dismiss()
             viewModel.dismissSyncSuccess()
+        }
+    }
+
+    // APK 下载开始提示 Snackbar
+    LaunchedEffect(uiState.apkDownloadStartedMessage) {
+        uiState.apkDownloadStartedMessage?.let { message ->
+            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+            viewModel.dismissApkDownloadStartedMessage()
+        }
+    }
+
+    // APK 下载通知权限申请（仅 Android 13+）
+    LaunchedEffect(uiState.needsNotificationPermissionForDownload) {
+        if (uiState.needsNotificationPermissionForDownload &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            downloadNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
@@ -262,7 +284,7 @@ fun HomeScreen(
                 onConfirm = {
                     showForceWifiWarning = false
                     val url = forceUpdateInfo.response.downloadUrl ?: return@WifiWarningDialog
-                    ApkDownloadService.start(context, url, forceUpdateInfo.response.versionCode ?: -1)
+                    viewModel.startApkDownload(url, forceUpdateInfo.response.versionCode ?: -1)
                     viewModel.dismissForceUpdateDialog()
                 },
                 onDismiss = { showForceWifiWarning = false }
@@ -291,7 +313,7 @@ fun HomeScreen(
                     val isWifi = cm.getNetworkCapabilities(cm.activeNetwork)
                         ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
                     if (isWifi) {
-                        ApkDownloadService.start(context, url, forceUpdateInfo.response.versionCode ?: -1)
+                        viewModel.startApkDownload(url, forceUpdateInfo.response.versionCode ?: -1)
                         viewModel.dismissForceUpdateDialog()
                     } else {
                         showForceWifiWarning = true

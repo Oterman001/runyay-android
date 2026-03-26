@@ -71,69 +71,69 @@ fun ContactUsScreen(
             )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
         ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 32.dp)
+            ) {
+                item { Spacer(modifier = Modifier.height(8.dp)) }
 
-            item {
-                SettingsCard {
-                    SettingsItem(
-                        iconResId = R.drawable.ic_wechat,
-                        title = "微信",
-                        onClick = onNavigateToWeChat
-                    )
-                    SettingsItem(
-                        iconResId = R.drawable.ic_xiaohongshu,
-                        title = "小红书",
-                        onClick = {
-                            val intent = Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse("https://www.xiaohongshu.com/user/profile/621b81e5000000001000e9cd")
-                            )
-                            context.startActivity(intent)
-                        }
-                    )
-                    SettingsItem(
-                        icon = Icons.Default.BugReport,
-                        title = "发送日志",
-                        subtitle = if (isExportingLogs) "日志导出中..." else null,
-                        iconTint = RunTheme.colorScheme.blue,
-                        showDivider = false,
-                        onClick = {
-                            if (!isExportingLogs) {
-                                isExportingLogs = true
-                                scope.launch {
-                                    val intent = LogExportHelper.exportLogs(context)
-                                    isExportingLogs = false
-                                    intent?.let {
-                                        context.startActivity(Intent.createChooser(it, "分享日志"))
+                item {
+                    SettingsCard {
+                        SettingsItem(
+                            iconResId = R.drawable.ic_wechat,
+                            title = "微信",
+                            onClick = onNavigateToWeChat
+                        )
+                        SettingsItem(
+                            iconResId = R.drawable.ic_xiaohongshu,
+                            title = "小红书",
+                            onClick = {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://www.xiaohongshu.com/user/profile/621b81e5000000001000e9cd")
+                                )
+                                context.startActivity(intent)
+                            }
+                        )
+                        SettingsItem(
+                            icon = Icons.Default.BugReport,
+                            title = "发送日志",
+                            subtitle = if (isExportingLogs) "日志导出中..." else null,
+                            iconTint = RunTheme.colorScheme.blue,
+                            showDivider = false,
+                            onClick = {
+                                if (!isExportingLogs) {
+                                    isExportingLogs = true
+                                    scope.launch {
+                                        val intent = LogExportHelper.exportLogs(context)
+                                        isExportingLogs = false
+                                        intent?.let {
+                                            context.startActivity(Intent.createChooser(it, "分享日志"))
+                                        }
                                     }
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(24.dp)) }
-
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "渝ICP备2025052772号-1A",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
+            Text(
+                text = "渝ICP备2025052772号-1A",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            )
         }
     }
 }

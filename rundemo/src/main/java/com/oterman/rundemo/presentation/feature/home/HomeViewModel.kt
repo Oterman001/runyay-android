@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.fit.FitImportService
+import com.oterman.rundemo.service.update.ApkDownloadService
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.AppUpdateRepository
@@ -504,6 +505,29 @@ class HomeViewModel(
 
     fun clearForceUpdate() {
         _uiState.update { it.copy(forceUpdateInfo = null, showForceUpdateDialog = false, resolvedMarket = null) }
+    }
+
+    // ==================== APK 后台下载 ====================
+
+    fun startApkDownload(url: String, versionCode: Int) {
+        ApkDownloadService.start(context, url, versionCode)
+        val needPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+        _uiState.update {
+            it.copy(
+                apkDownloadStartedMessage = "正在后台下载，请留意通知栏进度",
+                needsNotificationPermissionForDownload = needPermission
+            )
+        }
+    }
+
+    fun dismissApkDownloadStartedMessage() {
+        _uiState.update { it.copy(apkDownloadStartedMessage = null) }
+    }
+
+    fun dismissDownloadPermissionRequest() {
+        _uiState.update { it.copy(needsNotificationPermissionForDownload = false) }
     }
 }
 

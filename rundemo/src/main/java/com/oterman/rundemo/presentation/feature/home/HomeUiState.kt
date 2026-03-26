@@ -73,5 +73,9 @@ data class HomeUiState(
     // 强制更新状态
     val forceUpdateInfo: AppUpdateInfo? = null,
     val showForceUpdateDialog: Boolean = false,
-    val resolvedMarket: MarketUtils.ResolvedMarket? = null
+    val resolvedMarket: MarketUtils.ResolvedMarket? = null,
+
+    // APK 后台下载提示
+    val apkDownloadStartedMessage: String? = null,
+    val needsNotificationPermissionForDownload: Boolean = false
 )
