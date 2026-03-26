@@ -471,6 +471,9 @@ class HomeViewModel(
      * 启动时自动检查版本，仅当 forceUpgrade==true 时弹窗
      */
     fun checkUpdateOnLaunch() {
+        RLog.i(TAG,"checkUpdateOnLaunch return")
+        return
+
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
                 AppUpdateRepository.checkLatestVersion(context)
@@ -516,7 +519,8 @@ class HomeViewModel(
                 PackageManager.PERMISSION_GRANTED
         _uiState.update {
             it.copy(
-                apkDownloadStartedMessage = "正在后台下载，请留意通知栏进度",
+                // 若需要先弹权限弹窗，延迟到权限处理完后再显示 Snackbar，避免遮挡
+                apkDownloadStartedMessage = if (needPermission) null else "正在后台下载，请留意通知栏进度",
                 needsNotificationPermissionForDownload = needPermission
             )
         }
@@ -527,7 +531,12 @@ class HomeViewModel(
     }
 
     fun dismissDownloadPermissionRequest() {
-        _uiState.update { it.copy(needsNotificationPermissionForDownload = false) }
+        _uiState.update {
+            it.copy(
+                needsNotificationPermissionForDownload = false,
+                apkDownloadStartedMessage = "正在后台下载，请留意通知栏进度"
+            )
+        }
     }
 }
 

@@ -67,6 +67,9 @@ import com.oterman.rundemo.presentation.feature.home.tabs.DashboardTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.ProfileTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.UpdateAvailableDialog
 import com.oterman.rundemo.presentation.feature.home.tabs.WifiWarningDialog
+import com.oterman.rundemo.presentation.feature.home.tabs.triggerLocalInstall
+import com.oterman.rundemo.service.update.ApkDownloadService
+import com.oterman.rundemo.service.update.ApkDownloadState
 
 /**
  * Main Home screen with bottom navigation
@@ -155,6 +158,15 @@ fun HomeScreen(
         }
     }
 
+    // APK 下载完成后自动触发安装（用户切换 Tab 后 ProfileTab 不再 compose，需在此层监听）
+    val downloadState by ApkDownloadService.downloadState.collectAsState()
+    LaunchedEffect(downloadState) {
+        if (downloadState is ApkDownloadState.Completed) {
+            val apkFile = (downloadState as ApkDownloadState.Completed).apkFile
+            triggerLocalInstall(context, apkFile.absolutePath)
+        }
+    }
+
     // Handle navigation events
     LaunchedEffect(uiState.navigateToLogin) {
         if (uiState.navigateToLogin) {
@@ -227,7 +239,10 @@ fun HomeScreen(
                     onRunningShoesClick = onNavigateToRunningShoes,
                     onDebugClick = onNavigateToDebug,
                     onContactUsClick = onNavigateToContactUs,
-                    onThemeModeChanged = onThemeModeChanged
+                    onThemeModeChanged = onThemeModeChanged,
+                    onStartApkDownload = { url, versionCode ->
+                        viewModel.startApkDownload(url, versionCode)
+                    }
                 )
             }
         }

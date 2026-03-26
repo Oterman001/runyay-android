@@ -101,7 +101,8 @@ fun ProfileTabContent(
     onRunningShoesClick: () -> Unit = {},
     onDebugClick: () -> Unit = {},
     onContactUsClick: () -> Unit = {},
-    onThemeModeChanged: (ThemeMode) -> Unit = {}
+    onThemeModeChanged: (ThemeMode) -> Unit = {},
+    onStartApkDownload: (url: String, versionCode: Int) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
@@ -119,6 +120,9 @@ fun ProfileTabContent(
 
     LaunchedEffect(downloadState) {
         when (val state = downloadState) {
+            is ApkDownloadState.Completed -> {
+                triggerLocalInstall(context, state.apkFile.absolutePath)
+            }
             is ApkDownloadState.Failed -> {
                 Toast.makeText(context, "下载失败: ${state.message}", Toast.LENGTH_LONG).show()
             }
@@ -415,7 +419,7 @@ fun ProfileTabContent(
                         val isWifi = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
                         if (isWifi) {
                             val url = info.response.downloadUrl ?: return@UpdateAvailableDialog
-                            ApkDownloadService.start(context, url, info.response.versionCode ?: -1)
+                            onStartApkDownload(url, info.response.versionCode ?: -1)
                         } else {
                             showWifiWarning = true
                         }
@@ -468,7 +472,7 @@ fun ProfileTabContent(
 /**
  * 直接触发本地已缓存 APK 的安装界面（兼容 Android 10+ 前台 Activity 启动）
  */
-private fun triggerLocalInstall(context: Context, apkPath: String) {
+internal fun triggerLocalInstall(context: Context, apkPath: String) {
     try {
         val apkFile = File(apkPath)
         if (!apkFile.exists()) {
