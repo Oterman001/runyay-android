@@ -2,11 +2,8 @@ package com.oterman.rundemo.presentation.feature.home.tabs
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -17,19 +14,35 @@ import com.oterman.rundemo.data.network.dto.response.GetLatestVersionResponse
 
 /**
  * 发现新版本弹窗
+ * @param isAlreadyDownloaded 是否已在本地缓存，true 时显示"直接安装"文案
  */
 @Composable
 fun UpdateAvailableDialog(
     info: GetLatestVersionResponse,
+    isAlreadyDownloaded: Boolean = false,
     onUpdate: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val isForce = info.forceUpgrade == true
+    val title = if (isAlreadyDownloaded) "新版本已就绪 ${info.versionName ?: ""}"
+                else "发现新版本 ${info.versionName ?: ""}"
+    val confirmText = if (isAlreadyDownloaded) "立即安装" else "立即更新"
+
     AlertDialog(
         onDismissRequest = { if (!isForce) onDismiss() },
-        title = { Text("发现新版本 ${info.versionName ?: ""}") },
+        title = { Text(title) },
         text = {
             Column {
+                if (isAlreadyDownloaded) {
+                    Text(
+                        text = "安装包已下载，可直接安装",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (!info.changelog.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
                 if (!info.changelog.isNullOrBlank()) {
                     Text(
                         text = info.changelog,
@@ -40,7 +53,7 @@ fun UpdateAvailableDialog(
         },
         confirmButton = {
             TextButton(onClick = onUpdate) {
-                Text("立即更新")
+                Text(confirmText)
             }
         },
         dismissButton = if (!isForce) {
@@ -67,31 +80,5 @@ fun WifiWarningDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("取消") }
         }
-    )
-}
-
-/**
- * 下载进度弹窗（不可取消）
- */
-@Composable
-fun DownloadProgressDialog(progress: Float) {
-    val percent = (progress * 100).toInt()
-    AlertDialog(
-        onDismissRequest = {},
-        title = { Text("正在下载新版本") },
-        text = {
-            Column {
-                Text(
-                    text = "$percent%",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {}
     )
 }

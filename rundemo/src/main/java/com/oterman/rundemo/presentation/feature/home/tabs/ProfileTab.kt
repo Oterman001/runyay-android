@@ -1,8 +1,13 @@
 package com.oterman.rundemo.presentation.feature.home.tabs
 
+import android.content.Context
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.widget.Toast
+import androidx.core.content.FileProvider
+import com.oterman.rundemo.util.RLog
+import java.io.File
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,7 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.data.local.PreferencesManager
-import com.oterman.rundemo.data.network.dto.response.GetLatestVersionResponse
+import com.oterman.rundemo.data.repository.AppUpdateInfo
 import com.oterman.rundemo.data.repository.AppUpdateRepository
 import com.oterman.rundemo.presentation.components.trajectory.TrajectoryColorMode
 import com.oterman.rundemo.service.update.ApkDownloadService
@@ -107,7 +112,7 @@ fun ProfileTabContent(
 
     // App update state
     var isCheckingUpdate by remember { mutableStateOf(false) }
-    var updateInfo by remember { mutableStateOf<GetLatestVersionResponse?>(null) }
+    var updateInfo by remember { mutableStateOf<AppUpdateInfo?>(null) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var showWifiWarning by remember { mutableStateOf(false) }
     val downloadState by ApkDownloadService.downloadState.collectAsState()
@@ -327,7 +332,7 @@ fun ProfileTabContent(
                                 coroutineScope.launch {
                                     isCheckingUpdate = true
                                     val result = withContext(Dispatchers.IO) {
-                                        AppUpdateRepository.checkLatestVersion()
+                                        AppUpdateRepository.checkLatestVersion(context)
                                     }
                                     isCheckingUpdate = false
                                     result.onSuccess { info ->
@@ -394,18 +399,26 @@ fun ProfileTabContent(
 
         // App update dialogs
         if (showUpdateDialog && updateInfo != null) {
+            val info = updateInfo!!
             UpdateAvailableDialog(
-                info = updateInfo!!,
+                info = info.response,
+                isAlreadyDownloaded = info.isAlreadyDownloaded,
                 onUpdate = {
                     showUpdateDialog = false
-                    val connectivityManager = context.getSystemService(ConnectivityManager::class.java)
-                    val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
-                    val isWifi = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-                    if (isWifi) {
-                        val url = updateInfo?.downloadUrl ?: return@UpdateAvailableDialog
-                        ApkDownloadService.start(context, url)
+                    if (info.isAlreadyDownloaded && info.localApkPath != null) {
+                        // 已下载，直接触发安装
+                        triggerLocalInstall(context, info.localApkPath)
                     } else {
-                        showWifiWarning = true
+                        // 需要下载
+                        val connectivityManager = context.getSystemService(ConnectivityManager::class.java)
+                        val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+                        val isWifi = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+                        if (isWifi) {
+                            val url = info.response.downloadUrl ?: return@UpdateAvailableDialog
+                            ApkDownloadService.start(context, url, info.response.versionCode ?: -1)
+                        } else {
+                            showWifiWarning = true
+                        }
                     }
                 },
                 onDismiss = { showUpdateDialog = false }
@@ -416,16 +429,12 @@ fun ProfileTabContent(
             WifiWarningDialog(
                 onConfirm = {
                     showWifiWarning = false
-                    val url = updateInfo?.downloadUrl ?: return@WifiWarningDialog
-                    ApkDownloadService.start(context, url)
+                    val info = updateInfo ?: return@WifiWarningDialog
+                    val url = info.response.downloadUrl ?: return@WifiWarningDialog
+                    ApkDownloadService.start(context, url, info.response.versionCode ?: -1)
                 },
                 onDismiss = { showWifiWarning = false }
             )
-        }
-
-        val currentDownloadState = downloadState
-        if (currentDownloadState is ApkDownloadState.Downloading) {
-            DownloadProgressDialog(progress = currentDownloadState.progress)
         }
 
         // Trajectory color mode bottom sheet
@@ -453,6 +462,29 @@ fun ProfileTabContent(
             )
         }
 
+    }
+}
+
+/**
+ * 直接触发本地已缓存 APK 的安装界面（兼容 Android 10+ 前台 Activity 启动）
+ */
+private fun triggerLocalInstall(context: Context, apkPath: String) {
+    try {
+        val apkFile = File(apkPath)
+        if (!apkFile.exists()) {
+            Toast.makeText(context, "安装包文件不存在，请重新下载", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(installIntent)
+    } catch (e: Exception) {
+        RLog.e("ProfileTab", "触发本地安装失败", e)
+        Toast.makeText(context, "启动安装失败，请重试", Toast.LENGTH_SHORT).show()
     }
 }
 

@@ -76,6 +76,10 @@ object Constants {
         // Token refresh
         const val KEY_LAST_DAILY_TOKEN_REFRESH_DATE = "last_daily_token_refresh_date"
         const val KEY_LAST_LOGIN_DATE = "last_login_date"
+
+        // Downloaded APK cache
+        const val KEY_DOWNLOADED_APK_VERSION_CODE = "downloaded_apk_version_code"
+        const val KEY_DOWNLOADED_APK_PATH = "downloaded_apk_path"
     }
     
     /**

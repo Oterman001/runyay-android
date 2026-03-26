@@ -3,6 +3,8 @@ package com.oterman.rundemo
 import android.app.Application
 import android.content.Context
 import coil.Coil
+import com.oterman.rundemo.data.local.PreferencesManager
+import java.io.File
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
@@ -29,6 +31,23 @@ class MyRunApplication: Application() {
 
         //初始化组件化基础库, 所有友盟业务SDK都必须调用此初始化接口。
         UMConfigure.init(this, "69a930fe6f259537c76ddab0", BuildConfig.UMENG_CHANNEL, UMConfigure.DEVICE_TYPE_PHONE, "");
+
+        cleanupOldDownloadedApk()
+    }
+
+    /**
+     * 若当前版本已 >= 已缓存的下载版本，说明更新已完成，清理旧 APK 文件和缓存记录
+     */
+    private fun cleanupOldDownloadedApk() {
+        val prefs = PreferencesManager(this)
+        val storedVersionCode = prefs.getDownloadedApkVersionCode()
+        if (storedVersionCode > 0 && BuildConfig.VERSION_CODE >= storedVersionCode) {
+            prefs.getDownloadedApkPath()?.let { path ->
+                val file = File(path)
+                if (file.exists()) file.delete()
+            }
+            prefs.clearDownloadedApkInfo()
+        }
     }
 
     private fun initCoilImageLoader() {

@@ -474,5 +474,27 @@ class PreferencesManager(context: Context) {
     fun getLastLoginDate(): String? {
         return prefs.getString(Constants.PreferenceKeys.KEY_LAST_LOGIN_DATE, null)
     }
+
+    // ==================== Downloaded APK Cache ====================
+
+    fun saveDownloadedApkInfo(versionCode: Int, path: String) {
+        prefs.edit()
+            .putInt(Constants.PreferenceKeys.KEY_DOWNLOADED_APK_VERSION_CODE, versionCode)
+            .putString(Constants.PreferenceKeys.KEY_DOWNLOADED_APK_PATH, path)
+            .apply()
+    }
+
+    fun getDownloadedApkVersionCode(): Int =
+        prefs.getInt(Constants.PreferenceKeys.KEY_DOWNLOADED_APK_VERSION_CODE, -1)
+
+    fun getDownloadedApkPath(): String? =
+        prefs.getString(Constants.PreferenceKeys.KEY_DOWNLOADED_APK_PATH, null)
+
+    fun clearDownloadedApkInfo() {
+        prefs.edit()
+            .remove(Constants.PreferenceKeys.KEY_DOWNLOADED_APK_VERSION_CODE)
+            .remove(Constants.PreferenceKeys.KEY_DOWNLOADED_APK_PATH)
+            .apply()
+    }
 }
 
