@@ -29,8 +29,15 @@ object AppUpdateRepository {
             val response = RetrofitClient.versionApi.getLatestVersion(request)
             if (response.isSuccess()) {
                 val versionResponse = response.data
-                    ?.getLatestVersionResponseDto
+                    ?.getLatestVersionResponse
                     ?.firstOrNull()
+                    ?.let { resp ->
+                        val cleanUrl = resp.downloadUrl?.let { url ->
+                            val secondIdx = url.indexOf("http", 1)
+                            if (secondIdx > 0) url.substring(secondIdx) else url
+                        }
+                        resp.copy(downloadUrl = cleanUrl)
+                    }
                 RLog.d(TAG, "Latest version: ${versionResponse?.versionCode}, current: ${BuildConfig.VERSION_CODE}")
                 if (versionResponse != null && (versionResponse.versionCode ?: 0) > BuildConfig.VERSION_CODE) {
                     Result.success(versionResponse)
