@@ -44,17 +44,21 @@ data class PeriodStatistics(
     }
 
     /**
-     * Get formatted distance progress percentage
+     * Get formatted distance progress percentage (uncapped, can exceed 100%)
      */
     fun getDistanceProgressPercent(): String {
-        return String.format("%.1f%%", getDistanceProgress() * 100)
+        return if (distanceGoal > 0) {
+            String.format("%.1f%%", (totalDistance / distanceGoal) * 100)
+        } else "0.0%"
     }
 
     /**
-     * Get formatted duration progress percentage
+     * Get formatted duration progress percentage (uncapped, can exceed 100%)
      */
     fun getDurationProgressPercent(): String {
-        return String.format("%.1f%%", getDurationProgress() * 100)
+        return if (durationGoal > 0) {
+            String.format("%.1f%%", (totalDuration / durationGoal) * 100)
+        } else "0.0%"
     }
 
     /**

@@ -40,19 +40,30 @@ fun TotalRunVdotCard(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             // Left - Total Distance
+            val distanceText = if (stats.totalDistance >= 1000)
+                String.format("%.0f", stats.totalDistance)
+            else
+                String.format("%.1f", stats.totalDistance)
+            val distanceFontSize = when {
+                distanceText.length >= 5 -> 38.sp
+                distanceText.length == 4 -> 46.sp
+                else -> 55.sp
+            }
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onDistanceClick() }
+                modifier = Modifier.weight(1f).clickable { onDistanceClick() }
             ) {
                 Row(
                     verticalAlignment = Alignment.Bottom
                 ) {
                     Text(
-                        text =  if(stats.totalDistance >=1000) String.format("%.0f", stats.totalDistance) else String.format("%.1f", stats.totalDistance),
+                        text = distanceText,
                         color = RunTheme.colorScheme.blue,
-                        fontSize = 55.sp,
+                        fontSize = distanceFontSize,
                         fontWeight = FontWeight.SemiBold,
-                        fontFamily = RunYayFontFamily
+                        fontFamily = RunYayFontFamily,
+                        maxLines = 1,
+                        softWrap = false
                     )
                     Text(
                         text = "公里",
@@ -69,26 +80,28 @@ fun TotalRunVdotCard(
             }
 
             // Right - VDOT
+            val vdotText = String.format("%.1f", stats.overallVdot)
+            val vdotFontSize = when {
+                vdotText.length >= 5 -> 38.sp
+                vdotText.length == 4 -> 46.sp
+                else -> 55.sp
+            }
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onVdotClick() }
+                modifier = Modifier.weight(1f).clickable { onVdotClick() }
             ) {
                 Row(
                     verticalAlignment = Alignment.Bottom
                 ) {
                     Text(
-                        text = String.format("%.1f", stats.overallVdot),
+                        text = vdotText,
                         color = RunTheme.colorScheme.blue,
-                        fontSize = 55.sp,
+                        fontSize = vdotFontSize,
                         fontWeight = FontWeight.SemiBold,
-                        fontFamily = RunYayFontFamily
+                        fontFamily = RunYayFontFamily,
+                        maxLines = 1,
+                        softWrap = false
                     )
-//                    Text(
-//                        text = "",
-//                        color = SecondaryTextColor,
-//                        fontSize = 12.sp,
-//                        modifier = Modifier.padding(bottom = 10.dp, start = 2.dp)
-//                    )
                 }
                 Text(
                     text = "跑力",

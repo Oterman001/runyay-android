@@ -1,6 +1,7 @@
 package com.oterman.rundemo.presentation.feature.share.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -60,7 +61,8 @@ fun ShareBottomBar(
                     .weight(1f)
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
-                enabled = !busy
+                enabled = !busy,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
@@ -78,7 +80,8 @@ fun ShareBottomBar(
                     .weight(1f)
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
-                enabled = !busy
+                enabled = !busy,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
             ) {
                 if (isSaving) {
                     CircularProgressIndicator(
@@ -109,7 +112,8 @@ fun ShareBottomBar(
                     containerColor = RunBlue,
                     contentColor = Color.White
                 ),
-                enabled = !busy
+                enabled = !busy,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
             ) {
                 if (isGenerating) {
                     CircularProgressIndicator(

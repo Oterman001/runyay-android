@@ -18,6 +18,8 @@ import com.oterman.rundemo.presentation.components.MetricTagChip
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Watch
@@ -178,8 +180,9 @@ fun RunDetailHeaderDataCard(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.width(avatarSize)
+                                modifier = Modifier.widthIn(min = avatarSize, max = 96.dp)
                             )
                         }
                     }
