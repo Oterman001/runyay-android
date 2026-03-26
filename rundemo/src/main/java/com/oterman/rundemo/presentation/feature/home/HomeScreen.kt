@@ -44,12 +44,16 @@ import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
@@ -106,6 +110,16 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         viewModel.startSyncIfNeeded()
         viewModel.checkUpdateOnLaunch()
+    }
+
+    // ON_RESUME 重检版本（用户从应用市场返回后触发）
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.checkUpdateOnLaunch()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // 同步成功消息 Snackbar（展示 1 秒后自动关闭）
@@ -258,8 +272,17 @@ fun HomeScreen(
         UpdateAvailableDialog(
             info = forceUpdateInfo.response,
             isAlreadyDownloaded = forceUpdateInfo.isAlreadyDownloaded,
+            resolvedMarket = uiState.resolvedMarket,
             onUpdate = {
-                if (forceUpdateInfo.isAlreadyDownloaded && forceUpdateInfo.localApkPath != null) {
+                val resolved = uiState.resolvedMarket
+                if (resolved != null) {
+                    viewModel.openMarketForUpdate()
+                    // 强制更新：对话框保持，等用户从市场回来后 ON_RESUME 重新验证版本
+                    // 非强制更新：dismiss
+                    if (forceUpdateInfo.response.forceUpgrade != true) {
+                        viewModel.dismissForceUpdateDialog()
+                    }
+                } else if (forceUpdateInfo.isAlreadyDownloaded && forceUpdateInfo.localApkPath != null) {
                     triggerInstall(context, forceUpdateInfo.localApkPath)
                     viewModel.dismissForceUpdateDialog()
                 } else {

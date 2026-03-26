@@ -16,5 +16,7 @@ data class GetLatestVersionResponse(
     @SerializedName("forceUpgrade")
     val forceUpgrade: Boolean?,
     @SerializedName("fileSize")
-    val fileSize: Long?
+    val fileSize: Long?,
+    @SerializedName("marketUrls")
+    val marketUrls: Map<String, String>? = null
 )

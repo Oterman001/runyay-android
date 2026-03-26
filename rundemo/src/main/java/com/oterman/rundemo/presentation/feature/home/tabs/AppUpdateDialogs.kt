@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.data.network.dto.response.GetLatestVersionResponse
+import com.oterman.rundemo.util.MarketUtils
 
 /**
  * 发现新版本弹窗
@@ -20,13 +21,18 @@ import com.oterman.rundemo.data.network.dto.response.GetLatestVersionResponse
 fun UpdateAvailableDialog(
     info: GetLatestVersionResponse,
     isAlreadyDownloaded: Boolean = false,
+    resolvedMarket: MarketUtils.ResolvedMarket? = null,
     onUpdate: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val isForce = info.forceUpgrade == true
     val title = if (isAlreadyDownloaded) "新版本已就绪 ${info.versionName ?: ""}"
                 else "发现新版本 ${info.versionName ?: ""}"
-    val confirmText = if (isAlreadyDownloaded) "立即安装" else "立即更新"
+    val confirmText = when {
+        resolvedMarket != null -> "前往 ${resolvedMarket.label}"
+        isAlreadyDownloaded    -> "立即安装"
+        else                   -> "立即更新"
+    }
 
     AlertDialog(
         onDismissRequest = { if (!isForce) onDismiss() },

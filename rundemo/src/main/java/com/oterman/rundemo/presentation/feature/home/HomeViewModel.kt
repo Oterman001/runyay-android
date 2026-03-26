@@ -20,6 +20,7 @@ import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.service.sync.DataSyncForegroundService
 import com.oterman.rundemo.service.sync.SyncUiState
 import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
+import com.oterman.rundemo.util.MarketUtils
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -475,10 +476,26 @@ class HomeViewModel(
             }
             result.onSuccess { info ->
                 if (info != null && info.response.forceUpgrade == true) {
-                    _uiState.update { it.copy(forceUpdateInfo = info, showForceUpdateDialog = true) }
+                    val resolved = MarketUtils.resolve(context, info.response.marketUrls)
+                    _uiState.update {
+                        it.copy(
+                            forceUpdateInfo = info,
+                            showForceUpdateDialog = true,
+                            resolvedMarket = resolved
+                        )
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * 跳转到应用市场进行更新。
+     * 强制更新时不 dismiss 对话框，等用户从市场回来后 ON_RESUME 重新验证版本。
+     */
+    fun openMarketForUpdate() {
+        val resolved = _uiState.value.resolvedMarket ?: return
+        MarketUtils.open(context, resolved)
     }
 
     fun dismissForceUpdateDialog() {
@@ -486,7 +503,7 @@ class HomeViewModel(
     }
 
     fun clearForceUpdate() {
-        _uiState.update { it.copy(forceUpdateInfo = null, showForceUpdateDialog = false) }
+        _uiState.update { it.copy(forceUpdateInfo = null, showForceUpdateDialog = false, resolvedMarket = null) }
     }
 }
 

@@ -1,0 +1,605 @@
+ ▐▛███▜▌   Claude Code v2.1.77
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    ~/0oppo/0code/DemoHub
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Plan to implement                                                            │
+│                                                                              │
+│ 应用市场跳转更新方案                                                         │
+│                                                                              │
+│ Context                                                                      │
+│                                                                              │
+│ 当前更新流程直接从 OSS 下载 APK，耗费服务端流量。若 App                      │
+│ 已在华为/小米/OPPO/Vivo/Google Play 上架，优先跳转市场更新可节省流量。       │
+│ 需处理"部分市场已上架、部分未上架"的情况，且要兼容 Google Play。             │
+│                                                                              │
+│ ---                                                                          │
+│ 核心设计：服务端返回 Map，客户端按已安装市场匹配                             │
+│                                                                              │
+│ 为什么用 Map 而不是单个 marketUrl                                            │
+│                                                                              │
+│ 单个字段只能覆盖一家市场。不同设备（华为/小米/OPPO/Google）需要各自的跳转链  │
+│ 接，且各家市场的 URI Scheme 不同。服务端用 Map                               │
+│ 分别维护每家市场的上架状态，只有上架了才填写对应                             │
+│ key，客户端根据设备已安装的市场做匹配。                                      │
+│                                                                              │
+│ ---                                                                          │
+│ 服务端响应字段设计                                                           │
+│                                                                              │
+│ // GetLatestVersionResponse.kt 新增                                          │
+│ @SerializedName("marketUrls")                                                │
+│ val marketUrls: Map<String, String>? = null                                  │
+│                                                                              │
+│ JSON 示例（App 已在 OPPO、华为上架，未上架小米/Vivo/Google）：               │
+│                                                                              │
+│ {                                                                            │
+│   "versionName": "2.1.0",                                                    │
+│   "versionCode": 210,                                                        │
+│   "forceUpgrade": true,                                                      │
+│   "downloadUrl": "https://oss.example.com/app.apk",                          │
+│   "marketUrls": {                                                            │
+│     "oppo":   "oppomarket://details?id=com.oterman.rundemo",                 │
+│     "huawei": "appmarket://details?id=com.oterman.rundemo"                   │
+│   }                                                                          │
+│ }                                                                            │
+│                                                                              │
+│ 未填写 xiaomi/vivo/google → 客户端识别为"该市场未上架"→ 不跳转该市场。       │
+│                                                                              │
+│ ---                                                                          │
+│ 市场映射表（客户端）                                                         │
+│                                                                              │
+│ ┌─────────┬──────────┬───────────────┬────────────────────────────────────┐  │
+│ │ 市场标  │          │               │                                    │  │
+│ │ 识 (ser │  显示名  │ 设备应用包名  │             URI Scheme             │  │
+│ │ verKey) │          │               │                                    │  │
+│ ├─────────┼──────────┼───────────────┼────────────────────────────────────┤  │
+│ │ oppo    │ OPPO     │ com.heytap.ma │ oppomarket://details?id=<pkg>      │  │
+│ │         │ 软件商店 │ rket          │                                    │  │
+│ ├─────────┼──────────┼───────────────┼────────────────────────────────────┤  │
+│ │ xiaomi  │ 小米应用 │ com.xiaomi.ma │ mimarket://details?id=<pkg>        │  │
+│ │         │ 商店     │ rket          │                                    │  │
+│ ├─────────┼──────────┼───────────────┼────────────────────────────────────┤  │
+│ │ vivo    │ Vivo     │ com.bbk.appst │ vivomarket://details?id=<pkg>      │  │
+│ │         │ 应用商店 │ ore           │                                    │  │
+│ ├─────────┼──────────┼───────────────┼────────────────────────────────────┤  │
+│ │ huawei  │ 华为应用 │ com.huawei.ap │ appmarket://details?id=<pkg>       │  │
+│ │         │ 市场     │ pmarket       │                                    │  │
+│ ├─────────┼──────────┼───────────────┼────────────────────────────────────┤  │
+│ │ google  │ Google   │ com.android.v │ https://play.google.com/store/apps │  │
+│ │         │ Play     │ ending        │ /details?id=<pkg>                  │  │
+│ └─────────┴──────────┴───────────────┴────────────────────────────────────┘  │
+│                                                                              │
+│ ---                                                                          │
+│ 匹配逻辑（客户端）                                                           │
+│                                                                              │
+│ for each Market in MARKETS (按优先级排列):                                   │
+│     if market app is installed on device:                                    │
+│         if marketUrls[market.serverKey] exists:                              │
+│             → 使用该 URL 跳转，停止搜索                                      │
+│         else:                                                                │
+│             → 该市场未上架，跳过（不要用兜底 scheme 打开一个找不到 App       │
+│ 的市场）                                                                     │
+│ → 所有市场均无匹配 → 退化为 APK 下载流程                                     │
+│                                                                              │
+│ 关键规则：客户端不自行构造 scheme，完全依赖服务端提供的                      │
+│ URL。这样能保证"未上架"的市场不会被错误打开（否则用户在市场里找不到 App      │
+│ 体验差）。                                                                   │
+│                                                                              │
+│ ---                                                                          │
+│ 涉及文件                                                                     │
+│                                                                              │
+│ ┌──────────────────────────────────────────────┬──────────────────────────┐  │
+│ │                     文件                     │           改动           │  │
+│ ├──────────────────────────────────────────────┼──────────────────────────┤  │
+│ │ data/network/dto/response/GetLatestVersionRe │ 新增 marketUrls:         │  │
+│ │ sponse.kt                                    │ Map<String, String>?     │  │
+│ ├──────────────────────────────────────────────┼──────────────────────────┤  │
+│ │ util/MarketUtils.kt (新建)                   │ 市场定义、设备探测、匹配 │  │
+│ │                                              │ 、跳转                   │  │
+│ ├──────────────────────────────────────────────┼──────────────────────────┤  │
+│ │                                              │ 新增 resolvedMarket:     │  │
+│ │ presentation/feature/home/HomeUiState.kt     │ ResolvedMarket? (label + │  │
+│ │                                              │  url)                    │  │
+│ ├──────────────────────────────────────────────┼──────────────────────────┤  │
+│ │                                              │ checkUpdateOnLaunch()    │  │
+│ │ presentation/feature/home/HomeViewModel.kt   │ 调用匹配逻辑；新增       │  │
+│ │                                              │ openMarketForUpdate()    │  │
+│ ├──────────────────────────────────────────────┼──────────────────────────┤  │
+│ │                                              │ onUpdate                 │  │
+│ │ presentation/feature/home/HomeScreen.kt      │ 优先走市场；ON_RESUME    │  │
+│ │                                              │ 触发重检                 │  │
+│ ├──────────────────────────────────────────────┼──────────────────────────┤  │
+│ │ presentation/feature/home/tabs/AppUpdateDial │ 按钮文案动态切换         │  │
+│ │ ogs.kt                                       │                          │  │
+│ ├──────────────────────────────────────────────┼──────────────────────────┤  │
+│ │ AndroidManifest.xml                          │ <queries> 声明各市场包名 │  │
+│ └──────────────────────────────────────────────┴──────────────────────────┘  │
+│                                                                              │
+│ ---                                                                          │
+│ 详细实现                                                                     │
+│                                                                              │
+│ 1. GetLatestVersionResponse.kt                                               │
+│                                                                              │
+│ @SerializedName("marketUrls")                                                │
+│ val marketUrls: Map<String, String>? = null                                  │
+│                                                                              │
+│ 2. 新建 MarketUtils.kt                                                       │
+│                                                                              │
+│ object MarketUtils {                                                         │
+│                                                                              │
+│     data class MarketDef(val serverKey: String, val label: String, val       │
+│ pkgName: String)                                                             │
+│                                                                              │
+│     private val MARKETS = listOf(                                            │
+│         MarketDef("oppo",   "OPPO 软件商店", "com.heytap.market"),           │
+│         MarketDef("xiaomi", "小米应用商店",   "com.xiaomi.market"),          │
+│         MarketDef("vivo",   "Vivo 应用商店", "com.bbk.appstore"),            │
+│         MarketDef("huawei", "华为应用市场",   "com.huawei.appmarket"),       │
+│         MarketDef("google", "Google Play",   "com.android.vending"),         │
+│     )                                                                        │
+│                                                                              │
+│     data class ResolvedMarket(val label: String, val url: String)            │
+│                                                                              │
+│     /**                                                                      │
+│      * 遍历已知市场，返回第一个「设备已安装 + 服务端已上架」的市场和跳转     │
+│ URL。                                                                        │
+│      * 未上架的市场（marketUrls 中无对应 key）直接跳过，不构造兜底链接。     │
+│      */                                                                      │
+│     fun resolve(context: Context, marketUrls: Map<String, String>?):         │
+│ ResolvedMarket? {                                                            │
+│         if (marketUrls.isNullOrEmpty()) return null                          │
+│         val pm = context.packageManager                                      │
+│         return MARKETS.firstNotNullOfOrNull { market ->                      │
+│             val url = marketUrls[market.serverKey] ?:                        │
+│ return@firstNotNullOfOrNull null                                             │
+│             val installed = runCatching { pm.getPackageInfo(market.pkgName,  │
+│ 0) }.isSuccess                                                               │
+│             if (installed) ResolvedMarket(market.label, url) else null       │
+│         }                                                                    │
+│     }                                                                        │
+│                                                                              │
+│     fun open(context: Context, resolved: ResolvedMarket): Boolean {          │
+│         return runCatching {                                                 │
+│             val uri = Uri.parse(resolved.url)                                │
+│             context.startActivity(                                           │
+│                 Intent(Intent.ACTION_VIEW,                                   │
+│ uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)                                 │
+│             )                                                                │
+│             true                                                             │
+│         }.getOrDefault(false)                                                │
+│     }                                                                        │
+│ }                                                                            │
+│                                                                              │
+│ 3. HomeUiState.kt                                                            │
+│                                                                              │
+│ val resolvedMarket: MarketUtils.ResolvedMarket? = null  // 新增              │
+│                                                                              │
+│ 4. HomeViewModel.kt — checkUpdateOnLaunch() 改造                             │
+│                                                                              │
+│ fun checkUpdateOnLaunch() {                                                  │
+│     viewModelScope.launch {                                                  │
+│         val result = withContext(Dispatchers.IO) {                           │
+│             AppUpdateRepository.checkLatestVersion(context)                  │
+│         }                                                                    │
+│         result.onSuccess { info ->                                           │
+│             if (info != null && info.response.forceUpgrade == true) {        │
+│                 val resolved = MarketUtils.resolve(context,                  │
+│ info.response.marketUrls)                                                    │
+│                 _uiState.update {                                            │
+│                     it.copy(                                                 │
+│                         forceUpdateInfo = info,                              │
+│                         showForceUpdateDialog = true,                        │
+│                         resolvedMarket = resolved                            │
+│                     )                                                        │
+│                 }                                                            │
+│             }                                                                │
+│         }                                                                    │
+│     }                                                                        │
+│ }                                                                            │
+│                                                                              │
+│ fun openMarketForUpdate() {                                                  │
+│     val resolved = _uiState.value.resolvedMarket ?: return                   │
+│     MarketUtils.open(context, resolved)                                      │
+│     // 强制更新：不 dismiss，等用户从市场回来后 checkUpdateOnLaunch          │
+│ 重新验证版本                                                                 │
+│ }                                                                            │
+│                                                                              │
+│ 5. HomeScreen.kt — ON_RESUME 重检 + onUpdate 逻辑                            │
+│                                                                              │
+│ // ON_RESUME 重检（用户从市场返回后）                                        │
+│ val lifecycleOwner = LocalLifecycleOwner.current                             │
+│ DisposableEffect(lifecycleOwner) {                                           │
+│     val observer = LifecycleEventObserver { _, event ->                      │
+│         if (event == Lifecycle.Event.ON_RESUME)                              │
+│ viewModel.checkUpdateOnLaunch()                                              │
+│     }                                                                        │
+│     lifecycleOwner.lifecycle.addObserver(observer)                           │
+│     onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }          │
+│ }                                                                            │
+│                                                                              │
+│ // onUpdate 改造                                                             │
+│ onUpdate = {                                                                 │
+│     val resolved = uiState.resolvedMarket                                    │
+│     if (resolved != null) {                                                  │
+│         viewModel.openMarketForUpdate()                                      │
+│         // 非强制更新才 dismiss（强制更新对话框保持，等回来重检）            │
+│         if (forceUpdateInfo.response.forceUpgrade != true) {                 │
+│             viewModel.dismissForceUpdateDialog()                             │
+│         }                                                                    │
+│     } else {                                                                 │
+│         // 无可用市场 → 原有 APK 下载流程（WiFi 检查 / ApkDownloadService）  │
+│         ...existing download logic...                                        │
+│     }                                                                        │
+│ }                                                                            │
+│                                                                              │
+│ 6. AppUpdateDialogs.kt — 新增参数，动态按钮文案                              │
+│                                                                              │
+│ @Composable                                                                  │
+│ fun UpdateAvailableDialog(                                                   │
+│     info: GetLatestVersionResponse,                                          │
+│     isAlreadyDownloaded: Boolean = false,                                    │
+│     resolvedMarket: MarketUtils.ResolvedMarket? = null,  // 新增             │
+│     onUpdate: () -> Unit,                                                    │
+│     onDismiss: () -> Unit                                                    │
+│ ) {                                                                          │
+│     val confirmText = when {                                                 │
+│         resolvedMarket != null -> "前往 ${resolvedMarket.label}"  // e.g.    │
+│ "前往 OPPO 软件商店"                                                         │
+│         isAlreadyDownloaded    -> "立即安装"                                 │
+│         else                   -> "立即更新"                                 │
+│     }                                                                        │
+│     ...                                                                      │
+│ }                                                                            │
+│                                                                              │
+│ 7. AndroidManifest.xml — 声明 queries（Android 11+）                         │
+│                                                                              │
+│ <queries>                                                                    │
+│     <package android:name="com.heytap.market" />                             │
+│     <package android:name="com.huawei.appmarket" />                          │
+│     <package android:name="com.xiaomi.market" />                             │
+│     <package android:name="com.bbk.appstore" />                              │
+│     <package android:name="com.android.vending" />                           │
+│ </queries>                                                                   │
+│                                                                              │
+│ ---                                                                          │
+│ 各场景行为                                                                   │
+│                                                                              │
+│ ┌────────────────────────────┬────────────────────────────────────────────┐  │
+│ │            场景            │                    行为                    │  │
+│ ├────────────────────────────┼────────────────────────────────────────────┤  │
+│ │ OPPO 设备 + App 已在 OPPO  │ 按钮"前往 OPPO 软件商店"，点击跳转市场     │  │
+│ │ 市场上架                   │                                            │  │
+│ ├────────────────────────────┼────────────────────────────────────────────┤  │
+│ │ 小米设备 + App             │                                            │  │
+│ │ 未在小米市场上架（但有     │ 无匹配，退化 APK 下载                      │  │
+│ │ OPPO 版本）                │                                            │  │
+│ ├────────────────────────────┼────────────────────────────────────────────┤  │
+│ │ Google Play 设备 + google  │ 按钮"前往 Google Play"                     │  │
+│ │ key 存在                   │                                            │  │
+│ ├────────────────────────────┼────────────────────────────────────────────┤  │
+│ │ 华为设备 + huawei key 存在 │ 按钮"前往华为应用市场"                     │  │
+│ ├────────────────────────────┼────────────────────────────────────────────┤  │
+│ │ 所有 key 均不匹配（设备无  │ 退化 APK 下载（现有流程）                  │  │
+│ │ 已上架市场）               │                                            │  │
+│ ├────────────────────────────┼────────────────────────────────────────────┤  │
+│ │                            │ 对话框保持；从市场回来后 ON_RESUME 重新调  │  │
+│ │ 强制更新 + 跳市场成功      │ checkUpdateOnLaunch；版本更新后对话框自动  │  │
+│ │                            │ 消失                                       │  │
+│ ├────────────────────────────┼────────────────────────────────────────────┤  │
+│ │ 非强制更新 + 跳市场        │ 跳转后 dialog dismiss                      │  │
+│ └────────────────────────────┴────────────────────────────────────────────┘  │
+│                                                                              │
+│ ---                                                                          │
+│ 兜底保证                                                                     │
+│                                                                              │
+│ ApkDownloadService、WifiWarningDialog、triggerInstall()                      │
+│ 全部保留，作为无任何市场匹配时的兜底，不破坏现有流程。                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+⏺ Searched for 3 patterns, read 5 files (ctrl+o to expand)
+
+⏺ Now let me read HomeScreen.kt to understand the current update flow:
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ Now I have a complete picture. Let me implement all the changes:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/data/network/dto/response/Get
+        LatestVersionResponse.kt)
+  ⎿  Added 3 lines, removed 1 line
+      16      @SerializedName("forceUpgrade")
+      17      val forceUpgrade: Boolean?,
+      18      @SerializedName("fileSize")
+      19 -    val fileSize: Long?                                        
+      19 +    val fileSize: Long?,                                       
+      20 +    @SerializedName("marketUrls")                              
+      21 +    val marketUrls: Map<String, String>? = null                
+      22  )
+
+⏺ Write(rundemo/src/main/java/com/oterman/rundemo/util/MarketUtils.kt)
+  ⎿  Wrote 44 lines to
+     rundemo/src/main/java/com/oterman/rundemo/util/MarketUtils.kt
+      1 package com.oterman.rundemo.util
+      2 
+      3 import android.content.Context
+      4 import android.content.Intent
+      5 import android.net.Uri
+      6 
+      7 object MarketUtils {
+      8 
+      9     data class MarketDef(val serverKey: String, val label: String
+        , val pkgName: String)
+     … +34 lines (ctrl+o to expand)
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/home/Hom
+        eUiState.kt)
+  ⎿  Added 1 line
+      3  import android.net.Uri
+      4  import com.oterman.rundemo.data.local.entity.RunRecordEntity
+      5  import com.oterman.rundemo.data.repository.AppUpdateInfo
+      6 +import com.oterman.rundemo.util.MarketUtils                     
+      7  
+      8  /**
+      9   * Home screen tab definition
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/home/Hom
+        eUiState.kt)
+  ⎿  Added 2 lines, removed 1 line
+      72  
+      73      // 强制更新状态
+      74      val forceUpdateInfo: AppUpdateInfo? = null,
+      75 -    val showForceUpdateDialog: Boolean = false                 
+      75 +    val showForceUpdateDialog: Boolean = false,                
+      76 +    val resolvedMarket: MarketUtils.ResolvedMarket? = null     
+      77  )
+
+⏺ Now update HomeViewModel.kt — add MarketUtils import and update
+  checkUpdateOnLaunch(), add openMarketForUpdate():
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/home/Hom
+        eViewModel.kt)
+  ⎿  Added 1 line
+      20  import com.oterman.rundemo.service.sync.DataSyncForegroundServi
+          ce
+      21  import com.oterman.rundemo.service.sync.SyncUiState
+      22  import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
+      23 +import com.oterman.rundemo.util.MarketUtils                    
+      24  import com.oterman.rundemo.util.RLog
+      25  import kotlinx.coroutines.Dispatchers
+      26  import kotlinx.coroutines.Job
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/home/Hom
+        eViewModel.kt)
+  ⎿  Added 18 lines, removed 2 lines
+      476              }
+      477              result.onSuccess { info ->
+      478                  if (info != null && info.response.forceUpgrade
+            == true) {
+      479 -                    _uiState.update { it.copy(forceUpdateInfo 
+          -= info, showForceUpdateDialog = true) }                       
+      479 +                    val resolved = MarketUtils.resolve(context
+          +, info.response.marketUrls)                                   
+      480 +                    _uiState.update {                         
+      481 +                        it.copy(                              
+      482 +                            forceUpdateInfo = info,           
+      483 +                            showForceUpdateDialog = true,     
+      484 +                            resolvedMarket = resolved         
+      485 +                        )                                     
+      486 +                    }                                         
+      487                  }
+      488              }
+      489          }
+      490      }
+      491  
+      492 +    /**                                                       
+      493 +     * 跳转到应用市场进行更新。                               
+      494 +     * 强制更新时不 dismiss 对话框，等用户从市场回来后 ON_RESU
+          +ME 重新验证版本。                                             
+      495 +     */                                                       
+      496 +    fun openMarketForUpdate() {                               
+      497 +        val resolved = _uiState.value.resolvedMarket ?: return
+      498 +        MarketUtils.open(context, resolved)                   
+      499 +    }                                                         
+      500 +                                                              
+      501      fun dismissForceUpdateDialog() {
+      502          _uiState.update { it.copy(showForceUpdateDialog = fals
+           e) }
+      503      }
+      504  
+      505      fun clearForceUpdate() {
+      490 -        _uiState.update { it.copy(forceUpdateInfo = null, show
+          -ForceUpdateDialog = false) }                                  
+      506 +        _uiState.update { it.copy(forceUpdateInfo = null, show
+          +ForceUpdateDialog = false, resolvedMarket = null) }           
+      507      }
+      508  }
+      509  
+
+⏺ Now update AppUpdateDialogs.kt to accept resolvedMarket and show dynamic
+  button text:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/home/tab
+        s/AppUpdateDialogs.kt)
+  ⎿  Added 1 line
+      11  import androidx.compose.ui.Modifier
+      12  import androidx.compose.ui.unit.dp
+      13  import com.oterman.rundemo.data.network.dto.response.GetLatestV
+          ersionResponse
+      14 +import com.oterman.rundemo.util.MarketUtils                    
+      15  
+      16  /**
+      17   * 发现新版本弹窗
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/home/tab
+        s/AppUpdateDialogs.kt)
+  ⎿  Added 6 lines, removed 1 line
+      21  fun UpdateAvailableDialog(
+      22      info: GetLatestVersionResponse,
+      23      isAlreadyDownloaded: Boolean = false,
+      24 +    resolvedMarket: MarketUtils.ResolvedMarket? = null,        
+      25      onUpdate: () -> Unit,
+      26      onDismiss: () -> Unit
+      27  ) {
+      28      val isForce = info.forceUpgrade == true
+      29      val title = if (isAlreadyDownloaded) "新版本已就绪 ${info.v
+          ersionName ?: ""}"
+      30                  else "发现新版本 ${info.versionName ?: ""}"
+      30 -    val confirmText = if (isAlreadyDownloaded) "立即安装" else 
+         -"立即更新"                                                     
+      31 +    val confirmText = when {                                   
+      32 +        resolvedMarket != null -> "前往 ${resolvedMarket.label}
+         +"                                                              
+      33 +        isAlreadyDownloaded    -> "立即安装"                   
+      34 +        else                   -> "立即更新"                   
+      35 +    }                                                          
+      36  
+      37      AlertDialog(
+      38          onDismissRequest = { if (!isForce) onDismiss() },
+
+⏺ Now update HomeScreen.kt — add lifecycle observer for ON_RESUME re-check, pass
+   resolvedMarket to dialog, and update onUpdate logic:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/home/Hom
+        eScreen.kt)
+  ⎿  Added 4 lines
+      44  import androidx.activity.compose.rememberLauncherForActivityRes
+          ult
+      45  import androidx.activity.result.contract.ActivityResultContract
+          s
+      46  import androidx.compose.runtime.Composable
+      47 +import androidx.compose.runtime.DisposableEffect               
+      48  import androidx.compose.runtime.LaunchedEffect
+      49  import androidx.compose.runtime.collectAsState
+      50  import androidx.compose.runtime.getValue
+      51  import androidx.compose.runtime.mutableStateOf
+      52  import androidx.compose.runtime.remember
+      53  import androidx.compose.runtime.setValue
+      54 +import androidx.lifecycle.Lifecycle                            
+      55 +import androidx.lifecycle.LifecycleEventObserver               
+      56 +import androidx.lifecycle.compose.LocalLifecycleOwner          
+      57  import kotlinx.coroutines.delay
+      58  import kotlinx.coroutines.launch
+      59  import androidx.compose.ui.Modifier
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/home/Hom
+        eScreen.kt)
+  ⎿  Added 10 lines
+      112          viewModel.checkUpdateOnLaunch()
+      113      }
+      114  
+      115 +    // ON_RESUME 重检版本（用户从应用市场返回后触发）         
+      116 +    val lifecycleOwner = LocalLifecycleOwner.current          
+      117 +    DisposableEffect(lifecycleOwner) {                        
+      118 +        val observer = LifecycleEventObserver { _, event ->   
+      119 +            if (event == Lifecycle.Event.ON_RESUME) viewModel.
+          +checkUpdateOnLaunch()                                         
+      120 +        }                                                     
+      121 +        lifecycleOwner.lifecycle.addObserver(observer)        
+      122 +        onDispose { lifecycleOwner.lifecycle.removeObserver(ob
+          +server) }                                                     
+      123 +    }                                                         
+      124 +                                                              
+      125      // 同步成功消息 Snackbar（展示 1 秒后自动关闭）
+      126      LaunchedEffect(uiState.syncSuccessMessage) {
+      127          uiState.syncSuccessMessage?.let { message ->
+
+⏺ Now update the UpdateAvailableDialog call in HomeScreen.kt to pass
+  resolvedMarket and update the onUpdate logic:
+
+⏺ Update(rundemo/src/main/java/com/oterman/rundemo/presentation/feature/home/Hom
+        eScreen.kt)
+  ⎿  Added 10 lines, removed 1 line
+      272          UpdateAvailableDialog(
+      273              info = forceUpdateInfo.response,
+      274              isAlreadyDownloaded = forceUpdateInfo.isAlreadyDow
+           nloaded,
+      275 +            resolvedMarket = uiState.resolvedMarket,          
+      276              onUpdate = {
+      276 -                if (forceUpdateInfo.isAlreadyDownloaded && for
+          -ceUpdateInfo.localApkPath != null) {                          
+      277 +                val resolved = uiState.resolvedMarket         
+      278 +                if (resolved != null) {                       
+      279 +                    viewModel.openMarketForUpdate()           
+      280 +                    // 强制更新：对话框保持，等用户从市场回来 
+          +后 ON_RESUME 重新验证版本                                     
+      281 +                    // 非强制更新：dismiss                    
+      282 +                    if (forceUpdateInfo.response.forceUpgrade 
+          +!= true) {                                                    
+      283 +                        viewModel.dismissForceUpdateDialog()  
+      284 +                    }                                         
+      285 +                } else if (forceUpdateInfo.isAlreadyDownloaded
+          + && forceUpdateInfo.localApkPath != null) {                   
+      286                      triggerInstall(context, forceUpdateInfo.lo
+           calApkPath)
+      287                      viewModel.dismissForceUpdateDialog()
+      288                  } else {
+
+⏺ Finally, add the <queries> block to AndroidManifest.xml:
+
+⏺ Update(rundemo/src/main/AndroidManifest.xml)
+  ⎿  Added 9 lines
+      16      <!-- APK 安装权限 -->
+      17      <uses-permission android:name="android.permission.REQUEST_I
+          NSTALL_PACKAGES" />
+      18  
+      19 +    <!-- 应用市场包名查询（Android 11+ Package Visibility） -->
+      20 +    <queries>                                                  
+      21 +        <package android:name="com.heytap.market" />           
+      22 +        <package android:name="com.huawei.appmarket" />        
+      23 +        <package android:name="com.xiaomi.market" />           
+      24 +        <package android:name="com.bbk.appstore" />            
+      25 +        <package android:name="com.android.vending" />         
+      26 +    </queries>                                                 
+      27 +                                                               
+      28      <application
+      29          android:allowBackup="true"
+      30          android:icon="@drawable/run_demo"
+
+⏺ Now let me verify the key files look correct:
+
+⏺ Searched for 2 patterns (ctrl+o to expand)
+
+⏺ All changes are in place. Here's a summary of what was implemented:
+
+  7 files changed:
+
+  ┌─────────────────────────────┬────────────────────────────────────────────┐
+  │            File             │                   Change                   │
+  ├─────────────────────────────┼────────────────────────────────────────────┤
+  │ GetLatestVersionResponse.kt │ Added marketUrls: Map<String, String>?     │
+  │                             │ field                                      │
+  ├─────────────────────────────┼────────────────────────────────────────────┤
+  │                             │ New file — market definitions              │
+  │ util/MarketUtils.kt         │ (OPPO/小米/Vivo/华为/Google Play),         │
+  │                             │ resolve() matching logic, open() launcher  │
+  ├─────────────────────────────┼────────────────────────────────────────────┤
+  │ HomeUiState.kt              │ Added resolvedMarket:                      │
+  │                             │ MarketUtils.ResolvedMarket? field          │
+  ├─────────────────────────────┼────────────────────────────────────────────┤
+  │                             │ checkUpdateOnLaunch() now calls            │
+  │ HomeViewModel.kt            │ MarketUtils.resolve() and stores result;   │
+  │                             │ added openMarketForUpdate()                │
+  ├─────────────────────────────┼────────────────────────────────────────────┤
+  │                             │ Added DisposableEffect with                │
+  │ HomeScreen.kt               │ LifecycleEventObserver for ON_RESUME       │
+  │                             │ re-check; onUpdate prioritizes market      │
+  │                             │ jump, falls back to APK download           │
+  ├─────────────────────────────┼────────────────────────────────────────────┤
+  │                             │ Added resolvedMarket parameter; button     │
+  │ AppUpdateDialogs.kt         │ text switches to "前往                     │
+  │                             │ ${resolvedMarket.label}" when a market is  │
+  │                             │ matched                                    │
+  ├─────────────────────────────┼────────────────────────────────────────────┤
+  │                             │ Added <queries> block declaring all 5      │
+  │ AndroidManifest.xml         │ market package names (Android 11+          │
+  │                             │ visibility)                                │
+  └─────────────────────────────┴────────────────────────────────────────────┘
+
+  Key behaviors preserved:
+  - If no market matches → existing APK download flow (WiFi check →
+  ApkDownloadService) is used unchanged
+  - Force update + market jump: dialog stays open; ON_RESUME triggers
+  checkUpdateOnLaunch() to re-validate — dialog auto-closes once user updates
+  - Non-force update + market jump: dialog dismisses after jump
+
+✻ Crunched for 2m 8s

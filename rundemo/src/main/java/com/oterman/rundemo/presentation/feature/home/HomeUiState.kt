@@ -3,6 +3,7 @@ package com.oterman.rundemo.presentation.feature.home
 import android.net.Uri
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.repository.AppUpdateInfo
+import com.oterman.rundemo.util.MarketUtils
 
 /**
  * Home screen tab definition
@@ -71,5 +72,6 @@ data class HomeUiState(
 
     // 强制更新状态
     val forceUpdateInfo: AppUpdateInfo? = null,
-    val showForceUpdateDialog: Boolean = false
+    val showForceUpdateDialog: Boolean = false,
+    val resolvedMarket: MarketUtils.ResolvedMarket? = null
 )
