@@ -34,14 +34,22 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import android.Manifest
+import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
+import android.widget.Toast
+import androidx.core.content.FileProvider
+import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
@@ -53,6 +61,9 @@ import com.oterman.rundemo.presentation.feature.home.components.FitImportConflic
 import com.oterman.rundemo.presentation.feature.home.tabs.DataTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.DashboardTabContent
 import com.oterman.rundemo.presentation.feature.home.tabs.ProfileTabContent
+import com.oterman.rundemo.presentation.feature.home.tabs.UpdateAvailableDialog
+import com.oterman.rundemo.presentation.feature.home.tabs.WifiWarningDialog
+import com.oterman.rundemo.service.update.ApkDownloadService
 
 /**
  * Main Home screen with bottom navigation
@@ -91,9 +102,10 @@ fun HomeScreen(
         viewModel.dismissNotificationPermissionRequest(saveDenial = !granted)
     }
 
-    // 进入首页时自动触发同步
+    // 进入首页时自动触发同步 + 检查强制更新
     LaunchedEffect(Unit) {
         viewModel.startSyncIfNeeded()
+        viewModel.checkUpdateOnLaunch()
     }
 
     // 同步成功消息 Snackbar（展示 1 秒后自动关闭）
@@ -224,6 +236,66 @@ fun HomeScreen(
                 viewModel.dismissNotificationPermissionRequest(saveDenial = true) // 用户明确拒绝
             }
         )
+    }
+
+    // 强制更新弹窗（不可关闭）
+    val forceUpdateInfo = uiState.forceUpdateInfo
+    if (uiState.showForceUpdateDialog && forceUpdateInfo != null) {
+        var showForceWifiWarning by remember { mutableStateOf(false) }
+
+        if (showForceWifiWarning) {
+            WifiWarningDialog(
+                onConfirm = {
+                    showForceWifiWarning = false
+                    val url = forceUpdateInfo.response.downloadUrl ?: return@WifiWarningDialog
+                    ApkDownloadService.start(context, url, forceUpdateInfo.response.versionCode ?: -1)
+                    viewModel.dismissForceUpdateDialog()
+                },
+                onDismiss = { showForceWifiWarning = false }
+            )
+        }
+
+        UpdateAvailableDialog(
+            info = forceUpdateInfo.response,
+            isAlreadyDownloaded = forceUpdateInfo.isAlreadyDownloaded,
+            onUpdate = {
+                if (forceUpdateInfo.isAlreadyDownloaded && forceUpdateInfo.localApkPath != null) {
+                    triggerInstall(context, forceUpdateInfo.localApkPath)
+                    viewModel.dismissForceUpdateDialog()
+                } else {
+                    val url = forceUpdateInfo.response.downloadUrl ?: return@UpdateAvailableDialog
+                    val cm = context.getSystemService(ConnectivityManager::class.java)
+                    val isWifi = cm.getNetworkCapabilities(cm.activeNetwork)
+                        ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+                    if (isWifi) {
+                        ApkDownloadService.start(context, url, forceUpdateInfo.response.versionCode ?: -1)
+                        viewModel.dismissForceUpdateDialog()
+                    } else {
+                        showForceWifiWarning = true
+                    }
+                }
+            },
+            onDismiss = { /* forceUpgrade=true 时 dialog 内部不会调用此回调 */ }
+        )
+    }
+}
+
+private fun triggerInstall(context: android.content.Context, apkPath: String) {
+    try {
+        val apkFile = File(apkPath)
+        if (!apkFile.exists()) {
+            Toast.makeText(context, "安装包文件不存在，请重新下载", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "启动安装失败，请重试", Toast.LENGTH_SHORT).show()
     }
 }
 

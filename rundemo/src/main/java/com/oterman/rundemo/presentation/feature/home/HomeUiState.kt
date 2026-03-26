@@ -2,6 +2,7 @@ package com.oterman.rundemo.presentation.feature.home
 
 import android.net.Uri
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.data.repository.AppUpdateInfo
 
 /**
  * Home screen tab definition
@@ -66,5 +67,9 @@ data class HomeUiState(
     val syncSuccessMessage: String? = null,
 
     // 通知权限引导
-    val needsNotificationPermission: Boolean = false
+    val needsNotificationPermission: Boolean = false,
+
+    // 强制更新状态
+    val forceUpdateInfo: AppUpdateInfo? = null,
+    val showForceUpdateDialog: Boolean = false
 )

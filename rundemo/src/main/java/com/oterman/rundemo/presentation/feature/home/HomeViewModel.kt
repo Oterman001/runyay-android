@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.fit.FitImportService
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
+import com.oterman.rundemo.data.repository.AppUpdateRepository
 import com.oterman.rundemo.data.repository.AvatarManager
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.repository.TokenRefreshManager
@@ -20,6 +21,7 @@ import com.oterman.rundemo.service.sync.DataSyncForegroundService
 import com.oterman.rundemo.service.sync.SyncUiState
 import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.util.RLog
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * HomeScreen ViewModel
@@ -458,6 +461,32 @@ class HomeViewModel(
                 fitImportResult = null
             )
         }
+    }
+
+    // ==================== 强制更新 ====================
+
+    /**
+     * 启动时自动检查版本，仅当 forceUpgrade==true 时弹窗
+     */
+    fun checkUpdateOnLaunch() {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                AppUpdateRepository.checkLatestVersion(context)
+            }
+            result.onSuccess { info ->
+                if (info != null && info.response.forceUpgrade == true) {
+                    _uiState.update { it.copy(forceUpdateInfo = info, showForceUpdateDialog = true) }
+                }
+            }
+        }
+    }
+
+    fun dismissForceUpdateDialog() {
+        _uiState.update { it.copy(showForceUpdateDialog = false) }
+    }
+
+    fun clearForceUpdate() {
+        _uiState.update { it.copy(forceUpdateInfo = null, showForceUpdateDialog = false) }
     }
 }
 
