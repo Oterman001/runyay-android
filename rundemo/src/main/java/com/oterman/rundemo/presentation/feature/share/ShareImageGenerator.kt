@@ -1,10 +1,16 @@
 package com.oterman.rundemo.presentation.feature.share
 
 import android.app.Activity
+import android.content.ContentValues
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.graphics.Bitmap
+import android.media.MediaScannerConnection
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.runtime.Composable
@@ -65,6 +71,8 @@ object ShareImageGenerator {
             }
 
             // 临时添加到窗口（零尺寸，不影响现有布局），让 Compose 获取 Recomposer
+            // 向左平移移出屏幕，防止后续 layout() 时内容短暂显示在屏幕上造成闪烁
+            composeView.translationX = -(widthPx + 100).toFloat()
             rootView.addView(
                 composeView,
                 ViewGroup.LayoutParams(0, 0)
@@ -153,6 +161,69 @@ object ShareImageGenerator {
             type = "image/jpeg"
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
+    /**
+     * 将 Bitmap 保存到系统相册（Pictures/RunDemo/）。
+     * - Android Q+：通过 [MediaStore]，无需存储权限。
+     * - Android P 及以下：写入公共 Pictures 目录并触发媒体扫描（需 Manifest 中 WRITE_EXTERNAL_STORAGE，maxSdk 28）。
+     */
+    fun saveToGallery(context: Context, bitmap: Bitmap, fileName: String): Result<Uri> {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                    put(
+                        MediaStore.MediaColumns.RELATIVE_PATH,
+                        "${Environment.DIRECTORY_PICTURES}/RunDemo"
+                    )
+                }
+                val resolver = context.contentResolver
+                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    ?: return Result.failure(IllegalStateException("无法创建相册条目"))
+                resolver.openOutputStream(uri)?.use { out ->
+                    if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)) {
+                        resolver.delete(uri, null, null)
+                        return Result.failure(IllegalStateException("图片写入失败"))
+                    }
+                } ?: run {
+                    resolver.delete(uri, null, null)
+                    return Result.failure(IllegalStateException("无法打开输出流"))
+                }
+                // 通过构造预期路径触发媒体扫描，确保相册等应用立即感知到新图片
+                @Suppress("DEPRECATION")
+                val expectedPath = File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                    "RunDemo/$fileName"
+                ).absolutePath
+                MediaScannerConnection.scanFile(context, arrayOf(expectedPath), arrayOf("image/jpeg"), null)
+                Result.success(uri)
+            } else {
+                @Suppress("DEPRECATION")
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val dir = File(picturesDir, "RunDemo")
+                if (!dir.exists() && !dir.mkdirs()) {
+                    return Result.failure(IllegalStateException("无法创建目录"))
+                }
+                val file = File(dir, fileName)
+                FileOutputStream(file).use { fos ->
+                    if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos)) {
+                        return Result.failure(IllegalStateException("图片写入失败"))
+                    }
+                }
+                MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(file.absolutePath),
+                    arrayOf("image/jpeg"),
+                    null
+                )
+                Result.success(Uri.fromFile(file))
+            }
+        } catch (e: Exception) {
+            RLog.e(TAG, "saveToGallery failed", e)
+            Result.failure(e)
         }
     }
 }

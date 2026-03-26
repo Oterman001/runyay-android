@@ -81,6 +81,20 @@ fun ShareScreen(
         }
     }
 
+    LaunchedEffect(uiState.saveSuccess) {
+        if (uiState.saveSuccess) {
+            snackbarHostState.showSnackbar("图片已保存到相册")
+            viewModel.clearSaveState()
+        }
+    }
+
+    LaunchedEffect(uiState.saveError) {
+        uiState.saveError?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearSaveState()
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -108,7 +122,9 @@ fun ShareScreen(
             if (uiState.shareMode != ShareMode.CUSTOM) {
                 ShareBottomBar(
                     isGenerating = uiState.isGenerating,
+                    isSaving = uiState.isSaving,
                     onEditClick = { viewModel.showEditSheet() },
+                    onSaveClick = { viewModel.generateAndSave(context, isDark) },
                     onShareClick = { viewModel.generateAndShare(context, isDark) }
                 )
             }

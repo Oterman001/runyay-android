@@ -131,7 +131,12 @@ data class ShareUiState(
     // 图片生成
     val isGenerating: Boolean = false,
     val generatedBitmap: Bitmap? = null,
-    val shareError: String? = null
+    val shareError: String? = null,
+
+    // 保存到相册
+    val isSaving: Boolean = false,
+    val saveSuccess: Boolean = false,
+    val saveError: String? = null
 ) {
     companion object {
         val defaultShortMetrics = listOf(

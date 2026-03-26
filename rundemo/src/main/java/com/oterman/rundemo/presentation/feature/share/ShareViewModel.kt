@@ -2,6 +2,7 @@ package com.oterman.rundemo.presentation.feature.share
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -10,6 +11,7 @@ import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.data.repository.RunningShoeRepository
 import com.oterman.rundemo.data.local.DataSourcePreferences
+import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
@@ -269,6 +271,78 @@ class ShareViewModel(
 
     // ==================== 分享图片生成 ====================
 
+    private suspend fun renderShareBitmap(
+        context: Context,
+        state: ShareUiState,
+        record: RunRecordEntity,
+        darkTheme: Boolean
+    ): Bitmap? {
+        val widthPx = context.resources.displayMetrics.widthPixels
+        return withContext(Dispatchers.Main) {
+            when (state.shareMode) {
+                ShareMode.SHORT -> ShareImageGenerator.renderToBitmap(context, widthPx, darkTheme) {
+                    ShortSharePreview(
+                        record = record,
+                        mapSnapshot = state.mapSnapshot,
+                        selectedMetrics = state.selectedMetrics,
+                        showDate = state.showDate,
+                        deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
+                        brandText = state.brandText,
+                        avatarUrl = state.avatarUrl,
+                        userName = state.userName,
+                        isPrivacyMode = state.isPrivacyMode,
+                        trackPoints = state.trackPoints
+                    )
+                }
+                ShareMode.LONG -> ShareImageGenerator.renderToBitmap(context, widthPx, darkTheme) {
+                    LongSharePreview(
+                        record = record,
+                        mapSnapshot = state.mapSnapshot,
+                        metrics = state.metrics,
+                        enabledCards = state.enabledCards,
+                        segments = state.segments,
+                        trainingSegments = state.trainingSegments,
+                        mergedTrainingSegments = state.mergedTrainingSegments,
+                        heartRateSeries = state.heartRateSeries,
+                        speedSeries = state.speedSeries,
+                        cadenceSeries = state.cadenceSeries,
+                        powerSeries = state.powerSeries,
+                        strideLengthSeries = state.strideLengthSeries,
+                        verticalOscillationSeries = state.verticalOscillationSeries,
+                        contactTimeSeries = state.contactTimeSeries,
+                        altitudeSeries = state.altitudeSeries,
+                        heartRate7Zones = state.heartRate7Zones,
+                        heartRate5Zones = state.heartRate5Zones,
+                        speedZones = state.speedZones,
+                        vo2Max = state.vo2Max,
+                        previousVo2Max = state.previousVo2Max,
+                        showDate = state.showDate,
+                        deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
+                        brandText = state.brandText,
+                        avatarUrl = state.avatarUrl,
+                        userName = state.userName,
+                        linkedShoe = state.linkedShoe,
+                        isPrivacyMode = state.isPrivacyMode,
+                        trackPoints = state.trackPoints,
+                        heartRateZone7Selected = state.heartRateZone7Selected
+                    )
+                }
+                ShareMode.CUSTOM -> null
+            }
+        }
+    }
+
+    private fun buildGalleryFileName(state: ShareUiState): String {
+        val idPart = workoutId.take(8).ifEmpty { "unknown" }
+        val ts = SimpleDateFormat("yyyyMMdd_HHmmssSSS", Locale.getDefault()).format(Date())
+        val modeSuffix = when (state.shareMode) {
+            ShareMode.SHORT -> "short"
+            ShareMode.LONG -> "long"
+            else -> "other"
+        }
+        return "run_share_${idPart}_${ts}_${modeSuffix}.jpg"
+    }
+
     fun generateAndShare(context: Context, darkTheme: Boolean = false) {
         val state = _uiState.value
         val record = state.record ?: return
@@ -277,61 +351,7 @@ class ShareViewModel(
             _uiState.value = _uiState.value.copy(isGenerating = true, shareError = null)
 
             try {
-                val displayMetrics = context.resources.displayMetrics
-                val widthPx = displayMetrics.widthPixels
-
-                val bitmap = withContext(Dispatchers.Main) {
-                    when (state.shareMode) {
-                        ShareMode.SHORT -> ShareImageGenerator.renderToBitmap(context, widthPx, darkTheme) {
-                            ShortSharePreview(
-                                record = record,
-                                mapSnapshot = state.mapSnapshot,
-                                selectedMetrics = state.selectedMetrics,
-                                showDate = state.showDate,
-                                deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
-                                brandText = state.brandText,
-                                avatarUrl = state.avatarUrl,
-                                userName = state.userName,
-                                isPrivacyMode = state.isPrivacyMode,
-                                trackPoints = state.trackPoints
-                            )
-                        }
-                        ShareMode.LONG -> ShareImageGenerator.renderToBitmap(context, widthPx, darkTheme) {
-                            LongSharePreview(
-                                record = record,
-                                mapSnapshot = state.mapSnapshot,
-                                metrics = state.metrics,
-                                enabledCards = state.enabledCards,
-                                segments = state.segments,
-                                trainingSegments = state.trainingSegments,
-                                mergedTrainingSegments = state.mergedTrainingSegments,
-                                heartRateSeries = state.heartRateSeries,
-                                speedSeries = state.speedSeries,
-                                cadenceSeries = state.cadenceSeries,
-                                powerSeries = state.powerSeries,
-                                strideLengthSeries = state.strideLengthSeries,
-                                verticalOscillationSeries = state.verticalOscillationSeries,
-                                contactTimeSeries = state.contactTimeSeries,
-                                altitudeSeries = state.altitudeSeries,
-                                heartRate7Zones = state.heartRate7Zones,
-                                heartRate5Zones = state.heartRate5Zones,
-                                speedZones = state.speedZones,
-                                vo2Max = state.vo2Max,
-                                previousVo2Max = state.previousVo2Max,
-                                showDate = state.showDate,
-                                deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
-                                brandText = state.brandText,
-                                avatarUrl = state.avatarUrl,
-                                userName = state.userName,
-                                linkedShoe = state.linkedShoe,
-                                isPrivacyMode = state.isPrivacyMode,
-                                trackPoints = state.trackPoints,
-                                heartRateZone7Selected = state.heartRateZone7Selected
-                            )
-                        }
-                        ShareMode.CUSTOM -> null
-                    }
-                }
+                val bitmap = renderShareBitmap(context, state, record, darkTheme)
 
                 if (bitmap == null) {
                     _uiState.value = _uiState.value.copy(isGenerating = false)
@@ -354,6 +374,67 @@ class ShareViewModel(
                 )
             }
         }
+    }
+
+    fun generateAndSave(context: Context, darkTheme: Boolean = false) {
+        val state = _uiState.value
+        val record = state.record ?: return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isSaving = true,
+                saveError = null,
+                saveSuccess = false
+            )
+
+            try {
+                if (state.shareMode == ShareMode.CUSTOM) {
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        saveError = "当前模式不支持保存图片"
+                    )
+                    return@launch
+                }
+
+                val bitmap = renderShareBitmap(context, state, record, darkTheme)
+                if (bitmap == null) {
+                    _uiState.value = _uiState.value.copy(isSaving = false)
+                    return@launch
+                }
+
+                val fileName = buildGalleryFileName(state)
+                val result = withContext(Dispatchers.IO) {
+                    ShareImageGenerator.saveToGallery(context, bitmap, fileName)
+                }
+
+                result.fold(
+                    onSuccess = {
+                        _uiState.value = _uiState.value.copy(
+                            isSaving = false,
+                            saveSuccess = true,
+                            generatedBitmap = bitmap
+                        )
+                    },
+                    onFailure = { e ->
+                        RLog.e(TAG, "保存到相册失败: ${e.message}")
+                        _uiState.value = _uiState.value.copy(
+                            isSaving = false,
+                            saveError = e.message ?: "保存失败"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                RLog.e(TAG, "保存到相册失败: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    saveError = "保存失败: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun clearSaveState() {
+        _uiState.value = _uiState.value.copy(saveSuccess = false, saveError = null)
     }
 
     // ==================== 辅助方法 ====================
