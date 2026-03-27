@@ -42,6 +42,9 @@ object LogExportHelper {
         }
         logFiles.forEach { zipFile.addFile(it, params) }
 
+        val diagnosticFiles = DiagnosticDataExporter.generateDiagnosticFiles(context)
+        diagnosticFiles.forEach { zipFile.addFile(it, params) }
+
         val uri = FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",

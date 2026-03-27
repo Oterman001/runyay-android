@@ -118,6 +118,9 @@ interface RunRecordDao {
     @Query("UPDATE run_record SET overallVdot = :value WHERE workoutId = :workoutId")
     suspend fun updateOverallVdot(workoutId: String, value: Double)
 
+    @Query("SELECT * FROM run_record WHERE userId = :userId AND inclusiveLevel != 0 ORDER BY startTime DESC LIMIT :limit")
+    suspend fun getRecentRecordsForUser(userId: String, limit: Int): List<RunRecordEntity>
+
     @Query("""
         SELECT * FROM run_record
         WHERE userId = :userId
