@@ -49,6 +49,15 @@ fun TotalRunVdotCard(
                 distanceText.length == 4 -> 46.sp
                 else -> 55.sp
             }
+            // Right - VDOT
+            val vdotText = String.format("%.1f", stats.overallVdot)
+            val vdotFontSize = when {
+                vdotText.length >= 5 -> 38.sp
+                vdotText.length == 4 -> 46.sp
+                else -> 55.sp
+            }
+            val sharedFontSize = if (distanceFontSize.value < vdotFontSize.value) distanceFontSize else vdotFontSize
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(1f).clickable { onDistanceClick() }
@@ -59,7 +68,7 @@ fun TotalRunVdotCard(
                     Text(
                         text = distanceText,
                         color = RunTheme.colorScheme.blue,
-                        fontSize = distanceFontSize,
+                        fontSize = sharedFontSize,
                         fontWeight = FontWeight.SemiBold,
                         fontFamily = RunYayFontFamily,
                         maxLines = 1,
@@ -69,7 +78,7 @@ fun TotalRunVdotCard(
                         text = "公里",
                         color = SecondaryTextColor,
                         fontSize = 12.sp,
-                        modifier = Modifier.padding(bottom = 10.dp, start = 2.dp)
+                        modifier = Modifier.padding(start = 2.dp)
                     )
                 }
                 Text(
@@ -79,13 +88,7 @@ fun TotalRunVdotCard(
                 )
             }
 
-            // Right - VDOT
-            val vdotText = String.format("%.1f", stats.overallVdot)
-            val vdotFontSize = when {
-                vdotText.length >= 5 -> 38.sp
-                vdotText.length == 4 -> 46.sp
-                else -> 55.sp
-            }
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(1f).clickable { onVdotClick() }
@@ -96,7 +99,7 @@ fun TotalRunVdotCard(
                     Text(
                         text = vdotText,
                         color = RunTheme.colorScheme.blue,
-                        fontSize = vdotFontSize,
+                        fontSize = sharedFontSize,
                         fontWeight = FontWeight.SemiBold,
                         fontFamily = RunYayFontFamily,
                         maxLines = 1,
