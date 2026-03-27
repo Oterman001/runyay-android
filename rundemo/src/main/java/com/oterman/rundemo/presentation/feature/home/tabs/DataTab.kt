@@ -534,7 +534,8 @@ private fun AllRunTopView(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         AllRunItemView(
-            value = String.format("%.1f", totalDistance),
+            value = if (totalDistance >= 10000) String.format("%.0f", totalDistance)
+                    else String.format("%.1f", totalDistance),
             unit = "公里",
             description = "累计跑量"
         )
@@ -544,7 +545,8 @@ private fun AllRunTopView(
             description = "总次数"
         )
         AllRunItemView(
-            value = String.format("%.1f", totalDuration / 60),
+            value = if (totalDuration / 60 >= 1000) String.format("%.0f", totalDuration / 60)
+                    else String.format("%.1f", totalDuration / 60),
             unit = "小时",
             description = "总耗时"
         )
