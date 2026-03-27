@@ -121,6 +121,17 @@ interface RunRecordDao {
     @Query("SELECT * FROM run_record WHERE userId = :userId AND inclusiveLevel != 0 ORDER BY startTime DESC LIMIT :limit")
     suspend fun getRecentRecordsForUser(userId: String, limit: Int): List<RunRecordEntity>
 
+    // ==================== 诊断导出 top N 查询 ====================
+
+    @Query("SELECT * FROM run_record WHERE userId = :userId AND inclusiveLevel != 0 AND overallVdot > 0 ORDER BY overallVdot DESC LIMIT :limit")
+    suspend fun getTopByVdotForUser(userId: String, limit: Int): List<RunRecordEntity>
+
+    @Query("SELECT * FROM run_record WHERE userId = :userId AND inclusiveLevel != 0 ORDER BY duration DESC LIMIT :limit")
+    suspend fun getTopByDurationForUser(userId: String, limit: Int): List<RunRecordEntity>
+
+    @Query("SELECT * FROM run_record WHERE userId = :userId AND inclusiveLevel != 0 ORDER BY totalDistance DESC LIMIT :limit")
+    suspend fun getTopByDistanceForUser(userId: String, limit: Int): List<RunRecordEntity>
+
     @Query("""
         SELECT * FROM run_record
         WHERE userId = :userId

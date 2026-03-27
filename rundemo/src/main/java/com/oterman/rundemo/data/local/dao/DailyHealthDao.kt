@@ -92,4 +92,8 @@ interface DailyHealthDao {
      */
     @Query("SELECT vo2Max FROM daily_health WHERE userId = :userId AND platformCode = :platformCode AND calendarDate < :beforeDate AND vo2Max IS NOT NULL ORDER BY calendarDate DESC LIMIT 1")
     suspend fun getPreviousVo2MaxByPlatform(userId: String, platformCode: String, beforeDate: String): Double?
+
+    /** 诊断导出：指定日期范围内全部健康数据（跨平台），按日期降序 */
+    @Query("SELECT * FROM daily_health WHERE userId = :userId AND calendarDate >= :start AND calendarDate <= :end ORDER BY calendarDate DESC")
+    suspend fun getByDateRangeForUser(userId: String, start: String, end: String): List<DailyHealthEntity>
 }

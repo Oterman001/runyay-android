@@ -89,5 +89,19 @@ interface OverallVdotDao {
      */
     @Query("UPDATE overall_vdot SET inclusiveLevel = :level WHERE workoutId = :workoutId")
     suspend fun updateInclusiveLevel(workoutId: String, level: Int)
+
+    // ==================== 诊断导出查询 ====================
+
+    /** 指定时间范围内全部VDOT（不过滤inclusiveLevel），用于诊断导出 */
+    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND date >= :start AND date <= :end ORDER BY date DESC")
+    suspend fun getAllVdotsInRangeForUser(userId: String, start: Long, end: Long): List<OverallVdotEntity>
+
+    /** 按value降序取topN，指定inclusiveLevel=1 */
+    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND inclusiveLevel = 1 ORDER BY value DESC LIMIT :limit")
+    suspend fun getTopVdotsInclusiveForUser(userId: String, limit: Int): List<OverallVdotEntity>
+
+    /** 按value降序取topN，inclusiveLevel != 1 */
+    @Query("SELECT * FROM overall_vdot WHERE userId = :userId AND inclusiveLevel != 1 ORDER BY value DESC LIMIT :limit")
+    suspend fun getTopVdotsExcludedForUser(userId: String, limit: Int): List<OverallVdotEntity>
 }
 

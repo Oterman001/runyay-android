@@ -84,5 +84,23 @@ interface PBRecordDao {
 
     @Query("UPDATE pb_record SET userId = :userId WHERE userId = ''")
     suspend fun migrateOrphanedRecords(userId: String)
+
+    // ==================== 诊断导出查询（top5 per subType，区分 inclusiveLevel）====================
+
+    /** Speed subType top N，inclusiveLevel=1，值越小越好（配速 ASC） */
+    @Query("SELECT * FROM pb_record WHERE userId = :userId AND type = :type AND subType = :subType AND inclusiveLevel = 1 ORDER BY value ASC LIMIT :limit")
+    suspend fun getTopSpeedRecordsForUser(userId: String, type: String, subType: String, limit: Int): List<PBRecordEntity>
+
+    /** Ability subType top N，inclusiveLevel=1，值越大越好（DESC） */
+    @Query("SELECT * FROM pb_record WHERE userId = :userId AND type = :type AND subType = :subType AND inclusiveLevel = 1 ORDER BY value DESC LIMIT :limit")
+    suspend fun getTopAbilityRecordsForUser(userId: String, type: String, subType: String, limit: Int): List<PBRecordEntity>
+
+    /** Speed subType top N，inclusiveLevel != 1，ASC */
+    @Query("SELECT * FROM pb_record WHERE userId = :userId AND type = :type AND subType = :subType AND inclusiveLevel != 1 ORDER BY value ASC LIMIT :limit")
+    suspend fun getTopExcludedSpeedRecordsForUser(userId: String, type: String, subType: String, limit: Int): List<PBRecordEntity>
+
+    /** Ability subType top N，inclusiveLevel != 1，DESC */
+    @Query("SELECT * FROM pb_record WHERE userId = :userId AND type = :type AND subType = :subType AND inclusiveLevel != 1 ORDER BY value DESC LIMIT :limit")
+    suspend fun getTopExcludedAbilityRecordsForUser(userId: String, type: String, subType: String, limit: Int): List<PBRecordEntity>
 }
 
