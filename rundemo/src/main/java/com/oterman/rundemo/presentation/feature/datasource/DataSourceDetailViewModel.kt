@@ -10,13 +10,16 @@ import com.oterman.rundemo.domain.model.SyncTimeRange
 import com.oterman.rundemo.service.sync.SyncUiState
 import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.service.sync.model.SyncNotification
+import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 /**
  * 数据源详情ViewModel
@@ -360,6 +363,44 @@ class DataSourceDetailViewModel(
      */
     fun dismissBackfillSuccessDialog() {
         _uiState.update { it.copy(showBackfillSuccessDialog = false) }
+    }
+
+    /**
+     * 选择同步时间范围（带渠道控制）
+     * ALL时：fir渠道弹口令弹窗，其他渠道提示联系客服
+     */
+    fun onSyncTimeRangeSelected(timeRange: SyncTimeRange) {
+        if (timeRange == SyncTimeRange.ALL) {
+            _uiState.update { it.copy(showSyncOptionsDialog = false) }
+            if (BuildConfig.UMENG_CHANNEL == "fir") {
+                _uiState.update { it.copy(showPassphraseDialog = true, passphraseError = false) }
+            } else {
+                _uiState.update { it.copy(alertMessage = "当前版本暂不支持同步所有数据，如有需要请联系客服处理") }
+            }
+        } else {
+            startSyncWithTimeRange(timeRange)
+        }
+    }
+
+    /**
+     * 确认口令，校验通过后触发同步所有数据
+     */
+    fun confirmPassphrase(input: String) {
+        val today = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
+        val expected = "runyay$today"
+        if (input == expected) {
+            _uiState.update { it.copy(showPassphraseDialog = false, passphraseError = false) }
+            startSyncWithTimeRange(SyncTimeRange.ALL)
+        } else {
+            _uiState.update { it.copy(passphraseError = true) }
+        }
+    }
+
+    /**
+     * 关闭口令弹窗
+     */
+    fun dismissPassphraseDialog() {
+        _uiState.update { it.copy(showPassphraseDialog = false, passphraseError = false) }
     }
 
     /**

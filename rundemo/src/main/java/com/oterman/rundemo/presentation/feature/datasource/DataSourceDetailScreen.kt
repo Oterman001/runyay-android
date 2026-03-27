@@ -38,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -259,7 +260,7 @@ fun DataSourceDetailScreen(
     if (uiState.showSyncOptionsDialog) {
         SyncTimeRangeDialog(
             platform = uiState.platform,
-            onSelect = { timeRange -> viewModel.startSyncWithTimeRange(timeRange) },
+            onSelect = { timeRange -> viewModel.onSyncTimeRangeSelected(timeRange) },
             onDismiss = { viewModel.dismissSyncOptions() }
         )
     }
@@ -275,6 +276,15 @@ fun DataSourceDetailScreen(
                     Text("确定")
                 }
             }
+        )
+    }
+
+    // 同步所有数据口令验证弹窗（仅fir渠道）
+    if (uiState.showPassphraseDialog) {
+        PassphraseDialog(
+            passphraseError = uiState.passphraseError,
+            onConfirm = { input -> viewModel.confirmPassphrase(input) },
+            onDismiss = { viewModel.dismissPassphraseDialog() }
         )
     }
 }
@@ -623,6 +633,53 @@ private fun ConflictInfoBanner(modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+/**
+ * 同步所有数据口令验证弹窗
+ */
+@Composable
+private fun PassphraseDialog(
+    passphraseError: Boolean,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var input by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("口令验证") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    label = { Text("请输入口令") },
+                    isError = passphraseError,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (passphraseError) {
+                    Text(
+                        text = "口令错误，请重试",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(input) }) {
+                Text("确认")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
 
 /**
