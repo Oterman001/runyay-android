@@ -71,6 +71,20 @@ class SharePreferences(context: Context) {
     }
 
     /**
+     * 保存是否显示昵称
+     */
+    fun saveShowNickname(show: Boolean) {
+        prefs.edit().putBoolean(KEY_SHOW_NICKNAME, show).apply()
+    }
+
+    /**
+     * 获取是否显示昵称
+     */
+    fun getShowNickname(): Boolean {
+        return prefs.getBoolean(KEY_SHOW_NICKNAME, true)
+    }
+
+    /**
      * 保存自定义品牌文案
      */
     fun saveBrandText(text: String) {
@@ -107,6 +121,7 @@ class SharePreferences(context: Context) {
         private const val KEY_SELECTED_METRICS = "selected_metrics"
         private const val KEY_CARD_PREFIX = "card_enabled_"
         private const val KEY_SHOW_DATE = "show_date"
+        private const val KEY_SHOW_NICKNAME = "show_nickname"
         private const val KEY_BRAND_TEXT = "brand_text"
         private const val KEY_CUSTOM_DEVICE_NAME = "custom_device_name"
     }

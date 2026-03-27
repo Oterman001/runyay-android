@@ -35,10 +35,12 @@ import com.oterman.rundemo.ui.theme.RunBlue
 fun ShareEditControls(
     deviceName: String,
     showDate: Boolean,
+    showNickname: Boolean,
     brandText: String,
     onDeviceNameEdit: () -> Unit,
     onDeviceNameReset: () -> Unit,
     onShowDateToggle: (Boolean) -> Unit,
+    onShowNicknameToggle: (Boolean) -> Unit,
     onBrandTextEdit: () -> Unit,
     onBrandTextRefresh: () -> Unit,
     modifier: Modifier = Modifier
@@ -190,6 +192,26 @@ fun ShareEditControls(
             Switch(
                 checked = showDate,
                 onCheckedChange = onShowDateToggle
+            )
+        }
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+        // 显示昵称开关
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "显示昵称",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Switch(
+                checked = showNickname,
+                onCheckedChange = onShowNicknameToggle
             )
         }
 

@@ -57,10 +57,12 @@ fun ShortShareEditSheet(
     availableMetrics: List<ShareMetricType>,
     deviceName: String,
     showDate: Boolean,
+    showNickname: Boolean,
     brandText: String,
     onMetricsChanged: (List<ShareMetricType>) -> Unit,
     onDeviceNameChanged: (String) -> Unit,
     onShowDateChanged: (Boolean) -> Unit,
+    onShowNicknameChanged: (Boolean) -> Unit,
     onBrandTextChanged: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -139,10 +141,12 @@ fun ShortShareEditSheet(
             ShareEditControls(
                 deviceName = deviceName,
                 showDate = showDate,
+                showNickname = showNickname,
                 brandText = brandText,
                 onDeviceNameEdit = { showDeviceDialog = true },
                 onDeviceNameReset = { onDeviceNameChanged("") },
                 onShowDateToggle = onShowDateChanged,
+                onShowNicknameToggle = onShowNicknameChanged,
                 onBrandTextEdit = { showBrandDialog = true },
                 onBrandTextRefresh = { onBrandTextChanged("") }
             )

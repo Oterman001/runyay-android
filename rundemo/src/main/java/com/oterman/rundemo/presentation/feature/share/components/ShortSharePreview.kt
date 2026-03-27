@@ -62,6 +62,7 @@ fun ShortSharePreview(
     brandText: String,
     avatarUrl: String? = null,
     userName: String? = null,
+    showNickname: Boolean = true,
     isPrivacyMode: Boolean = false,
     trackPoints: List<TrackPoint> = emptyList(),
     modifier: Modifier = Modifier
@@ -213,7 +214,7 @@ fun ShortSharePreview(
                 // 头像 + 昵称
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     ShareAvatar(avatarUrl = avatarUrl)
-                    if (!userName.isNullOrBlank()) {
+                    if (showNickname && !userName.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = userName,

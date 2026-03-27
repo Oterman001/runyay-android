@@ -95,6 +95,7 @@ fun LongSharePreview(
     brandText: String,
     avatarUrl: String? = null,
     userName: String? = null,
+    showNickname: Boolean = true,
     linkedShoe: RunningShoe? = null,
     isPrivacyMode: Boolean = false,
     trackPoints: List<TrackPoint> = emptyList(),
@@ -180,7 +181,7 @@ fun LongSharePreview(
                 isOutdoor = mapSnapshot != null || isPrivacyMode,
                 metrics = metrics,
                 avatarUrl = avatarUrl,
-                userName = userName,
+                userName = if (showNickname) userName else null,
                 inclusiveLevel = record.inclusiveLevel,
                 modifier = Modifier.layout { measurable, constraints ->
                     val placeable = measurable.measure(constraints)

@@ -224,6 +224,7 @@ fun ShareScreen(
                                                 brandText = uiState.brandText,
                                                 avatarUrl = uiState.avatarUrl,
                                                 userName = uiState.userName,
+                                                showNickname = uiState.showNickname,
                                                 isPrivacyMode = uiState.isPrivacyMode,
                                                 trackPoints = uiState.trackPoints
                                             )
@@ -257,6 +258,7 @@ fun ShareScreen(
                                                 brandText = uiState.brandText,
                                                 avatarUrl = uiState.avatarUrl,
                                                 userName = uiState.userName,
+                                                showNickname = uiState.showNickname,
                                                 linkedShoe = uiState.linkedShoe,
                                                 isPrivacyMode = uiState.isPrivacyMode,
                                                 trackPoints = uiState.trackPoints,
@@ -286,10 +288,12 @@ fun ShareScreen(
                     deviceName = uiState.customDeviceName
                         ?: DeviceNameUtils.resolveDisplayName(uiState.record!!) ?: "",
                     showDate = uiState.showDate,
+                    showNickname = uiState.showNickname,
                     brandText = uiState.brandText,
                     onMetricsChanged = { viewModel.updateSelectedMetrics(it) },
                     onDeviceNameChanged = { viewModel.updateDeviceName(it) },
                     onShowDateChanged = { viewModel.updateShowDate(it) },
+                    onShowNicknameChanged = { viewModel.updateShowNickname(it) },
                     onBrandTextChanged = { viewModel.updateBrandText(it) },
                     onDismiss = { viewModel.hideEditSheet() }
                 )
@@ -302,10 +306,12 @@ fun ShareScreen(
                     deviceName = uiState.customDeviceName
                         ?: DeviceNameUtils.resolveDisplayName(uiState.record!!) ?: "",
                     showDate = uiState.showDate,
+                    showNickname = uiState.showNickname,
                     brandText = uiState.brandText,
                     onCardToggle = { type, enabled -> viewModel.toggleCard(type, enabled) },
                     onDeviceNameChanged = { viewModel.updateDeviceName(it) },
                     onShowDateChanged = { viewModel.updateShowDate(it) },
+                    onShowNicknameChanged = { viewModel.updateShowNickname(it) },
                     onBrandTextChanged = { viewModel.updateBrandText(it) },
                     onDismiss = { viewModel.hideEditSheet() }
                 )

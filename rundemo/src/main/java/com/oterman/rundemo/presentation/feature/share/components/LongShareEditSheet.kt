@@ -45,10 +45,12 @@ fun LongShareEditSheet(
     availableCards: List<ShareCardType>,
     deviceName: String,
     showDate: Boolean,
+    showNickname: Boolean,
     brandText: String,
     onCardToggle: (ShareCardType, Boolean) -> Unit,
     onDeviceNameChanged: (String) -> Unit,
     onShowDateChanged: (Boolean) -> Unit,
+    onShowNicknameChanged: (Boolean) -> Unit,
     onBrandTextChanged: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -105,10 +107,12 @@ fun LongShareEditSheet(
             ShareEditControls(
                 deviceName = deviceName,
                 showDate = showDate,
+                showNickname = showNickname,
                 brandText = brandText,
                 onDeviceNameEdit = { showDeviceDialog = true },
                 onDeviceNameReset = { onDeviceNameChanged("") },
                 onShowDateToggle = onShowDateChanged,
+                onShowNicknameToggle = onShowNicknameChanged,
                 onBrandTextEdit = { showBrandDialog = true },
                 onBrandTextRefresh = { onBrandTextChanged("") }
             )

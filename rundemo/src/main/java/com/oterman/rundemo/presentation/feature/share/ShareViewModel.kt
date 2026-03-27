@@ -87,6 +87,7 @@ class ShareViewModel(
         val savedMetrics = sharePreferences.getSelectedMetrics()
         val savedCards = sharePreferences.getEnabledCards()
         val showDate = sharePreferences.getShowDate()
+        val showNickname = sharePreferences.getShowNickname()
         val brandText = com.oterman.rundemo.presentation.feature.share.components.getRandomBrandText()
         val customDevice = sharePreferences.getCustomDeviceName()
 
@@ -94,6 +95,7 @@ class ShareViewModel(
             selectedMetrics = savedMetrics ?: ShareUiState.defaultShortMetrics,
             enabledCards = savedCards,
             showDate = showDate,
+            showNickname = showNickname,
             brandText = brandText,
             customDeviceName = customDevice
         )
@@ -244,6 +246,11 @@ class ShareViewModel(
         sharePreferences.saveShowDate(show)
     }
 
+    fun updateShowNickname(show: Boolean) {
+        _uiState.value = _uiState.value.copy(showNickname = show)
+        sharePreferences.saveShowNickname(show)
+    }
+
     fun updateHeartRateZoneMode(show7: Boolean) {
         _uiState.value = _uiState.value.copy(heartRateZone7Selected = show7)
     }
@@ -290,6 +297,7 @@ class ShareViewModel(
                         brandText = state.brandText,
                         avatarUrl = state.avatarUrl,
                         userName = state.userName,
+                        showNickname = state.showNickname,
                         isPrivacyMode = state.isPrivacyMode,
                         trackPoints = state.trackPoints
                     )
@@ -321,6 +329,7 @@ class ShareViewModel(
                         brandText = state.brandText,
                         avatarUrl = state.avatarUrl,
                         userName = state.userName,
+                        showNickname = state.showNickname,
                         linkedShoe = state.linkedShoe,
                         isPrivacyMode = state.isPrivacyMode,
                         trackPoints = state.trackPoints,

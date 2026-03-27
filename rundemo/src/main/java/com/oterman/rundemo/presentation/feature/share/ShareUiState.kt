@@ -121,6 +121,7 @@ data class ShareUiState(
 
     // 共用编辑设置
     val showDate: Boolean = true,
+    val showNickname: Boolean = true,
     val customDeviceName: String? = null,
     val brandText: String = "",
     val heartRateZone7Selected: Boolean = true,
