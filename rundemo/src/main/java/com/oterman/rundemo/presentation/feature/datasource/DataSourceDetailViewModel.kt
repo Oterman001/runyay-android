@@ -375,7 +375,7 @@ class DataSourceDetailViewModel(
             if (BuildConfig.UMENG_CHANNEL == "fir") {
                 _uiState.update { it.copy(showPassphraseDialog = true, passphraseError = false) }
             } else {
-                _uiState.update { it.copy(alertMessage = "当前版本暂不支持同步所有数据，如有需要请联系客服处理") }
+                _uiState.update { it.copy(alertMessage = "当前版本暂不支持同步所有数据，如有需要请联系客服(微信加yayarunya)处理") }
             }
         } else {
             startSyncWithTimeRange(timeRange)
@@ -386,7 +386,7 @@ class DataSourceDetailViewModel(
      * 确认口令，校验通过后触发同步所有数据
      */
     fun confirmPassphrase(input: String) {
-        val today = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
+        val today = SimpleDateFormat("ddMM", Locale.getDefault()).format(Date())
         val expected = "runyay$today"
         if (input == expected) {
             _uiState.update { it.copy(showPassphraseDialog = false, passphraseError = false) }
