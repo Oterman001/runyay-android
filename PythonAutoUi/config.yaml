@@ -1,0 +1,53 @@
+# 小红书跑步博主自动关注 - 配置文件
+
+# 设备配置
+device:
+  # USB 连接时填设备序列号（adb devices 查看），WiFi 连接时填 IP:PORT
+  # 留空则自动连接唯一已连接的设备
+  serial: ""
+
+# 运行模式
+dry_run: true  # true=只打日志不实际关注，调试完成后改为 false
+
+# 每日限额控制
+daily_follow_limit: 40          # 每天最多关注人数（建议 30-45，安全上限）
+max_follows_per_session: 15     # 单次会话最多关注人数（之后强制休息）
+session_break_seconds: 180      # 单次会话超限后的休息时长（秒）
+active_hours: [9, 22]           # 仅在此时间段内运行（24小时制）
+
+# 搜索关键词（每次会话随机打乱顺序）
+keywords:
+  - "跑步博主"
+  - "马拉松训练"
+  - "跑步打卡"
+  - "晨跑"
+  - "长跑"
+  - "马拉松备赛"
+  - "跑步日记"
+
+# 每个关键词滚动页数（每页约 5-8 个用户）
+pages_per_keyword: 6
+
+# 互关评分阈值（0-100），>= 此分值才关注
+min_score_threshold: 60
+
+# 随机跳过比例（模拟人类非系统性行为），0.12 = 12%
+random_skip_ratio: 0.12
+
+# 延迟配置（高斯分布参数：均值, 标准差，单位秒）
+delays:
+  tap:
+    mu: 0.8
+    sigma: 0.3
+  between_profiles:
+    mu: 3.0
+    sigma: 1.2
+  post_follow:
+    mu: 10.0
+    sigma: 4.0
+  long_break_probability: 0.15  # 关注后触发长暂停的概率
+  long_break_extra_min: 20      # 长暂停额外增加时间下限（秒）
+  long_break_extra_max: 60      # 长暂停额外增加时间上限（秒）
+  scroll_pause:
+    mu: 1.5
+    sigma: 0.6
