@@ -59,3 +59,19 @@ def human_swipe_down(d: u2.Device, distance: int = 800) -> None:
 
     duration = random.uniform(0.3, 0.6)
     d.swipe(x, start_y, x, end_y, duration=duration)
+
+
+def human_swipe_left(d: u2.Device, distance: int = 600) -> None:
+    """向左滑动（横向推荐列表翻看更多）。"""
+    screen_w = d.info.get("displayWidth", 1080)
+    screen_h = d.info.get("displayHeight", 2400)
+
+    # 在屏幕下半部分滑动（横向推荐列表通常在主页下方）
+    y = int(screen_h * 0.80) + random.randint(-60, 60)
+    start_x = int(screen_w * 0.75) + random.randint(-40, 40)
+    end_x = start_x - distance + random.randint(-80, 80)
+    end_x = max(50, end_x)
+
+    duration = random.uniform(0.25, 0.5)
+    d.swipe(start_x, y, end_x, y, duration=duration)
+    logger.debug(f"左滑: ({start_x},{y}) → ({end_x},{y}) dur={duration:.2f}s")

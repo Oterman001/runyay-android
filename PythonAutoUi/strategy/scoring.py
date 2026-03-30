@@ -7,6 +7,10 @@
   3. 内容活跃度（20分）  — 笔记数适中说明活跃
   4. 关注数绝对值（20分）— 关注 300-3000 人说明在建立网络
 
+快速通道（直接返回高分 80，跳过四维评分）：
+  - 昵称含互关意向关键词（如"互关"、"有关必回"等）
+  - 且粉丝数与关注数在同一量级（两者比值在 0.1~10 之间）
+
 硬过滤（直接返回 -1，无论得分）：
   - 已关注 / 已互关
   - 蓝 V 认证
@@ -18,6 +22,12 @@
 from __future__ import annotations
 
 from persistence.models import BloggerProfile
+
+# 昵称中表示"互关意向"的关键词列表
+_MUTUAL_KEYWORDS = [
+    "互关", "互粉", "互相关注", "跑友互关", "有关必回", "必回", "关必回",
+    "(互)", "【互】", "〔互〕", "互动", "互fo", "互FO",
+]
 
 
 def _follow_ratio_score(followers: int, following: int) -> int:
@@ -58,6 +68,26 @@ def _activity_score(notes_count: int) -> int:
     return 0  # 0 或 >500
 
 
+def _nickname_suggests_mutual(username: str) -> bool:
+    """判断昵称是否含有互关意向关键词（不区分大小写）。"""
+    lower = username.lower()
+    for kw in _MUTUAL_KEYWORDS:
+        if kw.lower() in lower:
+            return True
+    return False
+
+
+def _same_magnitude(followers: int, following: int) -> bool:
+    """
+    判断粉丝数与关注数是否在同一量级。
+    两者比值在 [0.1, 10] 之间视为同一量级（相差不超过 10 倍）。
+    """
+    if followers == 0 or following == 0:
+        return False
+    ratio = min(followers, following) / max(followers, following)
+    return ratio >= 0.1
+
+
 def _following_absolute_score(following: int) -> int:
     """关注数绝对值得分（0-20）。"""
     if 300 <= following <= 3000:
@@ -76,7 +106,7 @@ def compute_follow_score(profile: BloggerProfile) -> int:
     Returns:
         0-100 的整数得分，-1 表示硬过滤直接跳过。
     """
-    # 硬过滤
+    # 硬过滤（优先级最高，无论如何都跳过）
     if profile.is_already_followed or profile.is_mutual_follow:
         return -1
     if profile.is_verified:
@@ -87,6 +117,12 @@ def compute_follow_score(profile: BloggerProfile) -> int:
         return -1
     if profile.notes_count == 0:
         return -1
+
+    # 快速通道：昵称含互关关键词 + 粉丝/关注量级相近 → 直接高分通过
+    if _nickname_suggests_mutual(profile.username) and _same_magnitude(
+        profile.followers, profile.following
+    ):
+        return 80
 
     score = (
         _follow_ratio_score(profile.followers, profile.following)

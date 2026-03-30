@@ -34,29 +34,21 @@ class Device:
         self._register_watchers()
 
     def _register_watchers(self) -> None:
-        """注册系统弹窗自动处理（崩溃、权限、更新提示）。"""
+        """注册系统弹窗自动处理（崩溃、权限、更新提示）。
+        uiautomator2 v3+ 使用 XPath 语法。
+        """
         d = self.d
 
-        # App 崩溃弹窗
-        d.watcher("crash_dialog").when(
-            textContains="停止运行"
-        ).press("back")
-        d.watcher("crash_dialog2").when(
-            textContains="已停止"
-        ).press("back")
+        # App 崩溃弹窗 → 按返回键
+        d.watcher.when('//*[contains(@text,"停止运行")]').press("back")
+        d.watcher.when('//*[contains(@text,"已停止")]').press("back")
 
-        # 系统权限弹窗（允许）
-        d.watcher("allow_permission").when(
-            textContains="允许"
-        ).click(text="允许")
+        # 系统权限弹窗 → 点击"允许"
+        d.watcher.when('//*[@text="允许"]').click()
 
-        # XHS 更新提示（跳过）
-        d.watcher("xhs_update").when(
-            textContains="发现新版本"
-        ).click(text="以后再说")
-        d.watcher("xhs_update2").when(
-            textContains="暂不更新"
-        ).click(text="暂不更新")
+        # XHS 更新提示 → 点击跳过
+        d.watcher.when('//*[@text="以后再说"]').click()
+        d.watcher.when('//*[@text="暂不更新"]').click()
 
         d.watcher.start(interval=3.0)
         logger.debug("Watchers 已注册")
@@ -64,8 +56,9 @@ class Device:
     def launch_xhs(self) -> None:
         """启动小红书，等待首页加载完成。"""
         logger.info("启动小红书...")
-        self.d.app_start(XHS_PACKAGE, stop=False)
-        self._wait_for_home(timeout=15)
+        # stop=True 确保从首页干净启动，避免恢复到上次的非首页状态
+        self.d.app_start(XHS_PACKAGE, stop=True)
+        self._wait_for_home(timeout=20)
 
     def restart_xhs(self) -> None:
         """强制重启小红书（用于恢复异常状态）。"""
@@ -77,8 +70,16 @@ class Device:
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(3))
     def _wait_for_home(self, timeout: int = 15) -> None:
-        """等待首页底部导航栏出现。"""
-        if not self.d(text="首页").wait(timeout=timeout):
+        """等待首页底部导航栏出现。
+        XHS 底部 Tab 使用 content-desc 而非 text。
+        """
+        d = self.d
+        # 检测底部导航：首页 Tab（content-desc 或 text 任意一种）
+        found = (
+            d(description="首页").wait(timeout=timeout)
+            or d(text="首页").wait(timeout=3)
+        )
+        if not found:
             raise RuntimeError("等待首页超时，未检测到底部导航栏")
         logger.debug("首页已就绪")
 

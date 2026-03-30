@@ -42,6 +42,11 @@ class AppConfig(BaseModel):
     min_score_threshold: int = Field(60, ge=0, le=100)
     random_skip_ratio: float = Field(0.12, ge=0.0, le=1.0)
     delays: DelaysConfig = DelaysConfig()
+    # 推荐列表路径（v2）
+    mode: str = Field("recommend", pattern="^(search|recommend)$")
+    pages_per_recommend: int = Field(8, ge=1)
+    max_depth: int = Field(2, ge=1, le=4)
+    direct_follow: bool = True  # True=直接点列表关注按钮，False=进主页评分后关注
 
     @field_validator("active_hours", mode="before")
     @classmethod

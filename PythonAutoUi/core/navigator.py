@@ -79,3 +79,65 @@ class Navigator:
         # 等待搜索结果标签出现
         self.d(text="用户").wait(timeout=5)
         logger.debug("已返回搜索结果")
+
+    # ------------------------------------------------------------------ #
+    # 推荐列表路径导航（v2）
+    # ------------------------------------------------------------------ #
+
+    def go_to_my_tab(self) -> None:
+        """点击底部'我' Tab，进入我的主页。"""
+        d = self.d
+        # 底部'我' Tab 的 content-desc 就是"我"
+        if not d(description="我").wait(timeout=5):
+            raise RuntimeError("底部'我' Tab 未找到")
+        d(description="我").click()
+        time.sleep(1.5)
+        # 等待主页统计区域（关注/粉丝按钮）出现
+        if not d(descriptionContains="关注", className="android.widget.Button").wait(timeout=8):
+            raise RuntimeError("我的主页统计区域未加载")
+        logger.debug("已进入'我的'主页")
+
+    def click_following_count(self) -> None:
+        """
+        在我的主页，点击'关注'数字 Button 进入关注列表。
+        Button 的 content-desc 格式为 "NNN关注"（如 "456关注"）。
+        """
+        d = self.d
+        # 找 content-desc 以'关注'结尾的 Button（排除'已关注'按钮）
+        btn = d.xpath(
+            '//android.widget.Button[contains(@content-desc,"关注") '
+            'and not(@text="关注") and not(@text="已关注")]'
+        )
+        if btn.exists:
+            btn.click()
+        else:
+            # fallback：坐标点击（主页统计行左侧第一个按钮）
+            screen_w = d.info.get("displayWidth", 1116)
+            d.click(screen_w // 10, 870)  # 近似坐标
+        time.sleep(1.8)
+        # 等待关注列表页的推荐 Tab 出现
+        if not d(description="推荐").wait(timeout=8):
+            raise RuntimeError("关注列表页未加载（未找到'推荐' Tab）")
+        logger.debug("已进入关注列表页")
+
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
+    def switch_to_recommend_tab(self) -> None:
+        """在关注列表页，点击顶部'推荐' Tab。"""
+        d = self.d
+        if not d(description="推荐").wait(timeout=5):
+            raise RuntimeError("未找到'推荐' Tab")
+        d(description="推荐").click()
+        time.sleep(2.0)
+        logger.debug("已切换到推荐列表")
+
+    def go_back_to_recommend_list(self, depth: int = 1) -> None:
+        """
+        从用户主页（可能有多层深入）返回推荐列表。
+        depth: 需要按返回键的次数。
+        """
+        for _ in range(depth):
+            self.d.press("back")
+            time.sleep(0.8)
+        # 确认推荐 Tab 可见（在关注列表页）
+        self.d(description="推荐").wait(timeout=5)
+        logger.debug(f"已返回推荐列表（back x{depth}）")
