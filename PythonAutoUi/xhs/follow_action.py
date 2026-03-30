@@ -54,11 +54,15 @@ class FollowAction:
         logger.info(f"关注: {profile.username} (粉丝={profile.followers} 评分={profile.follow_score})")
         human_tap(d, btn)
 
-        # 等待 UI 更新
-        time.sleep(1.5)
+        # 等待 UI 更新（profile 页面按钮动画需要更长时间）
+        time.sleep(2.5)
 
-        # 验证关注是否成功
+        # 验证关注是否成功，最多再等 2s 轮询
         confirmed = self._verify_follow_success()
+        if not confirmed:
+            time.sleep(2.0)
+            confirmed = self._verify_follow_success()
+
         if confirmed:
             logger.success(f"关注成功: {profile.username}")
         else:

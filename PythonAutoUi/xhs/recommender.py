@@ -431,9 +431,16 @@ class Recommender:
 
             if not new_users:
                 empty_rounds += 1
-                if empty_rounds >= 3 or scroll_count >= max_scrolls:
-                    logger.info("无新用户或已达翻页上限，停止")
+                if scroll_count >= max_scrolls:
+                    logger.info("已达翻页上限，停止")
                     break
+                # 连续 2 轮无新用户：先去首页随机浏览，再回来刷新推荐列表
+                if empty_rounds >= 2:
+                    logger.info(f"推荐列表连续 {empty_rounds} 轮为空，去首页随机浏览后回来")
+                    self._browse_home_and_return()
+                    empty_rounds = 0   # 重置计数，给推荐列表刷新机会
+                    scroll_count += 1
+                    continue
                 logger.debug(f"无新用户，第 {scroll_count + 1} 次滚动")
                 human_swipe_up(self._d)
                 self._delay.scroll_pause()
@@ -481,6 +488,13 @@ class Recommender:
 
         profile = self._parser.parse(username)
         if profile is None:
+            d.press("back")
+            time.sleep(0.8)
+            return False
+
+        # 跑步相关判定：若主页内容与跑步无关则跳过
+        if not self._is_runner_profile():
+            logger.debug(f"非跑步博主，跳过: {username}")
             d.press("back")
             time.sleep(0.8)
             return False
@@ -706,6 +720,36 @@ class Recommender:
     # 导航辅助
     # ------------------------------------------------------------------ #
 
+    # 跑步相关关键词（昵称、简介、笔记标题中出现即视为跑步博主）
+    _RUNNER_KEYWORDS = [
+        "跑步", "跑", "马拉松", "长跑", "晨跑", "夜跑", "跑友", "配速", "公里", "km",
+        "5k", "10k", "半马", "全马", "越野跑", "trail", "run", "runner", "running",
+        "健步", "慢跑", "冲关", "跑圈", "打卡", "训练", "备赛", "PB", "pb",
+    ]
+
+    def _is_runner_profile(self) -> bool:
+        """
+        扫描当前博主主页可见文字，判断是否与跑步相关。
+        检测范围：用户昵称、所有可见 TextView 文本（简介、笔记标题等）。
+        宽松策略：找到任意一个跑步关键词即返回 True。
+        """
+        try:
+            xml_str = self._d.dump_hierarchy()
+            root = ET.fromstring(xml_str)
+            for node in root.iter():
+                t = (node.get("text", "") or "").lower()
+                cd = (node.get("contentDescription", "") or "").lower()
+                combined = t + " " + cd
+                for kw in self._RUNNER_KEYWORDS:
+                    if kw.lower() in combined:
+                        logger.debug(f"检测到跑步关键词 '{kw}'")
+                        return True
+        except Exception as e:
+            logger.debug(f"跑步关键词检测失败: {e}")
+            # 检测失败时放行（不误杀）
+            return True
+        return False
+
     def _click_user_by_name(self, username: str) -> bool:
         """在当前页面点击指定用户名进入主页。"""
         d = self._d
@@ -728,6 +772,74 @@ class Recommender:
                 break
             self._d.press("back")
             time.sleep(0.8)
+
+    def _browse_home_and_return(self) -> None:
+        """
+        模拟真人行为：离开推荐列表 → 去首页随机浏览其他 Tab → 回来重新导航到推荐列表。
+        触发时机：推荐列表连续多轮无新用户（列表已刷新耗尽）。
+        """
+        d = self._d
+
+        # ── 1. 去到首页 Tab ──────────────────────────────────────────────
+        try:
+            if d(description="首页").exists:
+                d(description="首页").click()
+            elif d(text="首页").exists:
+                d(text="首页").click()
+            time.sleep(random.uniform(1.5, 2.5))
+            logger.debug("已切换到首页，开始随机浏览")
+        except Exception as e:
+            logger.debug(f"切换首页失败: {e}")
+            return
+
+        # ── 2. 在首页上下滑动若干次，模拟刷推荐 Feed ─────────────────────
+        swipe_count = random.randint(3, 6)
+        for i in range(swipe_count):
+            try:
+                human_swipe_up(d, distance=random.randint(800, 1400))
+                time.sleep(random.uniform(1.2, 3.0))
+            except Exception:
+                break
+
+        # ── 3. 随机 30% 概率点击其他 Tab（发现/购物/消息），再返回 ──────
+        other_tabs = ["发现", "购物", "消息"]
+        if random.random() < 0.30:
+            tab_name = random.choice(other_tabs)
+            try:
+                if d(description=tab_name).exists:
+                    d(description=tab_name).click()
+                elif d(text=tab_name).exists:
+                    d(text=tab_name).click()
+                else:
+                    tab_name = None
+                if tab_name:
+                    logger.debug(f"随机切换到 {tab_name} Tab")
+                    time.sleep(random.uniform(2.0, 4.0))
+                    # 在该 Tab 随机上下滑动 1-3 次
+                    for _ in range(random.randint(1, 3)):
+                        human_swipe_up(d, distance=random.randint(600, 1000))
+                        time.sleep(random.uniform(1.0, 2.5))
+            except Exception as e:
+                logger.debug(f"随机 Tab 浏览失败: {e}")
+
+        # ── 4. 重新导航回推荐列表（最多重试 2 次） ───────────────────────
+        logger.info("随机浏览完毕，重新导航回推荐列表")
+        for attempt in range(3):
+            try:
+                self._nav.go_to_my_tab()
+                self._nav.click_following_count()
+                self._nav.switch_to_recommend_tab()
+                logger.debug("已成功重新导航到推荐列表")
+                break
+            except Exception as e:
+                logger.warning(f"重新导航到推荐列表失败（第{attempt+1}次）: {e}")
+                # 每次重试前先 press back 清理现场，再多等一会儿
+                for _ in range(4):
+                    d.press("back")
+                    time.sleep(1.0)
+                time.sleep(2.0)
+                if attempt == 2:
+                    logger.warning("重新导航最终失败，将在下轮主循环继续尝试")
 
     # ------------------------------------------------------------------ #
     # 静态工具
