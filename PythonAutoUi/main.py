@@ -60,41 +60,81 @@ def parse_args() -> argparse.Namespace:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def run_recommend_session(config, db: Database, device: Device) -> None:
-    """执行一次基于推荐列表路径的关注会话。"""
-    nav = Navigator(device.d)
-    delay = HumanDelay(config.delays)
-    parser = ProfileParser(device.d)
-    follower = FollowAction(device.d, delay)
+    """
+    执行一次基于推荐列表路径的关注会话。
+    遇到 ATX 断线（RemoteDisconnected / ConnectionError）时最多重连 2 次后继续。
+    """
+    import http.client
 
-    session = db.create_session(["[推荐列表路径]"])
+    max_reconnects = 2
+    reconnect_count = 0
 
-    try:
-        recommender = Recommender(
-            d=device.d,
-            navigator=nav,
-            delay=delay,
-            parser=parser,
-            follower=follower,
-            db=db,
-            config=config,
-            session_id=session.id,
-        )
-        total_followed = recommender.run()
-        session.follows_made = total_followed
-        session.stop_reason = "complete"
+    while reconnect_count <= max_reconnects:
+        nav = Navigator(device.d)
+        delay = HumanDelay(config.delays)
+        parser = ProfileParser(device.d)
+        follower = FollowAction(device.d, delay)
 
-    except RateLimitWarning as e:
-        logger.error(f"平台限制，立即停止: {e}")
-        session.stop_reason = "rate_limit"
-    except KeyboardInterrupt:
-        session.stop_reason = "interrupted"
-        logger.warning("用户中断")
-    except Exception as e:
-        session.stop_reason = f"error: {e}"
-        logger.exception(f"推荐会话异常: {e}")
-    finally:
-        db.close_session(session)
-        _print_session_summary(session, db)
+        session = db.create_session(["[推荐列表路径]"])
+
+        try:
+            recommender = Recommender(
+                d=device.d,
+                navigator=nav,
+                delay=delay,
+                parser=parser,
+                follower=follower,
+                db=db,
+                config=config,
+                session_id=session.id,
+            )
+            total_followed = recommender.run()
+            session.follows_made = total_followed
+            session.stop_reason = "complete"
+            db.close_session(session)
+            _print_session_summary(session, db)
+            break  # 正常完成，退出重连循环
+
+        except RateLimitWarning as e:
+            logger.error(f"平台限制，立即停止: {e}")
+            session.stop_reason = "rate_limit"
+            db.close_session(session)
+            _print_session_summary(session, db)
+            break
+
+        except KeyboardInterrupt:
+            session.stop_reason = "interrupted"
+            logger.warning("用户中断")
+            db.close_session(session)
+            _print_session_summary(session, db)
+            break
+
+        except (http.client.RemoteDisconnected, ConnectionError, OSError) as e:
+            reconnect_count += 1
+            session.stop_reason = f"disconnected:{e}"
+            session.follows_made = recommender._follows_this_session if 'recommender' in dir() else 0
+            db.close_session(session)
+            if reconnect_count > max_reconnects:
+                logger.error(f"ATX 断线超过重连次数上限，放弃: {e}")
+                _print_session_summary(session, db)
+                break
+            logger.warning(f"ATX 断线，第 {reconnect_count} 次重连中（等待 10s）: {e}")
+            time.sleep(10)
+            try:
+                device.connect()
+                device.launch_xhs()
+                logger.info("重连成功，继续会话")
+            except Exception as re_err:
+                logger.error(f"重连失败: {re_err}")
+                _print_session_summary(session, db)
+                break
+
+        except Exception as e:
+            session.stop_reason = f"error: {e}"
+            logger.exception(f"推荐会话异常: {e}")
+            db.close_session(session)
+            _print_session_summary(session, db)
+            break
 
 
 # ──────────────────────────────────────────────────────────────────────────────

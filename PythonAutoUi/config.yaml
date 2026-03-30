@@ -7,7 +7,7 @@ device:
   serial: ""
 
 # 运行模式
-dry_run: true  # true=只打日志不实际关注，调试完成后改为 false
+dry_run: false  # true=只打日志不实际关注，调试完成后改为 false
 
 # 每日限额控制
 daily_follow_limit: 40          # 每天最多关注人数（建议 30-45，安全上限）

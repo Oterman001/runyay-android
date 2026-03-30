@@ -88,12 +88,16 @@ class Navigator:
         """点击底部'我' Tab，进入我的主页。"""
         d = self.d
         # 底部'我' Tab 的 content-desc 就是"我"
-        if not d(description="我").wait(timeout=5):
+        if not d(description="我").wait(timeout=8):
             raise RuntimeError("底部'我' Tab 未找到")
         d(description="我").click()
-        time.sleep(1.5)
-        # 等待主页统计区域（关注/粉丝按钮）出现
-        if not d(descriptionContains="关注", className="android.widget.Button").wait(timeout=8):
+        time.sleep(2.0)
+        # 等待主页统计区域（关注/粉丝按钮）出现，冷启动时可能较慢
+        found = (
+            d(descriptionContains="关注", className="android.widget.Button").wait(timeout=15)
+            or d(descriptionContains="粉丝", className="android.widget.Button").wait(timeout=5)
+        )
+        if not found:
             raise RuntimeError("我的主页统计区域未加载")
         logger.debug("已进入'我的'主页")
 

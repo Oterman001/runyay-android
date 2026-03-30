@@ -120,7 +120,11 @@ class Recommender:
                     logger.info("无新卡片或已达翻页上限，停止")
                     break
                 logger.debug(f"无新卡片，第 {scroll_count + 1} 次滚动")
-                human_swipe_up(self._d)
+                try:
+                    human_swipe_up(self._d)
+                except Exception as swipe_err:
+                    # ATX 断线时向上层抛出，由 main.py 的重连逻辑处理
+                    raise swipe_err
                 self._delay.scroll_pause()
                 scroll_count += 1
                 continue
@@ -144,7 +148,8 @@ class Recommender:
                 self._db.record_follow(username, self._session_id, confirmed=True)
                 self._follows_this_session += 1
             else:
-                success = self._click_follow_button_at(btn_bounds)
+                # 用用户名重新定位按钮（避免旧坐标失效），点击后用用户名验证
+                success = self._click_follow_button_for_user(username)
                 if success:
                     logger.success(f"直接关注成功（已验证UI变化）: {username}")
                     self._db.record_follow(username, self._session_id, confirmed=True)
@@ -266,6 +271,121 @@ class Recommender:
                 return self._verify_card_button_changed(top, bot)
         except Exception as e:
             logger.debug(f"兜底点击失败: {e}")
+        return False
+
+    def _click_follow_button_for_user(self, username: str) -> bool:
+        """
+        以用户名为锚点重新扫描 UI，精确定位该用户的'关注'按钮并点击，
+        点击后再次 dump 以用户名锚点验证按钮状态变化。
+        相比旧的 stale-bounds 方案，从根本上解决坐标过期和误判问题。
+        """
+        d = self._d
+        try:
+            # 1. 重新 dump，用用户名找到其对应的'关注'按钮（最新坐标）
+            xml_fresh = d.dump_hierarchy()
+            root_fresh = ET.fromstring(xml_fresh)
+            btn_bounds = self._find_follow_btn_for_username(root_fresh, username)
+            if not btn_bounds:
+                logger.debug(f"未找到 {username} 的'关注'按钮（已关注/不在视图）")
+                return False
+
+            l, top, r, bot = self._parse_bounds(btn_bounds)
+            cx = (l + r) // 2 + random.randint(-8, 8)
+            cy = (top + bot) // 2 + random.randint(-5, 5)
+            logger.debug(f"点击 {username} 的关注按钮: ({cx},{cy})")
+
+            self._delay.tap()
+            d.click(cx, cy)
+            time.sleep(1.5)
+
+            # 2. 重新 dump，确认该用户行的按钮文字已变为"已关注"/"互相关注"
+            xml_after = d.dump_hierarchy()
+            root_after = ET.fromstring(xml_after)
+            if self._verify_followed_for_user(root_after, username):
+                return True
+
+            # 3. 如果文字匹配失败，检查该用户行是否已无"关注"按钮（某些版本直接消失）
+            if self._find_follow_btn_for_username(root_after, username) is None:
+                logger.debug(f"{username} 行关注按钮已消失，视为成功")
+                return True
+
+            logger.debug(f"关注验证失败: {username}（按钮未变化）")
+            return False
+
+        except Exception as e:
+            logger.debug(f"_click_follow_button_for_user 异常: {e}")
+            return False
+
+    def _find_follow_btn_for_username(
+        self, root, username: str
+    ) -> Optional[str]:
+        """
+        在 UI 树中，先定位用户名节点的 y 区间，
+        再在附近（±150px）找 x>700 的 text='关注' 节点，返回其 bounds。
+        """
+        user_top: Optional[int] = None
+        user_bot: Optional[int] = None
+        for node in root.iter():
+            if node.get("text", "").strip() == username:
+                b = node.get("bounds", "")
+                if b:
+                    try:
+                        _, t, _, bt = self._parse_bounds(b)
+                        user_top, user_bot = t, bt
+                        break
+                    except Exception:
+                        pass
+        if user_top is None:
+            return None
+
+        for node in root.iter():
+            if node.get("text", "").strip() == "关注":
+                b = node.get("bounds", "")
+                if not b:
+                    continue
+                try:
+                    l, t, r, bt = self._parse_bounds(b)
+                    if l > 700 and t < user_bot + 150 and bt > user_top - 150:
+                        return b
+                except Exception:
+                    pass
+        return None
+
+    def _verify_followed_for_user(self, root_after, username: str) -> bool:
+        """
+        以用户名为锚点：先找用户名节点 y 区间，
+        再检查该区间附近（±200px）是否出现 x>700 的"已关注"/"互相关注"。
+        """
+        user_top: Optional[int] = None
+        user_bot: Optional[int] = None
+        for node in root_after.iter():
+            if node.get("text", "").strip() == username:
+                b = node.get("bounds", "")
+                if b:
+                    try:
+                        _, t, _, bt = self._parse_bounds(b)
+                        user_top, user_bot = t, bt
+                        break
+                    except Exception:
+                        pass
+
+        success_texts = {"已关注", "互相关注"}
+        for node in root_after.iter():
+            node_text = node.get("text", "").strip()
+            if node_text in success_texts:
+                b = node.get("bounds", "")
+                if b:
+                    try:
+                        l, node_top, r, node_bot = self._parse_bounds(b)
+                        if l > 700:
+                            # 如果找到了用户名节点就精确匹配，否则宽松匹配
+                            if user_top is not None:
+                                if node_top < user_bot + 200 and node_bot > user_top - 200:
+                                    return True
+                            else:
+                                return True  # 找不到用户名节点则任意"已关注"都算
+                    except Exception:
+                        pass
         return False
 
     def _check_rate_limit(self) -> None:
