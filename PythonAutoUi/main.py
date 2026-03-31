@@ -2,9 +2,10 @@
 小红书跑步博主自动关注 — 主入口
 
 用法：
-  python main.py                        # 推荐列表模式，读 config.yaml
-  python main.py --mode recommend       # 推荐列表模式（默认）
-  python main.py --mode my_following    # 我的关注列表探索模式
+  python main.py                        # 自动整合模式（默认），随机顺序运行两种路径
+  python main.py --mode auto            # 同上，显式指定
+  python main.py --mode recommend       # 仅推荐列表模式
+  python main.py --mode my_following    # 仅我的关注列表探索模式
   python main.py --dry-run              # 模拟运行，不实际关注
   python main.py --limit 5              # 覆盖每日限额
   python main.py --serial xxxxx         # 指定设备序列号
@@ -45,9 +46,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--serial", type=str, default="", help="设备序列号")
     parser.add_argument(
         "--mode",
-        choices=["recommend", "my_following"],
+        choices=["auto", "recommend", "my_following"],
         default="",
-        help="运行模式：recommend（推荐列表，默认）/ my_following（我的关注列表探索）",
+        help="运行模式：auto（随机整合，默认）/ recommend（推荐列表）/ my_following（我的关注列表探索）",
     )
     return parser.parse_args()
 
@@ -222,6 +223,53 @@ def run_my_following_session(config, db: Database, device: Device) -> int:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# 自动整合模式（默认）：随机顺序交替两种路径，模拟真实用户行为
+# ──────────────────────────────────────────────────────────────────────────────
+
+def run_auto_session(config, db: Database, device: Device) -> int:
+    """
+    自动整合模式：将推荐列表和我的关注列表两种路径随机排序后依次执行，
+    模拟真实用户自然切换浏览行为。
+
+    - 每段路径开始前检查每日限额，达到上限则提前结束
+    - 两段路径之间加入随机间隔（15-45s），模拟用户自然停顿
+    - 返回最后一个完成会话的 session_id（0 表示全部异常）
+    """
+    from strategy.daily_limit import can_follow
+
+    modes = ["recommend", "my_following"]
+    random.shuffle(modes)
+
+    logger.info(f"自动整合模式，本次路径顺序：{' → '.join(modes)}")
+
+    last_session_id = 0
+
+    for i, mode in enumerate(modes):
+        if not can_follow(db, config):
+            logger.info(f"已达每日关注上限，跳过后续路径 [{mode}]")
+            break
+
+        logger.info(f"[{i + 1}/{len(modes)}] 切换到路径：{mode}")
+        config.mode = mode
+
+        if mode == "recommend":
+            session_id = run_recommend_session(config, db, device)
+        else:
+            session_id = run_my_following_session(config, db, device)
+
+        if session_id:
+            last_session_id = session_id
+
+        # 路径切换间随机停顿（最后一段不停顿）
+        if i < len(modes) - 1:
+            pause = random.uniform(15, 45)
+            logger.info(f"路径切换，休息 {pause:.0f}s 后继续...")
+            time.sleep(pause)
+
+    return last_session_id
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # 公共工具
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -324,8 +372,10 @@ def main() -> None:
 
         if config.mode == "my_following":
             session_id = run_my_following_session(config, db, device)
-        else:
+        elif config.mode == "recommend":
             session_id = run_recommend_session(config, db, device)
+        else:  # auto（默认）
+            session_id = run_auto_session(config, db, device)
 
         # 会话正常结束后：关闭 App → 冷启动 → 读取我的关注/粉丝统计并存库
         stats = _post_session_stats(device)

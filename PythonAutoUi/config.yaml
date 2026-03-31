@@ -16,8 +16,8 @@ session_break_seconds: 180      # 单次会话超限后的休息时长（秒）
 active_hours: [6, 23]           # 仅在此时间段内运行（24小时制）
 
 # ── 运行模式 ──────────────────────────────────────────────────────────────────
-# recommend（推荐列表，默认）/ my_following（从我的关注列表探索）
-mode: "recommend"
+# auto（随机整合两种路径，默认）/ recommend（仅推荐列表）/ my_following（仅我的关注列表探索）
+mode: "auto"
 
 # 推荐列表滚动页数（每页约 6-8 个推荐用户）
 pages_per_recommend: 8
