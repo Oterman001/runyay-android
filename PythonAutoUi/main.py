@@ -86,6 +86,7 @@ def run_recommend_session(config, db: Database, device: Device) -> int:
                 db=db,
                 config=config,
                 session_id=session.id,
+                device=device,
             )
             total_followed = recommender.run()
             session.follows_made = total_followed
@@ -170,6 +171,7 @@ def run_my_following_session(config, db: Database, device: Device) -> int:
                 db=db,
                 config=config,
                 session_id=session.id,
+                device=device,
             )
             total_followed = recommender.run()
             session.follows_made = total_followed

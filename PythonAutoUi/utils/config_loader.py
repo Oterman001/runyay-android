@@ -50,6 +50,8 @@ class AppConfig(BaseModel):
     max_following_list_users: int = Field(8, ge=1)
     # 我的关注列表探索模式（mode=my_following）专用
     max_bloggers_to_explore: int = Field(10, ge=1)  # 从我的关注列表取多少人作为探索入口
+    # 单次运行累计关注超过此数则强制重启应用（0 = 不重启）
+    restart_after_follows: int = Field(50, ge=0)
 
     @field_validator("active_hours", mode="before")
     @classmethod

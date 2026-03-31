@@ -53,6 +53,7 @@ class Recommender:
         db: Database,
         config: "AppConfig",
         session_id: int,
+        device=None,   # core.device.Device，用于重启应用（可选）
     ):
         self._d = d
         self._nav = navigator
@@ -62,7 +63,9 @@ class Recommender:
         self._db = db
         self._cfg = config
         self._session_id = session_id
+        self._device = device
         self._follows_this_session = 0
+        self._follows_total_run = 0   # 本次脚本运行的累计关注数（不随 session break 重置）
 
     # ------------------------------------------------------------------ #
     # 公共入口
@@ -202,9 +205,11 @@ class Recommender:
                 d.press("back")
                 time.sleep(random.uniform(0.6, 1.2))
 
+            self._follows_total_run += follows_made
             logger.info(
                 f"[{blogger}关注列表] 本次关注 {follows_made} 人"
                 f"{'，已完整探索' if fully_explored else ''}"
+                f"（本次运行累计 {self._follows_total_run}）"
             )
 
             if fully_explored:
@@ -214,6 +219,21 @@ class Recommender:
             d.press("back")
             time.sleep(random.uniform(1.0, 1.8))
             self._ensure_back_to_my_following()
+
+            # ── 5. 累计关注超阈值则重启应用，降低风控风险 ──────────────────
+            threshold = self._cfg.restart_after_follows
+            if threshold > 0 and self._follows_total_run >= threshold and self._device:
+                logger.info(
+                    f"本次运行累计关注 {self._follows_total_run} 人 "
+                    f"≥ 阈值 {threshold}，重启应用..."
+                )
+                self._device.restart_xhs()
+                self._follows_total_run = 0
+                # 重启后重新切到我的关注列表
+                self._nav.go_to_my_tab()
+                self._nav.click_following_count()
+                self._nav.switch_to_following_tab()
+                logger.info("应用已重启，继续探索")
 
             self._delay.between_profiles()
 
