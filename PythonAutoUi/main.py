@@ -349,25 +349,53 @@ def _print_session_summary(session, db: Database) -> None:
     console.print(table)
 
 
+def _print_my_stats_table(stats: dict) -> None:
+    """打印我的账号统计表格。"""
+    table = Table(title="我的账号当前统计", show_header=True, header_style="bold magenta")
+    table.add_column("指标", style="dim")
+    table.add_column("数值", justify="right", style="bold")
+    table.add_row("我的关注数", str(stats.get("following", 0)))
+    table.add_row("我的粉丝数", str(stats.get("followers", 0)))
+    console.print(table)
+
+
 def _post_session_stats(device: Device) -> dict:
     """
-    会话结束后的收尾操作：
-      导航到「我的」Tab → 下拉刷新 2-3 次 → 读取关注数和粉丝数并打印。
-      不杀进程、不重启 App，直接在当前进程内刷新读取，更自然高效。
+    会话结束后读取账号统计，两种方式结合：
+
+    方式1（优先）：导航到「我的」Tab → 下拉刷新 2-3 次 → 读取
+      - 快速、自然，无需重启 App
+      - 若成功获取非零数据，直接返回
+
+    方式2（兜底）：数据为 0 时，杀进程 → 随机等待 → 冷启动 → 重新读取
+      - 确保数据准确，等待时间随机化避免固定特征
+
     返回 {"following": int, "followers": int}，失败时返回空字典。
     """
+    from core.device import XHS_PACKAGE
+
     d = device.d
     try:
+        # ── 方式1：下拉刷新读取（快速、自然）────────────────────────────
+        logger.info("会话结束，下拉刷新读取最新统计...")
         nav = Navigator(d)
-        logger.info("会话结束，导航到「我的」Tab 并下拉刷新读取最新统计...")
         stats = nav.read_my_stats(pull_refresh=True)
 
-        table = Table(title="我的账号当前统计", show_header=True, header_style="bold magenta")
-        table.add_column("指标", style="dim")
-        table.add_column("数值", justify="right", style="bold")
-        table.add_row("我的关注数", str(stats["following"]))
-        table.add_row("我的粉丝数", str(stats["followers"]))
-        console.print(table)
+        if stats.get("following", 0) > 0 or stats.get("followers", 0) > 0:
+            _print_my_stats_table(stats)
+            return stats
+
+        # ── 方式2：冷启动重试（数据仍为 0 时兜底）───────────────────────
+        logger.warning("下拉刷新后统计数据为 0，改用冷启动重新读取...")
+        d.app_stop(XHS_PACKAGE)
+        time.sleep(random.uniform(1.5, 3.5))
+
+        device.launch_xhs()
+        time.sleep(random.uniform(2.0, 4.0))
+
+        nav2 = Navigator(d)
+        stats = nav2.read_my_stats()
+        _print_my_stats_table(stats)
         return stats
 
     except Exception as e:
