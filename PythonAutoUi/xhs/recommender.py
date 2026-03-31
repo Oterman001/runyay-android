@@ -964,6 +964,13 @@ class Recommender:
                 self._delay.session_break(self._cfg.session_break_seconds)
                 self._follows_this_session = 0
 
+            # 每屏扫描前确认仍在「关注」Tab（fling 可能误触 Tab 栏）
+            active_tab = self._nav.active_relation_tab()
+            if active_tab and active_tab != "关注":
+                logger.warning(f"[{blogger_username}关注列表] Tab 漂移到 {active_tab!r}，重新切回「关注」Tab")
+                self._nav.ensure_relation_tab("关注")
+                time.sleep(0.8)
+
             # 扫描当前屏幕所有含「关注」按钮的条目
             items = self._collect_following_list_items()
             new_items = [

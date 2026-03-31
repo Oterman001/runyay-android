@@ -248,47 +248,108 @@ class Navigator:
         time.sleep(2.0)
         logger.debug("已切换到推荐列表")
 
-    def switch_to_following_tab(self) -> None:
+    def active_relation_tab(self) -> str:
         """
-        在关注列表页，点击顶部'关注' Tab（我已关注的人）。
+        返回 RelationMergeActivity 当前激活的 Tab 名称。
 
-        注意：页面上同时有 text='关注' 的 Tab 控件（上方，y < 400）
-        和列表条目右侧的「已关注」按钮，需要靠 y 坐标区分。
+        实机验证：激活的 Tab 父 ViewGroup 的 content-desc 格式为 "已选中{tab_name}"，
+        未激活的为 "{tab_name}"（无前缀）。
+
+        返回值示例：'关注' / '粉丝' / '共同' / '推荐' / '互相关注'，识别失败返回 ''。
+        """
+        import xml.etree.ElementTree as ET
+        try:
+            xml_str = self.d.dump_hierarchy()
+            root = ET.fromstring(xml_str)
+            for node in root.iter():
+                cd = (node.get("content-desc") or "").strip()
+                if cd.startswith("已选定"):
+                    return cd[3:]   # 去掉"已选定"前缀
+        except Exception as e:
+            logger.debug(f"active_relation_tab 解析失败: {e}")
+        return ""
+
+    def ensure_relation_tab(self, tab_name: str = "关注") -> bool:
+        """
+        确保 RelationMergeActivity 当前激活指定 Tab。
+
+        通过 content-desc="已选中{tab_name}" 检测当前激活 Tab，
+        若不符则查找 content-desc="{tab_name}" 的 ViewGroup 并点击。
+
+        Args:
+            tab_name: 目标 Tab 名称，如 '关注'、'粉丝'、'推荐'
+
+        Returns:
+            True 表示已在目标 Tab（或切换成功），False 表示切换失败。
         """
         import xml.etree.ElementTree as ET
 
+        current = self.active_relation_tab()
+        if current == tab_name:
+            logger.debug(f"已在 {tab_name!r} Tab，无需切换")
+            return True
+
+        logger.info(f"当前 Tab={current!r}，切换到 {tab_name!r} Tab")
         d = self.d
         clicked = False
         try:
             xml_str = d.dump_hierarchy()
             root = ET.fromstring(xml_str)
             for node in root.iter():
-                t = node.get("text", "").strip()
-                cls = node.get("class", "")
+                cd = (node.get("content-desc") or "").strip()
                 bounds = node.get("bounds", "")
-                if t == "关注" and "TextView" in cls and bounds:
+                # 精确匹配未激活的目标 Tab（无"已选定"前缀）
+                if cd == tab_name and bounds:
                     try:
                         parts = bounds.replace("][", ",").strip("[]").split(",")
-                        l, top, r, bot = int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3])
-                        # Tab 控件在屏幕上方（y < 400），排除列表中的"已关注"按钮
-                        if top < 400:
+                        l, top, r, bot = (int(p) for p in parts)
+                        if top < 500:   # Tab 栏在屏幕上方
                             cx, cy = (l + r) // 2, (top + bot) // 2
-                            logger.debug(f"点击'关注' Tab: ({cx},{cy})")
+                            logger.debug(f"点击 {tab_name!r} Tab: ({cx},{cy})")
                             d.click(cx, cy)
                             clicked = True
                             break
                     except Exception:
                         pass
         except Exception as e:
-            logger.debug(f"切换'关注' Tab 解析失败: {e}")
+            logger.debug(f"ensure_relation_tab 解析失败: {e}")
 
         if not clicked:
-            # Fallback：直接用 text="关注" 点击 Tab
-            if d(text="关注").exists:
-                d(text="关注").click()
+            logger.warning(f"未找到 {tab_name!r} Tab 节点，尝试 text 兜底")
+            # 兜底：text 匹配 + y < 500 排除列表条目中的同名按钮
+            try:
+                xml_str = d.dump_hierarchy()
+                root = ET.fromstring(xml_str)
+                for node in root.iter():
+                    t = node.get("text", "").strip()
+                    cls = node.get("class", "")
+                    bounds = node.get("bounds", "")
+                    if t == tab_name and "TextView" in cls and bounds:
+                        parts = bounds.replace("][", ",").strip("[]").split(",")
+                        l, top, r, bot = (int(p) for p in parts)
+                        if top < 500:
+                            d.click((l + r) // 2, (top + bot) // 2)
+                            clicked = True
+                            break
+            except Exception:
+                pass
 
-        time.sleep(1.5)
-        logger.debug("已切换到'关注' Tab（我的关注列表）")
+        if not clicked:
+            logger.error(f"切换到 {tab_name!r} Tab 失败")
+            return False
+
+        time.sleep(1.2)
+        confirmed = self.active_relation_tab() == tab_name
+        logger.debug(f"切换后 active_tab={self.active_relation_tab()!r} 确认={'✓' if confirmed else '✗'}")
+        return confirmed
+
+    def switch_to_following_tab(self) -> None:
+        """
+        在关注列表页，切换到'关注' Tab（我已关注的人）。
+        委托给 ensure_relation_tab() 实现，兼容我的关注列表和博主关注列表。
+        """
+        self.ensure_relation_tab("关注")
+        logger.debug("已切换到'关注' Tab")
 
     def go_back_to_recommend_list(self, depth: int = 1) -> None:
         """
@@ -467,25 +528,30 @@ class Navigator:
         # ── 验证是否成功进入博主关注列表（Activity 为主信号） ─────────────
         screen = self.current_screen()
         logger.debug(f"click_blogger_following_count 后: current_screen={screen}")
-        if screen == "blogger_following":
-            logger.debug("已进入博主关注列表（Activity 确认）")
-            return True
         if screen == "other_profile":
             logger.debug("仍在博主主页（Activity 确认），未能进入关注列表")
             return False
-        # Activity 未变化或未识别，回退到 UI 宽度判断
-        try:
-            for follow_text in ("关注", "已关注", "互相关注"):
-                for btn in d(text=follow_text, className="android.widget.Button"):
-                    info = btn.info
-                    bounds = info.get("bounds", {})
-                    if bounds:
-                        w = bounds.get("right", 0) - bounds.get("left", 0)
-                        if 150 < w < 350:
-                            logger.debug(f"仍在博主主页（{follow_text!r} 按钮可见），未能进入关注列表")
-                            return False
-        except Exception:
-            pass
+        if screen != "blogger_following":
+            # Activity 未变化或未识别，回退到 UI 宽度判断
+            try:
+                for follow_text in ("关注", "已关注", "互相关注"):
+                    for btn in d(text=follow_text, className="android.widget.Button"):
+                        info = btn.info
+                        bounds = info.get("bounds", {})
+                        if bounds:
+                            w = bounds.get("right", 0) - bounds.get("left", 0)
+                            if 150 < w < 350:
+                                logger.debug(f"仍在博主主页（{follow_text!r} 按钮可见），未能进入关注列表")
+                                return False
+            except Exception:
+                pass
 
-        logger.debug("已进入博主关注列表（UI 兜底确认）")
+        # ── 已进入关注列表，强制校正到「关注」Tab ────────────────────────
+        # XHS 有时打开 RelationMergeActivity 时停留在「粉丝」或「共同」Tab
+        active_tab = self.active_relation_tab()
+        if active_tab != "关注":
+            logger.info(f"进入博主关注列表后 Tab={active_tab!r}，自动切换到「关注」Tab")
+            self.ensure_relation_tab("关注")
+        else:
+            logger.debug("已进入博主关注列表，当前在「关注」Tab（Activity 确认）")
         return True
