@@ -187,3 +187,52 @@ class Navigator:
         # 确认推荐 Tab 可见（在关注列表页）
         self.d(description="推荐").wait(timeout=5)
         logger.debug(f"已返回推荐列表（back x{depth}）")
+
+    # ------------------------------------------------------------------ #
+    # 读取「我的」统计数据
+    # ------------------------------------------------------------------ #
+
+    def read_my_stats(self) -> dict:
+        """
+        导航到「我的」Tab，读取并返回当前账号的关注数与粉丝数。
+        返回格式：{"following": int, "followers": int}
+        使用与 profile_parser 相同的兄弟节点解析策略。
+        """
+        import re
+        import xml.etree.ElementTree as ET
+        from utils.cn_number import parse_cn_number
+
+        d = self.d
+        result = {"following": 0, "followers": 0}
+
+        # 进入我的主页
+        self.go_to_my_tab()
+        time.sleep(1.0)
+
+        # dump 页面 XML，用兄弟节点法提取数值
+        xml_str = d.dump_hierarchy()
+        root = ET.fromstring(xml_str)
+
+        label_map = {"关注": "following", "粉丝": "followers"}
+        for label, key in label_map.items():
+            for parent in root.iter():
+                children = list(parent)
+                for i, child in enumerate(children):
+                    if (
+                        child.get("text", "").strip() == label
+                        and "TextView" in child.get("class", "")
+                    ):
+                        # 向前找第一个含数字的兄弟节点
+                        for j in range(i - 1, -1, -1):
+                            num_text = children[j].get("text", "").strip()
+                            if num_text and re.search(r"\d", num_text):
+                                result[key] = parse_cn_number(num_text)
+                                break
+                        break
+                if result[key]:
+                    break
+
+        logger.info(
+            f"我的账号统计 — 关注: {result['following']}  粉丝: {result['followers']}"
+        )
+        return result

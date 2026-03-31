@@ -261,6 +261,42 @@ def _print_session_summary(session, db: Database) -> None:
     console.print(table)
 
 
+def _post_session_stats(device: Device) -> None:
+    """
+    会话结束后的收尾操作：
+      1. 杀掉小红书进程
+      2. 重新冷启动小红书
+      3. 导航到「我的」Tab，读取关注数和粉丝数并打印
+    """
+    from core.device import XHS_PACKAGE
+
+    d = device.d
+    try:
+        # ── 1. 杀掉进程 ──────────────────────────────────────────────────
+        logger.info("会话结束，正在关闭小红书...")
+        d.app_stop(XHS_PACKAGE)
+        time.sleep(2.0)
+
+        # ── 2. 冷启动 ─────────────────────────────────────────────────────
+        logger.info("重新冷启动小红书...")
+        device.launch_xhs()
+        time.sleep(1.5)
+
+        # ── 3. 读取统计 ───────────────────────────────────────────────────
+        nav = Navigator(d)
+        stats = nav.read_my_stats()
+
+        table = Table(title="我的账号当前统计", show_header=True, header_style="bold magenta")
+        table.add_column("指标", style="dim")
+        table.add_column("数值", justify="right", style="bold")
+        table.add_row("我的关注数", str(stats["following"]))
+        table.add_row("我的粉丝数", str(stats["followers"]))
+        console.print(table)
+
+    except Exception as e:
+        logger.warning(f"收尾统计读取失败（不影响主流程）: {e}")
+
+
 def main() -> None:
     args = parse_args()
     config = load_config()
@@ -295,6 +331,9 @@ def main() -> None:
             run_recommend_session(config, db, device)
         else:
             run_search_session(config, db, device)
+
+        # 会话正常结束后：关闭 App → 冷启动 → 读取我的关注/粉丝统计
+        _post_session_stats(device)
 
     except Exception as e:
         logger.exception(f"主流程异常: {e}")
