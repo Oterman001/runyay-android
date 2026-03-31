@@ -352,28 +352,15 @@ def _print_session_summary(session, db: Database) -> None:
 def _post_session_stats(device: Device) -> dict:
     """
     会话结束后的收尾操作：
-      1. 杀掉小红书进程
-      2. 重新冷启动小红书
-      3. 导航到「我的」Tab，读取关注数和粉丝数并打印
+      导航到「我的」Tab → 下拉刷新 2-3 次 → 读取关注数和粉丝数并打印。
+      不杀进程、不重启 App，直接在当前进程内刷新读取，更自然高效。
     返回 {"following": int, "followers": int}，失败时返回空字典。
     """
-    from core.device import XHS_PACKAGE
-
     d = device.d
     try:
-        # ── 1. 杀掉进程 ──────────────────────────────────────────────────
-        logger.info("会话结束，正在关闭小红书...")
-        d.app_stop(XHS_PACKAGE)
-        time.sleep(2.0)
-
-        # ── 2. 冷启动 ─────────────────────────────────────────────────────
-        logger.info("重新冷启动小红书...")
-        device.launch_xhs()
-        time.sleep(1.5)
-
-        # ── 3. 读取统计 ───────────────────────────────────────────────────
         nav = Navigator(d)
-        stats = nav.read_my_stats()
+        logger.info("会话结束，导航到「我的」Tab 并下拉刷新读取最新统计...")
+        stats = nav.read_my_stats(pull_refresh=True)
 
         table = Table(title="我的账号当前统计", show_header=True, header_style="bold magenta")
         table.add_column("指标", style="dim")

@@ -4,6 +4,7 @@ XHS 屏幕导航：提供命名屏幕切换，检测当前所在页面。
 
 from __future__ import annotations
 
+import random
 import time
 
 import uiautomator2 as u2
@@ -246,11 +247,34 @@ class Navigator:
     # 读取「我的」统计数据
     # ------------------------------------------------------------------ #
 
-    def read_my_stats(self) -> dict:
+    def pull_to_refresh(self, times: int = 2) -> None:
         """
-        导航到「我的」Tab，读取并返回当前账号的关注数与粉丝数。
+        在当前页面执行下拉刷新，模拟手指从上方向下拉动。
+
+        参数：
+            times: 刷新次数（默认 2 次，确保数据更新）
+
+        手势参数：从 y≈350 拉到 y≈1000，速度较慢以触发系统下拉刷新动画。
+        每次刷新后等待 1.5-2.5 秒让数据加载完成。
+        """
+        d = self.d
+        for i in range(times):
+            start_y = random.randint(300, 400)
+            end_y   = random.randint(900, 1100)
+            dur     = random.uniform(0.6, 1.0)
+            d.swipe(540, start_y, 540, end_y, duration=dur)
+            wait = random.uniform(1.5, 2.5)
+            logger.debug(f"下拉刷新第 {i + 1}/{times} 次，等待 {wait:.1f}s")
+            time.sleep(wait)
+
+    def read_my_stats(self, pull_refresh: bool = False) -> dict:
+        """
+        导航到「我的」Tab，可选下拉刷新后读取关注数与粉丝数。
+
+        参数：
+            pull_refresh: True 时在读取前执行 2-3 次下拉刷新，
+                          确保关注操作后的数据已更新（无需重启 App）。
         返回格式：{"following": int, "followers": int}
-        使用与 profile_parser 相同的兄弟节点解析策略。
         """
         import re
         import xml.etree.ElementTree as ET
@@ -261,6 +285,13 @@ class Navigator:
 
         # 进入我的主页
         self.go_to_my_tab()
+
+        # 可选：下拉刷新若干次让关注数/粉丝数更新
+        if pull_refresh:
+            refresh_times = random.randint(2, 3)
+            logger.info(f"下拉刷新 {refresh_times} 次，等待数据更新...")
+            self.pull_to_refresh(times=refresh_times)
+
         time.sleep(1.0)
 
         # dump 页面 XML，用兄弟节点法提取数值
