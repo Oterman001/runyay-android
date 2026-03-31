@@ -105,6 +105,14 @@ class Recommender:
         d = self._d
         self._nav.switch_to_following_tab()
 
+        # ── 随机初始滑动：错开列表起始位置，避免每次都从顶部选同一批博主 ──
+        init_scrolls = random.randint(0, 4)
+        if init_scrolls > 0:
+            logger.info(f"随机初始滑动 {init_scrolls} 次，错开列表起始位置")
+            for _ in range(init_scrolls):
+                human_swipe_up(d)
+                time.sleep(random.uniform(0.5, 1.2))
+
         # 本次会话已处理的博主（防同一 session 内重复进入）
         visited_this_session: set[str] = set()
         bloggers_explored = 0
