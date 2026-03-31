@@ -4,7 +4,7 @@
 用法：
   python main.py                        # 推荐列表模式，读 config.yaml
   python main.py --mode recommend       # 推荐列表模式（默认）
-  python main.py --mode search          # 关键词搜索模式
+  python main.py --mode my_following    # 我的关注列表探索模式
   python main.py --dry-run              # 模拟运行，不实际关注
   python main.py --limit 5              # 覆盖每日限额
   python main.py --serial xxxxx         # 指定设备序列号
@@ -30,13 +30,10 @@ from anti_detection.human_delay import HumanDelay
 from core.device import Device
 from core.navigator import Navigator
 from persistence.database import Database
-from strategy.daily_limit import can_follow
-from strategy.scoring import compute_follow_score
 from utils.config_loader import load_config
 from xhs.follow_action import FollowAction, RateLimitWarning
 from xhs.profile_parser import ProfileParser
 from xhs.recommender import Recommender
-from xhs.searcher import Searcher
 
 console = Console()
 
@@ -48,9 +45,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--serial", type=str, default="", help="设备序列号")
     parser.add_argument(
         "--mode",
-        choices=["search", "recommend", "my_following"],
+        choices=["recommend", "my_following"],
         default="",
-        help="运行模式：recommend（推荐列表，默认）/ search（关键词搜索）/ my_following（我的关注列表探索）",
+        help="运行模式：recommend（推荐列表，默认）/ my_following（我的关注列表探索）",
     )
     return parser.parse_args()
 
@@ -225,114 +222,6 @@ def run_my_following_session(config, db: Database, device: Device) -> int:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 搜索关键词模式（v1，保留）
-# ──────────────────────────────────────────────────────────────────────────────
-
-def run_search_session(config, db: Database, device: Device) -> int:
-    """执行一次基于关键词搜索路径的关注会话。返回 session_id（0 表示异常）。"""
-    nav = Navigator(device.d)
-    delay = HumanDelay(config.delays)
-    searcher = Searcher(device.d, nav, delay)
-    parser = ProfileParser(device.d)
-    follower = FollowAction(device.d, delay)
-
-    keywords = list(config.keywords)
-    random.shuffle(keywords)
-    session = db.create_session(keywords)
-    followed_this_session = 0
-
-    try:
-        for keyword in keywords:
-            if not can_follow(db, config):
-                session.stop_reason = "daily_limit"
-                break
-
-            try:
-                candidates = searcher.search_users(keyword, config.pages_per_keyword)
-            except Exception as e:
-                logger.error(f"搜索关键词 '{keyword}' 失败: {e}")
-                device.restart_xhs()
-                continue
-
-            session.candidates_seen += len(candidates)
-
-            for username in candidates:
-                if not can_follow(db, config):
-                    session.stop_reason = "daily_limit"
-                    return
-
-                if followed_this_session >= config.max_follows_per_session:
-                    logger.info(f"单次会话上限，休息 {config.session_break_seconds}s")
-                    delay.session_break(config.session_break_seconds)
-                    followed_this_session = 0
-
-                if db.is_already_processed(username):
-                    continue
-                if random.random() < config.random_skip_ratio:
-                    continue
-
-                profile = None
-                try:
-                    btn = device.d(text=username)
-                    if not btn.exists:
-                        continue
-                    btn.click()
-                    time.sleep(1.5)
-                    profile = parser.parse(username)
-                except Exception as e:
-                    logger.warning(f"进入主页失败 {username}: {e}")
-                    device.press_back()
-                    delay.between_profiles()
-                    continue
-
-                if profile is None:
-                    device.press_back()
-                    delay.between_profiles()
-                    continue
-
-                score = compute_follow_score(profile)
-                profile.follow_score = score
-                db.save_blogger(profile)
-
-                if score < 0 or score < config.min_score_threshold:
-                    device.press_back()
-                    delay.between_profiles()
-                    continue
-
-                session.candidates_qualified += 1
-
-                try:
-                    success = follower.follow(profile, dry_run=config.dry_run)
-                    if success:
-                        db.record_follow(username, session.id, confirmed=True)
-                        followed_this_session += 1
-                        session.follows_made += 1
-                        delay.post_follow()
-                except RateLimitWarning as e:
-                    logger.error(f"平台限制，停止: {e}")
-                    session.stop_reason = "rate_limit"
-                    device.press_back()
-                    return
-                except Exception as e:
-                    logger.warning(f"关注失败 {username}: {e}")
-
-                nav.go_back_to_search_results()
-                delay.between_profiles()
-
-    except KeyboardInterrupt:
-        session.stop_reason = "interrupted"
-    except Exception as e:
-        session.stop_reason = f"error: {e}"
-        logger.exception(f"搜索会话异常: {e}")
-    finally:
-        if not session.stop_reason:
-            session.stop_reason = "complete"
-        db.close_session(session)
-        _print_session_summary(session, db)
-    return session.id
-
-
-# ──────────────────────────────────────────────────────────────────────────────
 # 公共工具
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -433,12 +322,10 @@ def main() -> None:
         device.connect()
         device.launch_xhs()
 
-        if config.mode == "recommend":
-            session_id = run_recommend_session(config, db, device)
-        elif config.mode == "my_following":
+        if config.mode == "my_following":
             session_id = run_my_following_session(config, db, device)
         else:
-            session_id = run_search_session(config, db, device)
+            session_id = run_recommend_session(config, db, device)
 
         # 会话正常结束后：关闭 App → 冷启动 → 读取我的关注/粉丝统计并存库
         stats = _post_session_stats(device)

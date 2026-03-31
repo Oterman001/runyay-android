@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Tuple
+from typing import Tuple
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
@@ -37,13 +37,11 @@ class AppConfig(BaseModel):
     max_follows_per_session: int = Field(15, ge=1)
     session_break_seconds: int = Field(180, ge=0)
     active_hours: Tuple[int, int] = (9, 22)
-    keywords: List[str] = Field(default_factory=lambda: ["跑步博主"])
-    pages_per_keyword: int = Field(6, ge=1)
     min_score_threshold: int = Field(60, ge=0, le=100)
     random_skip_ratio: float = Field(0.12, ge=0.0, le=1.0)
     delays: DelaysConfig = DelaysConfig()
     # 推荐列表路径（v2）
-    mode: str = Field("recommend", pattern="^(search|recommend|my_following)$")
+    mode: str = Field("recommend", pattern="^(recommend|my_following)$")
     pages_per_recommend: int = Field(8, ge=1)
     max_depth: int = Field(5, ge=1, le=10)
     direct_follow: bool = True  # True=直接点列表关注按钮，False=进主页评分后关注
