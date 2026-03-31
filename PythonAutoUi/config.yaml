@@ -10,14 +10,14 @@ device:
 dry_run: false  # true=只打日志不实际关注，调试完成后改为 false
 
 # 每日限额控制
-daily_follow_limit: 40          # 每天最多关注人数（建议 30-45，安全上限）
-max_follows_per_session: 15     # 单次会话最多关注人数（之后强制休息）
+daily_follow_limit: 110         # 每天最多关注人数（建议 30-45，安全上限）
+max_follows_per_session: 10     # 单次会话最多关注人数（之后强制休息）
 session_break_seconds: 180      # 单次会话超限后的休息时长（秒）
 active_hours: [6, 23]           # 仅在此时间段内运行（24小时制）
 
 # ── 运行模式 ──────────────────────────────────────────────────────────────────
 # auto（随机整合两种路径，默认）/ recommend（仅推荐列表）/ my_following（仅我的关注列表探索）
-mode: "auto"
+mode: "my_following"
 
 # 推荐列表滚动页数（每页约 6-8 个推荐用户）
 pages_per_recommend: 8
