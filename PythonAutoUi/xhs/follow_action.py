@@ -78,30 +78,33 @@ class FollowAction:
     # ------------------------------------------------------------------ #
 
     def _find_follow_button(self):
-        """找到可点击的"关注"按钮，必要时向上滚动使其可见。"""
+        """
+        找到可点击的"关注"按钮，必须是 Button 类型（排除统计数据旁的 TextView 标签）。
+        必要时向下滚动使其可见。
+        """
         d = self._d
         for text in _FOLLOWABLE_TEXTS:
-            btn = d(text=text)
+            btn = d(text=text, className="android.widget.Button")
             if btn.exists:
                 return btn
 
-        # 尝试向上滚动一次，再找
+        # 尝试向下滚动一次（按钮可能被键盘或其他元素遮挡），再找
         from anti_detection.gesture import human_swipe_down
         human_swipe_down(d, distance=400)
         time.sleep(0.8)
 
         for text in _FOLLOWABLE_TEXTS:
-            btn = d(text=text)
+            btn = d(text=text, className="android.widget.Button")
             if btn.exists:
                 return btn
 
         return None
 
     def _verify_follow_success(self) -> bool:
-        """验证关注按钮是否变为成功状态。"""
+        """验证关注按钮是否变为成功状态（限定 Button 类型，排除统计标签）。"""
         d = self._d
         for state_text in _SUCCESS_STATES:
-            if d(text=state_text).exists:
+            if d(text=state_text, className="android.widget.Button").exists:
                 return True
         return False
 

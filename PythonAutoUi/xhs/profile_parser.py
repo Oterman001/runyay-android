@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 import time
+import xml.etree.ElementTree as ET
 from typing import Optional
 
 import uiautomator2 as u2
@@ -65,10 +66,18 @@ class ProfileParser:
     # ------------------------------------------------------------------ #
 
     def _wait_for_stats(self, timeout: int = 8) -> bool:
-        """等待粉丝统计 Button 出现（主页已加载的信号）。"""
-        return self._d(
-            descriptionContains="粉丝", className="android.widget.Button"
-        ).wait(timeout=timeout)
+        """
+        等待主页统计区域加载完成。
+        实机验证：统计区是空文本 Button 包裹 TextView，
+        子 TextView text='粉丝' 是最可靠的加载信号。
+        兼容少数版本用 contentDescription="NNN粉丝" 的场景。
+        """
+        return (
+            self._d(text="粉丝").wait(timeout=timeout)
+            or self._d(
+                descriptionContains="粉丝", className="android.widget.Button"
+            ).wait(timeout=3)
+        )
 
     # ------------------------------------------------------------------ #
     # 数值解析（content-desc 方案）
@@ -76,10 +85,13 @@ class ProfileParser:
 
     def _extract_following(self) -> int:
         """
-        从 content-desc="NNN关注" 的 Button 提取关注数。
-        注意：排除 text="关注"/"已关注" 的操作按钮。
+        提取关注数。
+        方案1：contentDescription="NNN关注" Button（部分 XHS 版本）
+        方案2：统计区结构为空文本 Button，子 TextView 依次是数字和标签，
+               找 text='关注' 标签的前一个兄弟 TextView 里的数字。
         """
         d = self._d
+        # 方案1：content-desc 模式
         try:
             for btn in d(className="android.widget.Button"):
                 cd = btn.info.get("contentDescription", "") or ""
@@ -87,12 +99,22 @@ class ProfileParser:
                     num_str = cd[: cd.rfind("关注")].strip()
                     return parse_cn_number(num_str)
         except Exception as e:
-            logger.debug(f"提取关注数失败: {e}")
+            logger.debug(f"提取关注数(cd方案)失败: {e}")
+
+        # 方案2：XML 兄弟节点方案
+        try:
+            return self._extract_stat_by_label("关注")
+        except Exception as e:
+            logger.debug(f"提取关注数(xml方案)失败: {e}")
         return 0
 
     def _extract_followers(self) -> int:
-        """从 content-desc="NNN粉丝" 的 Button 提取粉丝数。"""
+        """
+        提取粉丝数。
+        同 _extract_following，优先 contentDescription，再用 XML 兄弟节点。
+        """
         d = self._d
+        # 方案1：content-desc 模式
         try:
             for btn in d(className="android.widget.Button"):
                 cd = btn.info.get("contentDescription", "") or ""
@@ -100,7 +122,32 @@ class ProfileParser:
                     num_str = cd[: cd.rfind("粉丝")].strip()
                     return parse_cn_number(num_str)
         except Exception as e:
-            logger.debug(f"提取粉丝数失败: {e}")
+            logger.debug(f"提取粉丝数(cd方案)失败: {e}")
+
+        # 方案2：XML 兄弟节点方案
+        try:
+            return self._extract_stat_by_label("粉丝")
+        except Exception as e:
+            logger.debug(f"提取粉丝数(xml方案)失败: {e}")
+        return 0
+
+    def _extract_stat_by_label(self, label: str) -> int:
+        """
+        通用：在 XML 树中找 text=label 的 TextView，
+        然后找同一父节点中排在它前面的 TextView（数字节点），解析数值。
+        统计区结构：Button > [TextView(数字), TextView(标签)]
+        """
+        xml_str = self._d.dump_hierarchy()
+        root = ET.fromstring(xml_str)
+        for parent in root.iter():
+            children = list(parent)
+            for i, child in enumerate(children):
+                if child.get("text", "").strip() == label and "TextView" in child.get("class", ""):
+                    # 找前一个兄弟中的数字节点
+                    for j in range(i - 1, -1, -1):
+                        num_text = children[j].get("text", "").strip()
+                        if num_text and re.search(r"\d", num_text):
+                            return parse_cn_number(num_text)
         return 0
 
     def _extract_notes_count(self) -> int:

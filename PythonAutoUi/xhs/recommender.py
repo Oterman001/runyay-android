@@ -580,74 +580,89 @@ class Recommender:
     def _get_horizontal_recommendations(self) -> List[str]:
         """
         解析横向推荐列表（关注后出现在主页底部）。
-        特征：包含多个小型用户卡片的水平可滑动容器。
+
+        实机验证结构（debug_horiz.py）：
+          - 标题 text='关注他也关注①' at y≈1211
+          - 用户名 TextView 横向分布 at y≈title_y+270（如 y≈1484）
+          - 粉丝数文本 at y≈title_y+330
+          - text='关注' TextView at y≈title_y+410，clickable=false
+          → 必须点用户名进入主页才能关注，不能直接点列表中的"关注"
         """
+        import re as _re
+
         d = self._d
-        usernames = []
+        usernames: List[str] = []
         seen: set[str] = set()
+
+        _EXCLUDE = {"关注", "已关注", "互相关注", "粉丝", "关注他"}
+        _EXCLUDE_CONTAINS = [
+            "也关注", "他们也关注", "共同关注", "共同好友", "的人也关注", "关注他",
+        ]
+        # 数字/单位组成的粉丝数文本，如 "4152"、"1.2万"、"300"
+        _NUM_PATTERN = _re.compile(r'^[\d\.万千百kKmM\+]+$')
 
         try:
             xml_str = d.dump_hierarchy()
             root = ET.fromstring(xml_str)
 
-            # 策略1：找 HorizontalScrollView / RecyclerView 中包含"关注"按钮的
+            # ── 1. 找"也关注"标题节点，获取其 y 坐标 ────────────────────────
+            title_y: Optional[int] = None
             for node in root.iter():
-                cls = node.get("class", "")
-                if "HorizontalScrollView" in cls or (
-                    "RecyclerView" in cls and self._is_horizontal(node)
-                ):
-                    inner_texts = [n.get("text", "") for n in node.iter()]
-                    if "关注" in inner_texts or "已关注" in inner_texts:
-                        for child in node.iter():
-                            t = child.get("text", "").strip()
-                            if (
-                                t
-                                and t not in ("关注", "已关注", "互相关注")
-                                and 1 < len(t) <= 20
-                                and t not in seen
-                            ):
-                                seen.add(t)
-                                usernames.append(t)
+                t = node.get("text", "").strip()
+                if "也关注" in t:
+                    b = node.get("bounds", "")
+                    if b:
+                        try:
+                            _, top, _, _ = self._parse_bounds(b)
+                            title_y = top
+                            logger.debug(f"横向推荐标题: {t!r} at y={top}")
+                            break
+                        except Exception:
+                            pass
 
-            # 策略2：找"关注他的人也关注"文字附近的用户名节点
-            if not usernames:
-                for node in root.iter():
-                    t = node.get("text", "").strip()
-                    if "也关注" in t or "他们也关注" in t:
-                        parent = self._find_parent(root, node)
-                        if parent:
-                            grandparent = self._find_parent(root, parent)
-                            if grandparent:
-                                for n in grandparent.iter():
-                                    nt = n.get("text", "").strip()
-                                    if (
-                                        nt
-                                        and nt not in ("关注", "已关注", "互相关注")
-                                        and "也关注" not in nt
-                                        and 1 < len(nt) <= 20
-                                        and nt not in seen
-                                    ):
-                                        seen.add(nt)
-                                        usernames.append(nt)
+            if title_y is None:
+                logger.debug("未找到横向推荐标题（'也关注'），跳过横向推荐")
+                return []
+
+            # ── 2. 在标题下方 [title_y+80, title_y+500] 找用户名 TextView ───
+            #    用户名横向分布（x 不限），需排除：数字、固定词、含"也关注"等
+            range_top = title_y + 80
+            range_bot = title_y + 500
+
+            candidates: List[tuple[int, str]] = []  # (x, name)
+            for node in root.iter():
+                t = node.get("text", "").strip()
+                cls = node.get("class", "")
+                b = node.get("bounds", "")
+                if not (t and "TextView" in cls and b):
+                    continue
+                if t in _EXCLUDE:
+                    continue
+                if any(kw in t for kw in _EXCLUDE_CONTAINS):
+                    continue
+                if not (1 < len(t) <= 20):
+                    continue
+                if _NUM_PATTERN.match(t):
+                    continue
+                try:
+                    l, top, r, _ = self._parse_bounds(b)
+                    if range_top <= top <= range_bot:
+                        candidates.append((l, t))
+                except Exception:
+                    pass
+
+            # 按 x 坐标从左到右排序（横向卡片顺序），去重
+            candidates.sort(key=lambda x: x[0])
+            for x_pos, name in candidates:
+                if name not in seen:
+                    seen.add(name)
+                    usernames.append(name)
+                    logger.debug(f"横向推荐用户: {name!r} at x={x_pos}")
 
         except Exception as e:
             logger.debug(f"横向推荐解析失败: {e}")
 
         return usernames
-
-    @staticmethod
-    def _is_horizontal(node) -> bool:
-        """判断 RecyclerView 是否是水平方向（横向推荐列表特征）。"""
-        bounds = node.get("bounds", "")
-        if not bounds:
-            return False
-        try:
-            l, t, r, b = Recommender._parse_bounds(bounds)
-            width = r - l
-            height = b - t
-            return width > height * 2  # 宽远大于高 → 横向
-        except Exception:
-            return False
 
     # ------------------------------------------------------------------ #
     # 用户名收集（路径 B 用）
@@ -759,7 +774,13 @@ class Recommender:
             return False
         node.click()
         time.sleep(1.8)
-        if not d(descriptionContains="粉丝", className="android.widget.Button").wait(timeout=8):
+        # 实机验证：主页统计区是空文本 Button，子 TextView 有 text='粉丝'
+        # 同时兼容部分 XHS 版本用 contentDescription 的场景
+        found = (
+            d(text="粉丝").wait(timeout=8)
+            or d(descriptionContains="粉丝", className="android.widget.Button").wait(timeout=4)
+        )
+        if not found:
             logger.warning(f"进入 {username} 主页超时")
             d.press("back")
             return False
@@ -768,7 +789,8 @@ class Recommender:
     def _safe_back_to_recommend(self) -> None:
         """安全返回推荐列表（连续 press_back 直到推荐 Tab 可见）。"""
         for _ in range(6):
-            if self._d(description="推荐").exists:
+            # text='推荐' 是推荐 Tab（实机验证，contentDescription 为空）
+            if self._d(text="推荐").exists:
                 break
             self._d.press("back")
             time.sleep(0.8)
@@ -780,11 +802,9 @@ class Recommender:
         """
         d = self._d
 
-        # ── 1. 去到首页 Tab ──────────────────────────────────────────────
+        # ── 1. 去到首页 Tab（text="首页"，contentDescription 为空）─────────
         try:
-            if d(description="首页").exists:
-                d(description="首页").click()
-            elif d(text="首页").exists:
+            if d(text="首页").exists:
                 d(text="首页").click()
             time.sleep(random.uniform(1.5, 2.5))
             logger.debug("已切换到首页，开始随机浏览")
@@ -801,14 +821,13 @@ class Recommender:
             except Exception:
                 break
 
-        # ── 3. 随机 30% 概率点击其他 Tab（发现/购物/消息），再返回 ──────
-        other_tabs = ["发现", "购物", "消息"]
+        # ── 3. 随机 30% 概率点击其他 Tab（市集/消息），再返回 ──────────
+        # 实机验证：底部 Tab 为 首页/市集/消息/我，均用 text 属性
+        other_tabs = ["市集", "消息"]
         if random.random() < 0.30:
             tab_name = random.choice(other_tabs)
             try:
-                if d(description=tab_name).exists:
-                    d(description=tab_name).click()
-                elif d(text=tab_name).exists:
+                if d(text=tab_name).exists:
                     d(text=tab_name).click()
                 else:
                     tab_name = None
