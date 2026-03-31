@@ -4,12 +4,20 @@ XHS 屏幕导航：提供命名屏幕切换，检测当前所在页面。
 
 from __future__ import annotations
 
+import re
 import random
+import subprocess
 import time
 
 import uiautomator2 as u2
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_fixed
+
+# XHS Activity 短名 → 屏幕标识（RelationMergeActivity 需进一步区分）
+_ACTIVITY_MAP = {
+    "IndexActivityV2":       "home",           # 首页 / 我的主页
+    "NewOtherUserActivity":  "other_profile",  # 其他博主主页
+}
 
 
 class Navigator:
@@ -20,26 +28,77 @@ class Navigator:
     # 当前屏幕检测
     # ------------------------------------------------------------------ #
 
+    def current_activity(self) -> str:
+        """
+        通过 adb dumpsys window 获取当前前台 Activity 短名。
+
+        实机探测结果：
+            IndexActivityV2          → 首页 / 我的主页
+            NewOtherUserActivity     → 其他博主主页
+            RelationMergeActivity    → 关注列表（我的 OR 博主的，需 UI 进一步区分）
+
+        返回 Activity 类名最后一段（如 'IndexActivityV2'），失败返回 'unknown'。
+        """
+        try:
+            result = subprocess.run(
+                ["adb", "shell", "dumpsys", "window"],
+                capture_output=True, text=True, timeout=6,
+                encoding="utf-8", errors="replace",
+            )
+            for line in result.stdout.splitlines():
+                if "mCurrentFocus=" in line and "null" not in line:
+                    m = re.search(r"com\.xingin\.xhs/[\w.]+\.(\w+)\}", line)
+                    if m:
+                        return m.group(1)
+        except Exception as e:
+            logger.debug(f"current_activity 获取失败: {e}")
+        return "unknown"
+
     def current_screen(self) -> str:
         """
-        返回当前所在屏幕名称：
-            'home'      首页
-            'search'    搜索结果页
-            'profile'   用户主页
-            'unknown'   未知
+        返回当前所在屏幕名称（以 Activity 为主信号，UI 辅助区分子状态）：
+
+            'home'               首页 / 我的主页（IndexActivityV2）
+            'other_profile'      其他博主主页（NewOtherUserActivity）
+            'my_following'       我的关注列表（RelationMergeActivity + 互相关注 Tab）
+            'blogger_following'  博主关注列表（RelationMergeActivity，无互相关注 Tab）
+            'unknown'            未识别
+
+        相比纯 UI 检测，Activity 名称更稳定，不受多语言/版本 UI 变化影响。
         """
-        d = self.d
-        if d(text="首页", className="android.widget.TextView").exists:
-            # 底部导航栏有"首页"说明在主页面族
-            if d(text="搜索", className="android.widget.EditText").exists:
-                return "search_input"
-            # 检查是否有"粉丝"数字区域（主页特征）
-            if d(textContains="粉丝").exists and not d(text="发现").exists:
-                return "profile"
-            if d(textContains="综合").exists or d(text="用户").exists:
-                return "search_results"
-            return "home"
+        activity = self.current_activity()
+        logger.debug(f"current_activity={activity}")
+
+        if activity in _ACTIVITY_MAP:
+            return _ACTIVITY_MAP[activity]
+
+        if activity == "RelationMergeActivity":
+            # 我的关注列表有独有的"互相关注" Tab（4 个 Tab），博主关注列表无此 Tab
+            if self.d(text="互相关注").exists:
+                return "my_following"
+            return "blogger_following"
+
         return "unknown"
+
+    def wait_for_screen(self, expected: str, timeout: float = 8.0) -> bool:
+        """
+        等待当前屏幕变为 expected，每 0.8s 轮询一次。
+
+        Args:
+            expected: 目标屏幕名（与 current_screen() 返回值一致）
+            timeout:  最长等待秒数
+
+        Returns:
+            True 表示在超时前到达目标屏幕，False 表示超时。
+        """
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if self.current_screen() == expected:
+                logger.debug(f"已到达目标界面: {expected}")
+                return True
+            time.sleep(0.8)
+        logger.warning(f"等待界面 {expected!r} 超时（{timeout}s）")
+        return False
 
     # ------------------------------------------------------------------ #
     # 导航动作
@@ -405,23 +464,28 @@ class Navigator:
 
         time.sleep(2.0)
 
-        # ── 验证是否成功进入关注列表 ────────────────────────────────────────
-        # 进入后，博主主页特有的关注操作按钮（宽约 200-300px，右侧）应消失
-        # 同时页面应出现用户列表（RecyclerView 或多个带"关注"按钮的条目）
+        # ── 验证是否成功进入博主关注列表（Activity 为主信号） ─────────────
+        screen = self.current_screen()
+        logger.debug(f"click_blogger_following_count 后: current_screen={screen}")
+        if screen == "blogger_following":
+            logger.debug("已进入博主关注列表（Activity 确认）")
+            return True
+        if screen == "other_profile":
+            logger.debug("仍在博主主页（Activity 确认），未能进入关注列表")
+            return False
+        # Activity 未变化或未识别，回退到 UI 宽度判断
         try:
             for follow_text in ("关注", "已关注", "互相关注"):
                 for btn in d(text=follow_text, className="android.widget.Button"):
                     info = btn.info
                     bounds = info.get("bounds", {})
-                    # 关注操作按钮宽度约 200-300px，排除统计区误判
                     if bounds:
                         w = bounds.get("right", 0) - bounds.get("left", 0)
                         if 150 < w < 350:
-                            # 仍在博主主页（操作按钮仍可见）
                             logger.debug(f"仍在博主主页（{follow_text!r} 按钮可见），未能进入关注列表")
                             return False
         except Exception:
             pass
 
-        logger.debug("已进入博主关注列表")
+        logger.debug("已进入博主关注列表（UI 兜底确认）")
         return True

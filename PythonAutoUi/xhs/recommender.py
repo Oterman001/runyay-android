@@ -94,18 +94,19 @@ class Recommender:
     def _run_my_following_explore(self) -> int:
         """
         路径 C：从「我的关注列表」出发，逐个进入已关注博主的主页，
-        再点击其关注数进入其关注列表，从中发现并关注新的互关跑步博主。
+        再进入其关注列表，在列表中根据昵称和描述直接关注互关跑友。
 
-        行为特征：
-          - 优先选择昵称含互关关键词的博主（如"互关"、"有关必回"等）
-          - 其余博主随机选择，不按列表顺序，模拟真人浏览
-          - 每次点击前进行随机滑动浏览，偶尔回看，速度/距离随机
+        与旧版区别：
+          - 不再进入每个候选用户的主页做完整解析
+          - 直接在博主关注列表中滚动并点击关注按钮（速度更快）
+          - 已被完整探索过的博主关注列表会跳过（持久化记录）
           - 若无法进入某博主的关注列表，静默跳过换下一个
         """
         d = self._d
         self._nav.switch_to_following_tab()
 
-        explored: set[str] = set()
+        # 本次会话已处理的博主（防同一 session 内重复进入）
+        visited_this_session: set[str] = set()
         bloggers_explored = 0
         max_bloggers = self._cfg.max_bloggers_to_explore
         scroll_count = 0
@@ -117,19 +118,24 @@ class Recommender:
                 logger.info("达到每日上限，停止探索")
                 break
 
-            # 每轮先做人类式随机浏览滑动（首轮除外）
+            # 首轮不滑，之后每轮浏览性滑动
             if scroll_count > 0 or bloggers_explored > 0:
                 self._human_scroll_in_following_list()
             scroll_count += 1
 
-            # 收集当前屏幕可见用户
+            # 收集当前屏幕可见已关注博主名
             visible = self._collect_my_following_users()
-            candidates = [u for u in visible if u not in explored]
+            # 过滤：本 session 未访问 + 未被持久化标记为已完整探索
+            candidates = [
+                u for u in visible
+                if u not in visited_this_session
+                and not self._db.is_blogger_following_explored(u)
+            ]
 
             if not candidates:
                 consecutive_empty += 1
                 if consecutive_empty >= 3:
-                    logger.info("我的关注列表已无新博主可探索，结束")
+                    logger.info("我的关注列表已无可用博主（全部已探索或已访问），结束")
                     break
                 continue
 
@@ -139,10 +145,9 @@ class Recommender:
             priority = [u for u in candidates if self._has_mutual_keyword(u)]
             rest     = [u for u in candidates if not self._has_mutual_keyword(u)]
             random.shuffle(rest)
-            sorted_candidates = priority + rest
+            blogger = (priority + rest)[0]
 
-            blogger = sorted_candidates[0]
-            explored.add(blogger)
+            visited_this_session.add(blogger)
             bloggers_explored += 1
 
             tag = "（互关词命中）" if self._has_mutual_keyword(blogger) else ""
@@ -150,45 +155,78 @@ class Recommender:
                 f"[我的关注列表] 探索 {bloggers_explored}/{max_bloggers}: {blogger}{tag}"
             )
 
-            # 点击前短暂停留（模拟视线落在该条目上）
             time.sleep(random.uniform(0.3, 1.0))
 
-            # 进入博主主页
+            # ── 1. 进入博主主页 ─────────────────────────────────────────────
             if not self._click_user_by_name(blogger):
                 logger.debug(f"无法点击 {blogger}（可能已滚出屏幕），跳过")
                 continue
 
-            # 尝试进入其关注列表并探索（内部处理进不去的情况）
+            # ── 2. 进入其关注列表 ───────────────────────────────────────────
+            entered = self._nav.click_blogger_following_count()
+            if not entered:
+                logger.debug(f"{blogger} 关注列表无法进入（私密/受限），返回")
+                d.press("back")
+                time.sleep(0.8)
+                # 回到我的关注列表
+                self._ensure_back_to_my_following()
+                self._delay.between_profiles()
+                continue
+
+            # ── 3. 直接在其关注列表中关注互关跑友 ─────────────────────────
+            follows_made = 0
+            fully_explored = False
             try:
-                self._explore_blogger_following_list(depth=1)
+                follows_made, fully_explored = self._direct_follow_in_blogger_following_list(
+                    blogger_username=blogger
+                )
             except RateLimitWarning:
+                # 按两次 back（关注列表 → 博主主页 → 我的关注列表）
+                d.press("back")
+                time.sleep(0.5)
                 d.press("back")
                 time.sleep(0.8)
                 raise
             except Exception as e:
-                logger.warning(f"探索 {blogger} 关注列表异常: {e}")
+                logger.warning(f"[{blogger}关注列表] 探索异常: {e}")
+            finally:
+                # 返回博主主页（从其关注列表退出）
                 d.press("back")
-                time.sleep(0.8)
+                time.sleep(random.uniform(0.6, 1.2))
 
-            # 从博主主页返回我的关注列表
+            logger.info(
+                f"[{blogger}关注列表] 本次关注 {follows_made} 人"
+                f"{'，已完整探索' if fully_explored else ''}"
+            )
+
+            if fully_explored:
+                self._db.mark_blogger_following_explored(blogger)
+
+            # ── 4. 返回我的关注列表 ─────────────────────────────────────────
             d.press("back")
             time.sleep(random.uniform(1.0, 1.8))
-
-            # 验证是否成功回到关注列表页
-            if not d(text="推荐").wait(timeout=5):
-                logger.warning("未检测到推荐 Tab，重新导航到我的关注列表")
-                try:
-                    self._nav.go_to_my_tab()
-                    self._nav.click_following_count()
-                    self._nav.switch_to_following_tab()
-                    scroll_count = 0  # 重置滚动计数
-                except Exception as nav_e:
-                    logger.error(f"重新导航失败，停止探索: {nav_e}")
-                    break
+            self._ensure_back_to_my_following()
 
             self._delay.between_profiles()
 
         return self._follows_this_session
+
+    def _ensure_back_to_my_following(self) -> None:
+        """
+        确保当前在「我的关注列表」页。
+        以 Activity 名称为主信号（my_following），比 UI 元素检测更可靠。
+        """
+        screen = self._nav.current_screen()
+        logger.debug(f"_ensure_back_to_my_following: current_screen={screen}")
+        if screen == "my_following":
+            return
+        logger.warning(f"当前界面={screen!r}，非我的关注列表，重新导航...")
+        try:
+            self._nav.go_to_my_tab()
+            self._nav.click_following_count()
+            self._nav.switch_to_following_tab()
+        except Exception as nav_e:
+            logger.error(f"重新导航失败: {nav_e}")
 
     def _has_mutual_keyword(self, username: str) -> bool:
         """判断昵称是否含有互关意向词（不区分大小写）。"""
@@ -255,6 +293,101 @@ class Recommender:
 
         logger.debug(f"我的关注列表当前可见: {len(usernames)} 个用户")
         return usernames
+
+    def _collect_following_list_items(self) -> List[tuple]:
+        """
+        从博主关注列表当前屏幕收集 (昵称, 描述) 对。
+
+        列表条目结构（实机）：
+          [头像] [昵称 TextView,  x∈[80,750]]      [关注 TextView, x>700]
+                 [描述 TextView,  x∈[80,750], 在昵称下方]
+
+        只收集右侧有「关注」按钮的条目（未关注状态），
+        同时捞取同行区域内昵称下方的描述文本（可能为空）。
+        """
+        items: List[tuple] = []
+        seen_names: set[str] = set()
+        try:
+            xml_str = self._d.dump_hierarchy()
+            root = ET.fromstring(xml_str)
+
+            follow_btns: List[tuple] = []
+            for node in root.iter():
+                t = node.get("text", "").strip()
+                bounds = node.get("bounds", "")
+                cls = node.get("class", "")
+                if t in ("关注", "+ 关注", "+关注") and "TextView" in cls and bounds:
+                    try:
+                        l, top, r, bot = self._parse_bounds(bounds)
+                        if l > 700:
+                            follow_btns.append((top, bot))
+                    except Exception:
+                        pass
+
+            for btn_top, btn_bot in follow_btns:
+                username = self._find_username_near_button(root, btn_top, btn_bot)
+                if not username or username in seen_names:
+                    continue
+                seen_names.add(username)
+                desc = self._find_desc_near_button(root, btn_top, btn_bot, username)
+                items.append((username, desc))
+
+        except Exception as e:
+            logger.warning(f"收集关注列表条目失败: {e}")
+
+        logger.debug(f"关注列表当前可见: {len(items)} 个条目")
+        return items
+
+    def _find_desc_near_button(
+        self, root, btn_top: int, btn_bot: int, username: str
+    ) -> str:
+        """
+        在关注按钮同行区域内，找昵称下方的描述/简介文本。
+
+        查找范围：
+          - x: [80, 700]（左侧内容区，排除右侧按钮）
+          - y: [btn_top-20, btn_bot+120]（适当延伸以覆盖简介行）
+        排除：昵称本身、「关注/已关注/互相关注」、纯数字统计文本、过短文本。
+        """
+        _EXCLUDE_TEXTS = {"关注", "已关注", "互相关注", "+ 关注", "+关注"}
+        _STATS_KEYWORDS = ("关注", "粉丝", "获赞", "收藏", "笔记")
+        import re as _re
+        _NUM_ONLY = _re.compile(r'^[\d\.万千百kKwW\+\-]+$')
+
+        candidates = []
+        row_top = btn_top - 20
+        row_bot = btn_bot + 120  # 描述通常在昵称下一行，稍微延伸
+
+        for node in root.iter():
+            t = node.get("text", "").strip()
+            cls = node.get("class", "")
+            bounds = node.get("bounds", "")
+            if not (t and "TextView" in cls and bounds):
+                continue
+            if t == username or t in _EXCLUDE_TEXTS:
+                continue
+            if any(kw in t for kw in _STATS_KEYWORDS):
+                continue
+            if _NUM_ONLY.match(t):
+                continue
+            if len(t) < 2:
+                continue
+            try:
+                l, top, r, bot = self._parse_bounds(bounds)
+                if l > 700:
+                    continue
+                if top < row_top or bot > row_bot + 60:
+                    continue
+                # 优先取昵称下方（y > btn_top+10）的文本作为描述
+                candidates.append((top, t))
+            except Exception:
+                pass
+
+        if not candidates:
+            return ""
+        # 按 y 排序，取最靠近按钮中心行的那条
+        candidates.sort(key=lambda x: abs(x[0] - (btn_top + btn_bot) // 2))
+        return candidates[0][1]
 
     # ------------------------------------------------------------------ #
     # 路径 A：直接关注模式（推荐列表直接点按钮）
@@ -782,6 +915,123 @@ class Recommender:
             time.sleep(1.0)
             logger.debug("已从博主关注列表返回主页")
 
+    def _direct_follow_in_blogger_following_list(
+        self, blogger_username: str
+    ) -> tuple:
+        """
+        直接在博主关注列表中滚动，根据列表项可见的昵称+描述，
+        识别互关跑友并直接点击关注按钮（不进入用户主页）。
+
+        流程：
+          1. 扫描当前屏幕可见条目（昵称 + 描述）
+          2. 对符合互关跑友条件的用户，直接点击其右侧关注按钮
+          3. 滑动到下一屏，重复，直到：
+             - 连续 3 屏无新候选（视为列表末尾）→ fully_explored=True
+             - 达到最大翻页数（pages_per_recommend）→ fully_explored=False
+             - 日均关注上限 → fully_explored=False
+
+        Args:
+            blogger_username: 当前博主昵称（仅用于日志）
+
+        Returns:
+            (follows_made: int, fully_explored: bool)
+        """
+        follows_made = 0
+        scroll_count = 0
+        max_scrolls = self._cfg.pages_per_recommend
+        consecutive_empty = 0
+        processed_in_list: set[str] = set()
+
+        while scroll_count <= max_scrolls:
+            if not can_follow(self._db, self._cfg):
+                logger.info("达到每日关注上限，停止探索")
+                return follows_made, False
+
+            if self._follows_this_session >= self._cfg.max_follows_per_session:
+                logger.info("单次会话上限，休息")
+                self._delay.session_break(self._cfg.session_break_seconds)
+                self._follows_this_session = 0
+
+            # 扫描当前屏幕所有含「关注」按钮的条目
+            items = self._collect_following_list_items()
+            new_items = [
+                (name, desc) for name, desc in items
+                if name not in processed_in_list
+                and not self._db.is_already_processed(name)
+            ]
+
+            if not new_items:
+                consecutive_empty += 1
+                logger.debug(
+                    f"[{blogger_username}关注列表] 第{scroll_count}屏无新候选"
+                    f"（连续{consecutive_empty}屏）"
+                )
+                if consecutive_empty >= 3:
+                    logger.info(
+                        f"[{blogger_username}关注列表] 连续3屏无新候选，已探索完毕"
+                    )
+                    return follows_made, True
+                self._human_scroll_in_following_list()
+                scroll_count += 1
+                continue
+
+            consecutive_empty = 0
+
+            for username, desc in new_items:
+                processed_in_list.add(username)
+
+                if not can_follow(self._db, self._cfg):
+                    return follows_made, False
+
+                if not self._is_runner_mutual_from_list_item(username, desc):
+                    logger.debug(
+                        f"  跳过（非跑友/非互关）: {username}"
+                        + (f" | {desc[:25]}" if desc else "")
+                    )
+                    continue
+
+                if random.random() < self._cfg.random_skip_ratio:
+                    logger.debug(f"  随机跳过: {username}")
+                    continue
+
+                logger.info(
+                    f"[{blogger_username}关注列表] 互关跑友: {username}"
+                    + (f" | {desc[:30]}" if desc else "")
+                )
+
+                # 保存最小化 profile 记录
+                profile = BloggerProfile(username=username, follow_score=75)
+                self._db.save_blogger(profile)
+
+                if self._cfg.dry_run:
+                    logger.info(f"[DRY RUN] 直接关注: {username}")
+                    self._db.record_follow(username, self._session_id, confirmed=True)
+                    follows_made += 1
+                    self._follows_this_session += 1
+                else:
+                    self._delay.tap()
+                    success = self._click_follow_button_for_user(username)
+                    if success:
+                        logger.success(f"直接关注成功: {username}")
+                        self._db.record_follow(
+                            username, self._session_id, confirmed=True
+                        )
+                        follows_made += 1
+                        self._follows_this_session += 1
+                        self._delay.post_follow()
+                        self._check_rate_limit()
+                    else:
+                        logger.warning(f"关注未成功（UI未变化），跳过: {username}")
+
+            # 当前屏处理完，向下滑动
+            self._human_scroll_in_following_list()
+            scroll_count += 1
+
+        logger.info(
+            f"[{blogger_username}关注列表] 已达最大翻页数({max_scrolls})，未完整探索"
+        )
+        return follows_made, False
+
     def _collect_following_list_users(self) -> List[str]:
         """
         从博主的关注列表页收集用户名。
@@ -1090,6 +1340,30 @@ class Recommender:
                 is_mutual = True
 
         return is_runner, is_mutual
+
+    def _is_runner_mutual_from_list_item(self, username: str, desc: str) -> bool:
+        """
+        仅凭列表条目可见的昵称+描述，判断是否为互关跑友。
+
+        与 _is_runner_and_mutual 相比：
+          - 无完整 bio / 无统计数据，信息量少
+          - 互关判定：仅靠关键词（不做关注/粉丝数兜底，因为没有该数据）
+          - 跑步判定：强词 1 个 或 弱词 1+ 个（比主页版本稍宽松）
+          - 两者都满足才返回 True
+        """
+        corpus = (username + " " + desc).lower()
+
+        # 互关关键词：至少命中 1 个
+        has_mutual = any(kw.lower() in corpus for kw in self._MUTUAL_INTENT)
+        if not has_mutual:
+            return False
+
+        # 跑步：强词 1 个
+        if any(kw.lower() in corpus for kw in self._RUNNER_STRONG):
+            return True
+        # 弱词 1+ 个（列表信息少，降低阈值）
+        weak_hits = sum(1 for kw in self._RUNNER_WEAK if kw.lower() in corpus)
+        return weak_hits >= 1
 
     def _click_user_by_name(self, username: str) -> bool:
         """
