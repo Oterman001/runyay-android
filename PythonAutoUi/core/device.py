@@ -54,11 +54,13 @@ class Device:
         logger.debug("Watchers 已注册")
 
     def launch_xhs(self) -> None:
-        """启动小红书，等待首页加载完成。"""
+        """启动小红书，等待首页加载完成。每次先强制杀进程再冷启动，避免恢复到上次页面状态。"""
+        logger.info("强制关闭小红书...")
+        self.d.app_stop(XHS_PACKAGE)
+        time.sleep(2.5)
         logger.info("启动小红书...")
-        # stop=True 确保从首页干净启动，避免恢复到上次的非首页状态
-        self.d.app_start(XHS_PACKAGE, stop=True)
-        self._wait_for_home(timeout=20)
+        self.d.app_start(XHS_PACKAGE)
+        self._wait_for_home(timeout=25)
 
     def restart_xhs(self) -> None:
         """强制重启小红书（用于恢复异常状态）。"""
