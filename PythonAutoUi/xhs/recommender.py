@@ -96,17 +96,16 @@ class Recommender:
         路径 C：从「我的关注列表」出发，逐个进入已关注博主的主页，
         再点击其关注数进入其关注列表，从中发现并关注新的互关跑步博主。
 
-        流程：
-          1. 切换到关注列表页的「关注」Tab
-          2. 收集当前可见的已关注博主用户名
-          3. 依次：进入博主主页 → 点击其关注数 → 探索其关注列表
-          4. 若无法进入某博主关注列表，返回我的关注列表后换下一个
-          5. 滚动继续，直到探索了 max_bloggers_to_explore 个博主或滚动完毕
+        行为特征：
+          - 优先选择昵称含互关关键词的博主（如"互关"、"有关必回"等）
+          - 其余博主随机选择，不按列表顺序，模拟真人浏览
+          - 每次点击前进行随机滑动浏览，偶尔回看，速度/距离随机
+          - 若无法进入某博主的关注列表，静默跳过换下一个
         """
         d = self._d
         self._nav.switch_to_following_tab()
 
-        explored_bloggers: set[str] = set()
+        explored: set[str] = set()
         bloggers_explored = 0
         max_bloggers = self._cfg.max_bloggers_to_explore
         scroll_count = 0
@@ -118,33 +117,48 @@ class Recommender:
                 logger.info("达到每日上限，停止探索")
                 break
 
-            visible = self._collect_my_following_users()
-            new_users = [u for u in visible if u not in explored_bloggers]
+            # 每轮先做人类式随机浏览滑动（首轮除外）
+            if scroll_count > 0 or bloggers_explored > 0:
+                self._human_scroll_in_following_list()
+            scroll_count += 1
 
-            if not new_users:
+            # 收集当前屏幕可见用户
+            visible = self._collect_my_following_users()
+            candidates = [u for u in visible if u not in explored]
+
+            if not candidates:
                 consecutive_empty += 1
                 if consecutive_empty >= 3:
                     logger.info("我的关注列表已无新博主可探索，结束")
                     break
-                human_swipe_up(d, distance=600)
-                time.sleep(1.5)
-                scroll_count += 1
                 continue
 
             consecutive_empty = 0
-            blogger = new_users[0]
-            explored_bloggers.add(blogger)
+
+            # 优先级排序：昵称含互关词 → 随机
+            priority = [u for u in candidates if self._has_mutual_keyword(u)]
+            rest     = [u for u in candidates if not self._has_mutual_keyword(u)]
+            random.shuffle(rest)
+            sorted_candidates = priority + rest
+
+            blogger = sorted_candidates[0]
+            explored.add(blogger)
             bloggers_explored += 1
+
+            tag = "（互关词命中）" if self._has_mutual_keyword(blogger) else ""
             logger.info(
-                f"[我的关注列表] 探索博主 {bloggers_explored}/{max_bloggers}: {blogger}"
+                f"[我的关注列表] 探索 {bloggers_explored}/{max_bloggers}: {blogger}{tag}"
             )
+
+            # 点击前短暂停留（模拟视线落在该条目上）
+            time.sleep(random.uniform(0.3, 1.0))
 
             # 进入博主主页
             if not self._click_user_by_name(blogger):
-                logger.debug(f"无法点击进入 {blogger} 主页，跳过")
+                logger.debug(f"无法点击 {blogger}（可能已滚出屏幕），跳过")
                 continue
 
-            # 尝试进入其关注列表并探索（内部自动处理进不去的情况）
+            # 尝试进入其关注列表并探索（内部处理进不去的情况）
             try:
                 self._explore_blogger_following_list(depth=1)
             except RateLimitWarning:
@@ -158,15 +172,16 @@ class Recommender:
 
             # 从博主主页返回我的关注列表
             d.press("back")
-            time.sleep(1.2)
+            time.sleep(random.uniform(1.0, 1.8))
 
-            # 验证是否成功回到关注列表页（有"推荐" Tab 则确认）
+            # 验证是否成功回到关注列表页
             if not d(text="推荐").wait(timeout=5):
-                logger.warning("未检测到推荐 Tab，尝试重新导航到我的关注列表")
+                logger.warning("未检测到推荐 Tab，重新导航到我的关注列表")
                 try:
                     self._nav.go_to_my_tab()
                     self._nav.click_following_count()
                     self._nav.switch_to_following_tab()
+                    scroll_count = 0  # 重置滚动计数
                 except Exception as nav_e:
                     logger.error(f"重新导航失败，停止探索: {nav_e}")
                     break
@@ -174,6 +189,34 @@ class Recommender:
             self._delay.between_profiles()
 
         return self._follows_this_session
+
+    def _has_mutual_keyword(self, username: str) -> bool:
+        """判断昵称是否含有互关意向词（不区分大小写）。"""
+        lower = username.lower()
+        return any(kw.lower() in lower for kw in self._MUTUAL_INTENT)
+
+    def _human_scroll_in_following_list(self) -> None:
+        """
+        模拟人类在关注列表中的浏览滑动：
+          - 随机 1-3 次向上滑动（浏览更多）
+          - 偶尔夹杂短距离向下回看（约 25% 概率）
+          - 每次滑动距离和停顿时间均随机
+        """
+        swipes = random.randint(1, 3)
+        for i in range(swipes):
+            # 偶尔向下回划（看上方内容）
+            if i > 0 and random.random() < 0.25:
+                back_dist = random.randint(80, 220)
+                self._d.swipe(
+                    540, 1000,
+                    540, 1000 + back_dist,
+                    duration=random.uniform(0.25, 0.55),
+                )
+                time.sleep(random.uniform(0.4, 1.2))
+
+            dist = random.randint(280, 680)
+            human_swipe_up(self._d, distance=dist)
+            time.sleep(random.uniform(0.8, 2.5))
 
     def _collect_my_following_users(self) -> List[str]:
         """
