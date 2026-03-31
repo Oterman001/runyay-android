@@ -25,7 +25,7 @@ import uiautomator2 as u2
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from anti_detection.gesture import human_swipe_up, human_swipe_left
+from anti_detection.gesture import human_swipe_up, human_swipe_down, human_swipe_left
 from anti_detection.human_delay import HumanDelay
 from core.navigator import Navigator
 from persistence.database import Database
@@ -235,26 +235,38 @@ class Recommender:
 
     def _human_scroll_in_following_list(self) -> None:
         """
-        模拟人类在关注列表中的浏览滑动：
-          - 随机 1-3 次向上滑动（浏览更多）
-          - 偶尔夹杂短距离向下回看（约 25% 概率）
-          - 每次滑动距离和停顿时间均随机
-        """
-        swipes = random.randint(1, 3)
-        for i in range(swipes):
-            # 偶尔向下回划（看上方内容）
-            if i > 0 and random.random() < 0.25:
-                back_dist = random.randint(80, 220)
-                self._d.swipe(
-                    540, 1000,
-                    540, 1000 + back_dist,
-                    duration=random.uniform(0.25, 0.55),
-                )
-                time.sleep(random.uniform(0.4, 1.2))
+        模拟真人在关注列表中的浏览滑动。
 
-            dist = random.randint(280, 680)
-            human_swipe_up(self._d, distance=dist)
-            time.sleep(random.uniform(0.8, 2.5))
+        真人特征：
+          - 1-2 次快速上划（每次约屏高 50-70%），触发 RecyclerView fling
+          - 约 20% 概率夹杂一次短距下划回看（屏高 20-35%）
+          - 划后随机停留 0.6-1.8s（阅读条目）
+
+        兜底：若 fling 后内容未变化（卡住），通过 RecyclerView 元素滚动补救。
+        """
+        d = self._d
+        screen_h = d.info.get("displayHeight", 2400)
+
+        swipes = random.randint(1, 2)
+        for i in range(swipes):
+            # 约 20% 概率先做短距下划（回看上方内容）
+            if i > 0 and random.random() < 0.20:
+                human_swipe_down(d)
+                time.sleep(random.uniform(0.4, 0.9))
+
+            # 快速上划，自动按屏高 50-70% 取随机距离
+            human_swipe_up(d)
+            # fling 触发后需等惯性滚动停止，停留时间偏短（0.6-1.5s）
+            time.sleep(random.uniform(0.6, 1.5))
+
+        # ── 兜底：若两次上划后列表仍未滚动（卡住），用元素 scroll 补救 ──
+        try:
+            rv = d(className="androidx.recyclerview.widget.RecyclerView")
+            if rv.exists:
+                rv.scroll.forward(steps=random.randint(8, 15))
+                time.sleep(random.uniform(0.3, 0.6))
+        except Exception as e:
+            logger.debug(f"RecyclerView 元素滚动兜底失败（忽略）: {e}")
 
     def _collect_my_following_users(self) -> List[str]:
         """
