@@ -492,9 +492,15 @@ class Recommender:
             time.sleep(0.8)
             return False
 
-        # 跑步相关判定：若主页内容与跑步无关则跳过
-        if not self._is_runner_profile():
-            logger.debug(f"非跑步博主，跳过: {username}")
+        # 双重判定：必须同时是跑步博主 + 互关类型
+        is_runner, is_mutual = self._is_runner_and_mutual(profile)
+        if not is_runner:
+            logger.debug(f"非跑步博主，跳过: {username}（bio={profile.bio_text[:30]!r}）")
+            d.press("back")
+            time.sleep(0.8)
+            return False
+        if not is_mutual:
+            logger.debug(f"非互关类型，跳过: {username}（粉丝={profile.followers} 关注={profile.following}）")
             d.press("back")
             time.sleep(0.8)
             return False
@@ -732,59 +738,96 @@ class Recommender:
         return None
 
     # ------------------------------------------------------------------ #
-    # 导航辅助
+    # 跑友 + 互关类型双重判定
     # ------------------------------------------------------------------ #
 
-    # 跑步相关关键词（昵称、简介、笔记标题中出现即视为跑步博主）
-    _RUNNER_KEYWORDS = [
-        "跑步", "跑", "马拉松", "长跑", "晨跑", "夜跑", "跑友", "配速", "公里", "km",
-        "5k", "10k", "半马", "全马", "越野跑", "trail", "run", "runner", "running",
-        "健步", "慢跑", "冲关", "跑圈", "打卡", "训练", "备赛", "PB", "pb",
+    # ── 跑步强关键词：出现任意1个即确认为跑步相关 ──────────────────────────
+    _RUNNER_STRONG = [
+        "跑步", "奔跑", "马拉松", "越野跑", "越野", "跑龄", "配速", "半马", "全马",
+        "trail", "itra", "跑量", "跑者", "跑友", "跑圈", "晨跑", "夜跑", "长跑",
+        "跑马", "全程马", "破三", "破四", "sub3", "sub4", "跑团", "跑club",
+    ]
+    # ── 跑步弱关键词：需出现 2+ 个 ─────────────────────────────────────────
+    _RUNNER_WEAK = [
+        "run", "runner", "running", "公里", "km", "pb", "备赛", "5k", "10k",
+        "健步", "慢跑", "冲关", "打卡", "训练",
+    ]
+    # ── 互关意向关键词 ──────────────────────────────────────────────────────
+    _MUTUAL_INTENT = [
+        "互关", "跑互", "跑友互关", "回关", "有关必回", "必回", "一定回",
+        "互粉", "互fo", "(互)", "【互】",
     ]
 
-    def _is_runner_profile(self) -> bool:
+    def _is_runner_and_mutual(self, profile) -> tuple[bool, bool]:
         """
-        扫描当前博主主页可见文字，判断是否与跑步相关。
-        检测范围：用户昵称、所有可见 TextView 文本（简介、笔记标题等）。
-        宽松策略：找到任意一个跑步关键词即返回 True。
+        基于 profile.bio_text / profile.social_proof_text / username 判断：
+          1. 是否是跑步博主（runner）
+          2. 是否是互关类型（mutual-type）
+
+        只扫描：昵称、简介、社交证明文字（不扫全页，避免误判）。
+        返回 (is_runner, is_mutual)。
         """
-        try:
-            xml_str = self._d.dump_hierarchy()
-            root = ET.fromstring(xml_str)
-            for node in root.iter():
-                t = (node.get("text", "") or "").lower()
-                cd = (node.get("contentDescription", "") or "").lower()
-                combined = t + " " + cd
-                for kw in self._RUNNER_KEYWORDS:
-                    if kw.lower() in combined:
-                        logger.debug(f"检测到跑步关键词 '{kw}'")
-                        return True
-        except Exception as e:
-            logger.debug(f"跑步关键词检测失败: {e}")
-            # 检测失败时放行（不误杀）
-            return True
-        return False
+        username = profile.username or ""
+        bio = profile.bio_text or ""
+        social = profile.social_proof_text or ""
+
+        # 合并三个来源为检测语料
+        corpus = (username + "\n" + bio + "\n" + social).lower()
+
+        # ── 跑步判定 ──────────────────────────────────────────────────────
+        is_runner = False
+        # 强关键词：任意1个
+        for kw in self._RUNNER_STRONG:
+            if kw.lower() in corpus:
+                logger.debug(f"跑步强关键词命中: '{kw}'")
+                is_runner = True
+                break
+        # 弱关键词：2+ 个
+        if not is_runner:
+            weak_hits = [kw for kw in self._RUNNER_WEAK if kw.lower() in corpus]
+            if len(weak_hits) >= 2:
+                logger.debug(f"跑步弱关键词命中 {len(weak_hits)} 个: {weak_hits}")
+                is_runner = True
+
+        # ── 互关类型判定 ──────────────────────────────────────────────────
+        is_mutual = False
+        # 优先：昵称/简介/社交证明含互关关键词
+        for kw in self._MUTUAL_INTENT:
+            if kw.lower() in corpus:
+                logger.debug(f"互关关键词命中: '{kw}'")
+                is_mutual = True
+                break
+        # 备用：关注/粉丝比例在 [0.4, 2.5] 范围内，双方体量均 >= 100
+        if not is_mutual:
+            f, fo = profile.followers, profile.following
+            if f >= 100 and fo >= 100:
+                ratio = min(f, fo) / max(f, fo)
+                if ratio >= 0.4:
+                    logger.debug(f"互关比例兜底通过: 粉丝={f} 关注={fo} ratio={ratio:.2f}")
+                    is_mutual = True
+
+        return is_runner, is_mutual
 
     def _click_user_by_name(self, username: str) -> bool:
-        """在当前页面点击指定用户名进入主页。"""
+        """
+        在当前页面点击指定用户名进入主页。
+        等待条件：关注 Button 出现（className=android.widget.Button，text=关注/已关注/互相关注）。
+        注意：不能用 text='粉丝' 作等待条件，推荐列表顶部的"粉丝" Tab 会立即误判。
+        """
         d = self._d
         node = d(text=username)
         if not node.exists:
             logger.debug(f"未找到用户节点: {username}")
             return False
         node.click()
-        time.sleep(1.8)
-        # 实机验证：主页统计区是空文本 Button，子 TextView 有 text='粉丝'
-        # 同时兼容部分 XHS 版本用 contentDescription 的场景
-        found = (
-            d(text="粉丝").wait(timeout=8)
-            or d(descriptionContains="粉丝", className="android.widget.Button").wait(timeout=4)
-        )
-        if not found:
-            logger.warning(f"进入 {username} 主页超时")
-            d.press("back")
-            return False
-        return True
+        time.sleep(1.5)
+        # 博主主页特有：关注/已关注/互相关注 Button（推荐列表里这些是 TextView）
+        for follow_text in ("关注", "已关注", "互相关注"):
+            if d(text=follow_text, className="android.widget.Button").wait(timeout=6):
+                return True
+        logger.warning(f"进入 {username} 主页超时（未检测到关注 Button）")
+        d.press("back")
+        return False
 
     def _safe_back_to_recommend(self) -> None:
         """安全返回推荐列表（连续 press_back 直到推荐 Tab 可见）。"""

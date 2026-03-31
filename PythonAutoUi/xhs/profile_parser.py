@@ -52,6 +52,9 @@ class ProfileParser:
         profile.is_already_followed = follow_state in ("followed", "mutual")
         profile.is_mutual_follow = follow_state == "mutual"
         profile.is_verified = self._is_verified()
+        bio, social = self._extract_bio_and_social_proof()
+        profile.bio_text = bio
+        profile.social_proof_text = social
 
         logger.info(
             f"[主页] {username} | "
@@ -59,6 +62,8 @@ class ProfileParser:
             f"笔记={profile.notes_count} 认证={profile.is_verified} "
             f"状态={follow_state}"
         )
+        if profile.bio_text:
+            logger.debug(f"[简介] {profile.bio_text[:60]!r}")
         return profile
 
     # ------------------------------------------------------------------ #
@@ -68,16 +73,14 @@ class ProfileParser:
     def _wait_for_stats(self, timeout: int = 8) -> bool:
         """
         等待主页统计区域加载完成。
-        实机验证：统计区是空文本 Button 包裹 TextView，
-        子 TextView text='粉丝' 是最可靠的加载信号。
-        兼容少数版本用 contentDescription="NNN粉丝" 的场景。
+        等待条件：关注/已关注/互相关注 Button 出现（uniquely 在博主主页存在）。
+        不使用 text='粉丝' 因为推荐列表顶部的"粉丝" Tab 会立即误判。
         """
-        return (
-            self._d(text="粉丝").wait(timeout=timeout)
-            or self._d(
-                descriptionContains="粉丝", className="android.widget.Button"
-            ).wait(timeout=3)
-        )
+        d = self._d
+        for text in ("关注", "已关注", "互相关注"):
+            if d(text=text, className="android.widget.Button").wait(timeout=timeout):
+                return True
+        return False
 
     # ------------------------------------------------------------------ #
     # 数值解析（content-desc 方案）
@@ -224,3 +227,46 @@ class ProfileParser:
             or d(descriptionContains="官方").exists
             or d(textContains="官方认证").exists
         )
+
+    # ------------------------------------------------------------------ #
+    # 简介 & 社交证明提取
+    # ------------------------------------------------------------------ #
+
+    def _extract_bio_and_social_proof(self) -> tuple[str, str]:
+        """
+        一次 dump_hierarchy 同时提取：
+          - 简介 (bio)：全宽 clickable TextView（宽度 > 700px，y 400-900）
+          - 社交证明：含"关注了他/她"的文字（关注者昵称，含互关圈信号）
+        返回 (bio_text, social_proof_text)。
+        """
+        bio = ""
+        social = ""
+        try:
+            xml_str = self._d.dump_hierarchy()
+            root = ET.fromstring(xml_str)
+            for node in root.iter():
+                t = (node.get("text", "") or "").strip()
+                if not t:
+                    continue
+                cls = node.get("class", "")
+                b = node.get("bounds", "")
+                if not b:
+                    continue
+
+                # ── 社交证明：含"关注了他/她" ──────────────────────────────
+                if ("关注了他" in t or "关注了她" in t) and len(t) > 5:
+                    social = t
+
+                # ── 简介：全宽 clickable TextView，y=400-900 ──────────────
+                if "TextView" in cls and node.get("clickable", "false") == "true":
+                    try:
+                        l, top, r, _ = [int(x) for x in
+                                        b.replace("][", ",").strip("[]").split(",")]
+                        if (r - l) > 700 and 400 < top < 900:
+                            if len(t) > len(bio):
+                                bio = t
+                    except Exception:
+                        pass
+        except Exception as e:
+            logger.debug(f"提取简介/社交证明失败: {e}")
+        return bio, social

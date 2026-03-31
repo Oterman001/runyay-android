@@ -96,14 +96,26 @@ class Navigator:
             raise RuntimeError("底部'我' Tab 未找到")
         d(text="我").click()
         time.sleep(2.0)
-        # 等待我的主页加载：统计区有 text='关注' 的 TextView 出现
-        # 实机验证：统计 Button 为空文本，子 TextView 才有 text='关注'/'粉丝'
+        # 等待我的主页加载：「编辑资料」Button 唯一出现在我的主页，不在关注列表/首页
+        # 不使用 text='粉丝'/'关注'，这两个 Tab 在关注列表顶部也存在，会立即误判
         found = (
-            d(text="粉丝").wait(timeout=15)
-            or d(text="关注").wait(timeout=5)
+            d(text="编辑资料", className="android.widget.Button").wait(timeout=12)
+            or d(textContains="编辑").wait(timeout=3)  # 兼容部分版本文字差异
         )
         if not found:
-            raise RuntimeError("我的主页统计区域未加载")
+            # 有时加载慢，press_back 清理后再试一次
+            logger.debug("'编辑资料'未出现，清理后重试...")
+            d.press("back")
+            time.sleep(1.5)
+            d(text="我").wait(timeout=5)
+            d(text="我").click()
+            time.sleep(3.0)
+            found = (
+                d(text="编辑资料", className="android.widget.Button").wait(timeout=12)
+                or d(textContains="编辑").wait(timeout=3)
+            )
+        if not found:
+            raise RuntimeError("我的主页未加载（未找到'编辑资料'按钮）")
         logger.debug("已进入'我的'主页")
 
     def click_following_count(self) -> None:

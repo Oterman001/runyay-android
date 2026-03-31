@@ -20,6 +20,8 @@ class BloggerProfile:
     is_already_followed: bool = False   # 已关注
     is_mutual_follow: bool = False      # 已互关
     is_verified: bool = False           # 蓝 V 认证
+    bio_text: str = ""                    # 简介全文（用于跑步/互关判定）
+    social_proof_text: str = ""           # "X等N人关注了他" 文本（关注圈判定）
     profile_note: str = ""              # 跳过原因或备注
     discovered_at: datetime = field(default_factory=datetime.now)
 
