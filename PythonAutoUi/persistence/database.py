@@ -20,6 +20,11 @@ from loguru import logger
 from persistence.models import BloggerProfile, FollowRecord, RunSession
 
 _DDL = """
+CREATE TABLE IF NOT EXISTS explored_following_sources (
+    blogger_username TEXT PRIMARY KEY NOT NULL,
+    explored_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS bloggers (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     username        TEXT UNIQUE NOT NULL,
@@ -220,6 +225,30 @@ class Database:
             f"[DB] 账号统计已保存: session_id={session_id} "
             f"关注={my_following} 粉丝={my_followers}"
         )
+
+    # ------------------------------------------------------------------ #
+    # 已探索博主关注列表 操作
+    # ------------------------------------------------------------------ #
+
+    def mark_blogger_following_explored(self, username: str) -> None:
+        """标记该博主的关注列表已被完整翻阅过，下次跳过。"""
+        self._conn.execute(
+            """
+            INSERT OR REPLACE INTO explored_following_sources (blogger_username, explored_at)
+            VALUES (?, CURRENT_TIMESTAMP)
+            """,
+            (username,),
+        )
+        self._conn.commit()
+        logger.info(f"[DB] 博主关注列表已标记为已探索: {username}")
+
+    def is_blogger_following_explored(self, username: str) -> bool:
+        """该博主的关注列表是否已被完整探索过。"""
+        row = self._conn.execute(
+            "SELECT 1 FROM explored_following_sources WHERE blogger_username = ?",
+            (username,),
+        ).fetchone()
+        return row is not None
 
     def close(self) -> None:
         self._conn.close()
