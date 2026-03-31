@@ -43,13 +43,15 @@ class AppConfig(BaseModel):
     random_skip_ratio: float = Field(0.12, ge=0.0, le=1.0)
     delays: DelaysConfig = DelaysConfig()
     # 推荐列表路径（v2）
-    mode: str = Field("recommend", pattern="^(search|recommend)$")
+    mode: str = Field("recommend", pattern="^(search|recommend|my_following)$")
     pages_per_recommend: int = Field(8, ge=1)
     max_depth: int = Field(5, ge=1, le=10)
     direct_follow: bool = True  # True=直接点列表关注按钮，False=进主页评分后关注
     # 博主关注列表探索（仅 direct_follow=False 时有意义）
     explore_following_list: bool = False
     max_following_list_users: int = Field(8, ge=1)
+    # 我的关注列表探索模式（mode=my_following）专用
+    max_bloggers_to_explore: int = Field(10, ge=1)  # 从我的关注列表取多少人作为探索入口
 
     @field_validator("active_hours", mode="before")
     @classmethod

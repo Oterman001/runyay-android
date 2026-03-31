@@ -188,6 +188,48 @@ class Navigator:
         time.sleep(2.0)
         logger.debug("已切换到推荐列表")
 
+    def switch_to_following_tab(self) -> None:
+        """
+        在关注列表页，点击顶部'关注' Tab（我已关注的人）。
+
+        注意：页面上同时有 text='关注' 的 Tab 控件（上方，y < 400）
+        和列表条目右侧的「已关注」按钮，需要靠 y 坐标区分。
+        """
+        import xml.etree.ElementTree as ET
+
+        d = self.d
+        clicked = False
+        try:
+            xml_str = d.dump_hierarchy()
+            root = ET.fromstring(xml_str)
+            for node in root.iter():
+                t = node.get("text", "").strip()
+                cls = node.get("class", "")
+                bounds = node.get("bounds", "")
+                if t == "关注" and "TextView" in cls and bounds:
+                    try:
+                        parts = bounds.replace("][", ",").strip("[]").split(",")
+                        l, top, r, bot = int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3])
+                        # Tab 控件在屏幕上方（y < 400），排除列表中的"已关注"按钮
+                        if top < 400:
+                            cx, cy = (l + r) // 2, (top + bot) // 2
+                            logger.debug(f"点击'关注' Tab: ({cx},{cy})")
+                            d.click(cx, cy)
+                            clicked = True
+                            break
+                    except Exception:
+                        pass
+        except Exception as e:
+            logger.debug(f"切换'关注' Tab 解析失败: {e}")
+
+        if not clicked:
+            # Fallback：直接用 text="关注" 点击 Tab
+            if d(text="关注").exists:
+                d(text="关注").click()
+
+        time.sleep(1.5)
+        logger.debug("已切换到'关注' Tab（我的关注列表）")
+
     def go_back_to_recommend_list(self, depth: int = 1) -> None:
         """
         从用户主页（可能有多层深入）返回推荐列表。

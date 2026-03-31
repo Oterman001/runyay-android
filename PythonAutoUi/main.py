@@ -48,9 +48,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--serial", type=str, default="", help="设备序列号")
     parser.add_argument(
         "--mode",
-        choices=["search", "recommend"],
+        choices=["search", "recommend", "my_following"],
         default="",
-        help="运行模式：recommend（推荐列表，默认）或 search（关键词搜索）",
+        help="运行模式：recommend（推荐列表，默认）/ search（关键词搜索）/ my_following（我的关注列表探索）",
     )
     return parser.parse_args()
 
@@ -133,6 +133,90 @@ def run_recommend_session(config, db: Database, device: Device) -> int:
         except Exception as e:
             session.stop_reason = f"error: {e}"
             logger.exception(f"推荐会话异常: {e}")
+            db.close_session(session)
+            _print_session_summary(session, db)
+            return session.id
+
+    return 0
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 我的关注列表探索模式（v3）
+# ──────────────────────────────────────────────────────────────────────────────
+
+def run_my_following_session(config, db: Database, device: Device) -> int:
+    """
+    从我的关注列表出发，进入各已关注博主的关注列表探索新跑友。
+    返回本次会话的 session_id（0 表示异常未创建）。
+    """
+    import http.client
+
+    max_reconnects = 2
+    reconnect_count = 0
+
+    while reconnect_count <= max_reconnects:
+        nav = Navigator(device.d)
+        delay = HumanDelay(config.delays)
+        parser = ProfileParser(device.d)
+        follower = FollowAction(device.d, delay)
+
+        session = db.create_session(["[我的关注列表探索]"])
+
+        try:
+            recommender = Recommender(
+                d=device.d,
+                navigator=nav,
+                delay=delay,
+                parser=parser,
+                follower=follower,
+                db=db,
+                config=config,
+                session_id=session.id,
+            )
+            total_followed = recommender.run()
+            session.follows_made = total_followed
+            session.stop_reason = "complete"
+            db.close_session(session)
+            _print_session_summary(session, db)
+            return session.id
+
+        except RateLimitWarning as e:
+            logger.error(f"平台限制，立即停止: {e}")
+            session.stop_reason = "rate_limit"
+            db.close_session(session)
+            _print_session_summary(session, db)
+            return session.id
+
+        except KeyboardInterrupt:
+            session.stop_reason = "interrupted"
+            logger.warning("用户中断")
+            db.close_session(session)
+            _print_session_summary(session, db)
+            return session.id
+
+        except (http.client.RemoteDisconnected, ConnectionError, OSError) as e:
+            reconnect_count += 1
+            session.stop_reason = f"disconnected:{e}"
+            session.follows_made = recommender._follows_this_session if 'recommender' in dir() else 0
+            db.close_session(session)
+            if reconnect_count > max_reconnects:
+                logger.error(f"ATX 断线超过重连次数上限，放弃: {e}")
+                _print_session_summary(session, db)
+                return session.id
+            logger.warning(f"ATX 断线，第 {reconnect_count} 次重连中（等待 10s）: {e}")
+            time.sleep(10)
+            try:
+                device.connect()
+                device.launch_xhs()
+                logger.info("重连成功，继续会话")
+            except Exception as re_err:
+                logger.error(f"重连失败: {re_err}")
+                _print_session_summary(session, db)
+                return session.id
+
+        except Exception as e:
+            session.stop_reason = f"error: {e}"
+            logger.exception(f"我的关注列表探索会话异常: {e}")
             db.close_session(session)
             _print_session_summary(session, db)
             return session.id
@@ -336,6 +420,8 @@ def main() -> None:
 
         if config.mode == "recommend":
             session_id = run_recommend_session(config, db, device)
+        elif config.mode == "my_following":
+            session_id = run_my_following_session(config, db, device)
         else:
             session_id = run_search_session(config, db, device)
 

@@ -69,10 +69,15 @@ class Recommender:
     # ------------------------------------------------------------------ #
 
     def run(self) -> int:
-        """完整流程入口：导航到推荐列表，遍历并关注。"""
+        """完整流程入口：根据 config.mode 分发到对应路径。"""
         logger.info("进入推荐列表路径")
         self._nav.go_to_my_tab()
         self._nav.click_following_count()
+
+        if self._cfg.mode == "my_following":
+            logger.info("使用我的关注列表探索模式")
+            return self._run_my_following_explore()
+
         self._nav.switch_to_recommend_tab()
 
         if self._cfg.direct_follow:
@@ -81,6 +86,132 @@ class Recommender:
         else:
             logger.info("使用主页关注模式（进主页+横向推荐）")
             return self._run_profile_follow()
+
+    # ------------------------------------------------------------------ #
+    # 路径 C：我的关注列表探索模式
+    # ------------------------------------------------------------------ #
+
+    def _run_my_following_explore(self) -> int:
+        """
+        路径 C：从「我的关注列表」出发，逐个进入已关注博主的主页，
+        再点击其关注数进入其关注列表，从中发现并关注新的互关跑步博主。
+
+        流程：
+          1. 切换到关注列表页的「关注」Tab
+          2. 收集当前可见的已关注博主用户名
+          3. 依次：进入博主主页 → 点击其关注数 → 探索其关注列表
+          4. 若无法进入某博主关注列表，返回我的关注列表后换下一个
+          5. 滚动继续，直到探索了 max_bloggers_to_explore 个博主或滚动完毕
+        """
+        d = self._d
+        self._nav.switch_to_following_tab()
+
+        explored_bloggers: set[str] = set()
+        bloggers_explored = 0
+        max_bloggers = self._cfg.max_bloggers_to_explore
+        scroll_count = 0
+        max_scrolls = self._cfg.pages_per_recommend
+        consecutive_empty = 0
+
+        while bloggers_explored < max_bloggers and scroll_count <= max_scrolls:
+            if not can_follow(self._db, self._cfg):
+                logger.info("达到每日上限，停止探索")
+                break
+
+            visible = self._collect_my_following_users()
+            new_users = [u for u in visible if u not in explored_bloggers]
+
+            if not new_users:
+                consecutive_empty += 1
+                if consecutive_empty >= 3:
+                    logger.info("我的关注列表已无新博主可探索，结束")
+                    break
+                human_swipe_up(d, distance=600)
+                time.sleep(1.5)
+                scroll_count += 1
+                continue
+
+            consecutive_empty = 0
+            blogger = new_users[0]
+            explored_bloggers.add(blogger)
+            bloggers_explored += 1
+            logger.info(
+                f"[我的关注列表] 探索博主 {bloggers_explored}/{max_bloggers}: {blogger}"
+            )
+
+            # 进入博主主页
+            if not self._click_user_by_name(blogger):
+                logger.debug(f"无法点击进入 {blogger} 主页，跳过")
+                continue
+
+            # 尝试进入其关注列表并探索（内部自动处理进不去的情况）
+            try:
+                self._explore_blogger_following_list(depth=1)
+            except RateLimitWarning:
+                d.press("back")
+                time.sleep(0.8)
+                raise
+            except Exception as e:
+                logger.warning(f"探索 {blogger} 关注列表异常: {e}")
+                d.press("back")
+                time.sleep(0.8)
+
+            # 从博主主页返回我的关注列表
+            d.press("back")
+            time.sleep(1.2)
+
+            # 验证是否成功回到关注列表页（有"推荐" Tab 则确认）
+            if not d(text="推荐").wait(timeout=5):
+                logger.warning("未检测到推荐 Tab，尝试重新导航到我的关注列表")
+                try:
+                    self._nav.go_to_my_tab()
+                    self._nav.click_following_count()
+                    self._nav.switch_to_following_tab()
+                except Exception as nav_e:
+                    logger.error(f"重新导航失败，停止探索: {nav_e}")
+                    break
+
+            self._delay.between_profiles()
+
+        return self._follows_this_session
+
+    def _collect_my_following_users(self) -> List[str]:
+        """
+        从我的关注列表（'关注' Tab）收集当前可见的用户名。
+
+        我的关注列表与推荐列表结构相似，区别：
+          - 右侧按钮为「已关注」或「互相关注」（不是「关注」）
+          - 可复用 _find_username_near_button() 定位同行用户名
+        """
+        usernames: List[str] = []
+        try:
+            xml_str = self._d.dump_hierarchy()
+            root = ET.fromstring(xml_str)
+
+            follow_btns = []
+            for node in root.iter():
+                t = node.get("text", "").strip()
+                bounds = node.get("bounds", "")
+                cls = node.get("class", "")
+                # 已关注/互相关注按钮在右侧（x > 700）
+                if t in ("已关注", "互相关注") and "TextView" in cls and bounds:
+                    try:
+                        l, top, r, bot = self._parse_bounds(bounds)
+                        if l > 700:
+                            follow_btns.append((top, bot, node))
+                    except Exception:
+                        pass
+
+            for btn_top, btn_bot, _ in follow_btns:
+                username = self._find_username_near_button(root, btn_top, btn_bot)
+                if username and username not in usernames:
+                    usernames.append(username)
+
+        except Exception as e:
+            logger.warning(f"我的关注列表用户名收集失败: {e}")
+
+        logger.debug(f"我的关注列表当前可见: {len(usernames)} 个用户")
+        return usernames
 
     # ------------------------------------------------------------------ #
     # 路径 A：直接关注模式（推荐列表直接点按钮）
