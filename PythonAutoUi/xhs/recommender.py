@@ -523,6 +523,10 @@ class Recommender:
 
         followed = False
         try:
+            # ── 进入博主关注列表探索（评分通过后、关注前）────────────────────
+            if self._cfg.explore_following_list and depth == 1:
+                self._explore_blogger_following_list(depth)
+
             followed = self._follower.follow(profile, dry_run=self._cfg.dry_run)
             if followed:
                 self._db.record_follow(username, self._session_id, confirmed=True)
@@ -538,6 +542,109 @@ class Recommender:
         d.press("back")
         time.sleep(0.8)
         return followed
+
+    # ------------------------------------------------------------------ #
+    # 博主关注列表探索（可选路径）
+    # ------------------------------------------------------------------ #
+
+    def _explore_blogger_following_list(self, depth: int) -> None:
+        """
+        在博主主页点击「关注数」区域，进入其关注列表探索更多互关跑步博主。
+
+        流程：
+          1. 调用 navigator.click_blogger_following_count() 进入列表
+          2. 若无法进入（私密账户等），直接返回，不影响后续关注流程
+          3. 若进入成功，收集列表中的用户名并逐一调用 _process_user
+          4. 最后 press back 回到博主主页（继续后续关注/横向推荐逻辑）
+
+        只在 depth==1 时触发，防止递归膨胀。
+        """
+        d = self._d
+        logger.info("尝试进入博主关注列表探索...")
+
+        entered = self._nav.click_blogger_following_count()
+        if not entered:
+            logger.debug("未能进入博主关注列表，跳过")
+            return
+
+        try:
+            users = self._collect_following_list_users()
+            if not users:
+                logger.debug("博主关注列表无可探索用户（可能为空或受限）")
+                return
+
+            limit = min(len(users), self._cfg.max_following_list_users)
+            logger.info(f"博主关注列表探索：发现 {len(users)} 人，处理前 {limit} 人")
+
+            for username in users[:limit]:
+                if not can_follow(self._db, self._cfg):
+                    break
+                if self._db.is_already_processed(username):
+                    continue
+                if random.random() < self._cfg.random_skip_ratio:
+                    continue
+
+                logger.info(f"[关注列表探索] 处理: {username}")
+                try:
+                    followed = self._process_user(username, depth=depth + 1)
+                    if followed:
+                        self._follows_this_session += 1
+                except RateLimitWarning:
+                    raise
+                except Exception as e:
+                    logger.warning(f"关注列表探索 {username} 异常: {e}")
+                    d.press("back")
+                    time.sleep(0.8)
+
+                self._delay.between_profiles()
+
+        except RateLimitWarning:
+            raise
+        except Exception as e:
+            logger.warning(f"博主关注列表探索异常: {e}")
+        finally:
+            # 无论成功与否，按 back 返回博主主页
+            d.press("back")
+            time.sleep(1.0)
+            logger.debug("已从博主关注列表返回主页")
+
+    def _collect_following_list_users(self) -> List[str]:
+        """
+        从博主的关注列表页收集用户名。
+
+        关注列表与推荐列表 UI 结构相似：
+          - 右侧有「关注」按钮（未关注时 x > 700）
+          - 用户名 TextView 在按钮同行左侧（x 区间 [80, 729]）
+        复用 _collect_recommend_usernames / _find_username_near_button 逻辑。
+        """
+        usernames: List[str] = []
+        try:
+            xml_str = self._d.dump_hierarchy()
+            root = ET.fromstring(xml_str)
+
+            follow_btns = []
+            for node in root.iter():
+                t = node.get("text", "").strip()
+                bounds = node.get("bounds", "")
+                cls = node.get("class", "")
+                if t in ("关注", "+ 关注", "+关注") and "TextView" in cls and bounds:
+                    try:
+                        l, top, r, bot = self._parse_bounds(bounds)
+                        if l > 700:
+                            follow_btns.append((top, bot, node))
+                    except Exception:
+                        pass
+
+            for btn_top, btn_bot, _ in follow_btns:
+                username = self._find_username_near_button(root, btn_top, btn_bot)
+                if username and username not in usernames:
+                    usernames.append(username)
+
+        except Exception as e:
+            logger.warning(f"博主关注列表用户名收集失败: {e}")
+
+        logger.debug(f"博主关注列表收集到 {len(usernames)} 个用户名")
+        return usernames
 
     # ------------------------------------------------------------------ #
     # 横向推荐处理（关注后出现）
@@ -797,14 +904,16 @@ class Recommender:
                 logger.debug(f"互关关键词命中: '{kw}'")
                 is_mutual = True
                 break
-        # 备用：关注/粉丝比例在 [0.4, 2.5] 范围内，双方体量均 >= 100
+        # 备用（无关键词时）：关注数 > 粉丝数 且 关注数 >= 300
+        # 说明该用户在主动建立互关网络，回关概率较高
         if not is_mutual:
-            f, fo = profile.followers, profile.following
-            if f >= 100 and fo >= 100:
-                ratio = min(f, fo) / max(f, fo)
-                if ratio >= 0.4:
-                    logger.debug(f"互关比例兜底通过: 粉丝={f} 关注={fo} ratio={ratio:.2f}")
-                    is_mutual = True
+            fo, f = profile.following, profile.followers
+            if fo > f and fo >= 300:
+                logger.debug(
+                    f"互关兜底通过（关注>粉丝且关注≥1000）: "
+                    f"粉丝={f} 关注={fo} ratio={fo/max(f,1):.2f}"
+                )
+                is_mutual = True
 
         return is_runner, is_mutual
 

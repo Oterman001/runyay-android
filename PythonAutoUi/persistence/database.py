@@ -50,7 +50,9 @@ CREATE TABLE IF NOT EXISTS run_sessions (
     candidates_seen         INTEGER DEFAULT 0,
     candidates_qualified    INTEGER DEFAULT 0,
     follows_made            INTEGER DEFAULT 0,
-    stop_reason             TEXT DEFAULT ''
+    stop_reason             TEXT DEFAULT '',
+    my_following_end        INTEGER DEFAULT 0,
+    my_followers_end        INTEGER DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_bloggers_username ON bloggers(username);
@@ -65,7 +67,21 @@ class Database:
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(_DDL)
         self._conn.commit()
+        self._migrate()
         logger.debug(f"数据库已连接: {db_path}")
+
+    def _migrate(self) -> None:
+        """对旧数据库做向前兼容迁移（新增列）。"""
+        migrations = [
+            "ALTER TABLE run_sessions ADD COLUMN my_following_end INTEGER DEFAULT 0",
+            "ALTER TABLE run_sessions ADD COLUMN my_followers_end INTEGER DEFAULT 0",
+        ]
+        for sql in migrations:
+            try:
+                self._conn.execute(sql)
+                self._conn.commit()
+            except Exception:
+                pass  # 列已存在时忽略
 
     # ------------------------------------------------------------------ #
     # Blogger 操作
@@ -186,6 +202,24 @@ class Database:
         if row and row["total"] > 0:
             return row["backed"] / row["total"]
         return None
+
+    def update_session_account_stats(
+        self, session_id: int, my_following: int, my_followers: int
+    ) -> None:
+        """会话结束后补录账号当前关注数与粉丝数。"""
+        self._conn.execute(
+            """
+            UPDATE run_sessions
+            SET my_following_end = ?, my_followers_end = ?
+            WHERE id = ?
+            """,
+            (my_following, my_followers, session_id),
+        )
+        self._conn.commit()
+        logger.info(
+            f"[DB] 账号统计已保存: session_id={session_id} "
+            f"关注={my_following} 粉丝={my_followers}"
+        )
 
     def close(self) -> None:
         self._conn.close()

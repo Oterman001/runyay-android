@@ -59,10 +59,11 @@ def parse_args() -> argparse.Namespace:
 # 推荐列表模式（v2，主要使用）
 # ──────────────────────────────────────────────────────────────────────────────
 
-def run_recommend_session(config, db: Database, device: Device) -> None:
+def run_recommend_session(config, db: Database, device: Device) -> int:
     """
     执行一次基于推荐列表路径的关注会话。
     遇到 ATX 断线（RemoteDisconnected / ConnectionError）时最多重连 2 次后继续。
+    返回本次会话的 session_id（0 表示异常未创建）。
     """
     import http.client
 
@@ -93,21 +94,21 @@ def run_recommend_session(config, db: Database, device: Device) -> None:
             session.stop_reason = "complete"
             db.close_session(session)
             _print_session_summary(session, db)
-            break  # 正常完成，退出重连循环
+            return session.id  # 正常完成
 
         except RateLimitWarning as e:
             logger.error(f"平台限制，立即停止: {e}")
             session.stop_reason = "rate_limit"
             db.close_session(session)
             _print_session_summary(session, db)
-            break
+            return session.id
 
         except KeyboardInterrupt:
             session.stop_reason = "interrupted"
             logger.warning("用户中断")
             db.close_session(session)
             _print_session_summary(session, db)
-            break
+            return session.id
 
         except (http.client.RemoteDisconnected, ConnectionError, OSError) as e:
             reconnect_count += 1
@@ -117,7 +118,7 @@ def run_recommend_session(config, db: Database, device: Device) -> None:
             if reconnect_count > max_reconnects:
                 logger.error(f"ATX 断线超过重连次数上限，放弃: {e}")
                 _print_session_summary(session, db)
-                break
+                return session.id
             logger.warning(f"ATX 断线，第 {reconnect_count} 次重连中（等待 10s）: {e}")
             time.sleep(10)
             try:
@@ -127,22 +128,24 @@ def run_recommend_session(config, db: Database, device: Device) -> None:
             except Exception as re_err:
                 logger.error(f"重连失败: {re_err}")
                 _print_session_summary(session, db)
-                break
+                return session.id
 
         except Exception as e:
             session.stop_reason = f"error: {e}"
             logger.exception(f"推荐会话异常: {e}")
             db.close_session(session)
             _print_session_summary(session, db)
-            break
+            return session.id
+
+    return 0
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 搜索关键词模式（v1，保留）
 # ──────────────────────────────────────────────────────────────────────────────
 
-def run_search_session(config, db: Database, device: Device) -> None:
-    """执行一次基于关键词搜索路径的关注会话。"""
+def run_search_session(config, db: Database, device: Device) -> int:
+    """执行一次基于关键词搜索路径的关注会话。返回 session_id（0 表示异常）。"""
     nav = Navigator(device.d)
     delay = HumanDelay(config.delays)
     searcher = Searcher(device.d, nav, delay)
@@ -242,6 +245,7 @@ def run_search_session(config, db: Database, device: Device) -> None:
             session.stop_reason = "complete"
         db.close_session(session)
         _print_session_summary(session, db)
+    return session.id
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -261,12 +265,13 @@ def _print_session_summary(session, db: Database) -> None:
     console.print(table)
 
 
-def _post_session_stats(device: Device) -> None:
+def _post_session_stats(device: Device) -> dict:
     """
     会话结束后的收尾操作：
       1. 杀掉小红书进程
       2. 重新冷启动小红书
       3. 导航到「我的」Tab，读取关注数和粉丝数并打印
+    返回 {"following": int, "followers": int}，失败时返回空字典。
     """
     from core.device import XHS_PACKAGE
 
@@ -292,9 +297,11 @@ def _post_session_stats(device: Device) -> None:
         table.add_row("我的关注数", str(stats["following"]))
         table.add_row("我的粉丝数", str(stats["followers"]))
         console.print(table)
+        return stats
 
     except Exception as e:
         logger.warning(f"收尾统计读取失败（不影响主流程）: {e}")
+        return {}
 
 
 def main() -> None:
@@ -328,12 +335,18 @@ def main() -> None:
         device.launch_xhs()
 
         if config.mode == "recommend":
-            run_recommend_session(config, db, device)
+            session_id = run_recommend_session(config, db, device)
         else:
-            run_search_session(config, db, device)
+            session_id = run_search_session(config, db, device)
 
-        # 会话正常结束后：关闭 App → 冷启动 → 读取我的关注/粉丝统计
-        _post_session_stats(device)
+        # 会话正常结束后：关闭 App → 冷启动 → 读取我的关注/粉丝统计并存库
+        stats = _post_session_stats(device)
+        if session_id and stats:
+            db.update_session_account_stats(
+                session_id,
+                stats.get("following", 0),
+                stats.get("followers", 0),
+            )
 
     except Exception as e:
         logger.exception(f"主流程异常: {e}")

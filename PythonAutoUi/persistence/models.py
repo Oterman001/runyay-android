@@ -47,3 +47,5 @@ class RunSession:
     candidates_qualified: int = 0
     follows_made: int = 0
     stop_reason: str = ""             # daily_limit | session_limit | error | complete
+    my_following_end: int = 0         # 会话结束时账号的关注数
+    my_followers_end: int = 0         # 会话结束时账号的粉丝数

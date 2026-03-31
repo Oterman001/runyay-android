@@ -47,6 +47,9 @@ class AppConfig(BaseModel):
     pages_per_recommend: int = Field(8, ge=1)
     max_depth: int = Field(5, ge=1, le=10)
     direct_follow: bool = True  # True=直接点列表关注按钮，False=进主页评分后关注
+    # 博主关注列表探索（仅 direct_follow=False 时有意义）
+    explore_following_list: bool = False
+    max_following_list_users: int = Field(8, ge=1)
 
     @field_validator("active_hours", mode="before")
     @classmethod

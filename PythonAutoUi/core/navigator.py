@@ -248,3 +248,107 @@ class Navigator:
             f"我的账号统计 — 关注: {result['following']}  粉丝: {result['followers']}"
         )
         return result
+
+    def click_blogger_following_count(self) -> bool:
+        """
+        在博主主页，点击「关注数」统计按钮，尝试进入其关注列表。
+
+        小红书博主主页统计区按钮 content-desc 格式为 "8387关注"（数字+关注），
+        与关注操作按钮（text="关注"）区分方式：
+          - 统计按钮：contentDescription 以"关注"结尾且不以"关注"/"+"开头
+          - 关注操作按钮：text="关注"，无 contentDescription 或 contentDescription 不含数字
+
+        进入成功判定：点击后页面不再含有博主主页专有的 follow 操作按钮
+        （"关注"/"已关注"/"互相关注" Button），同时能收集到列表用户名。
+        不成功时（私密/受限）静默返回 False，不抛异常。
+        """
+        import xml.etree.ElementTree as ET
+
+        d = self.d
+        clicked = False
+
+        # ── 方案1：content-desc 以"关注"结尾的统计按钮（如 "8387关注"） ────
+        try:
+            xml_str = d.dump_hierarchy()
+            root = ET.fromstring(xml_str)
+            for node in root.iter():
+                cls = node.get("class", "")
+                if "Button" not in cls:
+                    continue
+                cd = (node.get("content-desc", "") or "").strip()
+                if not cd:
+                    cd = (node.get("contentDescription", "") or "").strip()
+                # 以"关注"结尾，且首字符为数字（排除 "+关注" 之类操作按钮）
+                if cd.endswith("关注") and cd[0].isdigit():
+                    bounds = node.get("bounds", "")
+                    if bounds:
+                        try:
+                            parts = bounds.replace("][", ",").strip("[]").split(",")
+                            l, top, r, bot = (int(p) for p in parts)
+                            cx, cy = (l + r) // 2, (top + bot) // 2
+                            logger.debug(f"点击博主关注数按钮: cd={cd!r} ({cx},{cy})")
+                            d.click(cx, cy)
+                            clicked = True
+                        except Exception:
+                            node.click() if hasattr(node, "click") else d.click(cx, cy)
+                            clicked = True
+                    break
+        except Exception as e:
+            logger.debug(f"博主关注数按钮(cd方案)查找失败: {e}")
+
+        if not clicked:
+            # ── 方案2：找 text='关注' 标签，点击其父统计 Button（XML 兄弟节点） ──
+            try:
+                xml_str = d.dump_hierarchy()
+                root = ET.fromstring(xml_str)
+                for parent in root.iter():
+                    children = list(parent)
+                    for i, child in enumerate(children):
+                        t = child.get("text", "").strip()
+                        cls = child.get("class", "")
+                        if t == "关注" and "TextView" in cls:
+                            # 找前一个兄弟（数字节点），再找父 Button
+                            pb = parent.get("bounds", "")
+                            pc = parent.get("class", "")
+                            if "Button" in pc and pb:
+                                try:
+                                    parts = pb.replace("][", ",").strip("[]").split(",")
+                                    l, top, r, bot = (int(p) for p in parts)
+                                    cx, cy = (l + r) // 2, (top + bot) // 2
+                                    logger.debug(f"点击博主关注数按钮(兄弟节点方案): ({cx},{cy})")
+                                    d.click(cx, cy)
+                                    clicked = True
+                                except Exception:
+                                    pass
+                            break
+                    if clicked:
+                        break
+            except Exception as e:
+                logger.debug(f"博主关注数按钮(xml方案)查找失败: {e}")
+
+        if not clicked:
+            logger.debug("未找到博主关注数按钮，跳过关注列表探索")
+            return False
+
+        time.sleep(2.0)
+
+        # ── 验证是否成功进入关注列表 ────────────────────────────────────────
+        # 进入后，博主主页特有的关注操作按钮（宽约 200-300px，右侧）应消失
+        # 同时页面应出现用户列表（RecyclerView 或多个带"关注"按钮的条目）
+        try:
+            for follow_text in ("关注", "已关注", "互相关注"):
+                for btn in d(text=follow_text, className="android.widget.Button"):
+                    info = btn.info
+                    bounds = info.get("bounds", {})
+                    # 关注操作按钮宽度约 200-300px，排除统计区误判
+                    if bounds:
+                        w = bounds.get("right", 0) - bounds.get("left", 0)
+                        if 150 < w < 350:
+                            # 仍在博主主页（操作按钮仍可见）
+                            logger.debug(f"仍在博主主页（{follow_text!r} 按钮可见），未能进入关注列表")
+                            return False
+        except Exception:
+            pass
+
+        logger.debug("已进入博主关注列表")
+        return True
