@@ -5,10 +5,22 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Tuple
+from typing import List, Tuple
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
+
+
+class NoteExploreConfig(BaseModel):
+    """笔记探索 & 点赞/收藏配置。"""
+    tabs: List[str] = ["关注", "发现"]
+    pages_per_tab: int = Field(5, ge=1, le=50)
+    daily_like_limit: int = Field(50, ge=0, le=200)
+    daily_collect_limit: int = Field(30, ge=0, le=200)
+    like_probability: float = Field(0.70, ge=0.0, le=1.0)
+    collect_probability: float = Field(0.45, ge=0.0, le=1.0)
+    min_read_seconds: float = Field(3.0, ge=0.5)
+    max_read_seconds: float = Field(9.0, ge=1.0)
 
 
 class DelayConfig(BaseModel):
@@ -41,7 +53,7 @@ class AppConfig(BaseModel):
     random_skip_ratio: float = Field(0.12, ge=0.0, le=1.0)
     delays: DelaysConfig = DelaysConfig()
     # 推荐列表路径（v2）
-    mode: str = Field("auto", pattern="^(auto|recommend|my_following)$")
+    mode: str = Field("auto", pattern="^(auto|recommend|my_following|explore_notes)$")
     pages_per_recommend: int = Field(8, ge=1)
     max_depth: int = Field(5, ge=1, le=10)
     direct_follow: bool = True  # True=直接点列表关注按钮，False=进主页评分后关注
@@ -52,6 +64,8 @@ class AppConfig(BaseModel):
     max_bloggers_to_explore: int = Field(10, ge=1)  # 从我的关注列表取多少人作为探索入口
     # 单次运行累计关注超过此数则强制重启应用（0 = 不重启）
     restart_after_follows: int = Field(50, ge=0)
+    # 笔记探索配置
+    note_explore: NoteExploreConfig = NoteExploreConfig()
 
     @field_validator("active_hours", mode="before")
     @classmethod

@@ -34,6 +34,8 @@ from core.navigator import Navigator
 from persistence.database import Database
 from utils.config_loader import load_config
 from xhs.follow_action import FollowAction, RateLimitWarning
+from xhs.note_action import NoteAction
+from xhs.note_explorer import NoteExplorer
 from xhs.profile_parser import ProfileParser
 from xhs.recommender import Recommender
 
@@ -47,9 +49,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--serial", type=str, default="", help="设备序列号")
     parser.add_argument(
         "--mode",
-        choices=["auto", "recommend", "my_following"],
+        choices=["auto", "recommend", "my_following", "explore_notes"],
         default="",
-        help="运行模式：auto（随机整合，默认）/ recommend（推荐列表）/ my_following（我的关注列表探索）",
+        help=(
+            "运行模式：auto（随机整合，默认）/ recommend（推荐列表）"
+            " / my_following（我的关注列表探索）/ explore_notes（笔记点赞/收藏）"
+        ),
     )
     return parser.parse_args()
 
@@ -226,6 +231,83 @@ def run_my_following_session(config, db: Database, device: Device) -> int:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# 笔记探索模式：浏览首页瀑布流，对跑步相关笔记点赞/收藏
+# ──────────────────────────────────────────────────────────────────────────────
+
+def run_explore_notes_session(config, db: Database, device: Device) -> int:
+    """
+    执行一次笔记探索会话：在「关注」/「发现」Tab 浏览笔记，
+    对跑步相关笔记按概率点赞 / 收藏。
+
+    Returns:
+        session_id（0 表示未创建）。
+    """
+    import http.client
+
+    max_reconnects = 2
+    reconnect_count = 0
+
+    while reconnect_count <= max_reconnects:
+        nav = Navigator(device.d)
+        delay = HumanDelay(config.delays)
+        note_action = NoteAction(device.d, delay)
+
+        session = db.create_session(["[笔记探索]"])
+
+        try:
+            explorer = NoteExplorer(
+                d=device.d,
+                navigator=nav,
+                delay=delay,
+                note_action=note_action,
+                db=db,
+                config=config.note_explore,
+                session_id=session.id,
+                dry_run=config.dry_run,
+            )
+            stats = explorer.run()
+
+            session.candidates_seen = stats.notes_seen
+            session.candidates_qualified = stats.notes_running
+            session.follows_made = 0
+            session.stop_reason = "complete"
+            db.close_session(session)
+            _print_explore_summary(session, stats, db)
+            return session.id
+
+        except KeyboardInterrupt:
+            session.stop_reason = "interrupted"
+            logger.warning("用户中断")
+            db.close_session(session)
+            return session.id
+
+        except (http.client.RemoteDisconnected, ConnectionError, OSError) as e:
+            reconnect_count += 1
+            session.stop_reason = f"disconnected:{e}"
+            db.close_session(session)
+            if reconnect_count > max_reconnects:
+                logger.error(f"ATX 断线超过重连次数上限: {e}")
+                return session.id
+            logger.warning(f"ATX 断线，第 {reconnect_count} 次重连（等待 10s）: {e}")
+            time.sleep(10)
+            try:
+                device.connect()
+                device.launch_xhs()
+                logger.info("重连成功，继续笔记探索")
+            except Exception as re_err:
+                logger.error(f"重连失败: {re_err}")
+                return session.id
+
+        except Exception as e:
+            session.stop_reason = f"error: {e}"
+            logger.exception(f"笔记探索会话异常: {e}")
+            db.close_session(session)
+            return session.id
+
+    return 0
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # 自动整合模式（默认）：随机顺序交替两种路径，模拟真实用户行为
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -285,6 +367,22 @@ def _print_session_summary(session, db: Database) -> None:
     table.add_row("符合条件", str(session.candidates_qualified))
     table.add_row("成功关注", str(session.follows_made))
     table.add_row("今日累计", str(db.get_today_follow_count()))
+    table.add_row("停止原因", session.stop_reason)
+    console.print(table)
+
+
+def _print_explore_summary(session, stats, db: Database) -> None:
+    """打印笔记探索会话总结。"""
+    from xhs.note_explorer import ExploreStats
+    table = Table(title="笔记探索总结", show_header=True, header_style="bold cyan")
+    table.add_column("指标", style="dim")
+    table.add_column("值", justify="right")
+    table.add_row("浏览笔记", str(stats.notes_seen))
+    table.add_row("跑步笔记", str(stats.notes_running))
+    table.add_row("点赞", str(stats.likes))
+    table.add_row("收藏", str(stats.collects))
+    table.add_row("今日点赞累计", str(db.get_today_note_like_count()))
+    table.add_row("今日收藏累计", str(db.get_today_note_collect_count()))
     table.add_row("停止原因", session.stop_reason)
     console.print(table)
 
@@ -396,13 +494,21 @@ def main() -> None:
     acquire_guard()
 
     run_mode = "DRY RUN" if config.dry_run else "正式运行"
-    console.print(f"\n[bold green]小红书跑步博主自动关注[/bold green] — {run_mode}")
-    console.print(
-        f"模式: [bold]{config.mode}[/bold] | "
-        f"每日上限: {config.daily_follow_limit} | "
-        f"评分阈值: {config.min_score_threshold} | "
-        f"最大深度: {config.max_depth}"
-    )
+    console.print(f"\n[bold green]小红书自动化[/bold green] — {run_mode}")
+    if config.mode == "explore_notes":
+        ne = config.note_explore
+        console.print(
+            f"模式: [bold]{config.mode}[/bold] | "
+            f"tabs={ne.tabs} | pages_per_tab={ne.pages_per_tab} | "
+            f"日限额: 点赞≤{ne.daily_like_limit} 收藏≤{ne.daily_collect_limit}"
+        )
+    else:
+        console.print(
+            f"模式: [bold]{config.mode}[/bold] | "
+            f"每日关注上限: {config.daily_follow_limit} | "
+            f"评分阈值: {config.min_score_threshold} | "
+            f"最大深度: {config.max_depth}"
+        )
 
     db = Database()
     device = Device(serial=config.device.serial)
@@ -416,6 +522,8 @@ def main() -> None:
             session_id = run_my_following_session(config, db, device)
         elif config.mode == "recommend":
             session_id = run_recommend_session(config, db, device)
+        elif config.mode == "explore_notes":
+            session_id = run_explore_notes_session(config, db, device)
         else:  # auto（默认）
             session_id = run_auto_session(config, db, device)
 

@@ -60,8 +60,17 @@ CREATE TABLE IF NOT EXISTS run_sessions (
     my_followers_end        INTEGER DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS note_interactions (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id  INTEGER,
+    action      TEXT NOT NULL,   -- 'like' | 'collect'
+    acted_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES run_sessions(id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_bloggers_username ON bloggers(username);
 CREATE INDEX IF NOT EXISTS idx_follow_records_date ON follow_records(followed_at);
+CREATE INDEX IF NOT EXISTS idx_note_interactions_date ON note_interactions(acted_at);
 """
 
 
@@ -249,6 +258,46 @@ class Database:
             (username,),
         ).fetchone()
         return row is not None
+
+    # ------------------------------------------------------------------ #
+    # 笔记互动记录
+    # ------------------------------------------------------------------ #
+
+    def record_note_like(self, session_id: int) -> None:
+        """记录一次点赞操作。"""
+        self._conn.execute(
+            "INSERT INTO note_interactions (session_id, action) VALUES (?, 'like')",
+            (session_id,),
+        )
+        self._conn.commit()
+        logger.info("[DB] 笔记点赞记录已保存")
+
+    def record_note_collect(self, session_id: int) -> None:
+        """记录一次收藏操作。"""
+        self._conn.execute(
+            "INSERT INTO note_interactions (session_id, action) VALUES (?, 'collect')",
+            (session_id,),
+        )
+        self._conn.commit()
+        logger.info("[DB] 笔记收藏记录已保存")
+
+    def get_today_note_like_count(self) -> int:
+        """今日点赞次数。"""
+        today = date.today().isoformat()
+        row = self._conn.execute(
+            "SELECT COUNT(*) FROM note_interactions WHERE action='like' AND DATE(acted_at)=?",
+            (today,),
+        ).fetchone()
+        return row[0] if row else 0
+
+    def get_today_note_collect_count(self) -> int:
+        """今日收藏次数。"""
+        today = date.today().isoformat()
+        row = self._conn.execute(
+            "SELECT COUNT(*) FROM note_interactions WHERE action='collect' AND DATE(acted_at)=?",
+            (today,),
+        ).fetchone()
+        return row[0] if row else 0
 
     def close(self) -> None:
         self._conn.close()

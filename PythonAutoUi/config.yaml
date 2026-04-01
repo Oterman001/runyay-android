@@ -50,6 +50,25 @@ explore_following_list: false
 # 每位博主关注列表最多处理几个用户（防止停留过久）
 max_following_list_users: 8
 
+# ── 笔记探索 & 点赞/收藏配置 ────────────────────────────────────────────────
+note_explore:
+  # 要探索的首页 Tab（按顺序）：关注 = 已关注博主的笔记；发现 = 系统推荐
+  tabs: ["关注", "发现"]
+  # 每个 Tab 最多滚动页数（每页约 6-8 张卡片）
+  pages_per_tab: 10
+  # 每日点赞上限（建议 ≤ 60，过多易触发限流）
+  daily_like_limit: 10
+  # 每日收藏上限
+  daily_collect_limit: 8
+  # 命中跑步笔记后点赞概率（0.0-1.0），1.0 = 测试用全量命中
+  like_probability: 1.0
+  # 命中跑步笔记后收藏概率
+  collect_probability: 1.0
+  # 每张笔记的最短"阅读"停留时间（秒）
+  min_read_seconds: 2.0
+  # 最长"阅读"停留时间（秒）
+  max_read_seconds: 4.0
+
 # 延迟配置（高斯分布参数：均值, 标准差，单位秒）
 delays:
   tap:
