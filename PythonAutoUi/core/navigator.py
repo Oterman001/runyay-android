@@ -555,3 +555,167 @@ class Navigator:
         else:
             logger.debug("已进入博主关注列表，当前在「关注」Tab（Activity 确认）")
         return True
+
+    # ------------------------------------------------------------------ #
+    # 消息界面：清理未读消息
+    # ------------------------------------------------------------------ #
+
+    def go_to_messages_tab(self) -> None:
+        """
+        点击底部「消息」Tab，进入消息列表页。
+
+        实机验证：
+          - 底部消息 Tab 的父 ViewGroup content-desc 包含「消息」
+          - 有未读时 content-desc 格式如「消息（99+条未读）」
+          - 通过 text='消息' 的 TextView 定位，取其父 ViewGroup 点击
+        """
+        import xml.etree.ElementTree as ET
+
+        d = self.d
+        clicked = False
+        try:
+            xml_str = d.dump_hierarchy()
+            root = ET.fromstring(xml_str)
+            for node in root.iter():
+                t = (node.get("text") or "").strip()
+                cls = node.get("class", "")
+                bounds = node.get("bounds", "")
+                if t == "消息" and "TextView" in cls and bounds:
+                    parts = bounds.replace("][", ",").strip("[]").split(",")
+                    l, top, r, bot = (int(p) for p in parts)
+                    if top > 2000:   # 只点底部导航栏的消息 Tab
+                        d.click((l + r) // 2, (top + bot) // 2)
+                        clicked = True
+                        break
+        except Exception as e:
+            logger.debug(f"go_to_messages_tab 解析失败: {e}")
+
+        if not clicked:
+            logger.warning("未通过 XML 找到消息 Tab，尝试 content-desc 兜底")
+            el = d(descriptionContains="消息")
+            if el.exists:
+                el.click()
+                clicked = True
+
+        if not clicked:
+            raise RuntimeError("消息 Tab 未找到")
+
+        time.sleep(1.5)
+        logger.debug("已进入消息界面")
+
+    def clear_unread_messages(self) -> int:
+        """
+        进入消息界面，逐条点开含未读标记的会话，进入后返回，
+        以此清除未读角标。不点击顶部三个系统按钮（赞和收藏 / 新增关注 / 评论和@）。
+
+        实机验证：
+          - 未读会话：`ViewGroup`，`content-desc` 包含 '未读'，`top > 600`
+          - 会话详情 Activity：`ChatActivity`
+          - 顶部三个按钮 top < 650，通过 y 坐标过滤排除
+
+        策略：
+          1. 导航到消息 Tab
+          2. 扫描当前屏幕的未读会话并逐条点开→返回
+          3. 下滑一屏继续扫描，连续 3 屏无未读则停止
+          4. 返回清除数量
+
+        Returns:
+            成功清除的未读会话数。
+        """
+        import xml.etree.ElementTree as ET
+
+        d = self.d
+        self.go_to_messages_tab()
+        time.sleep(1.0)
+
+        cleared = 0
+        consecutive_empty = 0
+        max_empty_scrolls = 3
+        # content-desc 作为去重 key（bounds 会随滚动变化，cd 保持稳定）
+        processed_cds: set[str] = set()   # 已处理 / 已跳过的 content-desc
+        non_chat_cds: set[str] = set()    # 确认不是聊天会话的 cd（点击后未进 ChatActivity）
+
+        def _find_unread_items() -> list[tuple[int, int, str]]:
+            """
+            扫描当前屏幕，返回 [(cx, cy, cd), ...] 未读私信会话列表，按 top 升序。
+
+            过滤规则（实机验证）：
+              - ViewGroup 且 content-desc 含「未读」
+              - top > 650：排除顶部三个固定系统按钮（赞收藏 / 新增关注 / 评论@）
+              - (r-l) > 800：全宽会话条目，排除角标等小控件
+              - cd 不在 non_chat_cds：排除已知非聊天条目
+            """
+            items = []
+            try:
+                xml_str = d.dump_hierarchy()
+                root = ET.fromstring(xml_str)
+                for node in root.iter():
+                    if "ViewGroup" not in node.get("class", ""):
+                        continue
+                    cd = (node.get("content-desc") or "").strip()
+                    if "未读" not in cd or cd in non_chat_cds:
+                        continue
+                    bounds = node.get("bounds", "")
+                    if not bounds:
+                        continue
+                    parts = bounds.replace("][", ",").strip("[]").split(",")
+                    l, top, r, bot = (int(p) for p in parts)
+                    if top > 650 and (r - l) > 800:
+                        cx, cy = (l + r) // 2, (top + bot) // 2
+                        items.append((top, cx, cy, cd))
+            except Exception as e:
+                logger.debug(f"_find_unread_items 解析失败: {e}")
+            items.sort(key=lambda x: x[0])
+            return [(cx, cy, cd) for _, cx, cy, cd in items]
+
+        while consecutive_empty < max_empty_scrolls:
+            unread_items = [
+                (cx, cy, cd) for cx, cy, cd in _find_unread_items()
+                if cd not in processed_cds
+            ]
+
+            if not unread_items:
+                consecutive_empty += 1
+                logger.debug(f"当前屏幕无新的未读会话（连续 {consecutive_empty} 屏）")
+                if consecutive_empty < max_empty_scrolls:
+                    # 向下翻一屏
+                    screen_w = d.info.get("displayWidth", 1080)
+                    screen_h = d.info.get("displayHeight", 2400)
+                    d.swipe(
+                        screen_w // 2, int(screen_h * 0.70),
+                        screen_w // 2, int(screen_h * 0.30),
+                        duration=0.20,
+                    )
+                    time.sleep(1.0)
+                continue
+
+            consecutive_empty = 0
+
+            for cx, cy, cd in unread_items:
+                processed_cds.add(cd)
+                logger.info(f"点开未读会话: 坐标({cx},{cy}) | {cd[:30]!r}")
+                d.click(cx, cy)
+
+                # 等待 ChatActivity 出现（最多 3s）
+                entered = False
+                for _ in range(8):
+                    time.sleep(0.4)
+                    if "ChatActivity" in self.current_activity():
+                        entered = True
+                        break
+
+                if entered:
+                    time.sleep(random.uniform(0.5, 1.0))   # 停留让服务端记为已读
+                    d.press("back")
+                    time.sleep(1.0)
+                    cleared += 1
+                    logger.info(f"已清除未读会话（累计 {cleared} 条）")
+                else:
+                    # 非聊天类条目（系统通知等），记录后跳过，不再重试
+                    non_chat_cds.add(cd)
+                    logger.debug(f"非聊天会话（系统通知类），跳过: {cd[:30]!r}")
+                    d.press("back")
+                    time.sleep(0.5)
+
+        logger.info(f"未读消息清理完成，共清除 {cleared} 条会话")
+        return cleared

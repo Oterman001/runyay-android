@@ -33,7 +33,7 @@ class DeviceConfig(BaseModel):
 class AppConfig(BaseModel):
     device: DeviceConfig = DeviceConfig()
     dry_run: bool = True
-    daily_follow_limit: int = Field(40, ge=1, le=200)
+    daily_follow_limit: int = Field(40, ge=1, le=9999)
     max_follows_per_session: int = Field(15, ge=1)
     session_break_seconds: int = Field(180, ge=0)
     active_hours: Tuple[int, int] = (9, 22)

@@ -10,9 +10,9 @@ device:
 dry_run: false  # true=只打日志不实际关注，调试完成后改为 false
 
 # 每日限额控制
-daily_follow_limit: 110         # 每天最多关注人数（建议 30-45，安全上限）
-max_follows_per_session: 10     # 单次会话最多关注人数（之后强制休息）
-session_break_seconds: 180      # 单次会话超限后的休息时长（秒）
+daily_follow_limit: 97          # 每天最多关注人数（建议 30-45，安全上限）
+max_follows_per_session: 100    # 单次会话最多关注人数（之后强制休息）
+session_break_seconds: 30       # 单次会话超限后的休息时长（秒）
 active_hours: [6, 24]           # 仅在此时间段内运行（24小时制）
 
 # ── 运行模式 ──────────────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ min_score_threshold: 60
 # ── 我的关注列表探索模式（my_following）专用配置 ──────────────────────────
 # 运行模式：my_following — 从我的关注列表进入各博主关注列表探索新跑友
 # 从我的关注列表最多取几个博主作为探索入口（每个入口进入其关注列表）
-max_bloggers_to_explore: 10
+max_bloggers_to_explore: 500
 # 单次运行累计关注超过此数则强制重启应用，0 = 不重启
 restart_after_follows: 50
 random_skip_ratio: 0.12
