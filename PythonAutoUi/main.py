@@ -288,55 +288,91 @@ def _print_session_summary(session, db: Database) -> None:
     console.print(table)
 
 
-def _print_my_stats_table(stats: dict) -> None:
-    """打印我的账号统计表格。"""
-    table = Table(title="我的账号当前统计", show_header=True, header_style="bold magenta")
+def _print_my_stats_table(stats: dict, prev_stats: dict | None = None) -> None:
+    """
+    打印我的账号统计表格，可选显示与上次会话的增量。
+
+    Args:
+        stats:      本次统计 {"following": int, "followers": int}
+        prev_stats: 上次会话统计（有值时增加增量列）
+    """
+    show_delta = prev_stats and (
+        prev_stats.get("following", 0) > 0 or prev_stats.get("followers", 0) > 0
+    )
+    title = "我的账号当前统计" + ("（含增量）" if show_delta else "")
+    table = Table(title=title, show_header=True, header_style="bold magenta")
     table.add_column("指标", style="dim")
     table.add_column("数值", justify="right", style="bold")
-    table.add_row("我的关注数", str(stats.get("following", 0)))
-    table.add_row("我的粉丝数", str(stats.get("followers", 0)))
+    if show_delta:
+        table.add_column("较上次", justify="right", style="cyan")
+
+    for key, label in [("following", "我的关注数"), ("followers", "我的粉丝数")]:
+        cur = stats.get(key, 0)
+        row = [label, str(cur)]
+        if show_delta:
+            prev = prev_stats.get(key, 0)
+            delta = cur - prev
+            sign = "+" if delta >= 0 else ""
+            row.append(f"{sign}{delta}")
+        table.add_row(*row)
+
     console.print(table)
 
 
-def _post_session_stats(device: Device) -> dict:
+def _post_session_stats(device: Device, db: "Database | None" = None) -> dict:
     """
-    会话结束后读取账号统计，两种方式结合：
+    会话结束后读取账号统计。
 
-    方式1（优先）：导航到「我的」Tab → 下拉刷新 2-3 次 → 读取
-      - 快速、自然，无需重启 App
-      - 若成功获取非零数据，直接返回
+    流程：
+      1. 冷启动 App（当前页面可能是博主关注列表等非首页，无法直接导航）
+      2. 导航到「我的」Tab → 下拉刷新读取关注/粉丝数
+      3. 若读取到非零数据则返回；否则再次重启重试一次
 
-    方式2（兜底）：数据为 0 时，杀进程 → 随机等待 → 冷启动 → 重新读取
-      - 确保数据准确，等待时间随机化避免固定特征
+    同时从 db 查询上次会话的统计数据，输出增量对比。
 
     返回 {"following": int, "followers": int}，失败时返回空字典。
     """
-    from core.device import XHS_PACKAGE
+    logger.info("会话结束，重启应用读取最新统计...")
 
-    d = device.d
-    try:
-        # ── 方式1：下拉刷新读取（快速、自然）────────────────────────────
-        logger.info("会话结束，下拉刷新读取最新统计...")
-        nav = Navigator(d)
-        stats = nav.read_my_stats(pull_refresh=True)
+    # ── 查询上次会话统计，用于增量对比 ──────────────────────────────────
+    prev_stats: dict = {}
+    if db:
+        try:
+            row = db._conn.execute(
+                """SELECT my_following_end, my_followers_end
+                   FROM run_sessions
+                   WHERE my_following_end > 0 OR my_followers_end > 0
+                   ORDER BY id DESC LIMIT 1"""
+            ).fetchone()
+            if row:
+                prev_stats = {"following": row[0], "followers": row[1]}
+        except Exception:
+            pass
 
-        if stats.get("following", 0) > 0 or stats.get("followers", 0) > 0:
-            _print_my_stats_table(stats)
-            return stats
-
-        # ── 方式2：冷启动重试（数据仍为 0 时兜底）───────────────────────
-        logger.warning("下拉刷新后统计数据为 0，改用冷启动重新读取...")
-        d.app_stop(XHS_PACKAGE)
-        time.sleep(random.uniform(1.5, 3.5))
-
+    def _read_stats_after_launch() -> dict:
         device.launch_xhs()
-        time.sleep(random.uniform(2.0, 4.0))
+        import time as _time
+        _time.sleep(random.uniform(1.5, 3.0))
+        nav = Navigator(device.d)
+        return nav.read_my_stats(pull_refresh=True)
 
-        nav2 = Navigator(d)
-        stats = nav2.read_my_stats()
-        _print_my_stats_table(stats)
+    # ── 第1次尝试：冷启动读取 ────────────────────────────────────────────
+    try:
+        stats = _read_stats_after_launch()
+        if stats.get("following", 0) > 0 or stats.get("followers", 0) > 0:
+            _print_my_stats_table(stats, prev_stats)
+            return stats
+    except Exception as e:
+        logger.warning(f"第1次统计读取失败: {e}")
+
+    # ── 第2次尝试：再次冷启动重试 ────────────────────────────────────────
+    logger.warning("统计数据为 0 或读取失败，等待后重试...")
+    try:
+        import time as _time
+        _time.sleep(random.uniform(3.0, 6.0))
+        stats = _read_stats_after_launch()
+        _print_my_stats_table(stats, prev_stats)
         return stats
-
     except Exception as e:
         logger.warning(f"收尾统计读取失败（不影响主流程）: {e}")
         return {}
@@ -379,8 +415,8 @@ def main() -> None:
         else:  # auto（默认）
             session_id = run_auto_session(config, db, device)
 
-        # 会话正常结束后：关闭 App → 冷启动 → 读取我的关注/粉丝统计并存库
-        stats = _post_session_stats(device)
+        # 会话正常结束后：冷启动 → 读取我的关注/粉丝统计并存库
+        stats = _post_session_stats(device, db)
         if session_id and stats:
             db.update_session_account_stats(
                 session_id,
