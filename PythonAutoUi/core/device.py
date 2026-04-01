@@ -98,6 +98,63 @@ class Device:
             logger.debug(f"截图已保存: {save_path}")
         return img
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # 锁屏 / 解锁
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def is_screen_on(self) -> bool:
+        """检查屏幕是否亮起。"""
+        return self.d.info.get("screenOn", False)
+
+    def is_screen_locked(self) -> bool:
+        """检查设备是否处于锁屏状态（兼容 Android 7-14）。"""
+        output = self.d.shell("dumpsys window").output
+        return (
+            "mDreamingLockscreen=true" in output
+            or "mShowingLockscreen=true" in output
+            or "isStatusBarKeyguard=true" in output
+        )
+
+    def ensure_unlocked(self) -> None:
+        """若屏幕未亮或已锁屏，则唤醒并解锁（适用于无密码/滑动解锁设备）。
+        依次尝试三种方式：wm dismiss-keyguard → keyevent 82 → d.unlock() 滑动。
+        """
+        if not self.is_screen_on():
+            logger.info("屏幕已关闭，正在点亮...")
+            self.d.press("power")
+            time.sleep(2.0)
+
+        if not self.is_screen_locked():
+            logger.debug("屏幕已处于解锁状态，跳过解锁")
+            return
+
+        logger.info("屏幕已锁定，尝试解锁（方式1: wm dismiss-keyguard）...")
+        self.d.shell("wm dismiss-keyguard")
+        time.sleep(1.5)
+        if not self.is_screen_locked():
+            logger.info("屏幕解锁成功（wm dismiss-keyguard）")
+            return
+
+        logger.info("方式1失败，尝试方式2: keyevent 82...")
+        self.d.shell("input keyevent 82")
+        time.sleep(1.5)
+        if not self.is_screen_locked():
+            logger.info("屏幕解锁成功（keyevent 82）")
+            return
+
+        logger.info("方式2失败，尝试方式3: d.unlock() 滑动解锁...")
+        self.d.unlock()
+        time.sleep(2.0)
+        if self.is_screen_locked():
+            raise RuntimeError("屏幕解锁失败，请检查设备是否设有密码锁")
+        logger.info("屏幕解锁成功（滑动）")
+
+    def lock_screen(self) -> None:
+        """按电源键锁定屏幕。"""
+        logger.info("任务完成，锁定屏幕...")
+        self.d.press("power")
+        time.sleep(0.5)
+
     def press_back(self) -> None:
         self.d.press("back")
 

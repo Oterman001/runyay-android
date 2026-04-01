@@ -27,6 +27,7 @@ from rich.console import Console
 from rich.table import Table
 
 import utils.logger  # 初始化日志
+from utils.process_guard import acquire_guard
 from anti_detection.human_delay import HumanDelay
 from core.device import Device
 from core.navigator import Navigator
@@ -392,6 +393,8 @@ def main() -> None:
     if args.mode:
         config.mode = args.mode
 
+    acquire_guard()
+
     run_mode = "DRY RUN" if config.dry_run else "正式运行"
     console.print(f"\n[bold green]小红书跑步博主自动关注[/bold green] — {run_mode}")
     console.print(
@@ -406,6 +409,7 @@ def main() -> None:
 
     try:
         device.connect()
+        device.ensure_unlocked()
         device.launch_xhs()
 
         if config.mode == "my_following":
@@ -428,7 +432,8 @@ def main() -> None:
         logger.exception(f"主流程异常: {e}")
     finally:
         db.close()
-        device.press_home()
+        if device.d:
+            device.lock_screen()
         logger.info("脚本退出")
 
 

@@ -20,6 +20,7 @@ from loguru import logger
 from rich.console import Console
 
 import utils.logger  # 初始化日志
+from utils.process_guard import acquire_guard
 from core.device import Device
 from core.navigator import Navigator
 from utils.config_loader import load_config
@@ -40,11 +41,14 @@ def main() -> None:
     if args.serial:
         config.device.serial = args.serial
 
+    acquire_guard()
+
     console.print("\n[bold green]小红书未读消息清理[/bold green]")
 
     device = Device(serial=config.device.serial)
     try:
         device.connect()
+        device.ensure_unlocked()
         device.launch_xhs()
         time.sleep(2.0)
 
@@ -62,7 +66,8 @@ def main() -> None:
     except Exception as e:
         logger.exception(f"清消息脚本异常: {e}")
     finally:
-        device.press_home()
+        if device.d:
+            device.lock_screen()
         logger.info("脚本退出")
 
 
