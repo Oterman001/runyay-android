@@ -46,9 +46,12 @@ def human_swipe_up(d: u2.Device, distance: int = 0) -> None:
         distance = int(screen_h * random.uniform(0.50, 0.70))
 
     x = screen_w // 2 + random.randint(-30, 30)
-    # 起点在屏幕 65-80% 处，终点上移 distance，但不超出可见区顶部
+    # 起点在屏幕 65-80% 处，终点上移 distance
+    # end_y 下限取屏高 22%（≈546px @ 2484），确保手指抬起点不落入
+    # 页面顶部的 Tab 栏区域（RelationMergeActivity Tab 栏底部约 412px），
+    # 避免 MOTION_UP 被 Tab RecyclerView 误识别为滑动切换 Tab。
     start_y = int(screen_h * random.uniform(0.65, 0.80))
-    end_y = max(int(screen_h * 0.10), start_y - distance)
+    end_y = max(int(screen_h * 0.22), start_y - distance)
 
     # 快速划动才能触发 fling，duration 控制在 0.10-0.22s
     duration = random.uniform(0.10, 0.22)

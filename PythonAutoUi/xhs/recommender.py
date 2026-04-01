@@ -265,15 +265,15 @@ class Recommender:
         """
         模拟真人在关注列表中的浏览滑动。
 
-        真人特征：
-          - 1-2 次快速上划（每次约屏高 50-70%），触发 RecyclerView fling
-          - 约 20% 概率夹杂一次短距下划回看（屏高 20-35%）
-          - 划后随机停留 0.6-1.8s（阅读条目）
-
-        兜底：若 fling 后内容未变化（卡住），通过 RecyclerView 元素滚动补救。
+        策略（双保险）：
+          1. human_swipe_up：快速 fling，视觉自然，触发惯性滚动。
+             end_y 下限已提高到屏高 22%（≈546px），不会落入 Tab 栏（≤412px），
+             根本上消除了 MOTION_UP 误触 Tab 切换的问题。
+          2. rv.scroll.forward：每次必执行（非兜底），在 RecyclerView 元素
+             内部发送辅助滚动，确保内容确实前进，同时对 Tab 栏无任何影响。
+          3. 约 20% 概率夹杂短距下划（回看），增加真实感。
         """
         d = self._d
-        screen_h = d.info.get("displayHeight", 2400)
 
         swipes = random.randint(1, 2)
         for i in range(swipes):
@@ -282,19 +282,19 @@ class Recommender:
                 human_swipe_down(d)
                 time.sleep(random.uniform(0.4, 0.9))
 
-            # 快速上划，自动按屏高 50-70% 取随机距离
+            # ① 快速 fling（视觉层）
             human_swipe_up(d)
-            # fling 触发后需等惯性滚动停止，停留时间偏短（0.6-1.5s）
-            time.sleep(random.uniform(0.6, 1.5))
+            time.sleep(random.uniform(0.5, 1.2))
 
-        # ── 兜底：若两次上划后列表仍未滚动（卡住），用元素 scroll 补救 ──
-        try:
-            rv = d(className="androidx.recyclerview.widget.RecyclerView")
-            if rv.exists:
-                rv.scroll.forward(steps=random.randint(8, 15))
-                time.sleep(random.uniform(0.3, 0.6))
-        except Exception as e:
-            logger.debug(f"RecyclerView 元素滚动兜底失败（忽略）: {e}")
+            # ② RecyclerView 元素滚动（内容层，每次必执行）
+            # 在列表元素内部操作，与 Tab 栏完全隔离，不会误触 Tab
+            try:
+                rv = d(className="androidx.recyclerview.widget.RecyclerView")
+                if rv.exists:
+                    rv.scroll.forward(steps=random.randint(6, 12))
+                    time.sleep(random.uniform(0.2, 0.5))
+            except Exception as e:
+                logger.debug(f"RecyclerView 元素滚动失败（忽略）: {e}")
 
     def _collect_my_following_users(self) -> List[str]:
         """
