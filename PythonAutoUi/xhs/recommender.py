@@ -66,6 +66,7 @@ class Recommender:
         self._device = device
         self._follows_this_session = 0
         self._follows_total_run = 0   # 本次脚本运行的累计关注数（不随 session break 重置）
+        self._last_scroll_first_name: Optional[str] = None  # 用于检测 fling 是否推进内容
 
     # ------------------------------------------------------------------ #
     # 公共入口
@@ -261,6 +262,39 @@ class Recommender:
         lower = username.lower()
         return any(kw.lower() in lower for kw in self._MUTUAL_INTENT)
 
+    def _ensure_screen_on(self) -> None:
+        """若屏幕已息屏，唤醒并等待 UI 稳定后继续。"""
+        if self._device and not self._device.is_screen_on():
+            logger.info("屏幕息屏，唤醒中...")
+            self._device.ensure_unlocked()
+            time.sleep(2.0)
+
+    def _first_visible_username(self, root_xml) -> Optional[str]:
+        """
+        从 XML 树中返回当前第一个可见的用户名（用于判断 fling 是否已推进内容）。
+        取 x∈[80,750]、y 最小的非空 TextView 文本。
+        """
+        _EXCLUDE = {"关注", "已关注", "互相关注", "+ 关注", "+关注"}
+        candidates = []
+        for node in root_xml.iter():
+            t = node.get("text", "").strip()
+            cls = node.get("class", "")
+            bounds = node.get("bounds", "")
+            if not (t and "TextView" in cls and bounds and 1 < len(t) <= 20):
+                continue
+            if t in _EXCLUDE:
+                continue
+            try:
+                l, top, r, bot = self._parse_bounds(bounds)
+                if 80 <= l < 750 and r < 800:
+                    candidates.append((top, t))
+            except Exception:
+                pass
+        if not candidates:
+            return None
+        candidates.sort(key=lambda x: x[0])
+        return candidates[0][1]
+
     def _human_scroll_in_following_list(self) -> None:
         """
         模拟真人在关注列表中的浏览滑动。
@@ -284,18 +318,25 @@ class Recommender:
                 time.sleep(random.uniform(0.4, 0.9))
 
             # ① 快速 fling（视觉层）
-            human_swipe_up(d)
+            # 距离缩短至 35-55%（原 50-70%），防止与 rv.scroll 叠加后超过一屏
+            screen_h = d.info.get("displayHeight", 2400)
+            fling_dist = int(screen_h * random.uniform(0.35, 0.55))
+            human_swipe_up(d, distance=fling_dist)
             time.sleep(random.uniform(0.5, 1.2))
 
-            # ② RecyclerView 元素滚动（内容层）
+            # ② RecyclerView 元素滚动（内容层兜底）
+            # 仅在 fling 未能推进内容时执行（通过比对第一个可见用户名判断）。
             # 必须跳过 Tab 栏 RecyclerView（instance=0，y≈269~412px），
             # 只对内容区 RecyclerView（top > 屏高 20%）执行 scroll.forward，
             # 否则会将 Tab 栏向右滚动，导致「关注」→「粉丝」漂移。
             try:
-                screen_h = d.info.get("displayHeight", 2400)
                 tab_bar_bottom = int(screen_h * 0.20)  # ≈480px > Tab 栏底部 412px
                 xml_str = d.dump_hierarchy()
                 root_xml = ET.fromstring(xml_str)
+
+                # 采集 fling 后第一个可见用户名，用于判断内容是否已推进
+                first_name_after_fling = self._first_visible_username(root_xml)
+
                 rv_instance = 0
                 target_instance = None
                 for node in root_xml.iter():
@@ -308,13 +349,21 @@ class Recommender:
                                 target_instance = rv_instance
                                 break
                         rv_instance += 1
-                if target_instance is not None:
+
+                if target_instance is not None and first_name_after_fling in (
+                    self._last_scroll_first_name, None
+                ):
+                    # fling 未推进内容，执行 rv.scroll 兜底
                     rv = d(className="androidx.recyclerview.widget.RecyclerView",
                            instance=target_instance)
                     if rv.exists:
-                        rv.scroll.forward(steps=random.randint(6, 12))
+                        rv.scroll.forward(steps=random.randint(20, 30))
                         time.sleep(random.uniform(0.2, 0.5))
-                        logger.debug(f"内容区 RecyclerView 滚动（instance={target_instance}）")
+                        logger.debug(f"内容区 RecyclerView 兜底滚动（instance={target_instance}）")
+                else:
+                    logger.debug("fling 已推进内容，跳过 rv.scroll")
+
+                self._last_scroll_first_name = first_name_after_fling
             except Exception as e:
                 logger.debug(f"RecyclerView 元素滚动失败（忽略）: {e}")
 
@@ -408,17 +457,21 @@ class Recommender:
 
         查找范围：
           - x: [80, 700]（左侧内容区，排除右侧按钮）
-          - y: [btn_top-20, btn_bot+120]（适当延伸以覆盖简介行）
+          - y: [btn_top-20, btn_bot+160]（适当延伸以覆盖多行简介）
         排除：昵称本身、「关注/已关注/互相关注」、纯数字统计文本、过短文本。
+        将范围内所有描述行拼接返回，避免关键词出现在第二/三行时被漏掉。
         """
         _EXCLUDE_TEXTS = {"关注", "已关注", "互相关注", "+ 关注", "+关注"}
         _STATS_KEYWORDS = ("关注", "粉丝", "获赞", "收藏", "笔记")
         import re as _re
         _NUM_ONLY = _re.compile(r'^[\d\.万千百kKwW\+\-]+$')
+        # 只过滤"数字+统计词"或"统计词+数字"格式的统计文本，
+        # 避免误杀"互关有关注必回"之类含"关注"的互关签名
+        _HAS_DIGIT = _re.compile(r'\d')
 
         candidates = []
         row_top = btn_top - 20
-        row_bot = btn_bot + 120  # 描述通常在昵称下一行，稍微延伸
+        row_bot = btn_bot + 160  # 扩展覆盖多行简介
 
         for node in root.iter():
             t = node.get("text", "").strip()
@@ -428,7 +481,8 @@ class Recommender:
                 continue
             if t == username or t in _EXCLUDE_TEXTS:
                 continue
-            if any(kw in t for kw in _STATS_KEYWORDS):
+            # 仅在文本同时含数字+统计关键词时才视为统计信息并过滤
+            if any(kw in t for kw in _STATS_KEYWORDS) and _HAS_DIGIT.search(t):
                 continue
             if _NUM_ONLY.match(t):
                 continue
@@ -440,16 +494,15 @@ class Recommender:
                     continue
                 if top < row_top or bot > row_bot + 60:
                     continue
-                # 优先取昵称下方（y > btn_top+10）的文本作为描述
                 candidates.append((top, t))
             except Exception:
                 pass
 
         if not candidates:
             return ""
-        # 按 y 排序，取最靠近按钮中心行的那条
-        candidates.sort(key=lambda x: abs(x[0] - (btn_top + btn_bot) // 2))
-        return candidates[0][1]
+        # 按 y 坐标排序后拼接所有行，保留多行签名中每一行的关键词
+        candidates.sort(key=lambda x: x[0])
+        return " ".join(t for _, t in candidates)
 
     # ------------------------------------------------------------------ #
     # 路径 A：直接关注模式（推荐列表直接点按钮）
@@ -1005,6 +1058,7 @@ class Recommender:
         processed_in_list: set[str] = set()
 
         while scroll_count <= max_scrolls:
+            self._ensure_screen_on()
             if not can_follow(self._db, self._cfg):
                 logger.info("达到每日关注上限，停止探索")
                 return follows_made, False

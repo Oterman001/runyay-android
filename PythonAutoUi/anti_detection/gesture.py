@@ -32,18 +32,18 @@ def human_swipe_up(d: u2.Device, distance: int = 0) -> None:
     向上滑动（翻下一页），模拟真人快速上划手势。
 
     真人操作特征：
-      - 单次滑动距离约占屏高 50-70%（大距离快速划过）
-      - 持续时间短（0.10-0.25s），触发 RecyclerView fling 惯性
+      - 单次滑动距离约占屏高 35-55%（适中距离，避免与后续 rv.scroll 叠加超出一屏）
+      - 持续时间短（0.10-0.22s），触发 RecyclerView fling 惯性
       - 起点在屏幕中下区域，终点在屏幕中上区域
 
     Args:
-        distance: 滑动距离（像素）。0 表示自动按屏高 50-70% 随机取值。
+        distance: 滑动距离（像素）。0 表示自动按屏高 35-55% 随机取值。
     """
     screen_w = d.info.get("displayWidth", 1080)
     screen_h = d.info.get("displayHeight", 2400)
 
     if distance <= 0:
-        distance = int(screen_h * random.uniform(0.50, 0.70))
+        distance = int(screen_h * random.uniform(0.35, 0.55))
 
     x = screen_w // 2 + random.randint(-30, 30)
     # 起点在屏幕 65-80% 处，终点上移 distance

@@ -453,6 +453,12 @@ def _post_session_stats(device: Device, db: "Database | None" = None) -> dict:
         import time as _time
         _time.sleep(random.uniform(1.5, 3.0))
         nav = Navigator(device.d)
+        # 冷启动后先不刷新直接读取（XHS 会从缓存加载统计数据）
+        stats = nav.read_my_stats(pull_refresh=False)
+        if stats.get("following", 0) > 0 or stats.get("followers", 0) > 0:
+            return stats
+        # 缓存数据为空时才下拉刷新一次
+        logger.debug("缓存统计为空，执行一次下拉刷新...")
         return nav.read_my_stats(pull_refresh=True)
 
     # ── 第1次尝试：冷启动读取 ────────────────────────────────────────────
