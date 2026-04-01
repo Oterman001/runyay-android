@@ -268,9 +268,10 @@ class Recommender:
         策略（双保险）：
           1. human_swipe_up：快速 fling，视觉自然，触发惯性滚动。
              end_y 下限已提高到屏高 22%（≈546px），不会落入 Tab 栏（≤412px），
-             根本上消除了 MOTION_UP 误触 Tab 切换的问题。
-          2. rv.scroll.forward：每次必执行（非兜底），在 RecyclerView 元素
-             内部发送辅助滚动，确保内容确实前进，同时对 Tab 栏无任何影响。
+             消除了 MOTION_UP 误触 Tab 切换的问题。
+          2. rv.scroll.forward：每次必执行。通过 UI 层级树筛选 top > 20%
+             屏高的内容区 RecyclerView（跳过 Tab 栏 RecyclerView），
+             确保内容确实前进，同时不会误触 Tab。
           3. 约 20% 概率夹杂短距下划（回看），增加真实感。
         """
         d = self._d
@@ -286,13 +287,34 @@ class Recommender:
             human_swipe_up(d)
             time.sleep(random.uniform(0.5, 1.2))
 
-            # ② RecyclerView 元素滚动（内容层，每次必执行）
-            # 在列表元素内部操作，与 Tab 栏完全隔离，不会误触 Tab
+            # ② RecyclerView 元素滚动（内容层）
+            # 必须跳过 Tab 栏 RecyclerView（instance=0，y≈269~412px），
+            # 只对内容区 RecyclerView（top > 屏高 20%）执行 scroll.forward，
+            # 否则会将 Tab 栏向右滚动，导致「关注」→「粉丝」漂移。
             try:
-                rv = d(className="androidx.recyclerview.widget.RecyclerView")
-                if rv.exists:
-                    rv.scroll.forward(steps=random.randint(6, 12))
-                    time.sleep(random.uniform(0.2, 0.5))
+                screen_h = d.info.get("displayHeight", 2400)
+                tab_bar_bottom = int(screen_h * 0.20)  # ≈480px > Tab 栏底部 412px
+                xml_str = d.dump_hierarchy()
+                root_xml = ET.fromstring(xml_str)
+                rv_instance = 0
+                target_instance = None
+                for node in root_xml.iter():
+                    if "RecyclerView" in node.get("class", ""):
+                        bounds = node.get("bounds", "")
+                        if bounds:
+                            parts = bounds.replace("][", ",").strip("[]").split(",")
+                            l, top, r, bot = (int(p) for p in parts)
+                            if top > tab_bar_bottom:   # 内容区 RecyclerView
+                                target_instance = rv_instance
+                                break
+                        rv_instance += 1
+                if target_instance is not None:
+                    rv = d(className="androidx.recyclerview.widget.RecyclerView",
+                           instance=target_instance)
+                    if rv.exists:
+                        rv.scroll.forward(steps=random.randint(6, 12))
+                        time.sleep(random.uniform(0.2, 0.5))
+                        logger.debug(f"内容区 RecyclerView 滚动（instance={target_instance}）")
             except Exception as e:
                 logger.debug(f"RecyclerView 元素滚动失败（忽略）: {e}")
 
@@ -1030,7 +1052,11 @@ class Recommender:
                 if not can_follow(self._db, self._cfg):
                     return follows_made, False
 
-                if not self._is_runner_mutual_from_list_item(username, desc):
+                fast_pass = self._is_runner_mutual_from_list_item(username, desc)
+                borderline = (not fast_pass and
+                              self._has_mutual_only_from_list_item(username, desc))
+
+                if not fast_pass and not borderline:
                     logger.debug(
                         f"  跳过（非跑友/非互关）: {username}"
                         + (f" | {desc[:25]}" if desc else "")
@@ -1041,6 +1067,22 @@ class Recommender:
                     logger.debug(f"  随机跳过: {username}")
                     continue
 
+                # ── 边界用户：仅命中互关词，进主页复核 ───────────────────────
+                if borderline:
+                    logger.debug(
+                        f"  边界用户，进主页复核: {username}"
+                        + (f" | {desc[:25]}" if desc else "")
+                    )
+                    self._delay.tap()
+                    followed = self._check_and_follow_via_profile(username)
+                    if followed:
+                        follows_made += 1
+                        self._follows_this_session += 1
+                        self._delay.post_follow()
+                        self._check_rate_limit()
+                    continue
+
+                # ── 快速路径：列表信息已足够确认，直接关注 ───────────────────
                 logger.info(
                     f"[{blogger_username}关注列表] 互关跑友: {username}"
                     + (f" | {desc[:30]}" if desc else "")
@@ -1335,6 +1377,10 @@ class Recommender:
         "互关", "跑互", "跑友互关", "回关", "有关必回", "必回", "一定回",
         "互粉", "互fo", "(互)", "【互】",
     ]
+    # ── 跑步+互关组合词：天然兼含跑步和互关含义，命中即同时满足两个条件 ──────
+    _RUNNER_MUTUAL_COMBO = [
+        "跑互", "跑友互关", "跑步互关", "跑友互fo", "跑互关",
+    ]
 
     def _is_runner_and_mutual(self, profile) -> tuple[bool, bool]:
         """
@@ -1390,27 +1436,100 @@ class Recommender:
 
     def _is_runner_mutual_from_list_item(self, username: str, desc: str) -> bool:
         """
-        仅凭列表条目可见的昵称+描述，判断是否为互关跑友。
+        仅凭列表条目可见的昵称+描述，判断是否为明确的互关跑友（快速路径）。
 
-        与 _is_runner_and_mutual 相比：
-          - 无完整 bio / 无统计数据，信息量少
-          - 互关判定：仅靠关键词（不做关注/粉丝数兜底，因为没有该数据）
-          - 跑步判定：强词 1 个 或 弱词 1+ 个（比主页版本稍宽松）
-          - 两者都满足才返回 True
+        返回 True 表示可直接关注（无需进主页）：
+          - 命中「跑步+互关组合词」（如"跑互""跑友互关"），天然隐含两层含义
+          - 或同时命中互关词 + 跑步词
+        返回 False 时，调用方应进一步检查 _has_mutual_only_from_list_item，
+        决定是进主页复核还是直接跳过。
         """
         corpus = (username + " " + desc).lower()
 
-        # 互关关键词：至少命中 1 个
+        # ① 组合词：天然兼含「跑步」+「互关」，直接放行
+        if any(kw.lower() in corpus for kw in self._RUNNER_MUTUAL_COMBO):
+            return True
+
+        # ② 常规双重判定：互关词 + 跑步词
         has_mutual = any(kw.lower() in corpus for kw in self._MUTUAL_INTENT)
         if not has_mutual:
             return False
-
-        # 跑步：强词 1 个
         if any(kw.lower() in corpus for kw in self._RUNNER_STRONG):
             return True
-        # 弱词 1+ 个（列表信息少，降低阈值）
         weak_hits = sum(1 for kw in self._RUNNER_WEAK if kw.lower() in corpus)
         return weak_hits >= 1
+
+    def _has_mutual_only_from_list_item(self, username: str, desc: str) -> bool:
+        """
+        仅命中互关关键词、但无跑步关键词的边界用户。
+        此类用户在博主关注列表中有互关意愿，但单凭列表信息无法确认是跑友，
+        需进入主页做完整判断。
+        """
+        corpus = (username + " " + desc).lower()
+        # 组合词已由 _is_runner_mutual_from_list_item 处理，这里排除
+        if any(kw.lower() in corpus for kw in self._RUNNER_MUTUAL_COMBO):
+            return False
+        has_mutual = any(kw.lower() in corpus for kw in self._MUTUAL_INTENT)
+        if not has_mutual:
+            return False
+        has_runner = any(kw.lower() in corpus for kw in self._RUNNER_STRONG) or \
+                     any(kw.lower() in corpus for kw in self._RUNNER_WEAK)
+        return not has_runner
+
+    def _check_and_follow_via_profile(self, username: str) -> bool:
+        """
+        进入用户主页做完整判断（针对列表快速判定不确定的边界用户）。
+
+        流程：
+          1. 点进用户主页（_click_user_by_name）
+          2. 解析 profile（_parser.parse）
+          3. 双重判定：runner + mutual（_is_runner_and_mutual）
+          4. 通过则在主页关注，记录
+          5. press back 回关注列表，确保 Tab 仍在「关注」
+
+        Returns: True 表示已成功关注。
+        """
+        d = self._d
+        if not self._click_user_by_name(username):
+            return False
+
+        try:
+            profile = self._parser.parse(username)
+        except Exception as e:
+            logger.debug(f"  主页解析失败: {username} {e}")
+            d.press("back")
+            time.sleep(0.8)
+            return False
+
+        if profile is None:
+            d.press("back")
+            time.sleep(0.8)
+            return False
+
+        is_runner, is_mutual = self._is_runner_and_mutual(profile)
+        if not is_runner or not is_mutual:
+            logger.debug(
+                f"  主页复核不通过: {username} "
+                f"runner={is_runner} mutual={is_mutual}"
+            )
+            d.press("back")
+            time.sleep(0.8)
+            return False
+
+        logger.info(f"  主页复核通过，关注: {username}")
+        profile.follow_score = 70
+        self._db.save_blogger(profile)
+
+        followed = self._follower.follow(profile, dry_run=self._cfg.dry_run)
+        if followed:
+            self._db.record_follow(username, self._session_id, confirmed=True)
+
+        d.press("back")
+        time.sleep(1.0)
+        # 回到关注列表后确保 Tab 仍在「关注」
+        self._nav.ensure_relation_tab("关注")
+        time.sleep(0.5)
+        return followed
 
     def _click_user_by_name(self, username: str) -> bool:
         """
