@@ -1,13 +1,15 @@
 package com.oterman.rundemo.presentation.feature.rundetail.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.AbilityZone
@@ -75,22 +78,25 @@ private fun ZoneBarRow(
     ) {
         // Left: Zone description + speed range (85dp fixed)
         Column(
-            modifier = Modifier.width(85.dp)
+            modifier = Modifier.width(85.dp),
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = zone.getZoneDescription(),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 11.sp,
-                maxLines = 1
+                fontSize = 11.5.sp,
+                lineHeight = 14.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             if (showValueRange) {
                 Text(
                     text = zone.getFormattedSpeedRange(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Normal,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     fontSize = 10.sp,
+                    lineHeight = 12.sp,
                     maxLines = 1
                 )
             }
@@ -117,25 +123,29 @@ private fun ZoneBarRow(
 
         Spacer(modifier = Modifier.width(6.dp))
 
-        // Right: Percentage + duration (65dp fixed)
+        // Right: Percentage (primary) + duration (secondary), 65dp fixed
         Column(
             modifier = Modifier.width(65.dp),
-            horizontalAlignment = Alignment.End
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = String.format("%.1f%%", percentage * 100),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 11.sp,
-                textAlign = TextAlign.End
+                fontSize = 13.sp,
+                lineHeight = 15.sp,
+                textAlign = TextAlign.End,
+                maxLines = 1
             )
             Text(
                 text = zone.getFormattedDuration(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Normal,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 fontSize = 10.sp,
-                textAlign = TextAlign.End
+                lineHeight = 12.sp,
+                textAlign = TextAlign.End,
+                maxLines = 1
             )
         }
     }
