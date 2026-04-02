@@ -9,6 +9,7 @@ import com.oterman.rundemo.data.network.api.UserApi
 import com.oterman.rundemo.data.network.api.VersionApi
 import com.oterman.rundemo.data.network.interceptor.AuthInterceptor
 import com.oterman.rundemo.data.network.interceptor.SmartLoggingInterceptor
+import com.oterman.rundemo.data.network.interceptor.TokenRefreshRetryInterceptor
 import com.oterman.rundemo.data.repository.TokenRefreshManager
 import com.oterman.rundemo.util.RLog
 import okhttp3.OkHttpClient
@@ -71,6 +72,7 @@ object RetrofitClient {
      */
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
+            .addInterceptor(TokenRefreshRetryInterceptor { tokenRefreshManager })
             .addInterceptor(AuthInterceptor(
                 tokenProvider = { tokenProvider?.invoke() },
                 tokenRefreshManagerProvider = { tokenRefreshManager }
