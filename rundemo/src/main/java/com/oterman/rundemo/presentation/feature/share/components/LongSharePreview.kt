@@ -101,6 +101,7 @@ fun LongSharePreview(
     trackPoints: List<TrackPoint> = emptyList(),
     heartRateZone7Selected: Boolean = true,
     onHeartRateZoneChanged: ((Boolean) -> Unit)? = null,
+    isIndoor: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     fun isCardEnabled(type: ShareCardType): Boolean = enabledCards[type] != false
@@ -111,63 +112,56 @@ fun LongSharePreview(
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // 1. 地图截图 + 底部渐变遮罩
-        Box(modifier = Modifier.fillMaxWidth()) {
-            if (mapSnapshot != null) {
-                val bitmapAspectRatio = mapSnapshot.width.toFloat() / mapSnapshot.height.toFloat()
-                Image(
-                    bitmap = mapSnapshot.asImageBitmap(),
-                    contentDescription = "运动轨迹",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(bitmapAspectRatio),
-                    contentScale = ContentScale.Fit
-                )
-            } else if (isPrivacyMode && trackPoints.isNotEmpty()) {
-                val configuration = LocalConfiguration.current
-                val placeholderRatio = configuration.screenWidthDp.toFloat() /
-                    (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(placeholderRatio)
-                ) {
-                    com.oterman.rundemo.presentation.feature.rundetail.components.PrivacyTrackView(
-                        trackPoints = trackPoints,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            } else {
-                // 室内跑：用屏幕宽高比模拟地图区域比例
-                val configuration = LocalConfiguration.current
-                val placeholderRatio = configuration.screenWidthDp.toFloat() /
-                    (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(placeholderRatio)
-                        .background(Color(0xFFF0F0F0)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("室内跑步", color = Color.Gray, fontSize = 16.sp)
-                }
-            }
+        // 顶部间距：无地图（室内跑步）时补充，与底部保持对称
+        if (isIndoor) {
+            Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
+        }
 
-            // 底部渐变遮罩（与短图一致，但使用 surface 色）
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(RunDetailLayoutConstants.MapGradientHeight.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.surface
+        // 1. 地图截图 + 底部渐变遮罩（室内跑步时整体隐藏）
+        if (!isIndoor) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                if (mapSnapshot != null) {
+                    val bitmapAspectRatio = mapSnapshot.width.toFloat() / mapSnapshot.height.toFloat()
+                    Image(
+                        bitmap = mapSnapshot.asImageBitmap(),
+                        contentDescription = "运动轨迹",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(bitmapAspectRatio),
+                        contentScale = ContentScale.Fit
+                    )
+                } else if (isPrivacyMode && trackPoints.isNotEmpty()) {
+                    val configuration = LocalConfiguration.current
+                    val placeholderRatio = configuration.screenWidthDp.toFloat() /
+                        (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(placeholderRatio)
+                    ) {
+                        com.oterman.rundemo.presentation.feature.rundetail.components.PrivacyTrackView(
+                            trackPoints = trackPoints,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+                // 底部渐变遮罩（与短图一致，但使用 surface 色）
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(RunDetailLayoutConstants.MapGradientHeight.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    MaterialTheme.colorScheme.surface
+                                )
                             )
                         )
-                    )
-            )
+                )
+            }
         }
 
         // 2. Header + DataGrid（始终显示）
@@ -178,12 +172,14 @@ fun LongSharePreview(
                 endTime = record.endTime,
                 duration = record.activeDuration,
                 deviceName = deviceName ?: com.oterman.rundemo.util.DeviceNameUtils.resolveDisplayName(record),
-                isOutdoor = mapSnapshot != null || isPrivacyMode,
+                isOutdoor = !isIndoor && (mapSnapshot != null || isPrivacyMode),
                 metrics = metrics,
                 avatarUrl = avatarUrl,
                 userName = if (showNickname) userName else null,
                 inclusiveLevel = record.inclusiveLevel,
-                modifier = Modifier.layout { measurable, constraints ->
+                showInclusiveIndicator = false,
+                indoorLabel = if (isIndoor) "(室内跑)" else null,
+                modifier = if (!isIndoor) Modifier.layout { measurable, constraints ->
                     val placeable = measurable.measure(constraints)
                     val invasionPx = kotlin.math.abs(
                         RunDetailLayoutConstants.HeaderInvasionOffset.dp.roundToPx()
@@ -191,7 +187,7 @@ fun LongSharePreview(
                     layout(placeable.width, (placeable.height - invasionPx).coerceAtLeast(0)) {
                         placeable.placeRelative(0, -invasionPx)
                     }
-                }
+                } else Modifier
             )
             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }

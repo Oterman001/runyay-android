@@ -226,7 +226,8 @@ fun ShareScreen(
                                                 userName = uiState.userName,
                                                 showNickname = uiState.showNickname,
                                                 isPrivacyMode = uiState.isPrivacyMode,
-                                                trackPoints = uiState.trackPoints
+                                                trackPoints = uiState.trackPoints,
+                                                isIndoor = !uiState.isOutdoor
                                             )
                                         }
 
@@ -263,7 +264,8 @@ fun ShareScreen(
                                                 isPrivacyMode = uiState.isPrivacyMode,
                                                 trackPoints = uiState.trackPoints,
                                                 heartRateZone7Selected = uiState.heartRateZone7Selected,
-                                                onHeartRateZoneChanged = { viewModel.updateHeartRateZoneMode(it) }
+                                                onHeartRateZoneChanged = { viewModel.updateHeartRateZoneMode(it) },
+                                                isIndoor = !uiState.isOutdoor
                                             )
                                         }
 

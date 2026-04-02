@@ -121,7 +121,7 @@ class ShareViewModel(
                 val trainingSegments = repository.getTrainingSegments(workoutId)
                 val mergedTrainingSegments = createMergedSegmentData(trainingSegments)
                 val metrics = buildMetricsList(record)
-                val isOutdoor = trackPoints.isNotEmpty()
+                val isOutdoor = trackPoints.isNotEmpty()  // 与 RunDetailViewModel 保持一致：有 GPS 轨迹即为户外
 
                 // 图表数据
                 val heartRateSeries = repository.getHeartRateSeries(workoutId)
@@ -299,7 +299,8 @@ class ShareViewModel(
                         userName = state.userName,
                         showNickname = state.showNickname,
                         isPrivacyMode = state.isPrivacyMode,
-                        trackPoints = state.trackPoints
+                        trackPoints = state.trackPoints,
+                        isIndoor = !state.isOutdoor
                     )
                 }
                 ShareMode.LONG -> ShareImageGenerator.renderToBitmap(context, widthPx, darkTheme) {
@@ -333,7 +334,8 @@ class ShareViewModel(
                         linkedShoe = state.linkedShoe,
                         isPrivacyMode = state.isPrivacyMode,
                         trackPoints = state.trackPoints,
-                        heartRateZone7Selected = state.heartRateZone7Selected
+                        heartRateZone7Selected = state.heartRateZone7Selected,
+                        isIndoor = !state.isOutdoor
                     )
                 }
                 ShareMode.CUSTOM -> null

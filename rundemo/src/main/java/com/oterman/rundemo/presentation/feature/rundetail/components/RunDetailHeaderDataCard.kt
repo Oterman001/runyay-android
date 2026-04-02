@@ -80,6 +80,8 @@ fun RunDetailHeaderDataCard(
     userName: String? = null,
     inclusiveLevel: Int = 1,
     onInclusiveLevelClick: (() -> Unit)? = null,
+    showInclusiveIndicator: Boolean = true,  // false 时隐藏彩色圆点
+    indoorLabel: String? = null,             // 非 null 时在圆点位置显示文字（如"室内跑"）
     modifier: Modifier = Modifier
 ) {
     // Tag dialog state
@@ -115,23 +117,32 @@ fun RunDetailHeaderDataCard(
                         ) {
                             Text(
                                 text = String.format("%.2f", distance),
-                                fontSize = 42.sp,
+                                fontSize = RunDetailLayoutConstants.DistanceFontSize.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontFamily = RunYayFontFamily
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "km",
+                                text = buildAnnotatedString {
+                                    append("km")
+                                    if (indoorLabel != null) {
+                                        withStyle(SpanStyle(fontSize = 11.sp)) {
+                                            append(" $indoorLabel")
+                                        }
+                                    }
+                                },
                                 fontSize = RunDetailLayoutConstants.DistanceUnitFontSize.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 6.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            InclusiveLevelIndicator(
-                                inclusiveLevel = inclusiveLevel,
-                                modifier = Modifier.padding(bottom = 10.dp)
-                            )
+                            if (showInclusiveIndicator) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                InclusiveLevelIndicator(
+                                    inclusiveLevel = inclusiveLevel,
+                                    modifier = Modifier.padding(bottom = 10.dp)
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(4.dp))

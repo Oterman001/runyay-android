@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Watch
@@ -34,7 +35,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
@@ -65,6 +71,7 @@ fun ShortSharePreview(
     showNickname: Boolean = true,
     isPrivacyMode: Boolean = false,
     trackPoints: List<TrackPoint> = emptyList(),
+    isIndoor: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -72,82 +79,73 @@ fun ShortSharePreview(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // 1. 地图 + 底部渐变
-        Box(modifier = Modifier.fillMaxWidth()) {
-            if (mapSnapshot != null) {
-                val bitmapAspectRatio = mapSnapshot.width.toFloat() / mapSnapshot.height.toFloat()
-                Image(
-                    bitmap = mapSnapshot.asImageBitmap(),
-                    contentDescription = "运动轨迹",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(bitmapAspectRatio),
-                    contentScale = ContentScale.Fit
-                )
-            } else if (isPrivacyMode && trackPoints.isNotEmpty()) {
-                val configuration = LocalConfiguration.current
-                val placeholderRatio = configuration.screenWidthDp.toFloat() /
-                    (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(placeholderRatio)
-                ) {
-                    com.oterman.rundemo.presentation.feature.rundetail.components.PrivacyTrackView(
-                        trackPoints = trackPoints,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            } else {
-                // 室内跑：用屏幕宽高比模拟地图区域比例
-                val configuration = LocalConfiguration.current
-                val placeholderRatio = configuration.screenWidthDp.toFloat() /
-                    (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(placeholderRatio)
-                        .background(Color(0xFFF0F0F0)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "室内跑步",
-                        color = Color.Gray,
-                        fontSize = 16.sp
-                    )
-                }
-            }
-
-            // 底部渐变遮罩
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(RunDetailLayoutConstants.MapGradientHeight.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.background
-                            )
-                        )
-                    )
-            )
+        // 顶部间距：无地图（室内跑步）时补充，与底部保持对称
+        if (isIndoor) {
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // 2. 数据卡片（向上侵入地图）
+        // 1. 地图 + 底部渐变（室内跑步时整体隐藏）
+        if (!isIndoor) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                if (mapSnapshot != null) {
+                    val bitmapAspectRatio = mapSnapshot.width.toFloat() / mapSnapshot.height.toFloat()
+                    Image(
+                        bitmap = mapSnapshot.asImageBitmap(),
+                        contentDescription = "运动轨迹",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(bitmapAspectRatio),
+                        contentScale = ContentScale.Fit
+                    )
+                } else if (isPrivacyMode && trackPoints.isNotEmpty()) {
+                    val configuration = LocalConfiguration.current
+                    val placeholderRatio = configuration.screenWidthDp.toFloat() /
+                        (configuration.screenHeightDp * RunDetailLayoutConstants.MapHeightRatio)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(placeholderRatio)
+                    ) {
+                        com.oterman.rundemo.presentation.feature.rundetail.components.PrivacyTrackView(
+                            trackPoints = trackPoints,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+                // 底部渐变遮罩
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(RunDetailLayoutConstants.MapGradientHeight.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    MaterialTheme.colorScheme.background
+                                )
+                            )
+                        )
+                )
+            }
+        }
+
+        // 2. 数据卡片（有地图时向上侵入，室内跑步时正常排列）
         AppCard(
             modifier = Modifier
                 .padding(horizontal = RunDetailLayoutConstants.HeaderCardMargin.dp)
-                .layout { measurable, constraints ->
-                    val placeable = measurable.measure(constraints)
-                    val invasionPx = kotlin.math.abs(
-                        RunDetailLayoutConstants.HeaderInvasionOffset.dp.roundToPx()
-                    )
-                    layout(placeable.width, (placeable.height - invasionPx).coerceAtLeast(0)) {
-                        placeable.placeRelative(0, -invasionPx)
-                    }
-                }
+                .then(
+                    if (!isIndoor) Modifier.layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val invasionPx = kotlin.math.abs(
+                            RunDetailLayoutConstants.HeaderInvasionOffset.dp.roundToPx()
+                        )
+                        layout(placeable.width, (placeable.height - invasionPx).coerceAtLeast(0)) {
+                            placeable.placeRelative(0, -invasionPx)
+                        }
+                    } else Modifier
+                )
         ) {
             // Header: 距离 + 日期 + 设备 + 头像
             Row(
@@ -171,7 +169,14 @@ fun ShortSharePreview(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "km",
+                            text = buildAnnotatedString {
+                                append("km")
+                                if (isIndoor) {
+                                    withStyle(SpanStyle(fontSize = 11.sp)) {
+                                        append(" (室内跑)")
+                                    }
+                                }
+                            },
                             fontSize = RunDetailLayoutConstants.DistanceUnitFontSize.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 6.dp)
@@ -221,7 +226,12 @@ fun ShortSharePreview(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
-                            modifier = Modifier.width(RunDetailLayoutConstants.AvatarSize.dp)
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.widthIn(
+                                min = RunDetailLayoutConstants.AvatarSize.dp,
+                                max = 96.dp
+                            )
                         )
                     }
                 }
