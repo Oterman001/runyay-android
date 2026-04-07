@@ -99,8 +99,8 @@ class SegmentTypeInferenceEngine {
             lapIndex, totalLapCount, currentLap, lapContexts, stats, totalScore, maxHR, restHR
         )
 
-        // 6. 应用分组一致性修正
-        val consistencyType = applyGroupConsistency(lapIndex, cachedGroups, preliminaryType)
+        // 6. 应用分组一致性修正（间歇训练模式下跳过，避免快慢段时长相同时的雪崩式误判）
+        val consistencyType = applyGroupConsistency(lapIndex, cachedGroups, preliminaryType, stats.isIntervalTraining)
 
         // 7. 应用逻辑约束验证
         val finalType = validateSegmentLogic(lapIndex, totalLapCount, consistencyType)
@@ -415,8 +415,10 @@ class SegmentTypeInferenceEngine {
     private fun applyGroupConsistency(
         lapIndex: Int,
         groups: List<LapGroup>,
-        preliminaryType: String
+        preliminaryType: String,
+        isIntervalTraining: Boolean = false
     ): String {
+        if (isIntervalTraining) return preliminaryType
         val targetGroup = groups.find { lapIndex in it.indices } ?: return preliminaryType
 
         val groupInferredTypes = targetGroup.indices
