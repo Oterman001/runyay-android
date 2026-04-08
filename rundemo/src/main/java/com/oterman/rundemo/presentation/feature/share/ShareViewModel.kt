@@ -437,11 +437,12 @@ class ShareViewModel(
                 }
 
                 result.fold(
-                    onSuccess = {
+                    onSuccess = { uri ->
                         _uiState.value = _uiState.value.copy(
                             isSaving = false,
                             saveSuccess = true,
-                            generatedBitmap = bitmap
+                            generatedBitmap = bitmap,
+                            savedImageUri = uri
                         )
                     },
                     onFailure = { e ->
@@ -463,7 +464,7 @@ class ShareViewModel(
     }
 
     fun clearSaveState() {
-        _uiState.value = _uiState.value.copy(saveSuccess = false, saveError = null)
+        _uiState.value = _uiState.value.copy(saveSuccess = false, saveError = null, savedImageUri = null)
     }
 
     // ==================== 辅助方法 ====================

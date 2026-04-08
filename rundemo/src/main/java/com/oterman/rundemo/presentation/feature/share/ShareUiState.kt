@@ -1,6 +1,7 @@
 package com.oterman.rundemo.presentation.feature.share
 
 import android.graphics.Bitmap
+import android.net.Uri
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.ChartDataPoint
@@ -141,7 +142,8 @@ data class ShareUiState(
     // 保存到相册
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
-    val saveError: String? = null
+    val saveError: String? = null,
+    val savedImageUri: Uri? = null
 ) {
     companion object {
         val defaultShortMetrics = listOf(
