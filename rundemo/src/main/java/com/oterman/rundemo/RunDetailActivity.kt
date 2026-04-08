@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailScreen
 import com.oterman.rundemo.ui.theme.ComopseDemoHubTheme
@@ -67,7 +68,10 @@ class RunDetailActivity : ComponentActivity() {
                 ) {
                     RunDetailScreen(
                         workoutId = workoutId,
-                        onNavigateBack = { finish() }
+                        onNavigateBack = { finish() },
+                        onNavigateToDebug = if (BuildConfig.DEBUG) {
+                            { startActivity(RunDetailDebugActivity.createIntent(this@RunDetailActivity, workoutId)) }
+                        } else null
                     )
                 }
             }

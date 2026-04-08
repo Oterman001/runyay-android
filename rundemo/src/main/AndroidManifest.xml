@@ -137,6 +137,13 @@
             android:parentActivityName=".MainActivity" />
 
         <activity
+            android:name=".RunDetailDebugActivity"
+            android:exported="false"
+            android:label="跑步详情调试"
+            android:theme="@style/Theme.ComopseDemoHub"
+            android:parentActivityName=".RunDetailActivity" />
+
+        <activity
             android:name=".RunningShoeDetailActivity"
             android:exported="false"
             android:label="跑鞋详情"

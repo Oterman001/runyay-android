@@ -112,6 +112,7 @@ import com.oterman.rundemo.RunningShoeDetailActivity
 fun RunDetailScreen(
     workoutId: String,
     onNavigateBack: () -> Unit,
+    onNavigateToDebug: (() -> Unit)? = null,
     viewModel: RunDetailViewModel = viewModel(
         factory = RunDetailViewModelFactory(LocalContext.current, workoutId)
     )
@@ -279,6 +280,13 @@ fun RunDetailScreen(
                         ) {
 
                             if (BuildConfig.DEBUG) {
+                                // 调试详情页
+                                if (onNavigateToDebug != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("调试详情") },
+                                        onClick = { showMenu = false; onNavigateToDebug() }
+                                    )
+                                }
                                 // 修正距离
                                 DropdownMenuItem(
                                     text = { Text("修正距离") },
