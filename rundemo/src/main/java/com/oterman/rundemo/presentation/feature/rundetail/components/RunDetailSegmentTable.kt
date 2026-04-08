@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,8 +36,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.RunSegment
@@ -45,15 +48,33 @@ import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstan
 import com.oterman.rundemo.ui.theme.RunBlue
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
+// 柱状图第三列可切换指标
+private enum class SegmentMetric(val label: String) {
+    CADENCE("步频"),
+    HEART_RATE("心率"),
+    STRIDE_LENGTH("步幅"),
+    POWER("功率");
+
+    fun next(): SegmentMetric = entries[(ordinal + 1) % entries.size]
+}
+
+private fun RunSegment.metricValue(metric: SegmentMetric): String = when (metric) {
+    SegmentMetric.CADENCE -> if (averageCadence > 0) "${averageCadence.toInt()}" else "-"
+    SegmentMetric.HEART_RATE -> if (averageHeartRate > 0) "${averageHeartRate.toInt()}" else "-"
+    SegmentMetric.STRIDE_LENGTH -> if (averageStrideLength > 0) String.format("%.1f", averageStrideLength) else "-"
+    SegmentMetric.POWER -> if (averagePower > 0) "${averagePower.toInt()}" else "-"
+}
+
+// 左列固定宽度
+private val LeftColWidth = 40.dp
+// 右列固定宽度
+private val RightColWidth = 56.dp
+
 /**
  * 公里分段卡片
  * 支持两种视图模式：
  *   - TABLE: 6列表格（序号、距离、配速、心率、步幅、步频）
- *   - BAR_CHART: Strava风格横向柱状图，以配速为长度基准
- *
- * 标题右侧有两个控件：
- *   1. 视图切换图标按钮（表格 ↔ 柱状图）
- *   2. 柱状图模式下，柱子方向切换 Toggle（慢→长 / 快→长）
+ *   - BAR_CHART: Strava风格横向柱状图，配速叠加在柱子内，第三列指标可切换
  */
 @Composable
 fun RunDetailSegmentTable(
@@ -63,8 +84,7 @@ fun RunDetailSegmentTable(
     if (segments.isEmpty()) return
 
     var isBarChartMode by remember { mutableStateOf(false) }
-    // true = 越慢柱越长（默认，与 Strava 一致）；false = 越快柱越长
-    var barLongerMeansSlow by remember { mutableStateOf(true) }
+    var selectedMetric by remember { mutableStateOf(SegmentMetric.CADENCE) }
 
     AppCard(
         modifier = modifier
@@ -90,15 +110,6 @@ fun RunDetailSegmentTable(
                     modifier = Modifier.weight(1f)
                 )
 
-                // 柱状图方向切换（仅柱状图模式显示）
-                if (isBarChartMode) {
-                    BarChartDirectionToggle(
-                        longerMeansSlow = barLongerMeansSlow,
-                        onToggle = { barLongerMeansSlow = !barLongerMeansSlow }
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                }
-
                 // 视图模式切换按钮
                 IconButton(
                     onClick = { isBarChartMode = !isBarChartMode },
@@ -108,7 +119,10 @@ fun RunDetailSegmentTable(
                         imageVector = if (isBarChartMode) Icons.Filled.TableChart else Icons.Filled.BarChart,
                         contentDescription = if (isBarChartMode) "切换到表格视图" else "切换到柱状图视图",
                         tint = RunBlue,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier
+                            .size(20.dp)
+                            // BarChart icon 默认竖向，旋转90°变为横向柱状图样式
+                            .graphicsLayer { rotationZ = if (isBarChartMode) 0f else 90f }
                     )
                 }
             }
@@ -126,7 +140,8 @@ fun RunDetailSegmentTable(
                 if (barMode) {
                     SegmentBarChart(
                         segments = segments,
-                        longerMeansSlow = barLongerMeansSlow
+                        selectedMetric = selectedMetric,
+                        onMetricChange = { selectedMetric = selectedMetric.next() }
                     )
                 } else {
                     SegmentTable(segments = segments)
@@ -289,20 +304,23 @@ private fun SegmentTableRow(
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Strava 风格横向柱状图
+ * Strava 风格横向柱状图（升级版）
  *
  * 每行布局：
- *   [72dp 左标签: 序号 + 配速]  [10dp 间距]  [剩余宽度: 轨道 + 实心柱]
+ *   [40dp 左标签: 序号/最快/零头距离]  [weight 1f: 柱+配速叠加]  [56dp 指标值]
  *
  * 归一化规则：
  *   longerMeansSlow = true  → 柱长 ∝ (pace - minPace) / range，最慢满宽，最快最短
  *   longerMeansSlow = false → 柱长 ∝ 1 - 上述，最快满宽，最慢最短
- *   保留 15% 最小可见宽度，避免最短柱消失
+ *   保留 28% 最小可见宽度，确保配速文字始终在柱内可见
+ *
+ * 不足1公里段：第一列显示零头距离（如"0.85"），其余与普通行一致
  */
 @Composable
 private fun SegmentBarChart(
     segments: List<RunSegment>,
-    longerMeansSlow: Boolean
+    selectedMetric: SegmentMetric,
+    onMetricChange: () -> Unit
 ) {
     val validPaces = segments.map { it.averageSpeed }.filter { it > 0.0 }
     if (validPaces.isEmpty()) return
@@ -312,16 +330,19 @@ private fun SegmentBarChart(
     val paceRange = (maxPace - minPace).coerceAtLeast(0.001)
 
     Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+        // 表头
+        SegmentBarChartHeader(
+            selectedMetric = selectedMetric,
+            onMetricChange = onMetricChange
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+
         segments.forEachIndexed { index, segment ->
             val pace = segment.averageSpeed
-            // slowRatio: 0 = 最快，1 = 最慢
+            // slowRatio: 0 = 最快，1 = 最慢；固定快→长模式
             val slowRatio = if (pace > 0) ((pace - minPace) / paceRange).toFloat() else 0f
-
-            val targetFraction = if (longerMeansSlow) {
-                0.15f + slowRatio * 0.85f
-            } else {
-                0.15f + (1f - slowRatio) * 0.85f
-            }
+            // 快→长：越快柱越长
+            val targetFraction = 0.28f + (1f - slowRatio) * 0.72f
 
             val animatedFraction by animateFloatAsState(
                 targetValue = targetFraction,
@@ -331,12 +352,70 @@ private fun SegmentBarChart(
 
             SegmentBarRow(
                 segment = segment,
-                barFraction = animatedFraction
+                barFraction = animatedFraction,
+                selectedMetric = selectedMetric
             )
 
             if (index < segments.lastIndex) {
-                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(3.dp))
             }
+        }
+    }
+}
+
+/**
+ * 三列表头：公里 | 配速 | [指标名▼]（第三列可点击切换）
+ */
+@Composable
+private fun SegmentBarChartHeader(
+    selectedMetric: SegmentMetric,
+    onMetricChange: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 第一列：公里
+        Text(
+            text = "公里",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(LeftColWidth),
+            textAlign = TextAlign.Start
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // 第二列：配速
+        Text(
+            text = "配速",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+
+        // 第三列：可切换指标
+        Row(
+            modifier = Modifier
+                .width(RightColWidth)
+                .clip(RoundedCornerShape(4.dp))
+                .clickable(onClick = onMetricChange)
+                .padding(vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End
+        ) {
+            Text(
+                text = selectedMetric.label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = RunBlue
+            )
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowDown,
+                contentDescription = "切换指标",
+                tint = RunBlue,
+                modifier = Modifier.size(12.dp)
+            )
         }
     }
 }
@@ -344,135 +423,109 @@ private fun SegmentBarChart(
 @Composable
 private fun SegmentBarRow(
     segment: RunSegment,
-    barFraction: Float
+    barFraction: Float,
+    selectedMetric: SegmentMetric
 ) {
     val isFastest = segment.isFastest
-    val barColor = if (isFastest) RunBlue else RunBlue.copy(alpha = 0.30f)
+    val isPartial = segment.distance < 0.95
+    val barColor = if (isFastest) RunBlue else RunBlue.copy(alpha = 0.65f)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(36.dp),
+            .height(28.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // ── 左侧标签（固定 72dp）──
-        Row(
-            modifier = Modifier.width(72.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        // ── 第一列：公里号 / 最快 / 零头距离（固定 40dp）──
+        Box(
+            modifier = Modifier
+                .width(LeftColWidth)
+                .height(28.dp),
+            contentAlignment = Alignment.Center
         ) {
             if (isFastest) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(RunBlue.copy(alpha = 0.12f))
-                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                        .padding(horizontal = 4.dp, vertical = 1.dp)
                 ) {
                     Text(
                         text = "最快",
-                        fontSize = 10.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = RunBlue
                     )
                 }
+            } else if (isPartial) {
+                // 不足1公里：显示零头距离，如"0.85"
+                Text(
+                    text = segment.getFormattedDistance(),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = SecondaryTextColor,
+                    textAlign = TextAlign.Center
+                )
             } else {
                 Text(
                     text = "${segment.seq + 1}",
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = SecondaryTextColor
+                    color = SecondaryTextColor,
+                    textAlign = TextAlign.Center
                 )
             }
-
-            Text(
-                text = segment.getFormattedSpeed(),
-                fontSize = 12.sp,
-                fontWeight = if (isFastest) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (isFastest) RunBlue else MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.End,
-                modifier = Modifier.padding(start = 4.dp)
-            )
         }
 
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-        // ── 柱状条 ──
+        // ── 第二列：柱状条（配速叠加，weight 1f）──
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(36.dp),
+                .height(28.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             // 轨道背景
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .height(22.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             )
-            // 实心柱
+            // 实心柱 + 配速文字叠加
             Box(
                 modifier = Modifier
                     .fillMaxWidth(barFraction)
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(barColor)
-            )
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────
-// 柱状图方向 Toggle
-// ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun BarChartDirectionToggle(
-    longerMeansSlow: Boolean,
-    onToggle: () -> Unit
-) {
-    val activeBg = RunBlue.copy(alpha = 0.12f)
-
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .clickable(onClick = onToggle)
-            .padding(horizontal = 6.dp, vertical = 4.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // 慢→长
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(if (longerMeansSlow) activeBg else Color.Transparent)
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                    .height(22.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(barColor),
+                contentAlignment = Alignment.CenterStart
             ) {
                 Text(
-                    text = "慢→长",
+                    text = segment.getFormattedSpeed(),
                     fontSize = 11.sp,
-                    fontWeight = if (longerMeansSlow) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (longerMeansSlow) RunBlue else SecondaryTextColor
-                )
-            }
-
-            Spacer(modifier = Modifier.width(2.dp))
-
-            // 快→长
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(if (!longerMeansSlow) activeBg else Color.Transparent)
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = "快→长",
-                    fontSize = 11.sp,
-                    fontWeight = if (!longerMeansSlow) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (!longerMeansSlow) RunBlue else SecondaryTextColor
+                    fontWeight = if (isFastest) FontWeight.SemiBold else FontWeight.Medium,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                    modifier = Modifier.padding(start = 6.dp)
                 )
             }
         }
+
+        // ── 第三列：指标值（固定 56dp，右对齐）──
+        Text(
+            text = segment.metricValue(selectedMetric),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (isFastest) RunBlue else MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .width(RightColWidth)
+                .padding(start = 6.dp)
+        )
     }
 }
+
