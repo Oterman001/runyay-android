@@ -80,6 +80,7 @@ fun RunDetailDebugScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val uploadActionState by viewModel.uploadActionState.collectAsState()
+    val vo2MaxUpdateState by viewModel.vo2MaxUpdateState.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     
     Scaffold(
@@ -131,6 +132,10 @@ fun RunDetailDebugScreen(
                     data = state.data,
                     uploadActionState = uploadActionState,
                     onUpload = { viewModel.uploadRecord(state.data.record) },
+                    vo2MaxUpdateState = vo2MaxUpdateState,
+                    onUpdateVo2Max = { vo2Max, summaryId ->
+                        viewModel.updateVo2MaxToServer(vo2Max, summaryId)
+                    },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -146,6 +151,8 @@ private fun RunDetailContent(
     data: RunDetailFullData,
     uploadActionState: UploadActionState,
     onUpload: () -> Unit,
+    vo2MaxUpdateState: Vo2MaxUpdateState,
+    onUpdateVo2Max: (Double, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -193,7 +200,7 @@ private fun RunDetailContent(
                 title = "训练效果",
                 initiallyExpanded = false
             ) {
-                TrainingEffectContent(record = data.record)
+                TrainingEffectContent(record = data.record, vo2Max = data.vo2Max)
             }
         }
         
@@ -212,7 +219,10 @@ private fun RunDetailContent(
             UploadActionCard(
                 record = data.record,
                 uploadActionState = uploadActionState,
-                onUpload = onUpload
+                onUpload = onUpload,
+                vo2Max = data.vo2Max,
+                vo2MaxUpdateState = vo2MaxUpdateState,
+                onUpdateVo2Max = onUpdateVo2Max
             )
         }
 
@@ -513,7 +523,7 @@ private fun CadenceStrideContent(record: RunRecordEntity) {
  * 训练效果内容
  */
 @Composable
-private fun TrainingEffectContent(record: RunRecordEntity) {
+private fun TrainingEffectContent(record: RunRecordEntity, vo2Max: Double? = null) {
     Column {
         DataRow("VDOT", String.format("%.1f", record.vdot))
         DataRow("整体VDOT", String.format("%.1f", record.overallVdot))
@@ -521,6 +531,7 @@ private fun TrainingEffectContent(record: RunRecordEntity) {
         DataRow("无氧训练效果", String.format("%.1f", record.anaerobicTrainingEffect))
         DataRow("训练负荷", String.format("%.0f", record.trainingLoad))
         DataRow("感受等级", "${record.feelingLevel}")
+        DataRow("最大摄氧量", vo2Max?.let { String.format("%.1f", it) } ?: "-")
     }
 }
 
@@ -561,7 +572,10 @@ private fun DeviceSourceContent(record: RunRecordEntity) {
 private fun UploadActionCard(
     record: RunRecordEntity,
     uploadActionState: UploadActionState,
-    onUpload: () -> Unit
+    onUpload: () -> Unit,
+    vo2Max: Double? = null,
+    vo2MaxUpdateState: Vo2MaxUpdateState = Vo2MaxUpdateState.Idle,
+    onUpdateVo2Max: (Double, String) -> Unit = { _, _ -> }
 ) {
     Card(
         modifier = Modifier
@@ -616,6 +630,51 @@ private fun UploadActionCard(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text(if (isLoading) "上传中..." else "手动上传")
+                }
+            }
+
+            // VO2Max 更新按钮：仅当 vo2Max 有值且有 originId 时显示
+            if (vo2Max != null && record.originId != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(modifier = Modifier.padding(bottom = 12.dp))
+                DataRow("最大摄氧量", String.format("%.1f", vo2Max))
+
+                when (vo2MaxUpdateState) {
+                    is Vo2MaxUpdateState.Error -> {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "更新失败：${vo2MaxUpdateState.message}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    is Vo2MaxUpdateState.Success -> {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "VO2Max 已更新到服务器",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    else -> {}
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                val isVo2MaxLoading = vo2MaxUpdateState is Vo2MaxUpdateState.Loading
+                Button(
+                    onClick = { onUpdateVo2Max(vo2Max, record.originId) },
+                    enabled = !isVo2MaxLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isVo2MaxLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text(if (isVo2MaxLoading) "更新中..." else "更新 VO2Max 到服务器")
                 }
             }
         }

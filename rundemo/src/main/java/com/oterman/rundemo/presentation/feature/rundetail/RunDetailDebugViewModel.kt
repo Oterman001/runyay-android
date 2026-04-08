@@ -5,12 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.fit.RunSummaryMapper
+import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunAbilityZoneEntity
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.local.entity.RunSamplePointEntity
 import com.oterman.rundemo.data.local.entity.RunSegmentEntity
+import com.oterman.rundemo.data.network.dto.request.RunSummaryUpdateRequest
+import com.oterman.rundemo.data.repository.DataSourceRepository
+import com.oterman.rundemo.data.repository.HealthRepository
 import com.oterman.rundemo.data.repository.RunDataRemoteRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
@@ -18,6 +22,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * 手动上传操作状态
@@ -39,6 +46,16 @@ sealed class RunDetailDebugUiState {
 }
 
 /**
+ * vo2Max 更新到服务端状态
+ */
+sealed class Vo2MaxUpdateState {
+    object Idle : Vo2MaxUpdateState()
+    object Loading : Vo2MaxUpdateState()
+    object Success : Vo2MaxUpdateState()
+    data class Error(val message: String) : Vo2MaxUpdateState()
+}
+
+/**
  * 完整的跑步详情数据
  */
 data class RunDetailFullData(
@@ -47,7 +64,8 @@ data class RunDetailFullData(
     val zones: List<RunAbilityZoneEntity>,
     val samplePoints: List<RunSamplePointEntity>,
     val trackPointCount: Int,
-    val samplePointCount: Int
+    val samplePointCount: Int,
+    val vo2Max: Double? = null
 )
 
 /**
@@ -57,7 +75,8 @@ class RunDetailDebugViewModel(
     private val workoutId: String,
     private val repository: RunDataRepository,
     private val remoteRepository: RunDataRemoteRepository,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val healthRepository: HealthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<RunDetailDebugUiState>(RunDetailDebugUiState.Loading)
@@ -65,6 +84,9 @@ class RunDetailDebugViewModel(
 
     private val _uploadActionState = MutableStateFlow<UploadActionState>(UploadActionState.Idle)
     val uploadActionState: StateFlow<UploadActionState> = _uploadActionState.asStateFlow()
+
+    private val _vo2MaxUpdateState = MutableStateFlow<Vo2MaxUpdateState>(Vo2MaxUpdateState.Idle)
+    val vo2MaxUpdateState: StateFlow<Vo2MaxUpdateState> = _vo2MaxUpdateState.asStateFlow()
     
     init {
         loadData()
@@ -86,7 +108,15 @@ class RunDetailDebugViewModel(
                 
                 // 加载采样点数据
                 val samplePoints = repository.getSamplePoints(workoutId)
-                
+
+                // 按平台读取 vo2Max（不跨平台混用）
+                val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    .format(Date(detailData.record.startTime))
+                val platformCode = detailData.record.datasource ?: ""
+                val vo2Max = if (platformCode.isNotEmpty()) {
+                    healthRepository.getVo2MaxForDateByPlatform(platformCode, dateStr)
+                } else null
+
                 _uiState.value = RunDetailDebugUiState.Success(
                     RunDetailFullData(
                         record = detailData.record,
@@ -94,7 +124,8 @@ class RunDetailDebugViewModel(
                         zones = detailData.zones,
                         samplePoints = samplePoints,
                         trackPointCount = detailData.trackPointCount,
-                        samplePointCount = detailData.samplePointCount
+                        samplePointCount = detailData.samplePointCount,
+                        vo2Max = vo2Max
                     )
                 )
             } catch (e: Exception) {
@@ -132,6 +163,23 @@ class RunDetailDebugViewModel(
     }
 
     /**
+     * 将 vo2Max 更新到服务端
+     */
+    fun updateVo2MaxToServer(vo2Max: Double, summaryId: String) {
+        viewModelScope.launch {
+            _vo2MaxUpdateState.value = Vo2MaxUpdateState.Loading
+            val result = remoteRepository.updateRunSummary(
+                RunSummaryUpdateRequest(summaryId = summaryId, vo2Max = vo2Max)
+            )
+            _vo2MaxUpdateState.value = if (result.isSuccess) {
+                Vo2MaxUpdateState.Success
+            } else {
+                Vo2MaxUpdateState.Error(result.exceptionOrNull()?.message ?: "更新失败")
+            }
+        }
+    }
+
+    /**
      * 刷新数据
      */
     fun refresh() {
@@ -154,7 +202,10 @@ class RunDetailDebugViewModelFactory(
             val repository = RunDataRepositoryImpl.getInstance(database)
             val preferencesManager = PreferencesManager(context)
             val remoteRepository = RunDataRemoteRepository(preferencesManager)
-            return RunDetailDebugViewModel(workoutId, repository, remoteRepository, preferencesManager) as T
+            val dataSourcePreferences = DataSourcePreferences(context)
+            val dataSourceRepository = DataSourceRepository(dataSourcePreferences, preferencesManager)
+            val healthRepository = HealthRepository(database.dailyHealthDao(), dataSourceRepository, preferencesManager)
+            return RunDetailDebugViewModel(workoutId, repository, remoteRepository, preferencesManager, healthRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
