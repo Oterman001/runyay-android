@@ -4,18 +4,30 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.oterman.rundemo.data.fit.RunSummaryMapper
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunAbilityZoneEntity
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.local.entity.RunSamplePointEntity
 import com.oterman.rundemo.data.local.entity.RunSegmentEntity
+import com.oterman.rundemo.data.repository.RunDataRemoteRepository
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
-import com.oterman.rundemo.data.repository.RunDetailData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+/**
+ * 手动上传操作状态
+ */
+sealed class UploadActionState {
+    object Idle : UploadActionState()
+    object Loading : UploadActionState()
+    object Success : UploadActionState()
+    data class Error(val message: String) : UploadActionState()
+}
 
 /**
  * 详情页UI状态
@@ -43,11 +55,16 @@ data class RunDetailFullData(
  */
 class RunDetailDebugViewModel(
     private val workoutId: String,
-    private val repository: RunDataRepository
+    private val repository: RunDataRepository,
+    private val remoteRepository: RunDataRemoteRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow<RunDetailDebugUiState>(RunDetailDebugUiState.Loading)
     val uiState: StateFlow<RunDetailDebugUiState> = _uiState.asStateFlow()
+
+    private val _uploadActionState = MutableStateFlow<UploadActionState>(UploadActionState.Idle)
+    val uploadActionState: StateFlow<UploadActionState> = _uploadActionState.asStateFlow()
     
     init {
         loadData()
@@ -87,6 +104,34 @@ class RunDetailDebugViewModel(
     }
     
     /**
+     * 手动触发上传
+     */
+    fun uploadRecord(record: RunRecordEntity) {
+        viewModelScope.launch {
+            _uploadActionState.value = UploadActionState.Loading
+            repository.updateUploadStatus(record.workoutId, 1)
+            try {
+                val settings = preferencesManager.getHearRateZoneSettings()
+                val dto = RunSummaryMapper.toUploadItemDto(record, settings)
+                val result = remoteRepository.uploadRunRecords(listOf(dto))
+                if (result.isSuccess) {
+                    repository.updateUploadStatus(record.workoutId, 2)
+                    _uploadActionState.value = UploadActionState.Success
+                    refresh()
+                } else {
+                    repository.updateUploadStatus(record.workoutId, 3)
+                    _uploadActionState.value = UploadActionState.Error(
+                        result.exceptionOrNull()?.message ?: "上传失败"
+                    )
+                }
+            } catch (e: Exception) {
+                repository.updateUploadStatus(record.workoutId, 3)
+                _uploadActionState.value = UploadActionState.Error(e.message ?: "上传异常")
+            }
+        }
+    }
+
+    /**
      * 刷新数据
      */
     fun refresh() {
@@ -107,7 +152,9 @@ class RunDetailDebugViewModelFactory(
         if (modelClass.isAssignableFrom(RunDetailDebugViewModel::class.java)) {
             val database = RunDatabase.getInstance(context)
             val repository = RunDataRepositoryImpl.getInstance(database)
-            return RunDetailDebugViewModel(workoutId, repository) as T
+            val preferencesManager = PreferencesManager(context)
+            val remoteRepository = RunDataRemoteRepository(preferencesManager)
+            return RunDetailDebugViewModel(workoutId, repository, remoteRepository, preferencesManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

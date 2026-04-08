@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -78,6 +79,7 @@ fun RunDetailDebugScreen(
     )
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val uploadActionState by viewModel.uploadActionState.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     
     Scaffold(
@@ -127,6 +129,8 @@ fun RunDetailDebugScreen(
             is RunDetailDebugUiState.Success -> {
                 RunDetailContent(
                     data = state.data,
+                    uploadActionState = uploadActionState,
+                    onUpload = { viewModel.uploadRecord(state.data.record) },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -140,6 +144,8 @@ fun RunDetailDebugScreen(
 @Composable
 private fun RunDetailContent(
     data: RunDetailFullData,
+    uploadActionState: UploadActionState,
+    onUpload: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -200,7 +206,16 @@ private fun RunDetailContent(
                 DeviceSourceContent(record = data.record)
             }
         }
-        
+
+        // 手动上传操作
+        item {
+            UploadActionCard(
+                record = data.record,
+                uploadActionState = uploadActionState,
+                onUpload = onUpload
+            )
+        }
+
         // 公里分段
         if (data.segments.isNotEmpty()) {
             item {
@@ -536,6 +551,74 @@ private fun DeviceSourceContent(record: RunRecordEntity) {
         DataRow("关联训练计划", record.trainPlanId ?: "-")
         DataRow("关联跑鞋", record.shoeId ?: "-")
         DataRow("关联赛事", record.linkedRaceRecordId ?: "-")
+    }
+}
+
+/**
+ * 手动上传操作卡片
+ */
+@Composable
+private fun UploadActionCard(
+    record: RunRecordEntity,
+    uploadActionState: UploadActionState,
+    onUpload: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "上传操作",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(modifier = Modifier.padding(bottom = 12.dp))
+
+            val statusText = when (record.uploadStatus) {
+                0 -> "未上传"
+                1 -> "上传中"
+                2 -> "已上传"
+                3 -> "上传失败"
+                else -> "${record.uploadStatus}"
+            }
+            DataRow("上传状态", statusText)
+
+            if (uploadActionState is UploadActionState.Error) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "错误：${uploadActionState.message}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            if (record.uploadStatus != 2) {
+                Spacer(modifier = Modifier.height(12.dp))
+                val isLoading = uploadActionState is UploadActionState.Loading
+                Button(
+                    onClick = onUpload,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text(if (isLoading) "上传中..." else "手动上传")
+                }
+            }
+        }
     }
 }
 

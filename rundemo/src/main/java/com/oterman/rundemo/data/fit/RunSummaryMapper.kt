@@ -1,5 +1,6 @@
 package com.oterman.rundemo.data.fit
 
+import com.oterman.rundemo.data.local.HearRateZoneSettings
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.network.dto.RunSummaryBasicInfoDto
 import com.oterman.rundemo.data.network.dto.request.RunRecordUploadItemDto
@@ -30,7 +31,10 @@ object RunSummaryMapper {
      * Entity -> RunRecordUploadItemDto (用于 /api/rundata/upload)
      * 字段和类型完全对齐服务端 API (run_recordupload.txt)
      */
-    fun toUploadItemDto(entity: RunRecordEntity): RunRecordUploadItemDto {
+    fun toUploadItemDto(
+        entity: RunRecordEntity,
+        settings: HearRateZoneSettings? = null
+    ): RunRecordUploadItemDto {
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault())
         sdf.timeZone = TimeZone.getDefault()
         return RunRecordUploadItemDto(
@@ -48,6 +52,8 @@ object RunSummaryMapper {
             averageHeartRate = entity.averageHeartRate.takeIf { it > 0 },
             maxHeartRate = entity.maxHeartRate.takeIf { it > 0 },
             minHeartRate = entity.minHeartRate.takeIf { it > 0 },
+            restingHeartRate = settings?.restingHeartRate?.takeIf { it > 0 },
+            userMaxHeartRate = settings?.maxHeartRate?.takeIf { it > 0 },
             totalStepCount = entity.totalStepCount.takeIf { it > 0 },
             totalActiveEnergy = entity.totalCalories.takeIf { it > 0 },
             originDistance = entity.originDistance.takeIf { it > 0 },

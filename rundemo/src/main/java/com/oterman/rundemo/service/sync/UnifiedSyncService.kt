@@ -79,6 +79,9 @@ class UnifiedSyncService(
     /** 追踪本次同步中最早的记录时间，用于同步后批量重算VDOT */
     private var earliestImportedStartTime: Long = Long.MAX_VALUE
 
+    /** 待批量上传的workoutId列表（服务端无runSummary、非HK/MANUAL平台） */
+    private val pendingUploadWorkoutIds = mutableListOf<String>()
+
     /** inclusiveLevel 冲突解决器 */
     private val inclusiveLevelResolver: InclusiveLevelResolver by lazy {
         InclusiveLevelResolver(runDataRepository, dataSourcePreferences)
@@ -257,10 +260,9 @@ class UnifiedSyncService(
         // 追踪最早导入时间，用于同步后批量重算VDOT
         earliestImportedStartTime = minOf(earliestImportedStartTime, resolvedRecord.startTime)
 
-        // Step 7: 服务端无runSummary时异步上传
-        if (serverRunSummary == null) {
-            // TODO
-            // asyncUploadRunData(resolvedRecord.workoutId, fileInfo.summaryId)
+        // Step 7: 服务端无runSummary时加入待上传列表（同步结束后统一批量上传）
+        if (serverRunSummary == null && !isHKPlatform && !isManualPlatform) {
+            pendingUploadWorkoutIds.add(resolvedRecord.workoutId)
         }
 
         return ImportedRunSummary(
@@ -282,8 +284,13 @@ class UnifiedSyncService(
             recalcService.recalculateAfterSync(earliestImportedStartTime)
             RLog.i(logTag, "VDOT批量重算完成")
         }
+        // 批量上传无服务端runSummary的记录（全部下载完毕后统一上传）
+        if (pendingUploadWorkoutIds.isNotEmpty()) {
+            batchUploadPendingRecords()
+        }
         // 重置追踪变量
         earliestImportedStartTime = Long.MAX_VALUE
+        pendingUploadWorkoutIds.clear()
     }
 
     // ============ 私有方法 ============
@@ -327,6 +334,45 @@ class UnifiedSyncService(
             restingHeartRate = restingHeartRate,
             vo2Max = vo2Max
         )
+    }
+
+    /**
+     * 批量上传待上传记录（同步结束后统一调用）
+     */
+    private suspend fun batchUploadPendingRecords() {
+        RLog.i(logTag, "开始批量上传 ${pendingUploadWorkoutIds.size} 条记录")
+        // 标记所有记录为上传中
+        pendingUploadWorkoutIds.forEach { runDataRepository.updateUploadStatus(it, 1) }
+
+        try {
+            val settings = preferencesManager?.getHearRateZoneSettings()
+            val dtos = pendingUploadWorkoutIds.mapNotNull { workoutId ->
+                val record = runDataRepository.getRunRecord(workoutId)
+                if (record == null) {
+                    RLog.w(logTag, "批量上传：找不到记录 workoutId=$workoutId")
+                    null
+                } else {
+                    RunSummaryMapper.toUploadItemDto(record, settings)
+                }
+            }
+
+            if (dtos.isEmpty()) {
+                RLog.w(logTag, "批量上传：无有效记录可上传")
+                return
+            }
+
+            val result = runDataRemoteRepository.uploadRunRecords(dtos)
+            if (result.isSuccess) {
+                pendingUploadWorkoutIds.forEach { runDataRepository.updateUploadStatus(it, 2) }
+                RLog.i(logTag, "批量上传成功: ${dtos.size} 条")
+            } else {
+                pendingUploadWorkoutIds.forEach { runDataRepository.updateUploadStatus(it, 3) }
+                RLog.w(logTag, "批量上传失败: ${result.exceptionOrNull()?.message}")
+            }
+        } catch (e: Exception) {
+            pendingUploadWorkoutIds.forEach { runDataRepository.updateUploadStatus(it, 3) }
+            RLog.e(logTag, "批量上传异常", e)
+        }
     }
 
     /**
