@@ -95,6 +95,10 @@ data class ShareUiState(
     val trainingSegments: List<RunSegment> = emptyList(),
     val mergedTrainingSegments: List<MergedRunSegment> = emptyList(),
 
+    // 公里分段视图状态（从详情页同步）
+    val segmentBarChartMode: Boolean = false,
+    val segmentBarChartMetricIndex: Int = 0,
+
     // VO2Max
     val vo2Max: Double? = null,
     val previousVo2Max: Double? = null,

@@ -55,6 +55,10 @@ data class RunDetailUiState(
     val downloadError: String? = null,
     val downloadSuccess: Boolean = false,
 
+    // 公里分段视图状态（柱状图模式 & 指标索引），用于同步到分享页
+    val segmentBarChartMode: Boolean = false,
+    val segmentBarChartMetricIndex: Int = 0,
+
     // 分享状态
     val isPreparingShare: Boolean = false,
     val shareDataReady: Boolean = false,
@@ -129,6 +133,8 @@ data class RunDetailUiState(
         } else if (other.downloadedFitData != null) return false
         if (downloadError != other.downloadError) return false
         if (downloadSuccess != other.downloadSuccess) return false
+        if (segmentBarChartMode != other.segmentBarChartMode) return false
+        if (segmentBarChartMetricIndex != other.segmentBarChartMetricIndex) return false
         if (isPreparingShare != other.isPreparingShare) return false
         if (shareDataReady != other.shareDataReady) return false
         if (isDeleting != other.isDeleting) return false
@@ -181,6 +187,8 @@ data class RunDetailUiState(
         result = 31 * result + (downloadedFitData?.contentHashCode() ?: 0)
         result = 31 * result + (downloadError?.hashCode() ?: 0)
         result = 31 * result + downloadSuccess.hashCode()
+        result = 31 * result + segmentBarChartMode.hashCode()
+        result = 31 * result + segmentBarChartMetricIndex.hashCode()
         result = 31 * result + isPreparingShare.hashCode()
         result = 31 * result + shareDataReady.hashCode()
         result = 31 * result + isDeleting.hashCode()

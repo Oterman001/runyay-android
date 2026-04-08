@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.local.RunDetailPreferences
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.repository.AvatarManager
@@ -44,7 +45,8 @@ class RunDetailViewModel(
     private val preferencesManager: PreferencesManager,
     private val healthRepository: HealthRepository,
     private val syncManager: UnifiedDataSyncManager,
-    private val shoeRepository: RunningShoeRepository
+    private val shoeRepository: RunningShoeRepository,
+    private val runDetailPreferences: RunDetailPreferences
 ) : ViewModel() {
 
     companion object {
@@ -53,7 +55,12 @@ class RunDetailViewModel(
 
     private val vdotRecalculationService = VdotRecalculationService(repository)
 
-    private val _uiState = MutableStateFlow(RunDetailUiState())
+    private val _uiState = MutableStateFlow(
+        RunDetailUiState(
+            segmentBarChartMode = runDetailPreferences.getSegmentBarChartMode(),
+            segmentBarChartMetricIndex = runDetailPreferences.getSegmentMetricIndex()
+        )
+    )
     val uiState: StateFlow<RunDetailUiState> = _uiState.asStateFlow()
 
     private val _expandedSegmentIds = mutableSetOf<String>()
@@ -509,6 +516,15 @@ class RunDetailViewModel(
         )
     }
 
+    fun updateSegmentBarChart(isBarChart: Boolean, metricIndex: Int) {
+        _uiState.value = _uiState.value.copy(
+            segmentBarChartMode = isBarChart,
+            segmentBarChartMetricIndex = metricIndex
+        )
+        runDetailPreferences.saveSegmentBarChartMode(isBarChart)
+        runDetailPreferences.saveSegmentMetricIndex(metricIndex)
+    }
+
     /**
      * 刷新数据
      */
@@ -829,7 +845,8 @@ class RunDetailViewModelFactory(
             val healthRepository = HealthRepository(database.dailyHealthDao(), dataSourceRepository, preferencesManager)
             val syncManager = UnifiedDataSyncManager.getInstance(context)
             val shoeRepository = RunningShoeRepository(context)
-            return RunDetailViewModel(workoutId, repository, fitDownloadRepository, avatarManager, preferencesManager, healthRepository, syncManager, shoeRepository) as T
+            val runDetailPreferences = com.oterman.rundemo.data.local.RunDetailPreferences(context)
+            return RunDetailViewModel(workoutId, repository, fitDownloadRepository, avatarManager, preferencesManager, healthRepository, syncManager, shoeRepository, runDetailPreferences) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

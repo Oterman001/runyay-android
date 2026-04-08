@@ -46,14 +46,22 @@ class ShareViewModel(
     private val avatarManager: com.oterman.rundemo.data.repository.AvatarManager,
     private val preferencesManager: PreferencesManager,
     private val shoeRepository: RunningShoeRepository,
-    private val isPrivacyMode: Boolean = false
+    private val isPrivacyMode: Boolean = false,
+    private val segmentBarChartMode: Boolean = false,
+    private val segmentBarChartMetricIndex: Int = 0
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "ShareViewModel"
     }
 
-    private val _uiState = MutableStateFlow(ShareUiState(isPrivacyMode = isPrivacyMode))
+    private val _uiState = MutableStateFlow(
+        ShareUiState(
+            isPrivacyMode = isPrivacyMode,
+            segmentBarChartMode = segmentBarChartMode,
+            segmentBarChartMetricIndex = segmentBarChartMetricIndex
+        )
+    )
     val uiState: StateFlow<ShareUiState> = _uiState.asStateFlow()
 
     init {
@@ -255,6 +263,14 @@ class ShareViewModel(
         _uiState.value = _uiState.value.copy(heartRateZone7Selected = show7)
     }
 
+    fun updateSegmentBarChartMode(isBarChart: Boolean) {
+        _uiState.value = _uiState.value.copy(segmentBarChartMode = isBarChart)
+    }
+
+    fun updateSegmentBarChartMetricIndex(index: Int) {
+        _uiState.value = _uiState.value.copy(segmentBarChartMetricIndex = index)
+    }
+
     fun updateDeviceName(name: String) {
         _uiState.value = _uiState.value.copy(customDeviceName = name.ifBlank { null })
         sharePreferences.saveCustomDeviceName(name.ifBlank { null })
@@ -335,7 +351,9 @@ class ShareViewModel(
                         isPrivacyMode = state.isPrivacyMode,
                         trackPoints = state.trackPoints,
                         heartRateZone7Selected = state.heartRateZone7Selected,
-                        isIndoor = !state.isOutdoor
+                        isIndoor = !state.isOutdoor,
+                        segmentBarChartMode = state.segmentBarChartMode,
+                        segmentMetricIndex = state.segmentBarChartMetricIndex
                     )
                 }
                 ShareMode.CUSTOM -> null
@@ -615,7 +633,9 @@ class ShareViewModel(
  */
 class ShareViewModelFactory(
     private val context: Context,
-    private val workoutId: String
+    private val workoutId: String,
+    private val segmentBarChartMode: Boolean = false,
+    private val segmentMetricIndex: Int = 0
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -631,7 +651,11 @@ class ShareViewModelFactory(
             val avatarManager = com.oterman.rundemo.data.repository.AvatarManager.getInstance(context)
             val shoeRepository = RunningShoeRepository(context)
             val isPrivacyMode = com.oterman.rundemo.presentation.feature.rundetail.components.RunMapPreferences.getPrivacyMode(context)
-            return ShareViewModel(workoutId, repository, sharePreferences, healthRepository, avatarManager, preferencesManager, shoeRepository, isPrivacyMode) as T
+            return ShareViewModel(
+                workoutId, repository, sharePreferences, healthRepository,
+                avatarManager, preferencesManager, shoeRepository,
+                isPrivacyMode, segmentBarChartMode, segmentMetricIndex
+            ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

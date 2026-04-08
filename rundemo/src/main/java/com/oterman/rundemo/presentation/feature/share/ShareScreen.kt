@@ -64,9 +64,11 @@ import com.oterman.rundemo.util.DeviceNameUtils
 @Composable
 fun ShareScreen(
     workoutId: String,
+    segmentBarChartMode: Boolean = false,
+    segmentMetricIndex: Int = 0,
     onNavigateBack: () -> Unit,
     viewModel: ShareViewModel = viewModel(
-        factory = ShareViewModelFactory(LocalContext.current, workoutId)
+        factory = ShareViewModelFactory(LocalContext.current, workoutId, segmentBarChartMode, segmentMetricIndex)
     )
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -265,7 +267,11 @@ fun ShareScreen(
                                                 trackPoints = uiState.trackPoints,
                                                 heartRateZone7Selected = uiState.heartRateZone7Selected,
                                                 onHeartRateZoneChanged = { viewModel.updateHeartRateZoneMode(it) },
-                                                isIndoor = !uiState.isOutdoor
+                                                isIndoor = !uiState.isOutdoor,
+                                                segmentBarChartMode = uiState.segmentBarChartMode,
+                                                segmentMetricIndex = uiState.segmentBarChartMetricIndex,
+                                                onSegmentBarChartModeChanged = { viewModel.updateSegmentBarChartMode(it) },
+                                                onSegmentMetricIndexChanged = { viewModel.updateSegmentBarChartMetricIndex(it) }
                                             )
                                         }
 

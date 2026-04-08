@@ -25,10 +25,19 @@ class ShareActivity : ComponentActivity() {
     companion object {
         private const val TAG = "ShareActivity"
         private const val EXTRA_WORKOUT_ID = "workout_id"
+        private const val EXTRA_SEGMENT_BAR_CHART_MODE = "segment_bar_chart_mode"
+        private const val EXTRA_SEGMENT_METRIC_INDEX = "segment_metric_index"
 
-        fun createIntent(context: Context, workoutId: String): Intent {
+        fun createIntent(
+            context: Context,
+            workoutId: String,
+            segmentBarChartMode: Boolean = false,
+            segmentMetricIndex: Int = 0
+        ): Intent {
             return Intent(context, ShareActivity::class.java).apply {
                 putExtra(EXTRA_WORKOUT_ID, workoutId)
+                putExtra(EXTRA_SEGMENT_BAR_CHART_MODE, segmentBarChartMode)
+                putExtra(EXTRA_SEGMENT_METRIC_INDEX, segmentMetricIndex)
             }
         }
     }
@@ -43,6 +52,8 @@ class ShareActivity : ComponentActivity() {
             finish()
             return
         }
+        val segmentBarChartMode = intent.getBooleanExtra(EXTRA_SEGMENT_BAR_CHART_MODE, false)
+        val segmentMetricIndex = intent.getIntExtra(EXTRA_SEGMENT_METRIC_INDEX, 0)
 
         setContent {
             ComopseDemoHubTheme {
@@ -52,6 +63,8 @@ class ShareActivity : ComponentActivity() {
                 ) {
                     ShareScreen(
                         workoutId = workoutId,
+                        segmentBarChartMode = segmentBarChartMode,
+                        segmentMetricIndex = segmentMetricIndex,
                         onNavigateBack = { finish() }
                     )
                 }

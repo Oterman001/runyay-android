@@ -102,6 +102,10 @@ fun LongSharePreview(
     heartRateZone7Selected: Boolean = true,
     onHeartRateZoneChanged: ((Boolean) -> Unit)? = null,
     isIndoor: Boolean = false,
+    segmentBarChartMode: Boolean = false,
+    segmentMetricIndex: Int = 0,
+    onSegmentBarChartModeChanged: ((Boolean) -> Unit)? = null,
+    onSegmentMetricIndexChanged: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     fun isCardEnabled(type: ShareCardType): Boolean = enabledCards[type] != false
@@ -210,7 +214,13 @@ fun LongSharePreview(
 
         // 5. 公里分段
         if (isCardEnabled(ShareCardType.KM_SEGMENTS) && segments.isNotEmpty()) {
-            RunDetailSegmentTable(segments = segments)
+            RunDetailSegmentTable(
+                segments = segments,
+                initialBarChartMode = segmentBarChartMode,
+                initialMetricIndex = segmentMetricIndex,
+                onBarChartModeChange = onSegmentBarChartModeChanged,
+                onMetricIndexChange = onSegmentMetricIndexChanged
+            )
             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
         }
 

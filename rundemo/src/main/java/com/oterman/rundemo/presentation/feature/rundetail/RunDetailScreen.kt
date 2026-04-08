@@ -150,7 +150,14 @@ fun RunDetailScreen(
         if (uiState.shareDataReady) {
             val record = uiState.record
             if (record != null) {
-                context.startActivity(ShareActivity.createIntent(context, record.workoutId))
+                context.startActivity(
+                    ShareActivity.createIntent(
+                        context,
+                        record.workoutId,
+                        uiState.segmentBarChartMode,
+                        uiState.segmentBarChartMetricIndex
+                    )
+                )
             }
             viewModel.clearShareState()
         }
@@ -565,7 +572,15 @@ fun RunDetailScreen(
                         // ==================== 5. 公里分段表格 ====================
                         if (uiState.segments.isNotEmpty()) {
                             RunDetailSegmentTable(
-                                segments = uiState.segments
+                                segments = uiState.segments,
+                                initialBarChartMode = uiState.segmentBarChartMode,
+                                onBarChartModeChange = {
+                                    viewModel.updateSegmentBarChart(it, uiState.segmentBarChartMetricIndex)
+                                },
+                                initialMetricIndex = uiState.segmentBarChartMetricIndex,
+                                onMetricIndexChange = {
+                                    viewModel.updateSegmentBarChart(uiState.segmentBarChartMode, it)
+                                }
                             )
                             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }

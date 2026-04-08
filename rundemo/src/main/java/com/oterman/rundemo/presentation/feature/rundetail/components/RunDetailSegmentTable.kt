@@ -79,12 +79,18 @@ private val RightColWidth = 56.dp
 @Composable
 fun RunDetailSegmentTable(
     segments: List<RunSegment>,
+    initialBarChartMode: Boolean = false,
+    onBarChartModeChange: ((Boolean) -> Unit)? = null,
+    initialMetricIndex: Int = 0,
+    onMetricIndexChange: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     if (segments.isEmpty()) return
 
-    var isBarChartMode by remember { mutableStateOf(false) }
-    var selectedMetric by remember { mutableStateOf(SegmentMetric.CADENCE) }
+    var isBarChartMode by remember { mutableStateOf(initialBarChartMode) }
+    var selectedMetric by remember {
+        mutableStateOf(SegmentMetric.entries[initialMetricIndex.coerceIn(0, SegmentMetric.entries.lastIndex)])
+    }
 
     AppCard(
         modifier = modifier
@@ -112,7 +118,11 @@ fun RunDetailSegmentTable(
 
                 // 视图模式切换按钮
                 IconButton(
-                    onClick = { isBarChartMode = !isBarChartMode },
+                    onClick = {
+                        val newMode = !isBarChartMode
+                        isBarChartMode = newMode
+                        onBarChartModeChange?.invoke(newMode)
+                    },
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
@@ -141,7 +151,10 @@ fun RunDetailSegmentTable(
                     SegmentBarChart(
                         segments = segments,
                         selectedMetric = selectedMetric,
-                        onMetricChange = { selectedMetric = selectedMetric.next() }
+                        onMetricChange = {
+                            selectedMetric = selectedMetric.next()
+                            onMetricIndexChange?.invoke(selectedMetric.ordinal)
+                        }
                     )
                 } else {
                     SegmentTable(segments = segments)
@@ -201,9 +214,9 @@ private fun SegmentTableRow(
     isFastest: Boolean
 ) {
     val bgColor = if (index % 2 == 0) {
-        Color.LightGray.copy(alpha = 0.1f)
+        Color.LightGray.copy(alpha = 0.22f)
     } else {
-        Color.Gray.copy(alpha = 0.01f)
+        Color.Transparent
     }
 
     Row(
@@ -503,15 +516,31 @@ private fun SegmentBarRow(
                     .background(barColor),
                 contentAlignment = Alignment.CenterStart
             ) {
-                Text(
-                    text = segment.getFormattedSpeed(),
-                    fontSize = 11.sp,
-                    fontWeight = if (isFastest) FontWeight.SemiBold else FontWeight.Medium,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Clip,
-                    modifier = Modifier.padding(start = 6.dp)
-                )
+                Row(
+                    modifier = Modifier
+                        .padding(start = 6.dp, end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = segment.getFormattedSpeed(),
+                        fontSize = 11.sp,
+                        fontWeight = if (isFastest) FontWeight.SemiBold else FontWeight.Medium,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Clip
+                    )
+                    if (isFastest) {
+                        Text(
+                            text = "最快",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White.copy(alpha = 0.85f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Clip
+                        )
+                    }
+                }
             }
         }
 

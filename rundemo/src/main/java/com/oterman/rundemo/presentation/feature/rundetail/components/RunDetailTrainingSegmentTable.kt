@@ -215,9 +215,9 @@ private fun MergedSegmentRow(
     onToggle: () -> Unit
 ) {
     val bgColor = if (index % 2 == 0) {
-        Color.LightGray.copy(alpha = 0.1f)
+        Color.LightGray.copy(alpha = 0.22f)
     } else {
-        Color.Gray.copy(alpha = 0.01f)
+        Color.Transparent
     }
 
     Row(
