@@ -85,6 +85,9 @@ class RunDetailDebugViewModel(
     private val _uploadActionState = MutableStateFlow<UploadActionState>(UploadActionState.Idle)
     val uploadActionState: StateFlow<UploadActionState> = _uploadActionState.asStateFlow()
 
+    private val _forceUploadState = MutableStateFlow<UploadActionState>(UploadActionState.Idle)
+    val forceUploadState: StateFlow<UploadActionState> = _forceUploadState.asStateFlow()
+
     private val _vo2MaxUpdateState = MutableStateFlow<Vo2MaxUpdateState>(Vo2MaxUpdateState.Idle)
     val vo2MaxUpdateState: StateFlow<Vo2MaxUpdateState> = _vo2MaxUpdateState.asStateFlow()
     
@@ -158,6 +161,34 @@ class RunDetailDebugViewModel(
             } catch (e: Exception) {
                 repository.updateUploadStatus(record.workoutId, 3)
                 _uploadActionState.value = UploadActionState.Error(e.message ?: "上传异常")
+            }
+        }
+    }
+
+    /**
+     * 强制上传（不判断当前 uploadStatus，始终执行上传）
+     */
+    fun forceUploadRecord(record: RunRecordEntity) {
+        viewModelScope.launch {
+            _forceUploadState.value = UploadActionState.Loading
+            repository.updateUploadStatus(record.workoutId, 1)
+            try {
+                val settings = preferencesManager.getHearRateZoneSettings()
+                val dto = RunSummaryMapper.toUploadItemDto(record, settings)
+                val result = remoteRepository.uploadRunRecords(listOf(dto))
+                if (result.isSuccess) {
+                    repository.updateUploadStatus(record.workoutId, 2)
+                    _forceUploadState.value = UploadActionState.Success
+                    refresh()
+                } else {
+                    repository.updateUploadStatus(record.workoutId, 3)
+                    _forceUploadState.value = UploadActionState.Error(
+                        result.exceptionOrNull()?.message ?: "上传失败"
+                    )
+                }
+            } catch (e: Exception) {
+                repository.updateUploadStatus(record.workoutId, 3)
+                _forceUploadState.value = UploadActionState.Error(e.message ?: "上传异常")
             }
         }
     }

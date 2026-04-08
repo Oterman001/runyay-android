@@ -80,6 +80,7 @@ fun RunDetailDebugScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val uploadActionState by viewModel.uploadActionState.collectAsState()
+    val forceUploadState by viewModel.forceUploadState.collectAsState()
     val vo2MaxUpdateState by viewModel.vo2MaxUpdateState.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     
@@ -132,6 +133,8 @@ fun RunDetailDebugScreen(
                     data = state.data,
                     uploadActionState = uploadActionState,
                     onUpload = { viewModel.uploadRecord(state.data.record) },
+                    forceUploadState = forceUploadState,
+                    onForceUpload = { viewModel.forceUploadRecord(state.data.record) },
                     vo2MaxUpdateState = vo2MaxUpdateState,
                     onUpdateVo2Max = { vo2Max, summaryId ->
                         viewModel.updateVo2MaxToServer(vo2Max, summaryId)
@@ -151,6 +154,8 @@ private fun RunDetailContent(
     data: RunDetailFullData,
     uploadActionState: UploadActionState,
     onUpload: () -> Unit,
+    forceUploadState: UploadActionState,
+    onForceUpload: () -> Unit,
     vo2MaxUpdateState: Vo2MaxUpdateState,
     onUpdateVo2Max: (Double, String) -> Unit,
     modifier: Modifier = Modifier
@@ -220,6 +225,8 @@ private fun RunDetailContent(
                 record = data.record,
                 uploadActionState = uploadActionState,
                 onUpload = onUpload,
+                forceUploadState = forceUploadState,
+                onForceUpload = onForceUpload,
                 vo2Max = data.vo2Max,
                 vo2MaxUpdateState = vo2MaxUpdateState,
                 onUpdateVo2Max = onUpdateVo2Max
@@ -573,6 +580,8 @@ private fun UploadActionCard(
     record: RunRecordEntity,
     uploadActionState: UploadActionState,
     onUpload: () -> Unit,
+    forceUploadState: UploadActionState = UploadActionState.Idle,
+    onForceUpload: () -> Unit = {},
     vo2Max: Double? = null,
     vo2MaxUpdateState: Vo2MaxUpdateState = Vo2MaxUpdateState.Idle,
     onUpdateVo2Max: (Double, String) -> Unit = { _, _ -> }
@@ -631,6 +640,43 @@ private fun UploadActionCard(
                     }
                     Text(if (isLoading) "上传中..." else "手动上传")
                 }
+            }
+
+            // 强制上传（始终显示）
+            Spacer(modifier = Modifier.height(8.dp))
+            if (forceUploadState is UploadActionState.Error) {
+                Text(
+                    text = "强制上传失败：${forceUploadState.message}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            } else if (forceUploadState is UploadActionState.Success) {
+                Text(
+                    text = "强制上传成功",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+            val isForceLoading = forceUploadState is UploadActionState.Loading
+            Button(
+                onClick = onForceUpload,
+                enabled = !isForceLoading,
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                if (isForceLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onError
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(if (isForceLoading) "上传中..." else "强制上传摘要")
             }
 
             // VO2Max 更新按钮：仅当 vo2Max 有值且有 originId 时显示
