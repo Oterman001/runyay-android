@@ -585,9 +585,15 @@ object VdotCalculator {
         }
 
         // 逐个计算原始 VDOT
+        // 过滤极短工作段：距离 < 200m 或时长 < 1min 时 Jack Daniels 公式不适用，
+        // 会因为时长极小导致修正因子 f 放大，产生虚高 VDOT
         val perIntervalVdots = mutableListOf<Double>()
         for (seg in workSegments) {
             if (seg.distance <= 0 || seg.activeDuration <= 0) continue
+            if (seg.distance < 0.2 || seg.activeDuration < 1.0) {
+                RLog.d(TAG, "  工作段[${seg.seq}]过短，跳过: ${seg.distance}km, ${seg.activeDuration}min")
+                continue
+            }
             val rawVdot = getVDot(seg.distance * 1000, seg.activeDuration)
             if (rawVdot > 0) {
                 perIntervalVdots.add(rawVdot)

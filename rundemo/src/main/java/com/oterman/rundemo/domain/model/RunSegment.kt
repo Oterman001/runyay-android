@@ -31,6 +31,7 @@ enum class IntervalType(val value: String, val displayName: String) {
             return entries.find { it.value == value }
                 ?: when (value) {
                     "active", "interval" -> WORK
+                    "rest" -> RECOVERY
                     else -> UNKNOWN
                 }
         }
