@@ -324,6 +324,7 @@ class UnifiedDataSyncManager private constructor(
                     }
                 }
                 val result = finalResult ?: UnifiedSyncResult.empty()
+                retryPendingUploads()
                 _syncUiState.value = SyncUiState.Completed(result)
                 delay(3000)
                 _syncUiState.value = SyncUiState.Idle
