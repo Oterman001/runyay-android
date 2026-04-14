@@ -102,15 +102,16 @@ class HealthRepository(
         vo2Max: Double?
     ) {
         val userId = preferencesManager.getUserId() ?: return
+        val validVo2Max = if (vo2Max != null && vo2Max > 0) vo2Max else null
         val entity = DailyHealthEntity(
             userId = userId,
             platformCode = platformCode,
             calendarDate = calendarDate,
             restingHeartRate = restingHeartRate,
-            vo2Max = vo2Max
+            vo2Max = validVo2Max
         )
         dailyHealthDao.insertOrReplace(entity)
-        RLog.d(TAG, "从runSummary缓存健康数据: platform=$platformCode, date=$calendarDate, restHR=$restingHeartRate, vo2Max=$vo2Max")
+        RLog.d(TAG, "从runSummary缓存健康数据: platform=$platformCode, date=$calendarDate, restHR=$restingHeartRate, vo2Max=$validVo2Max")
     }
 
     /**
