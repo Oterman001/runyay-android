@@ -91,7 +91,17 @@ class RunDetailViewModel(
                 val trackPoints = repository.getTrackPoints(workoutId)
 
                 // 获取公里分段
-                val segments = repository.getKilometerSegments(workoutId)
+                val segments = repository.getKilometerSegments(workoutId).let { list ->
+                    // 标记最快完整公里（distance >= 0.95km，averageSpeed 最小即最快）
+                    val fastestSeq = list
+                        .filter { it.distance >= 0.95 && it.averageSpeed > 0 }
+                        .minByOrNull { it.averageSpeed }
+                        ?.seq
+                    if (fastestSeq != null)
+                        list.map { if (it.seq == fastestSeq) it.copy(isFastest = true) else it }
+                    else
+                        list
+                }
 
                 // 获取训练分段
                 val trainingSegments = repository.getTrainingSegments(workoutId)
