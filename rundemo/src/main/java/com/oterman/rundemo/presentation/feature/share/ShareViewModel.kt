@@ -157,6 +157,9 @@ class ShareViewModel(
                 // 根据数据可用性构建可选指标列表
                 val availableMetrics = buildAvailableMetrics(record)
 
+                // 过滤掉当前记录中不可用的已选指标，确保预览与编辑面板保持一致
+                val filteredSelectedMetrics = _uiState.value.selectedMetrics.filter { it in availableMetrics }
+
                 // 关联跑鞋
                 val linkedShoe = record.shoeId?.let { shoeRepository.getShoe(it) }
 
@@ -187,6 +190,7 @@ class ShareViewModel(
                     previousVo2Max = previousVo2Max,
                     mapSnapshot = mapSnapshot,
                     availableMetrics = availableMetrics,
+                    selectedMetrics = filteredSelectedMetrics,
                     linkedShoe = linkedShoe
                 )
             } catch (e: Exception) {
