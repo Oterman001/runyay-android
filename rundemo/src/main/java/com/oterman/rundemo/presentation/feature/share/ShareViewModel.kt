@@ -482,12 +482,10 @@ class ShareViewModel(
         if (record.trainingLoad > 0) list.add(ShareMetricType.TRAINING_LOAD)
         list.add(ShareMetricType.AVG_HEART_RATE)
         list.add(ShareMetricType.MAX_HEART_RATE)
-        if (record.averageStrideLength > 0) list.add(ShareMetricType.AVG_STRIDE_LENGTH)
-        if (record.averageCadence > 0) list.add(ShareMetricType.AVG_CADENCE)
+        list.add(ShareMetricType.AVG_STRIDE_LENGTH)
+        list.add(ShareMetricType.AVG_CADENCE)
         list.add(ShareMetricType.ELEVATION)
-        if (record.averageStrideLength > 0 && record.averageVerticalOscillation > 0) {
-            list.add(ShareMetricType.VERTICAL_STRIDE_RATIO)
-        }
+        list.add(ShareMetricType.VERTICAL_STRIDE_RATIO)
         if (record.totalCalories > 0) list.add(ShareMetricType.CALORIES)
         if (record.averagePower > 0) list.add(ShareMetricType.AVG_POWER)
         return list
