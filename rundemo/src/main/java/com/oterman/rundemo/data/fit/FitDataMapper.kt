@@ -226,7 +226,8 @@ object FitDataMapper {
                 records = parseResult.records,
                 workoutId = workoutId,
                 startTimeMs = startTimeMs,
-                pauseList = pauseList
+                pauseList = pauseList,
+                maxDistanceM = parseResult.session?.totalDistance?.toDouble()
             )
             
             RLog.i(TAG, "训练分段: ${trainingSegments.size}个, 公里分段: ${kmSegments.size}个")

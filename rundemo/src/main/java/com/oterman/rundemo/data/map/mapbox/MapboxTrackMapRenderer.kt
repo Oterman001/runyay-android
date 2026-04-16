@@ -38,6 +38,7 @@ import com.oterman.rundemo.domain.map.TrackMapRenderer
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.feature.rundetail.components.MapTrackColors
 import com.oterman.rundemo.presentation.feature.rundetail.components.calculateKilometerPositions
+import com.oterman.rundemo.presentation.feature.rundetail.components.splitTrackAtJumps
 import com.oterman.rundemo.util.RLog
 
 private const val TAG = "MapboxRenderer"
@@ -110,18 +111,24 @@ class MapboxTrackMapRenderer : TrackMapRenderer {
                 return
             }
 
-            val points = validPoints.map { Point.fromLngLat(it.longitude, it.latitude) }
-            val lineString = LineString.fromLngLats(points)
+            // 将轨迹在相邻点跳变(>300m)处断开，分段独立渲染，避免GPS异常产生的跨城连线
+            val segments = splitTrackAtJumps(validPoints, maxJumpKm = 0.3)
+            RLog.d(TAG, "轨迹分段数: ${segments.size}, 总点数: ${validPoints.size}")
 
-            style.addSource(geoJsonSource("track-source") { geometry(lineString) })
-            style.addLayer(lineLayer("track-layer", "track-source") {
-                lineColor(colors.track)
-                lineWidth(MapTrackColors.TRACK_WIDTH)
-                lineCap(LineCap.ROUND)
-                lineJoin(LineJoin.ROUND)
-            })
+            segments.forEachIndexed { segIdx, seg ->
+                val points = seg.map { Point.fromLngLat(it.longitude, it.latitude) }
+                val sourceId = "track-source-$segIdx"
+                val layerId = "track-layer-$segIdx"
+                style.addSource(geoJsonSource(sourceId) { geometry(LineString.fromLngLats(points)) })
+                style.addLayer(lineLayer(layerId, sourceId) {
+                    lineColor(colors.track)
+                    lineWidth(MapTrackColors.TRACK_WIDTH)
+                    lineCap(LineCap.ROUND)
+                    lineJoin(LineJoin.ROUND)
+                })
+            }
 
-            // 起点标记
+            // 起点标记（始终取全部有效点的第一个）
             val startPoint = validPoints.first()
             style.addSource(geoJsonSource("start-point-source") {
                 geometry(Point.fromLngLat(startPoint.longitude, startPoint.latitude))
@@ -133,7 +140,7 @@ class MapboxTrackMapRenderer : TrackMapRenderer {
                 circleStrokeColor(colors.stroke)
             })
 
-            // 终点标记
+            // 终点标记（始终取全部有效点的最后一个）
             if (validPoints.size > 1) {
                 val endPoint = validPoints.last()
                 style.addSource(geoJsonSource("end-point-source") {
@@ -147,7 +154,7 @@ class MapboxTrackMapRenderer : TrackMapRenderer {
                 })
             }
 
-            RLog.d(TAG, "轨迹添加成功, 点数: ${points.size}")
+            RLog.d(TAG, "轨迹添加成功, 有效点数: ${validPoints.size}, 分段数: ${segments.size}")
         } catch (e: Exception) {
             RLog.e(TAG, "添加轨迹失败", e)
         }

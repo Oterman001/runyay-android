@@ -539,3 +539,49 @@ private fun haversineDistance(
     val c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return R * c
 }
+
+/**
+ * 将轨迹点列表按相邻点间的跳变距离分割为多段
+ *
+ * 当 GPS 信号丢失或设备固件异常时，相邻两点间会出现远超正常步幅的距离跳变（例如1~2km），
+ * 直接连线会在地图上产生跨越城区的错误轨迹。本函数将这些跳变点处断开，
+ * 返回多条各自连续合理的轨迹段，由渲染器分别独立绘制，避免跳变连线。
+ *
+ * @param trackPoints 有效坐标点列表（调用方应已过滤 isValidCoordinate）
+ * @param maxJumpKm   相邻两点允许的最大距离（公里），超出则断开，默认 0.3km
+ * @return 按跳变断开后的多段轨迹，每段至少含 2 个点
+ */
+fun splitTrackAtJumps(
+    trackPoints: List<TrackPoint>,
+    maxJumpKm: Double = 0.3
+): List<List<TrackPoint>> {
+    if (trackPoints.size < 2) return if (trackPoints.size == 1) listOf(trackPoints) else emptyList()
+
+    val segments = mutableListOf<List<TrackPoint>>()
+    var currentSegment = mutableListOf(trackPoints[0])
+
+    for (i in 1 until trackPoints.size) {
+        val prev = trackPoints[i - 1]
+        val curr = trackPoints[i]
+        val dist = haversineDistance(prev.latitude, prev.longitude, curr.latitude, curr.longitude)
+
+        if (dist > maxJumpKm) {
+            RLog.w(TAG, "轨迹跳变断开[i=$i]: ${String.format("%.0f", dist * 1000)}m > ${(maxJumpKm * 1000).toInt()}m, " +
+                "from(${prev.latitude},${prev.longitude}) -> (${curr.latitude},${curr.longitude}), " +
+                "当前段已有${currentSegment.size}个点")
+            if (currentSegment.size >= 2) {
+                segments.add(currentSegment.toList())
+            }
+            currentSegment = mutableListOf(curr)
+        } else {
+            currentSegment.add(curr)
+        }
+    }
+
+    if (currentSegment.size >= 2) {
+        segments.add(currentSegment.toList())
+    }
+
+    RLog.d(TAG, "splitTrackAtJumps完成: 输入${trackPoints.size}个点, 分为${segments.size}段, maxJumpKm=$maxJumpKm")
+    return segments
+}

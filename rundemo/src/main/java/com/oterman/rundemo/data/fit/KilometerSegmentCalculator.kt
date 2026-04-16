@@ -21,20 +21,22 @@ object KilometerSegmentCalculator {
      * @param workoutId workoutId
      * @param startTimeMs 跑步开始时间(ms)
      * @param pauseList 暂停事件列表
+     * @param maxDistanceM Session总距离上限(米)，超出则停止生成分段，防止FIT文件record.distance异常导致分段数量翻倍
      * @return 公里分段Entity列表（segmentType=1）
      */
     fun calculateKilometerSegments(
         records: List<FitRecord>,
         workoutId: String,
         startTimeMs: Long,
-        pauseList: List<FitEventConverter.PauseEvent>
+        pauseList: List<FitEventConverter.PauseEvent>,
+        maxDistanceM: Double? = null
     ): List<RunSegmentEntity> {
         if (records.isEmpty()) {
             RLog.w(TAG, "Record列表为空，无法计算公里分段")
             return emptyList()
         }
 
-        RLog.i(TAG, "开始计算公里分段: records=${records.size}个, startTimeMs=$startTimeMs, pauseList=${pauseList.size}个")
+        RLog.i(TAG, "开始计算公里分段: records=${records.size}个, startTimeMs=$startTimeMs, pauseList=${pauseList.size}个, maxDistanceM=$maxDistanceM")
 
         val segments = mutableListOf<RunSegmentEntity>()
         var currentKm = 1
@@ -46,6 +48,10 @@ object KilometerSegmentCalculator {
 
         for ((index, record) in records.withIndex()) {
             val currentDistance = record.distance?.toDouble() ?: continue
+
+            // 超出Session总距离时停止——防止FIT文件record.distance因GPS异常而累积超出实际距离
+            if (maxDistanceM != null && segmentStartDistance >= maxDistanceM) break
+
             val timestampMs = FitFileParser.fitTimestampToMillis(record.timestamp)
             val kmThreshold = currentKm * 1000.0
 
@@ -72,10 +78,14 @@ object KilometerSegmentCalculator {
             }
         }
 
-        // 最后一段（不足1公里）
+        // 最后一段（不足1公里）：若已受maxDistanceM约束提前退出，则尾段使用maxDistanceM作为终止距离
         val lastRecord = records.lastOrNull()
         if (lastRecord != null && segmentStartIndex < records.size - 1) {
-            val lastDistance = lastRecord.distance?.toDouble()
+            val rawLastDistance = lastRecord.distance?.toDouble()
+            val lastDistance = if (maxDistanceM != null && rawLastDistance != null)
+                minOf(rawLastDistance, maxDistanceM)
+            else
+                rawLastDistance
             val lastTimeMs = FitFileParser.fitTimestampToMillis(lastRecord.timestamp)
             if (lastDistance != null && lastDistance > segmentStartDistance) {
                 val segment = createSegment(

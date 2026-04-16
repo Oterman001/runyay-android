@@ -32,6 +32,7 @@ import com.oterman.rundemo.domain.map.TrackMapRenderer
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.feature.rundetail.components.MapTrackColors
 import com.oterman.rundemo.presentation.feature.rundetail.components.calculateKilometerPositions
+import com.oterman.rundemo.presentation.feature.rundetail.components.splitTrackAtJumps
 import com.oterman.rundemo.util.CoordinateConverter
 import com.oterman.rundemo.util.RLog
 
@@ -147,21 +148,30 @@ class AMapTrackMapRenderer : TrackMapRenderer {
             RLog.d(TAG, "renderTrack: 开始, validPoints=${validPoints.size}")
             if (validPoints.isEmpty()) return
 
-            // 转换坐标到 GCJ-02
-            val gcjPoints = validPoints.map { pt ->
-                val (lat, lon) = CoordinateConverter.wgs84ToGcj02(pt.latitude, pt.longitude)
-                LatLng(lat, lon)
+            // 将轨迹在相邻点跳变(>300m)处断开，分段独立渲染，避免GPS异常产生的跨城连线
+            val segments = splitTrackAtJumps(validPoints, maxJumpKm = 0.3)
+            RLog.d(TAG, "轨迹分段数: ${segments.size}, 总点数: ${validPoints.size}")
+
+            val trackColor = android.graphics.Color.parseColor(colors.track)
+            val trackWidth = MapTrackColors.TRACK_WIDTH.toFloat() * 2.5f
+
+            segments.forEach { seg ->
+                val gcjSeg = seg.map { pt ->
+                    val (lat, lon) = CoordinateConverter.wgs84ToGcj02(pt.latitude, pt.longitude)
+                    LatLng(lat, lon)
+                }
+                aMap.addPolyline(
+                    PolylineOptions()
+                        .addAll(gcjSeg)
+                        .width(trackWidth)
+                        .color(trackColor)
+                )
             }
 
-            // 绘制轨迹线
-            val polylineOptions = PolylineOptions()
-                .addAll(gcjPoints)
-                .width(MapTrackColors.TRACK_WIDTH.toFloat() * 2.5f)  // 高德线宽单位不同，需调整
-                .color(android.graphics.Color.parseColor(colors.track))
-
-            aMap.addPolyline(polylineOptions)
-
-            // 起点标记
+            // 起点标记（始终取全部有效点的第一个，坐标转换为GCJ-02）
+            val (startLat, startLon) = CoordinateConverter.wgs84ToGcj02(
+                validPoints.first().latitude, validPoints.first().longitude
+            )
             val startBitmap = createCircleMarkerBitmap(
                 android.graphics.Color.parseColor(colors.start),
                 android.graphics.Color.parseColor(colors.stroke),
@@ -170,13 +180,16 @@ class AMapTrackMapRenderer : TrackMapRenderer {
             )
             aMap.addMarker(
                 MarkerOptions()
-                    .position(gcjPoints.first())
+                    .position(LatLng(startLat, startLon))
                     .icon(BitmapDescriptorFactory.fromBitmap(startBitmap))
                     .anchor(0.5f, 0.5f)
             )
 
-            // 终点标记
-            if (gcjPoints.size > 1) {
+            // 终点标记（始终取全部有效点的最后一个）
+            if (validPoints.size > 1) {
+                val (endLat, endLon) = CoordinateConverter.wgs84ToGcj02(
+                    validPoints.last().latitude, validPoints.last().longitude
+                )
                 val endBitmap = createCircleMarkerBitmap(
                     android.graphics.Color.parseColor(colors.end),
                     android.graphics.Color.parseColor(colors.stroke),
@@ -185,13 +198,13 @@ class AMapTrackMapRenderer : TrackMapRenderer {
                 )
                 aMap.addMarker(
                     MarkerOptions()
-                        .position(gcjPoints.last())
+                        .position(LatLng(endLat, endLon))
                         .icon(BitmapDescriptorFactory.fromBitmap(endBitmap))
                         .anchor(0.5f, 0.5f)
                 )
             }
 
-            RLog.d(TAG, "轨迹添加成功, 点数: ${gcjPoints.size}")
+            RLog.d(TAG, "轨迹添加成功, 有效点数: ${validPoints.size}, 分段数: ${segments.size}")
         } catch (e: Exception) {
             RLog.e(TAG, "添加轨迹失败", e)
         }
