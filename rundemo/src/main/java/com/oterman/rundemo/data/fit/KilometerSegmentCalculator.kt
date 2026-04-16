@@ -49,11 +49,13 @@ object KilometerSegmentCalculator {
         for ((index, record) in records.withIndex()) {
             val currentDistance = record.distance?.toDouble() ?: continue
 
-            // 超出Session总距离时停止——防止FIT文件record.distance因GPS异常而累积超出实际距离
-            if (maxDistanceM != null && segmentStartDistance >= maxDistanceM) break
-
             val timestampMs = FitFileParser.fitTimestampToMillis(record.timestamp)
             val kmThreshold = currentKm * 1000.0
+
+            // 下一个公里里程碑已超出Session总距离时停止创建完整公里段——
+            // 例如 maxDistanceM=10766m 时，km11 threshold=11000 > 10766，应停止，
+            // 由后续尾段逻辑生成 10000→10766m 的 0.766km 尾段
+            if (maxDistanceM != null && kmThreshold > maxDistanceM) break
 
             if (currentDistance >= kmThreshold) {
                 // 达到公里点，创建分段

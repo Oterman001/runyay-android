@@ -92,9 +92,9 @@ class RunDetailViewModel(
 
                 // 获取公里分段
                 val segments = repository.getKilometerSegments(workoutId).let { list ->
-                    // 标记最快完整公里（distance >= 0.95km，averageSpeed 最小即最快）
+                    // 标记最快完整公里（distance >= 1.0km，不足1km的尾段不参与评比；averageSpeed 最小即最快）
                     val fastestSeq = list
-                        .filter { it.distance >= 0.95 && it.averageSpeed > 0 }
+                        .filter { it.distance >= 1.0 && it.averageSpeed > 0 }
                         .minByOrNull { it.averageSpeed }
                         ?.seq
                     if (fastestSeq != null)
