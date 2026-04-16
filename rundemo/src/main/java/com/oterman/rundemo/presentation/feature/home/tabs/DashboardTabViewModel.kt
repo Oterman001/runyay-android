@@ -119,8 +119,13 @@ class DashboardTabViewModel(
 
                     val totalStats = calculateTotalStatistics(statsRecords, latestVdot)
 
-                    val pbAbilityList = calculatePBAbilityList(statsRecords, abilityPBs, latestVdot)
-                    val pbSpeedList = calculatePBSpeedList(speedPBs)
+                    // 以 run_record 的 inclusiveLevel 为准，过滤掉对应记录已被排除统计的 PB 条目
+                    val statsWorkoutIds = statsRecords.map { it.workoutId }.toSet()
+                    val filteredAbilityPBs = abilityPBs.filter { it.workoutId == null || it.workoutId in statsWorkoutIds }
+                    val filteredSpeedPBs = speedPBs.filter { it.workoutId == null || it.workoutId in statsWorkoutIds }
+
+                    val pbAbilityList = calculatePBAbilityList(statsRecords, filteredAbilityPBs, latestVdot)
+                    val pbSpeedList = calculatePBSpeedList(filteredSpeedPBs)
                     val nextRace = MockDataProvider.getMockNextRace()
                     val dailySentence = MockDataProvider.getRandomDailySentence()
 
