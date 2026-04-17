@@ -104,6 +104,7 @@ fun LongSharePreview(
     isIndoor: Boolean = false,
     segmentBarChartMode: Boolean = false,
     segmentMetricIndex: Int = 0,
+    segmentGroupSize: Int = 1,
     onSegmentBarChartModeChanged: ((Boolean) -> Unit)? = null,
     onSegmentMetricIndexChanged: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -218,6 +219,7 @@ fun LongSharePreview(
                 segments = segments,
                 initialBarChartMode = segmentBarChartMode,
                 initialMetricIndex = segmentMetricIndex,
+                initialGroupSize = segmentGroupSize,
                 onBarChartModeChange = onSegmentBarChartModeChanged,
                 onMetricIndexChange = onSegmentMetricIndexChanged
             )

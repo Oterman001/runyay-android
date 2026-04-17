@@ -99,6 +99,7 @@ data class ShareUiState(
     // 公里分段视图状态（从详情页同步）
     val segmentBarChartMode: Boolean = false,
     val segmentBarChartMetricIndex: Int = 0,
+    val segmentBarChartGroupSize: Int = 1,
 
     // VO2Max
     val vo2Max: Double? = null,

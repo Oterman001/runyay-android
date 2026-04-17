@@ -58,7 +58,8 @@ class RunDetailViewModel(
     private val _uiState = MutableStateFlow(
         RunDetailUiState(
             segmentBarChartMode = runDetailPreferences.getSegmentBarChartMode(),
-            segmentBarChartMetricIndex = runDetailPreferences.getSegmentMetricIndex()
+            segmentBarChartMetricIndex = runDetailPreferences.getSegmentMetricIndex(),
+            segmentBarChartGroupSize = runDetailPreferences.getBarChartGroupSize()
         )
     )
     val uiState: StateFlow<RunDetailUiState> = _uiState.asStateFlow()
@@ -533,6 +534,12 @@ class RunDetailViewModel(
         )
         runDetailPreferences.saveSegmentBarChartMode(isBarChart)
         runDetailPreferences.saveSegmentMetricIndex(metricIndex)
+    }
+
+    fun updateBarChartGroupSize(size: Int) {
+        val clamped = size.coerceIn(1, 10)
+        _uiState.value = _uiState.value.copy(segmentBarChartGroupSize = clamped)
+        runDetailPreferences.saveBarChartGroupSize(clamped)
     }
 
     /**

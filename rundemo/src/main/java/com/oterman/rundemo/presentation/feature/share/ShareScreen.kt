@@ -68,9 +68,10 @@ fun ShareScreen(
     workoutId: String,
     segmentBarChartMode: Boolean = false,
     segmentMetricIndex: Int = 0,
+    segmentGroupSize: Int = 1,
     onNavigateBack: () -> Unit,
     viewModel: ShareViewModel = viewModel(
-        factory = ShareViewModelFactory(LocalContext.current, workoutId, segmentBarChartMode, segmentMetricIndex)
+        factory = ShareViewModelFactory(LocalContext.current, workoutId, segmentBarChartMode, segmentMetricIndex, segmentGroupSize)
     )
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -285,6 +286,7 @@ fun ShareScreen(
                                                 isIndoor = !uiState.isOutdoor,
                                                 segmentBarChartMode = uiState.segmentBarChartMode,
                                                 segmentMetricIndex = uiState.segmentBarChartMetricIndex,
+                                                segmentGroupSize = uiState.segmentBarChartGroupSize,
                                                 onSegmentBarChartModeChanged = { viewModel.updateSegmentBarChartMode(it) },
                                                 onSegmentMetricIndexChanged = { viewModel.updateSegmentBarChartMetricIndex(it) }
                                             )

@@ -48,7 +48,8 @@ class ShareViewModel(
     private val shoeRepository: RunningShoeRepository,
     private val isPrivacyMode: Boolean = false,
     private val segmentBarChartMode: Boolean = false,
-    private val segmentBarChartMetricIndex: Int = 0
+    private val segmentBarChartMetricIndex: Int = 0,
+    private val segmentBarChartGroupSize: Int = 1
 ) : ViewModel() {
 
     companion object {
@@ -59,7 +60,8 @@ class ShareViewModel(
         ShareUiState(
             isPrivacyMode = isPrivacyMode,
             segmentBarChartMode = segmentBarChartMode,
-            segmentBarChartMetricIndex = segmentBarChartMetricIndex
+            segmentBarChartMetricIndex = segmentBarChartMetricIndex,
+            segmentBarChartGroupSize = segmentBarChartGroupSize
         )
     )
     val uiState: StateFlow<ShareUiState> = _uiState.asStateFlow()
@@ -357,7 +359,8 @@ class ShareViewModel(
                         heartRateZone7Selected = state.heartRateZone7Selected,
                         isIndoor = !state.isOutdoor,
                         segmentBarChartMode = state.segmentBarChartMode,
-                        segmentMetricIndex = state.segmentBarChartMetricIndex
+                        segmentMetricIndex = state.segmentBarChartMetricIndex,
+                        segmentGroupSize = state.segmentBarChartGroupSize
                     )
                 }
                 ShareMode.CUSTOM -> null
@@ -638,7 +641,8 @@ class ShareViewModelFactory(
     private val context: Context,
     private val workoutId: String,
     private val segmentBarChartMode: Boolean = false,
-    private val segmentMetricIndex: Int = 0
+    private val segmentMetricIndex: Int = 0,
+    private val segmentGroupSize: Int = 1
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -657,7 +661,7 @@ class ShareViewModelFactory(
             return ShareViewModel(
                 workoutId, repository, sharePreferences, healthRepository,
                 avatarManager, preferencesManager, shoeRepository,
-                isPrivacyMode, segmentBarChartMode, segmentMetricIndex
+                isPrivacyMode, segmentBarChartMode, segmentMetricIndex, segmentGroupSize
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

@@ -1,6 +1,7 @@
 package com.oterman.rundemo.presentation.feature.rundetail.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -23,6 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -81,6 +84,7 @@ private val RightColWidth = 56.dp
  * 支持两种视图模式：
  *   - TABLE: 6列表格（序号、距离、配速、心率、步幅、步频）
  *   - BAR_CHART: Strava风格横向柱状图，配速叠加在柱子内，第三列指标可切换
+ *   - BAR_CHART + groupSize>1: 多公里分组柱状图，第二列显示耗时+均配
  */
 @Composable
 fun RunDetailSegmentTable(
@@ -89,6 +93,8 @@ fun RunDetailSegmentTable(
     onBarChartModeChange: ((Boolean) -> Unit)? = null,
     initialMetricIndex: Int = 0,
     onMetricIndexChange: ((Int) -> Unit)? = null,
+    initialGroupSize: Int = 1,
+    onGroupSizeChange: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     if (segments.isEmpty()) return
@@ -97,6 +103,8 @@ fun RunDetailSegmentTable(
     var selectedMetric by remember {
         mutableStateOf(SegmentMetric.entries[initialMetricIndex.coerceIn(0, SegmentMetric.entries.lastIndex)])
     }
+    var groupSize by remember { mutableStateOf(initialGroupSize.coerceIn(1, 10)) }
+    var showGroupPicker by remember { mutableStateOf(false) }
 
     AppCard(
         modifier = modifier
@@ -121,6 +129,59 @@ fun RunDetailSegmentTable(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
+
+                // 分组间距选择器（仅柱状图模式下可见）
+                AnimatedVisibility(visible = isBarChartMode) {
+                    Box {
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(RunBlue.copy(alpha = 0.05f))
+                                .clickable { showGroupPicker = true }
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = "${groupSize}km",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = RunBlue
+                            )
+                            Icon(
+                                imageVector = Icons.Filled.KeyboardArrowDown,
+                                contentDescription = "设置分组间距",
+                                tint = RunBlue,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showGroupPicker,
+                            onDismissRequest = { showGroupPicker = false }
+                        ) {
+                            (1..10).forEach { km ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "${km}km",
+                                            fontSize = 13.sp,
+                                            fontWeight = if (km == groupSize) FontWeight.SemiBold else FontWeight.Normal,
+                                            color = if (km == groupSize) RunBlue
+                                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    onClick = {
+                                        groupSize = km
+                                        showGroupPicker = false
+                                        onGroupSizeChange?.invoke(km)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
 
                 // 视图模式切换按钮
                 IconButton(
@@ -147,21 +208,33 @@ fun RunDetailSegmentTable(
 
             // ===== 内容区域（淡入淡出切换） =====
             AnimatedContent(
-                targetState = isBarChartMode,
+                targetState = isBarChartMode to groupSize,
                 transitionSpec = {
                     fadeIn(tween(220)) togetherWith fadeOut(tween(180))
                 },
                 label = "segment_view_mode"
-            ) { barMode ->
+            ) { (barMode, gs) ->
                 if (barMode) {
-                    SegmentBarChart(
-                        segments = segments,
-                        selectedMetric = selectedMetric,
-                        onMetricChange = {
-                            selectedMetric = selectedMetric.next()
-                            onMetricIndexChange?.invoke(selectedMetric.ordinal)
-                        }
-                    )
+                    if (gs == 1) {
+                        SegmentBarChart(
+                            segments = segments,
+                            selectedMetric = selectedMetric,
+                            onMetricChange = {
+                                selectedMetric = selectedMetric.next()
+                                onMetricIndexChange?.invoke(selectedMetric.ordinal)
+                            }
+                        )
+                    } else {
+                        GroupedSegmentBarChart(
+                            segments = segments,
+                            groupSize = gs,
+                            selectedMetric = selectedMetric,
+                            onMetricChange = {
+                                selectedMetric = selectedMetric.next()
+                                onMetricIndexChange?.invoke(selectedMetric.ordinal)
+                            }
+                        )
+                    }
                 } else {
                     SegmentTable(segments = segments)
                 }
@@ -322,6 +395,72 @@ private fun SegmentTableRow(
 // ─────────────────────────────────────────────────────────────
 // 柱状图视图
 // ─────────────────────────────────────────────────────────────
+
+// ── 分组数据模型 ──
+private data class SegmentGroup(
+    val rangeLabel: String,
+    val totalDuration: Double,
+    val totalDistance: Double,
+    val avgPace: Double,
+    val isFastest: Boolean,
+    val weightedCadence: Double,
+    val weightedHeartRate: Double,
+    val weightedStrideLength: Double,
+    val weightedPower: Double,
+    val isPartial: Boolean
+) {
+    fun metricValue(metric: SegmentMetric): String = when (metric) {
+        SegmentMetric.CADENCE -> if (weightedCadence > 0) "${weightedCadence.toInt()}" else "-"
+        SegmentMetric.HEART_RATE -> if (weightedHeartRate > 0) "${weightedHeartRate.toInt()}" else "-"
+        SegmentMetric.STRIDE_LENGTH -> if (weightedStrideLength > 0) String.format("%.1f", weightedStrideLength) else "-"
+        SegmentMetric.POWER -> if (weightedPower > 0) "${weightedPower.toInt()}" else "-"
+    }
+
+    fun formattedDuration(): String {
+        val totalSec = (totalDuration * 60).toInt()
+        val h = totalSec / 3600
+        val m = (totalSec % 3600) / 60
+        val s = totalSec % 60
+        return if (h > 0) String.format("%d:%02d:%02d", h, m, s)
+               else String.format("%d:%02d", m, s)
+    }
+
+    fun formattedAvgPace(): String {
+        if (avgPace <= 0) return "-"
+        val minutes = avgPace.toInt()
+        val seconds = ((avgPace - minutes) * 60).toInt()
+        return "${minutes}'${seconds.toString().padStart(2, '0')}\""
+    }
+}
+
+private fun weightedAvg(chunk: List<RunSegment>, value: (RunSegment) -> Double): Double {
+    val w = chunk.sumOf { it.activeDuration }
+    return if (w > 0) chunk.sumOf { value(it) * it.activeDuration } / w else 0.0
+}
+
+private fun buildSegmentGroups(segments: List<RunSegment>, groupSize: Int): List<SegmentGroup> {
+    val chunks = segments.chunked(groupSize)
+    val raw = chunks.map { chunk ->
+        val totalDur = chunk.sumOf { it.activeDuration }
+        val totalDist = chunk.sumOf { it.distance }
+        val startKm = chunk.first().seq + 1
+        val endKm = chunk.last().seq + 1
+        SegmentGroup(
+            rangeLabel = if (chunk.size == 1) "${startKm}k" else "${startKm}-${endKm}k",
+            totalDuration = totalDur,
+            totalDistance = totalDist,
+            avgPace = if (totalDist > 0) totalDur / totalDist else 0.0,
+            isFastest = false,
+            weightedCadence = weightedAvg(chunk) { it.averageCadence },
+            weightedHeartRate = weightedAvg(chunk) { it.averageHeartRate },
+            weightedStrideLength = weightedAvg(chunk) { it.averageStrideLength },
+            weightedPower = weightedAvg(chunk) { it.averagePower },
+            isPartial = chunk.last().distance < 0.95
+        )
+    }
+    val minPace = raw.filter { it.avgPace > 0 && !it.isPartial }.minOfOrNull { it.avgPace } ?: 0.0
+    return raw.map { it.copy(isFastest = !it.isPartial && it.avgPace == minPace && minPace > 0) }
+}
 
 private data class FiveKmMilestone(
     val rangeLabel: String,
@@ -524,43 +663,27 @@ private fun SegmentBarRow(
             .height(28.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // ── 第一列：公里号 / 最快 / 零头距离（固定 40dp）──
+        // ── 第一列：公里号 / 零头距离（固定 40dp）──
         Box(
             modifier = Modifier
                 .width(LeftColWidth)
                 .height(28.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.CenterStart
         ) {
-            if (isFastest) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(fastestAccent.copy(alpha = 0.12f))
-                        .padding(horizontal = 4.dp, vertical = 1.dp)
-                ) {
-                    Text(
-                        text = "最快",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = fastestAccent
-                    )
-                }
-            } else if (isPartial) {
+            if (isPartial) {
                 // 不足1公里：显示零头距离，如"0.85"
                 Text(
                     text = segment.getFormattedDistance(),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
-                    color = SecondaryTextColor,
-                    textAlign = TextAlign.Center
+                    color = SecondaryTextColor
                 )
             } else {
                 Text(
                     text = "${segment.seq + 1}",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = SecondaryTextColor,
-                    textAlign = TextAlign.Center
+                    color = SecondaryTextColor
                 )
             }
         }
@@ -625,6 +748,202 @@ private fun SegmentBarRow(
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             color = if (isFastest) fastestAccent else MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.End,
+            modifier = Modifier
+                .width(RightColWidth)
+                .padding(start = 6.dp)
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 多公里分组柱状图
+// ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun GroupedSegmentBarChart(
+    segments: List<RunSegment>,
+    groupSize: Int,
+    selectedMetric: SegmentMetric,
+    onMetricChange: () -> Unit
+) {
+    val groups = remember(segments, groupSize) { buildSegmentGroups(segments, groupSize) }
+    if (groups.isEmpty()) return
+
+    val validPaces = groups.map { it.avgPace }.filter { it > 0.0 }
+    if (validPaces.isEmpty()) return
+
+    val minPace = validPaces.min()
+    val maxPace = validPaces.max()
+    val paceRange = (maxPace - minPace).coerceAtLeast(0.001)
+
+    Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+        // 分组模式表头：第三列固定显示"耗时"
+        GroupedSegmentBarChartHeader()
+        Spacer(modifier = Modifier.height(6.dp))
+
+        groups.forEachIndexed { index, group ->
+            val slowRatio = if (group.avgPace > 0) ((group.avgPace - minPace) / paceRange).toFloat() else 0f
+            val targetFraction = 0.28f + (1f - slowRatio) * 0.72f
+
+            val animatedFraction by animateFloatAsState(
+                targetValue = targetFraction,
+                animationSpec = tween(durationMillis = 400, delayMillis = index * 40),
+                label = "grouped_bar_$index"
+            )
+
+            GroupedBarRow(
+                group = group,
+                barFraction = animatedFraction
+            )
+
+            if (index < groups.lastIndex) Spacer(modifier = Modifier.height(6.dp))
+        }
+    }
+}
+
+/**
+ * 分组模式专用表头：公里 | 配速 | 耗时（第三列固定，不可切换）
+ */
+@Composable
+private fun GroupedSegmentBarChartHeader() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "公里",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(LeftColWidth),
+            textAlign = TextAlign.Start
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = "配速",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+
+        Text(
+            text = "耗时",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(RightColWidth)
+        )
+    }
+}
+
+@Composable
+private fun GroupedBarRow(
+    group: SegmentGroup,
+    barFraction: Float
+) {
+    val runColors = LocalRunColorScheme.current
+    val isDark = RunTheme.isDark
+    val fastestAccent = Color(0xFFE8900A)
+
+    val barBrush = if (group.isFastest) {
+        Brush.horizontalGradient(listOf(Color(0xFFE8900A), Color(0xFFFFD040)))
+    } else {
+        Brush.horizontalGradient(
+            colors = if (isDark) listOf(runColors.blue, runColors.blueGradient2)
+                     else        listOf(runColors.blue, runColors.blueGradient1)
+        )
+    }
+    val trackAlpha = if (isDark) 0.18f else 0.38f
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(28.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 第一列：范围标签 / 余量距离（固定 40dp），始终正常展示
+        Box(
+            modifier = Modifier
+                .width(LeftColWidth)
+                .height(28.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            val labelText = if (group.isPartial) {
+                String.format("%.2fk", group.totalDistance)
+            } else {
+                group.rangeLabel
+            }
+            Text(
+                text = labelText,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (group.isPartial) SecondaryTextColor.copy(alpha = 0.7f)
+                        else SecondaryTextColor,
+                textAlign = TextAlign.Start,
+                maxLines = 1,
+                overflow = TextOverflow.Clip
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // 第二列：柱状条（叠加均配速 + 最快标注）
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(28.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(22.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = trackAlpha))
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(barFraction)
+                    .height(22.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(brush = barBrush),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(
+                    modifier = Modifier.padding(start = 6.dp, end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = group.formattedAvgPace(),
+                        fontSize = 11.sp,
+                        fontWeight = if (group.isFastest) FontWeight.SemiBold else FontWeight.Medium,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Clip
+                    )
+                    if (group.isFastest) {
+                        Text(
+                            text = "最快",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White.copy(alpha = 0.85f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Clip
+                        )
+                    }
+                }
+            }
+        }
+
+        // 第三列：耗时（固定 56dp）
+        Text(
+            text = group.formattedDuration(),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (group.isFastest) fastestAccent else MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.End,
             modifier = Modifier
                 .width(RightColWidth)

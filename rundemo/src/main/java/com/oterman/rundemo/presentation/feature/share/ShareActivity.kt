@@ -27,17 +27,20 @@ class ShareActivity : ComponentActivity() {
         private const val EXTRA_WORKOUT_ID = "workout_id"
         private const val EXTRA_SEGMENT_BAR_CHART_MODE = "segment_bar_chart_mode"
         private const val EXTRA_SEGMENT_METRIC_INDEX = "segment_metric_index"
+        private const val EXTRA_SEGMENT_GROUP_SIZE = "segment_group_size"
 
         fun createIntent(
             context: Context,
             workoutId: String,
             segmentBarChartMode: Boolean = false,
-            segmentMetricIndex: Int = 0
+            segmentMetricIndex: Int = 0,
+            segmentGroupSize: Int = 1
         ): Intent {
             return Intent(context, ShareActivity::class.java).apply {
                 putExtra(EXTRA_WORKOUT_ID, workoutId)
                 putExtra(EXTRA_SEGMENT_BAR_CHART_MODE, segmentBarChartMode)
                 putExtra(EXTRA_SEGMENT_METRIC_INDEX, segmentMetricIndex)
+                putExtra(EXTRA_SEGMENT_GROUP_SIZE, segmentGroupSize)
             }
         }
     }
@@ -54,6 +57,7 @@ class ShareActivity : ComponentActivity() {
         }
         val segmentBarChartMode = intent.getBooleanExtra(EXTRA_SEGMENT_BAR_CHART_MODE, false)
         val segmentMetricIndex = intent.getIntExtra(EXTRA_SEGMENT_METRIC_INDEX, 0)
+        val segmentGroupSize = intent.getIntExtra(EXTRA_SEGMENT_GROUP_SIZE, 1)
 
         setContent {
             ComopseDemoHubTheme {
@@ -65,6 +69,7 @@ class ShareActivity : ComponentActivity() {
                         workoutId = workoutId,
                         segmentBarChartMode = segmentBarChartMode,
                         segmentMetricIndex = segmentMetricIndex,
+                        segmentGroupSize = segmentGroupSize,
                         onNavigateBack = { finish() }
                     )
                 }

@@ -29,10 +29,19 @@ class RunDetailPreferences(context: Context) {
         return prefs.getInt(KEY_SEGMENT_METRIC_INDEX, 0)
     }
 
+    fun saveBarChartGroupSize(size: Int) {
+        prefs.edit().putInt(KEY_BAR_CHART_GROUP_SIZE, size.coerceIn(1, 10)).apply()
+    }
+
+    fun getBarChartGroupSize(): Int {
+        return prefs.getInt(KEY_BAR_CHART_GROUP_SIZE, 1).coerceIn(1, 10)
+    }
+
     companion object {
         private const val PREFS_NAME = "run_detail_prefs"
         private const val KEY_SEGMENT_BAR_CHART_MODE = "segment_bar_chart_mode"
         private const val KEY_SEGMENT_METRIC_INDEX = "segment_metric_index"
+        private const val KEY_BAR_CHART_GROUP_SIZE = "bar_chart_group_size"
         private const val DEFAULT_BAR_CHART_MODE = true
     }
 }

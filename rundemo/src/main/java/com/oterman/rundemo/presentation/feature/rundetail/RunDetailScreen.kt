@@ -155,7 +155,8 @@ fun RunDetailScreen(
                         context,
                         record.workoutId,
                         uiState.segmentBarChartMode,
-                        uiState.segmentBarChartMetricIndex
+                        uiState.segmentBarChartMetricIndex,
+                        uiState.segmentBarChartGroupSize
                     )
                 )
             }
@@ -580,6 +581,10 @@ fun RunDetailScreen(
                                 initialMetricIndex = uiState.segmentBarChartMetricIndex,
                                 onMetricIndexChange = {
                                     viewModel.updateSegmentBarChart(uiState.segmentBarChartMode, it)
+                                },
+                                initialGroupSize = uiState.segmentBarChartGroupSize,
+                                onGroupSizeChange = {
+                                    viewModel.updateBarChartGroupSize(it)
                                 }
                             )
                             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
