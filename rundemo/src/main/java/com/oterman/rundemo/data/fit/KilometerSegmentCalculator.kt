@@ -80,24 +80,47 @@ object KilometerSegmentCalculator {
             }
         }
 
-        // 最后一段（不足1公里）：若已受maxDistanceM约束提前退出，则尾段使用maxDistanceM作为终止距离
-        val lastRecord = records.lastOrNull()
-        if (lastRecord != null && segmentStartIndex < records.size - 1) {
-            val rawLastDistance = lastRecord.distance?.toDouble()
-            val lastDistance = if (maxDistanceM != null && rawLastDistance != null)
-                minOf(rawLastDistance, maxDistanceM)
-            else
-                rawLastDistance
-            val lastTimeMs = FitFileParser.fitTimestampToMillis(lastRecord.timestamp)
-            if (lastDistance != null && lastDistance > segmentStartDistance) {
+        // 最后一段（不足1公里）
+        // 当有 maxDistanceM 约束时，必须找到最后一条 distance <= maxDistanceM 的记录作为 endIndex，
+        // 而不是用 records.size-1。原因：FIT 文件在 GPS 跳变后可能存在大量重复数据，
+        // 直接用末尾记录会将这些重复数据的时间（可能高达数千秒）计入尾段时长，导致配速异常（如 82 min/km）。
+        // endDistanceM 仍使用 maxDistanceM（session 总距离）以保证显示正确的距离。
+        if (segmentStartDistance < (maxDistanceM ?: Double.MAX_VALUE)) {
+            // 扫描找到尾段的正确终点：最后一条 distance <= maxDistanceM 的记录
+            var tailEndIndex = segmentStartIndex
+            var tailEndTimeMs = segmentStartTimeMs
+            if (maxDistanceM != null) {
+                for (i in segmentStartIndex until records.size) {
+                    val d = records[i].distance?.toDouble() ?: continue
+                    if (d <= maxDistanceM) {
+                        tailEndIndex = i
+                        tailEndTimeMs = FitFileParser.fitTimestampToMillis(records[i].timestamp)
+                    } else {
+                        break  // distance 超出 maxDistanceM，后续记录均不需要
+                    }
+                }
+            } else {
+                tailEndIndex = records.size - 1
+                tailEndTimeMs = records.lastOrNull()
+                    ?.let { FitFileParser.fitTimestampToMillis(it.timestamp) }
+                    ?: segmentStartTimeMs
+            }
+
+            // endDistanceM：maxDistanceM 优先（保证尾段距离精确等于 session 总距离 - km整数倍）
+            val tailEndDistanceM = maxDistanceM ?: (records.getOrNull(tailEndIndex)?.distance?.toDouble() ?: segmentStartDistance)
+
+            if (tailEndIndex > segmentStartIndex && tailEndDistanceM > segmentStartDistance) {
+                RLog.d(TAG, "尾段: startIdx=$segmentStartIndex, endIdx=$tailEndIndex, " +
+                    "dist=${String.format("%.1f", tailEndDistanceM - segmentStartDistance)}m, " +
+                    "startTimeMs=$segmentStartTimeMs, endTimeMs=$tailEndTimeMs")
                 val segment = createSegment(
                     seq = currentKm - 1,
                     startIndex = segmentStartIndex,
-                    endIndex = records.size - 1,
+                    endIndex = tailEndIndex,
                     startDistanceM = segmentStartDistance,
-                    endDistanceM = lastDistance,
+                    endDistanceM = tailEndDistanceM,
                     startTimeMs = segmentStartTimeMs,
-                    endTimeMs = lastTimeMs,
+                    endTimeMs = tailEndTimeMs,
                     records = records,
                     workoutId = workoutId,
                     pauseList = pauseList

@@ -46,8 +46,13 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+import com.oterman.rundemo.ui.theme.LocalRunColorScheme
 import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 
 // 柱状图第三列可切换指标
 private enum class SegmentMetric(val label: String) {
@@ -318,6 +323,29 @@ private fun SegmentTableRow(
 // 柱状图视图
 // ─────────────────────────────────────────────────────────────
 
+private data class FiveKmMilestone(
+    val rangeLabel: String,
+    val totalDuration: Double,
+    val avgPace: Double,
+    val previousAvgPace: Double? = null
+) {
+    fun formattedDuration(): String {
+        val totalSec = (totalDuration * 60).toInt()
+        val h = totalSec / 3600
+        val m = (totalSec % 3600) / 60
+        val s = totalSec % 60
+        return if (h > 0) String.format("%d:%02d:%02d", h, m, s)
+               else String.format("%d:%02d", m, s)
+    }
+
+    fun formattedAvgPace(): String {
+        if (avgPace <= 0) return "-"
+        val minutes = avgPace.toInt()
+        val seconds = ((avgPace - minutes) * 60).toInt()
+        return "${minutes}'${seconds.toString().padStart(2, '0')}\""
+    }
+}
+
 /**
  * Strava 风格横向柱状图（升级版）
  *
@@ -343,6 +371,28 @@ private fun SegmentBarChart(
     val minPace = validPaces.min()
     val maxPace = validPaces.max()
     val paceRange = (maxPace - minPace).coerceAtLeast(0.001)
+
+    // 预计算每5个完整公里段后的里程碑：Map<segment全列表index, FiveKmMilestone>
+    val milestones: Map<Int, FiveKmMilestone> = remember(segments) {
+        val complete = segments.filter { it.distance >= 0.95 }
+        val groups = complete.chunked(5).filter { it.size == 5 }
+        val orderedEntries = groups.mapIndexed { i, group ->
+            val totalDur = group.sumOf { it.activeDuration }
+            val totalDist = group.sumOf { it.distance }
+            val prevPace: Double? = if (i > 0) {
+                val prev = groups[i - 1]
+                val pd = prev.sumOf { it.distance }
+                if (pd > 0) prev.sumOf { it.activeDuration } / pd else null
+            } else null
+            segments.indexOf(group.last()) to FiveKmMilestone(
+                rangeLabel = "${group.first().seq + 1}-${group.last().seq + 1}km",
+                totalDuration = totalDur,
+                avgPace = if (totalDist > 0) totalDur / totalDist else 0.0,
+                previousAvgPace = prevPace
+            )
+        }
+        buildMap { orderedEntries.forEach { (k, v) -> put(k, v) } }
+    }
 
     Column(modifier = Modifier.padding(horizontal = 12.dp)) {
         // 表头
@@ -371,7 +421,12 @@ private fun SegmentBarChart(
                 selectedMetric = selectedMetric
             )
 
-            if (index < segments.lastIndex) {
+            val milestone = milestones[index]
+            if (milestone != null) {
+                Spacer(modifier = Modifier.height(5.dp))
+                FiveKmMilestoneRow(milestone = milestone)
+                if (index < segments.lastIndex) Spacer(modifier = Modifier.height(5.dp))
+            } else if (index < segments.lastIndex) {
                 Spacer(modifier = Modifier.height(3.dp))
             }
         }
@@ -444,17 +499,24 @@ private fun SegmentBarRow(
     val isFastest = segment.isFastest
     val isPartial = segment.distance < 0.95
 
-    // 渐变色系：普通柱 蓝→天蓝；最快柱 琥珀→金黄（暖/冷两种色系强对比）
+    // 渐变色系：普通柱使用品牌蓝（亮色 blue→blueGradient1，暗色 blue→blueGradient2 更亮）
+    // 最快柱：琥珀→金黄（暖/冷色强对比）
+    val runColors = LocalRunColorScheme.current
+    val isDark = RunTheme.isDark
     val barBrush = if (isFastest) {
         Brush.horizontalGradient(
             colors = listOf(Color(0xFFE8900A), Color(0xFFFFD040))
         )
     } else {
         Brush.horizontalGradient(
-            colors = listOf(Color(0xFF3D72F0), Color(0xFF82B8FF))
+            colors = if (isDark) listOf(runColors.blue, runColors.blueGradient2)
+                     else        listOf(runColors.blue, runColors.blueGradient1)
         )
     }
     val fastestAccent = Color(0xFFE8900A)
+
+    // 轨道背景：暗色模式降低 alpha，让蓝柱更突出
+    val trackAlpha = if (isDark) 0.18f else 0.38f
 
     Row(
         modifier = Modifier
@@ -518,7 +580,7 @@ private fun SegmentBarRow(
                     .fillMaxWidth()
                     .height(22.dp)
                     .clip(RoundedCornerShape(5.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = trackAlpha))
             )
             // 渐变柱 + 配速文字叠加
             Box(
@@ -568,6 +630,48 @@ private fun SegmentBarRow(
                 .width(RightColWidth)
                 .padding(start = 6.dp)
         )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 5公里里程碑统计行
+// ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun FiveKmMilestoneRow(milestone: FiveKmMilestone) {
+    val baseColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+    val annotated = buildAnnotatedString {
+        withStyle(SpanStyle(color = baseColor, fontSize = 11.sp, fontWeight = FontWeight.Normal)) {
+            append("近5公里 ${milestone.formattedDuration()} · ${milestone.formattedAvgPace()}")
+        }
+        val prev = milestone.previousAvgPace
+        if (prev != null && kotlin.math.abs(milestone.avgPace - prev) > 0.001) {
+            val faster = milestone.avgPace < prev
+            withStyle(SpanStyle(
+                color = if (faster) Color(0xFF34C759) else Color(0xFFFF3B30),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold
+            )) {
+                append(if (faster) " ↑" else " ↓")
+            }
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(22.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(modifier = Modifier.width(LeftColWidth))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = annotated,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.width(RightColWidth))
     }
 }
 
