@@ -13,7 +13,9 @@ enum class DataSourcePlatform(
     val appBrandName: String,
     val iconResId: Int,
     val isEnabled: Boolean = true,
-    val supportsSorting: Boolean = true
+    val supportsSorting: Boolean = true,
+    /** 是否需要 OAuth 授权绑定（false 表示始终可用，不需要主动绑定，如 Apple Health、手动导入） */
+    val requiresOAuthBinding: Boolean = true
 ) {
     GARMIN_CHINA(
         code = "GCN",
@@ -49,7 +51,8 @@ enum class DataSourcePlatform(
         appBrandName = "Apple Health",
         iconResId = R.drawable.apple_hk,
         isEnabled = true,
-        supportsSorting = true
+        supportsSorting = true,
+        requiresOAuthBinding = false
     ),
     HUAWEI(
         code = "HUAWEI",
@@ -67,7 +70,8 @@ enum class DataSourcePlatform(
         appBrandName = "手动导入",
         iconResId = R.drawable.ic_manual2,
         isEnabled = true,
-        supportsSorting = true
+        supportsSorting = true,
+        requiresOAuthBinding = false
     );
 
     companion object {

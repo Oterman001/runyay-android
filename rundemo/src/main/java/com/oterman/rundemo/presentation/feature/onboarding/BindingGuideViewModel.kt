@@ -48,9 +48,9 @@ class BindingGuideViewModel(
                 return@launch
             }
 
-            // 2. 加载本地缓存的平台状态
+            // 2. 加载本地缓存的平台状态（仅展示需要 OAuth 授权的平台，隐藏苹果健康和手动导入）
             val localPlatforms = repository.getAllDataSourceInfos()
-                .filter { it.platform.isEnabled }
+                .filter { it.platform.isEnabled && it.platform.requiresOAuthBinding }
             _uiState.update {
                 it.copy(platforms = localPlatforms, isCheckingComplete = false)
             }
@@ -59,7 +59,10 @@ class BindingGuideViewModel(
             repository.queryPlatformStatus()
                 .onSuccess {
                     val updatedPlatforms = repository.getAllDataSourceInfos()
-                        .filter { it.platform.isEnabled }
+                        .filter { it.platform.isEnabled && it.platform.requiresOAuthBinding }
+                    // APPLE_HEALTH 在 Android 上无需 OAuth 授权（isPlatformBound 硬编码返回 true），
+                    // MANUAL 为手动导入，不代表用户已绑定运动平台，两者均不纳入"已绑定"判断。
+                    // updatedPlatforms 已按 requiresOAuthBinding 过滤，直接检查 isAuthorized 即可。
                     val hasAnyBound = updatedPlatforms.any { it.isAuthorized }
 
                     if (hasAnyBound) {
@@ -96,14 +99,14 @@ class BindingGuideViewModel(
         if (!isInitialLoadDone) return
         viewModelScope.launch {
             val updatedPlatforms = repository.getAllDataSourceInfos()
-                .filter { it.platform.isEnabled }
+                .filter { it.platform.isEnabled && it.platform.requiresOAuthBinding }
             _uiState.update { it.copy(platforms = updatedPlatforms) }
 
             // 同时从服务器确认
             repository.queryPlatformStatus()
                 .onSuccess {
                     val serverPlatforms = repository.getAllDataSourceInfos()
-                        .filter { it.platform.isEnabled }
+                        .filter { it.platform.isEnabled && it.platform.requiresOAuthBinding }
                     _uiState.update { it.copy(platforms = serverPlatforms) }
                 }
         }
