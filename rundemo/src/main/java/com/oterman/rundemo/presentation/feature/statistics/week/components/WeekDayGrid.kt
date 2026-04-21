@@ -29,6 +29,7 @@ import com.oterman.rundemo.presentation.feature.home.components.DayCell
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.statistics.components.DayTrajectoryCell
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -146,18 +147,49 @@ fun WeekSummaryAndGrid(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Summary text
-                val summaryText = if (runCount > 0) {
-                    "本周累计跑步 $runCount 次，总计 ${String.format("%.1f", totalDistance)} 公里"
+                if (runCount > 0) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(text = "本周", fontSize = 13.sp, color = SecondaryTextColor)
+                        Text(
+                            text = "$runCount",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = RunYayFontFamily4,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.alignByBaseline()
+                        )
+                        Text(
+                            text = "次，",
+                            fontSize = 13.sp,
+                            color = SecondaryTextColor,
+                            modifier = Modifier.alignByBaseline()
+                        )
+                        Text(
+                            text = String.format("%.1f", totalDistance),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = RunYayFontFamily4,
+                            color = RunTheme.colorScheme.blue,
+                            modifier = Modifier.alignByBaseline().padding(start = 4.dp)
+                        )
+                        Text(
+                            text = "公里",
+                            fontSize = 13.sp,
+                            color = SecondaryTextColor,
+                            modifier = Modifier.alignByBaseline()
+                        )
+                    }
                 } else {
-                    "本周还没有跑步记录"
+                    Text(
+                        text = "本周还没有跑步记录",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-
-                Text(
-                    text = summaryText,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
-                )
 
                 // Toggle button
                 IconButton(

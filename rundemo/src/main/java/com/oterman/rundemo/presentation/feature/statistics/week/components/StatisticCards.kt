@@ -19,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -126,21 +126,21 @@ private fun SimpleStatCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Value and unit
-            Row(
-                verticalAlignment = Alignment.Bottom
-            ) {
+            Row {
                 Text(
                     text = value,
                     fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = RunYayFontFamily4,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.alignByBaseline()
                 )
                 if (unit.isNotEmpty()) {
                     Text(
                         text = unit,
                         fontSize = 12.sp,
                         color = SecondaryTextColor,
-                        modifier = Modifier.padding(start = 2.dp, bottom = 2.dp)
+                        modifier = Modifier.alignByBaseline().padding(start = 2.dp)
                     )
                 }
             }

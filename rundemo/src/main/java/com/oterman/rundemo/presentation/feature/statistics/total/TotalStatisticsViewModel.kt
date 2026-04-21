@@ -69,6 +69,7 @@ class TotalStatisticsViewModel(
 
                 // Get all records from the beginning of time
                 val allRecords = repository.getAllRunRecords().first()
+                    .filter { it.inclusiveLevel != 0 }
 
                 // Group records by year
                 val recordsByYear = groupRecordsByYear(allRecords)

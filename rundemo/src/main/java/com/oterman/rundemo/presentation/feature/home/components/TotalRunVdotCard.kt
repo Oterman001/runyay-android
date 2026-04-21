@@ -36,6 +36,7 @@ fun TotalRunVdotCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(top = 10.dp)
                 .padding(vertical = 5.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -59,58 +60,62 @@ fun TotalRunVdotCard(
             val sharedFontSize = if (distanceFontSize.value < vdotFontSize.value) distanceFontSize else vdotFontSize
 
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.Start,
                 modifier = Modifier.weight(1f).clickable { onDistanceClick() }
             ) {
-                Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            text = distanceText,
+                            color = RunTheme.colorScheme.blue,
+                            fontSize = sharedFontSize,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = RunYayFontFamily,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                        Text(
+                            text = "公里",
+                            color = SecondaryTextColor,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 2.dp)
+                        )
+                    }
                     Text(
-                        text = distanceText,
-                        color = RunTheme.colorScheme.blue,
-                        fontSize = sharedFontSize,
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = RunYayFontFamily,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                    Text(
-                        text = "公里",
+                        text = "累计里程",
                         color = SecondaryTextColor,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(start = 2.dp)
+                        fontSize = 12.sp
                     )
                 }
-                Text(
-                    text = "累计里程",
-                    color = SecondaryTextColor,
-                    fontSize = 12.sp
-                )
             }
 
 
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.End,
                 modifier = Modifier.weight(1f).clickable { onVdotClick() }
             ) {
-                Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            text = vdotText,
+                            color = RunTheme.colorScheme.blue,
+                            fontSize = sharedFontSize,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = RunYayFontFamily,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                     Text(
-                        text = vdotText,
-                        color = RunTheme.colorScheme.blue,
-                        fontSize = sharedFontSize,
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = RunYayFontFamily,
-                        maxLines = 1,
-                        softWrap = false
+                        text = "跑力",
+                        color = SecondaryTextColor,
+                        fontSize = 12.sp
                     )
                 }
-                Text(
-                    text = "跑力",
-                    color = SecondaryTextColor,
-                    fontSize = 12.sp
-                )
             }
         }
     }

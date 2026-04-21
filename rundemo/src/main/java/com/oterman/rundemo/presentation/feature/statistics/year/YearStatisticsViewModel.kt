@@ -220,6 +220,7 @@ class YearStatisticsViewModel(
                     val monthEnd = getMonthEnd(currentYear, month)
 
                     val records = repository.getRunRecordsByTimeRange(monthStart, monthEnd)
+                        .filter { it.inclusiveLevel != 0 }
                     val monthData = calculateMonthRangeData(records, currentYear, month)
 
                     monthRangeDataList.add(monthData)

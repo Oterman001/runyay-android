@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 
 /**
@@ -30,30 +32,37 @@ internal fun YearSummaryHeader(
         verticalAlignment = Alignment.Bottom
     ) {
         Text(
-            text = "年跑步",
-            fontSize = 14.sp,
+            text = "本年",
+            fontSize = 13.sp,
             color = SecondaryTextColor
         )
         Text(
             text = "$runCount",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurface
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = RunYayFontFamily4,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.alignByBaseline()
         )
         Text(
             text = "次，",
-            fontSize = 14.sp,
-            color = SecondaryTextColor
+            fontSize = 13.sp,
+            color = SecondaryTextColor,
+            modifier = Modifier.alignByBaseline()
         )
         Text(
             text = String.format("%.1f", totalDistance),
             fontSize = 20.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = RunTheme.colorScheme.blue
+            fontWeight = FontWeight.Bold,
+            fontFamily = RunYayFontFamily4,
+            color = RunTheme.colorScheme.blue,
+            modifier = Modifier.alignByBaseline().padding(start = 4.dp)
         )
         Text(
             text = "公里",
-            fontSize = 14.sp,
-            color = SecondaryTextColor
+            fontSize = 13.sp,
+            color = SecondaryTextColor,
+            modifier = Modifier.alignByBaseline()
         )
     }
 }
