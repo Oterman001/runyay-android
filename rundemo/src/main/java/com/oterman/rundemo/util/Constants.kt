@@ -80,6 +80,9 @@ object Constants {
         // Downloaded APK cache
         const val KEY_DOWNLOADED_APK_VERSION_CODE = "downloaded_apk_version_code"
         const val KEY_DOWNLOADED_APK_PATH = "downloaded_apk_path"
+
+        // Privacy consent
+        const val KEY_PRIVACY_CONSENT_ACCEPTED = "privacy_consent_accepted"
     }
     
     /**

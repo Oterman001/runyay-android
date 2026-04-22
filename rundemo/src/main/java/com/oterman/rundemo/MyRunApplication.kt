@@ -28,9 +28,10 @@ class MyRunApplication: Application() {
          */
         UMConfigure.preInit(this,"69a930fe6f259537c76ddab0", BuildConfig.UMENG_CHANNEL)
 
-
-        //初始化组件化基础库, 所有友盟业务SDK都必须调用此初始化接口。
-        UMConfigure.init(this, "69a930fe6f259537c76ddab0", BuildConfig.UMENG_CHANNEL, UMConfigure.DEVICE_TYPE_PHONE, "");
+        // 已同意隐私政策的后续冷启动，立即完成初始化；首次启动由 PrivacyConsentScreen 在用户同意后调用
+        if (PreferencesManager(this).isPrivacyConsentAccepted()) {
+            UMConfigure.init(this, "69a930fe6f259537c76ddab0", BuildConfig.UMENG_CHANNEL, UMConfigure.DEVICE_TYPE_PHONE, "")
+        }
 
         cleanupOldDownloadedApk()
     }

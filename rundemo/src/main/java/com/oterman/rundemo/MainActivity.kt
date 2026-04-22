@@ -102,8 +102,9 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
 
-                    // 根据登录状态决定起始页面
+                    // 根据登录状态决定起始页面（首次启动需先同意隐私政策）
                     val startDestination = when {
+                        !preferencesManager.isPrivacyConsentAccepted() -> Screen.PrivacyConsent.route
                         !preferencesManager.isUserLoggedIn() -> Screen.Welcome.route
                         !preferencesManager.isPhysioSetupCompleted() -> Screen.PhysioSetup.createRoute("home")
                         else -> Screen.Home.route

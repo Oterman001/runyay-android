@@ -449,6 +449,14 @@ class PreferencesManager(context: Context) {
         }
     }
 
+    // ==================== Privacy Consent ====================
+
+    fun isPrivacyConsentAccepted(): Boolean =
+        prefs.getBoolean(Constants.PreferenceKeys.KEY_PRIVACY_CONSENT_ACCEPTED, false)
+
+    fun setPrivacyConsentAccepted(accepted: Boolean) =
+        prefs.edit().putBoolean(Constants.PreferenceKeys.KEY_PRIVACY_CONSENT_ACCEPTED, accepted).apply()
+
     fun saveLongValue(key: String, value: Long) {
         prefs.edit().putLong(key, value).apply()
     }

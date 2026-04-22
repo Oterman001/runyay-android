@@ -75,6 +75,7 @@ import com.oterman.rundemo.presentation.feature.debug.synccontrol.SyncControlScr
 import com.oterman.rundemo.presentation.feature.debug.synccontrol.SyncControlViewModel
 import com.oterman.rundemo.presentation.feature.debug.synccontrol.SyncControlViewModelFactory
 import com.oterman.rundemo.presentation.feature.syncstatus.DataSyncStatusScreen
+import com.oterman.rundemo.presentation.feature.legal.PrivacyConsentScreen
 import com.oterman.rundemo.presentation.feature.legal.PrivacyPolicyScreen
 import com.oterman.rundemo.presentation.feature.legal.UserTermsScreen
 import com.oterman.rundemo.presentation.feature.runningshoes.RunningShoesManagementScreen
@@ -111,6 +112,23 @@ fun AppNavGraph(
         popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 3 }) + fadeIn() },
         popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
     ) {
+        // 隐私政策同意页面（首次启动）
+        composable(Screen.PrivacyConsent.route) {
+            PrivacyConsentScreen(
+                onAgreed = {
+                    navController.navigate(Screen.Welcome.route) {
+                        popUpTo(Screen.PrivacyConsent.route) { inclusive = true }
+                    }
+                },
+                onNavigateToUserTerms = {
+                    navController.navigate(Screen.UserTerms.route)
+                },
+                onNavigateToPrivacyPolicy = {
+                    navController.navigate(Screen.PrivacyPolicy.route)
+                }
+            )
+        }
+
         // 欢迎页面
         composable(Screen.Welcome.route) {
             WelcomeScreen(

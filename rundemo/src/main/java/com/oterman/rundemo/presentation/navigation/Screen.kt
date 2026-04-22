@@ -6,6 +6,12 @@ package com.oterman.rundemo.presentation.navigation
  */
 sealed class Screen(val route: String) {
     /**
+     * 隐私政策同意页面
+     * 首次启动时展示，用户同意后才初始化友盟SDK并进入应用
+     */
+    object PrivacyConsent : Screen("privacy_consent")
+
+    /**
      * 欢迎页面
      */
     object Welcome : Screen("welcome")
