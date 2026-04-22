@@ -44,14 +44,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 
+// true = 使用本地内置 HTML；false = 使用线上网页
+private const val USE_LOCAL_HTML = true
+
 private const val USER_AGREEMENT_URL = "https://yayarun.cn/user-agreement"
 private const val PRIVACY_POLICY_URL = "https://yayarun.cn/privacy-policy"
+private const val USER_AGREEMENT_LOCAL = "file:///android_asset/user_agreement_zh.html"
+private const val PRIVACY_POLICY_LOCAL = "file:///android_asset/privacy_policy_zh.html"
 
 @Composable
 fun UserTermsScreen(onNavigateBack: () -> Unit) {
     PolicyWebScreen(
         title = "用户协议",
-        url = USER_AGREEMENT_URL,
+        url = if (USE_LOCAL_HTML) USER_AGREEMENT_LOCAL else USER_AGREEMENT_URL,
         onNavigateBack = onNavigateBack
     )
 }
@@ -60,7 +65,7 @@ fun UserTermsScreen(onNavigateBack: () -> Unit) {
 fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
     PolicyWebScreen(
         title = "隐私政策",
-        url = PRIVACY_POLICY_URL,
+        url = if (USE_LOCAL_HTML) PRIVACY_POLICY_LOCAL else PRIVACY_POLICY_URL,
         onNavigateBack = onNavigateBack
     )
 }

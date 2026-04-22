@@ -794,6 +794,12 @@ fun AppNavGraph(
                 },
                 onNavigateToWeChat = {
                     navController.navigate(Screen.WeChatQrCode.route)
+                },
+                onNavigateToUserTerms = {
+                    navController.navigate(Screen.UserTerms.route)
+                },
+                onNavigateToPrivacyPolicy = {
+                    navController.navigate(Screen.PrivacyPolicy.route)
                 }
             )
         }

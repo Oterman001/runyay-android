@@ -53,16 +53,16 @@ fun PrivacyConsentScreen(
             Spacer(modifier = Modifier.height(72.dp))
 
             Text(
-                text = "服务协议及隐私政策",
+                text = "个人信息保护提示",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "欢迎使用 跑鸭·RunYay！",
+                text = "欢迎来到跑鸭·RunYay！",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onBackground
@@ -71,7 +71,7 @@ fun PrivacyConsentScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "在您开始使用前，请仔细阅读并同意以下协议。我们依据相关规定保护您的隐私权益：",
+                text = "我们将依据《用户协议》和《隐私政策》向您提供服务并保护您的个人信息。请在同意前仔细阅读并做出选择。",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -79,9 +79,9 @@ fun PrivacyConsentScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "• 我们收集您的设备信息和运动数据，用于提供跑步记录、数据分析等核心功能；\n" +
-                        "• 我们使用友盟统计 SDK 进行应用分析，仅在您同意后才收集相关信息；\n" +
-                        "• 我们不会在未经您授权的情况下向第三方发送您的个人信息。\n",
+                text = "1、为保障账号安全与统计分析功能，我们会在您使用服务时收集设备标识（Android ID、OAID）、IP 地址及设备基础信息，用于安全风控、崩溃排查与应用统计（由友盟 SDK 处理），仅在您同意后才开始收集。\n\n" +
+                        "2、可选权限将仅在您使用对应功能时申请，且可随时关闭：存储（导入 FIT/GPX 运动文件）、位置（记录跑步 GPS 轨迹）、相机（上传头像）、通知（同步进度提醒），拒绝不影响其他基础功能。\n\n" +
+                        "3、我们遵循最小必要原则，不会将您的个人信息用于与服务无关的用途，亦不会在未经授权的情况下向第三方发送您的个人信息。",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
