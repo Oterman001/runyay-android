@@ -27,6 +27,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.layout.navigationBarsPadding
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.umeng.commonsdk.UMConfigure
 import com.oterman.rundemo.BuildConfig
@@ -44,12 +45,13 @@ fun PrivacyConsentScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
             Spacer(modifier = Modifier.height(72.dp))
 
             Text(
@@ -81,7 +83,8 @@ fun PrivacyConsentScreen(
             Text(
                 text = "1、为保障账号安全与统计分析功能，我们会在您使用服务时收集设备标识（Android ID、OAID）、IP 地址及设备基础信息，用于安全风控、崩溃排查与应用统计（由友盟 SDK 处理），仅在您同意后才开始收集。\n\n" +
                         "2、可选权限将仅在您使用对应功能时申请，且可随时关闭：存储（导入 FIT/GPX 运动文件）、位置（记录跑步 GPS 轨迹）、相机（上传头像）、通知（同步进度提醒），拒绝不影响其他基础功能。\n\n" +
-                        "3、我们遵循最小必要原则，不会将您的个人信息用于与服务无关的用途，亦不会在未经授权的情况下向第三方发送您的个人信息。",
+                        "3、我们遵循最小必要原则，不会将您的个人信息用于与服务无关的用途，亦不会在未经授权的情况下向第三方发送您的个人信息。\n\n" +
+                        "4、剪切板访问：为实现统计分析与功能联动，友盟 SDK 可能读取剪切板相关信息(获取分享信息或者跳转口令)。当您在App内复制客服联系方式时，相关内容会被写入剪切板。",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
@@ -128,11 +131,14 @@ fun PrivacyConsentScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+            } // end scrollable column
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
@@ -160,8 +166,6 @@ fun PrivacyConsentScreen(
                     Text("同意并继续")
                 }
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

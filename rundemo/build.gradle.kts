@@ -1,6 +1,13 @@
 import java.text.SimpleDateFormat
 import java.util.Date
 
+val gitHash: String = try {
+    val process = Runtime.getRuntime().exec(arrayOf("git", "rev-parse", "--short=6", "HEAD"))
+    process.inputStream.bufferedReader().readLine()?.trim() ?: "unknown"
+} catch (e: Exception) { "unknown" }
+
+val buildDate: String = SimpleDateFormat("yyMMdd").format(Date())
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -23,13 +30,6 @@ android {
 
         // 高德地图 API Key（通过 gradle.properties 或环境变量配置）
         manifestPlaceholders["AMAP_API_KEY"] = providers.gradleProperty("AMAP_API_KEY").getOrElse("YOUR_AMAP_API_KEY")
-
-        val gitHash = try {
-            val process = Runtime.getRuntime().exec(arrayOf("git", "rev-parse", "--short=6", "HEAD"))
-            process.inputStream.bufferedReader().readLine()?.trim() ?: "unknown"
-        } catch (e: Exception) { "unknown" }
-
-        val buildDate = SimpleDateFormat("yyMMdd").format(Date())
 
         buildConfigField("String", "GIT_HASH", "\"$gitHash\"")
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
@@ -103,6 +103,17 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    applicationVariants.all {
+        val variant = this
+        val btShort = if (variant.buildType.name == "release") "r" else "d"
+        outputs.all {
+            val out = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            out.outputFileName =
+                "ry-${variant.versionName}-${variant.versionCode}" +
+                "-${variant.flavorName}-${buildDate}-${gitHash}-${btShort}.apk"
+        }
     }
 }
 
