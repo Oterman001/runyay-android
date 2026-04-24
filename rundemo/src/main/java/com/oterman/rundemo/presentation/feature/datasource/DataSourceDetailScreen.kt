@@ -59,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.SyncTimeRange
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * 数据源详情页面
@@ -449,7 +450,7 @@ private fun SyncStatusSection(
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
-                            tint = Color(0xFF4CAF50),
+                            tint = RunTheme.colorScheme.success,
                             modifier = Modifier.size(14.dp)
                         )
                         Text(

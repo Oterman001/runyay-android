@@ -43,9 +43,9 @@ fun LoadingButton(
         enabled = enabled && !isLoading,
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (enabled) MaterialTheme.colorScheme.primary else Color.Gray,
+            containerColor = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
             contentColor = Color.White,
-            disabledContainerColor = Color.Gray,
+            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
             disabledContentColor = Color.White
         ),
         contentPadding = PaddingValues(16.dp)
@@ -89,7 +89,7 @@ fun GradientButton(
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
     ),
-    disabledColors: List<Color> = listOf(Color.Gray, Color.Gray.copy(alpha = 0.8f))
+    disabledColors: List<Color> = listOf(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
 ) {
     val colors = if (enabled && !isLoading) gradientColors else disabledColors
     

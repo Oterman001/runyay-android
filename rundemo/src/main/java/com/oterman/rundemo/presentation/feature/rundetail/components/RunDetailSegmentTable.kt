@@ -51,6 +51,7 @@ import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.ui.theme.LocalRunColorScheme
 import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.ui.theme.RunGold
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 import androidx.compose.ui.text.SpanStyle
@@ -293,7 +294,7 @@ private fun SegmentTableRow(
     isFastest: Boolean
 ) {
     val bgColor = if (index % 2 == 0) {
-        Color.LightGray.copy(alpha = 0.22f)
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     } else {
         Color.Transparent
     }
@@ -312,7 +313,7 @@ private fun SegmentTableRow(
             contentAlignment = Alignment.Center
         ) {
             if (isFastest) {
-                val tableAccent = Color(0xFFE8900A)
+                val tableAccent = RunTheme.colorScheme.orange
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
@@ -644,7 +645,7 @@ private fun SegmentBarRow(
     val isDark = RunTheme.isDark
     val barBrush = if (isFastest) {
         Brush.horizontalGradient(
-            colors = listOf(Color(0xFFE8900A), Color(0xFFFFD040))
+            colors = listOf(RunTheme.colorScheme.orange, RunGold)
         )
     } else {
         Brush.horizontalGradient(
@@ -652,7 +653,7 @@ private fun SegmentBarRow(
                      else        listOf(runColors.blue, runColors.blueGradient1)
         )
     }
-    val fastestAccent = Color(0xFFE8900A)
+    val fastestAccent = RunTheme.colorScheme.orange
 
     // 轨道背景：暗色模式降低 alpha，让蓝柱更突出
     val trackAlpha = if (isDark) 0.18f else 0.38f
@@ -845,10 +846,10 @@ private fun GroupedBarRow(
 ) {
     val runColors = LocalRunColorScheme.current
     val isDark = RunTheme.isDark
-    val fastestAccent = Color(0xFFE8900A)
+    val fastestAccent = RunTheme.colorScheme.orange
 
     val barBrush = if (group.isFastest) {
-        Brush.horizontalGradient(listOf(Color(0xFFE8900A), Color(0xFFFFD040)))
+        Brush.horizontalGradient(listOf(RunTheme.colorScheme.orange, RunGold))
     } else {
         Brush.horizontalGradient(
             colors = if (isDark) listOf(runColors.blue, runColors.blueGradient2)
@@ -967,7 +968,7 @@ private fun FiveKmMilestoneRow(milestone: FiveKmMilestone) {
         if (prev != null && kotlin.math.abs(milestone.avgPace - prev) > 0.001) {
             val faster = milestone.avgPace < prev
             withStyle(SpanStyle(
-                color = if (faster) Color(0xFF34C759) else Color(0xFFFF3B30),
+                color = if (faster) RunTheme.colorScheme.success else RunTheme.colorScheme.destructive,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.ExtraBold
             )) {

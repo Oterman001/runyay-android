@@ -20,7 +20,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -50,7 +49,6 @@ fun TotalYearBarChart(
     onToggleDisplayMode: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = RunTheme.isDark
     val textMeasurer = rememberTextMeasurer()
 
     // Calculate max value based on display mode
@@ -82,9 +80,9 @@ fun TotalYearBarChart(
             RunTheme.colorScheme.blue.copy(alpha = 0.6f)
         )
     )
-    val bgBarColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
+    val bgBarColor = RunTheme.colorScheme.tableHeader
     val textColor = SecondaryTextColor
-    val gridLineColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
+    val gridLineColor = RunTheme.colorScheme.tableHeader
     val toggleBgColor = RunTheme.colorScheme.blue.copy(alpha = 0.1f)
 
     StatisticsCard(modifier = modifier) {

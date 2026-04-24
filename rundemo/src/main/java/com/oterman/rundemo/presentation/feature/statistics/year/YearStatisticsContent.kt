@@ -25,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -66,7 +65,7 @@ fun YearStatisticsContent(
     }
 
     val isDark = RunTheme.isDark
-    val dividerColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
+    val dividerColor = RunTheme.colorScheme.divider
 
     Column(
         modifier = Modifier

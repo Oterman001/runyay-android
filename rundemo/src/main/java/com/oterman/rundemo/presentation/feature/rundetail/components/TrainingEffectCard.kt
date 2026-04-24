@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * 训练效果卡片
@@ -66,7 +67,7 @@ fun TrainingEffectCard(
                     TrainingEffectItem(
                         label = "有氧",
                         value = aerobicEffect,
-                        color = Color(0xFF4CAF50),
+                        color = RunTheme.colorScheme.success,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -76,7 +77,7 @@ fun TrainingEffectCard(
                     TrainingEffectItem(
                         label = "无氧",
                         value = anaerobicEffect,
-                        color = Color(0xFFFF9800),
+                        color = RunTheme.colorScheme.warning,
                         modifier = Modifier.weight(1f)
                     )
                 }

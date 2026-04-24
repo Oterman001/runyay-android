@@ -12,7 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -21,6 +20,7 @@ import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.ChartDataPoint
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * 配速图表卡片（合并版）
@@ -80,7 +80,7 @@ fun PaceChartCard(
             // ========== 配速折线图（嵌入式，Y轴反转） ==========
             RunDataLineChartContent(
                 dataPoints = filteredSeries,
-                lineColor = Color(0xFF1E88E5),
+                lineColor = RunTheme.colorScheme.chartPaceLine,
                 avgValue = avgSpeed,
                 invertYAxis = true,
                 chartHeight = 160

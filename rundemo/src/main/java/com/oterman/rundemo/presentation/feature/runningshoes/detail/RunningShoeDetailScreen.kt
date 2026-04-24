@@ -78,6 +78,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.oterman.rundemo.domain.model.RunningShoe
+import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.wearColorFor
 import androidx.core.content.FileProvider
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.components.ImagePickerDialog
@@ -497,7 +499,7 @@ private fun WearProgressSection(shoe: RunningShoe) {
                 Text("磨损程度", style = MaterialTheme.typography.titleSmall)
                 Text(
                     shoe.wearStatusText,
-                    color = shoe.wearStatusColor,
+                    color = RunTheme.colorScheme.wearColorFor(shoe.wearPercentage),
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -508,7 +510,7 @@ private fun WearProgressSection(shoe: RunningShoe) {
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = shoe.wearStatusColor,
+                color = RunTheme.colorScheme.wearColorFor(shoe.wearPercentage),
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
             Spacer(Modifier.height(4.dp))

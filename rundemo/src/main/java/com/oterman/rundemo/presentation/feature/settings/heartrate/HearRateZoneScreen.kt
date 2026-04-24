@@ -69,10 +69,8 @@ private val zonePercentDesc = listOf(
     "84%~88%", "88%~95%", "95%~100%", ">100%"
 )
 
-private val zoneColors = listOf(
-    Color(0xFF90CAF9), Color(0xFF64B5F6), Color(0xFF4CAF50),
-    Color(0xFFFFC107), Color(0xFFFF9800), Color(0xFFFF5722), Color(0xFFF44336)
-)
+@Composable
+private fun getZoneColors() = RunTheme.colorScheme.zone7Colors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -291,6 +289,7 @@ fun HearRateZoneScreen(
                             range.maxHR < 0 -> "> ${range.minHR.toInt()} bpm"
                             else -> "${range.minHR.toInt()} – ${range.maxHR.toInt()} bpm"
                         }
+                        val currentZoneColors = getZoneColors()
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -302,7 +301,7 @@ fun HearRateZoneScreen(
                                     .width(6.dp)
                                     .height(72.dp)
                                     .clip(RoundedCornerShape(3.dp))
-                                    .background(zoneColors.getOrElse(index) { Color.Gray })
+                                    .background(currentZoneColors.getOrElse(index) { RunTheme.colorScheme.neutral })
                             )
                             Spacer(Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {

@@ -39,6 +39,7 @@ import com.oterman.rundemo.domain.model.MergedRunSegment
 import com.oterman.rundemo.domain.model.RunSegment
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+import com.oterman.rundemo.ui.theme.RunTheme
 
 private enum class TrainingFilter(val label: String) {
     ALL("全部"),
@@ -46,13 +47,15 @@ private enum class TrainingFilter(val label: String) {
     RECOVERY("恢复")
 }
 
+@Composable
 private fun getIntervalColor(intervalType: IntervalType): Color {
+    val colors = RunTheme.colorScheme
     return when (intervalType) {
-        IntervalType.WARMUP -> Color(0xFFE65100)
-        IntervalType.WORK -> Color(0xFFEEB23C)
-        IntervalType.RECOVERY -> Color(0xFF2E7D32)
-        IntervalType.COOLDOWN -> Color(0xFF6A1B9A)
-        IntervalType.UNKNOWN -> Color(0xFF616161)
+        IntervalType.WARMUP -> colors.segmentWarmup
+        IntervalType.WORK -> colors.segmentWork
+        IntervalType.RECOVERY -> colors.segmentRecovery
+        IntervalType.COOLDOWN -> colors.segmentCooldown
+        IntervalType.UNKNOWN -> colors.segmentUnknown
     }
 }
 
@@ -156,8 +159,8 @@ private fun FilterButtonsRow(
                 modifier = Modifier
                     .clip(RoundedCornerShape(15.dp))
                     .background(
-                        if (isSelected) Color(0xFF1E88E5).copy(alpha = 0.3f)
-                        else Color.LightGray.copy(alpha = 0.3f)
+                        if (isSelected) RunTheme.colorScheme.chartPaceLine.copy(alpha = 0.3f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     )
                     .clickable { onFilterSelected(filter) }
                     .padding(horizontal = 15.dp, vertical = 5.dp),
@@ -167,7 +170,7 @@ private fun FilterButtonsRow(
                     text = filter.label,
                     fontSize = 14.sp,
                     fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-                    color = if (isSelected) Color(0xFF1E88E5)
+                    color = if (isSelected) RunTheme.colorScheme.chartPaceLine
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -215,7 +218,7 @@ private fun MergedSegmentRow(
     onToggle: () -> Unit
 ) {
     val bgColor = if (index % 2 == 0) {
-        Color.LightGray.copy(alpha = 0.22f)
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     } else {
         Color.Transparent
     }
@@ -251,7 +254,7 @@ private fun MergedSegmentRow(
                         .size(14.dp)
                         .align(Alignment.CenterEnd)
                         .offset(x = 8.dp),
-                    tint = Color(0xFF1E88E5)
+                    tint = RunTheme.colorScheme.chartPaceLine
                 )
             }
         }
@@ -326,7 +329,7 @@ private fun SubSegmentRow(
     subIndex: Int,
     parentDisplayName: String
 ) {
-    val bgColor = Color.LightGray.copy(alpha = 0.05f)
+    val bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f)
     val textAlpha = 0.8f
 
     Row(

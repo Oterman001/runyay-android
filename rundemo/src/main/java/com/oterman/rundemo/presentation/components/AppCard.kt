@@ -11,7 +11,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
 import com.oterman.rundemo.ui.theme.CardBgDark
@@ -41,8 +40,8 @@ fun AppCard(
                     Modifier.shadow(
                         elevation = 5.dp,
                         shape = cardShape,
-                        ambientColor = Color.Gray.copy(alpha = 0.1f),
-                        spotColor = Color.Gray.copy(alpha = 0.1f)
+                        ambientColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                        spotColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
                     )
                 } else {
                     Modifier

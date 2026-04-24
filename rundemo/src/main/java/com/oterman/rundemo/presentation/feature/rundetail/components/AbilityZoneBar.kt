@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.AbilityZoneType
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * 心率/配速区间水平条形图
@@ -52,10 +53,11 @@ fun AbilityZoneBar(
     ) {
         zones.forEach { zone ->
             val percentage = if (totalDuration > 0) zone.duration / totalDuration else 0.0
+            val zoneColor = getZoneColor(zone)
             ZoneBarRow(
                 zone = zone,
                 percentage = percentage.toFloat(),
-                color = getZoneColor(zone),
+                color = zoneColor,
                 showValueRange = showValueRange
             )
             Spacer(modifier = Modifier.height(2.dp))
@@ -154,33 +156,18 @@ private fun ZoneBarRow(
 /**
  * 根据区间类型和索引获取对应颜色
  */
+@Composable
 private fun getZoneColor(zone: AbilityZone): Color {
+    val colors = RunTheme.colorScheme
     return when (zone.zoneType) {
-        AbilityZoneType.HEART_RATE_7 -> when (zone.zoneIndex) {
-            1 -> Color(0xFF90CAF9)  // 蓝色极淡
-            2 -> Color(0xFF64B5F6)  // 蓝色
-            3 -> Color(0xFF4CAF50)  // 绿色
-            4 -> Color(0xFFFFC107)  // 黄色
-            5 -> Color(0xFFFF9800)  // 橙色
-            6 -> Color(0xFFFF5722)  // 深橙
-            7 -> Color(0xFFF44336)  // 红色
-            else -> Color.Gray
+        AbilityZoneType.HEART_RATE_7 -> {
+            val z7 = colors.zone7Colors
+            z7.getOrElse(zone.zoneIndex - 1) { colors.neutral }
         }
-        AbilityZoneType.HEART_RATE_5 -> when (zone.zoneIndex) {
-            1 -> Color(0xFF90CAF9)  // 蓝色
-            2 -> Color(0xFF4CAF50)  // 绿色
-            3 -> Color(0xFFFFC107)  // 黄色
-            4 -> Color(0xFFFF9800)  // 橙色
-            5 -> Color(0xFFF44336)  // 红色
-            else -> Color.Gray
-        }
-        AbilityZoneType.SPEED -> when (zone.zoneIndex) {
-            1 -> Color(0xFF90CAF9)  // E - 轻松跑
-            2 -> Color(0xFF4CAF50)  // M - 马拉松配速
-            3 -> Color(0xFFFFC107)  // T - 乳酸阈值
-            4 -> Color(0xFFFF9800)  // I - 间歇
-            5 -> Color(0xFFF44336)  // R - 重复
-            else -> Color.Gray
+        AbilityZoneType.HEART_RATE_5,
+        AbilityZoneType.SPEED -> {
+            val z5 = colors.zoneColors
+            z5.getOrElse(zone.zoneIndex - 1) { colors.neutral }
         }
     }
 }

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.components.MetricTagChip
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+import com.oterman.rundemo.ui.theme.RunTheme
 import kotlin.math.abs
 
 /**
@@ -68,7 +69,7 @@ fun VO2MaxCard(
                         text = String.format("%.2f", vo2Max),
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2196F3)
+                        color = RunTheme.colorScheme.chartPaceLine
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -103,9 +104,10 @@ private fun DeltaDisplay(
         )
     } else {
         val change = currentVo2Max - previousVo2Max
+        val colors = RunTheme.colorScheme
         val (arrow, color) = when {
-            change > 0 -> "↑" to Color(0xFF4CAF50)
-            change < 0 -> "↓" to Color(0xFFF44336)
+            change > 0 -> "↑" to colors.success
+            change < 0 -> "↓" to colors.destructive
             else -> "→" to MaterialTheme.colorScheme.onSurfaceVariant
         }
         val text = if (change == 0.0) {
@@ -128,11 +130,13 @@ private fun DeltaDisplay(
  */
 private data class Vo2MaxGrade(val label: String, val color: Color)
 
+@Composable
 private fun getVo2MaxGrade(vo2Max: Double): Vo2MaxGrade {
+    val colors = RunTheme.colorScheme
     return when {
-        vo2Max >= 52.0 -> Vo2MaxGrade("优秀", Color(0xFF4CAF50))
-        vo2Max >= 43.0 -> Vo2MaxGrade("良好", Color(0xFF2196F3))
-        vo2Max >= 34.0 -> Vo2MaxGrade("一般", Color(0xFFFF9800))
-        else -> Vo2MaxGrade("待提升", Color(0xFFF44336))
+        vo2Max >= 52.0 -> Vo2MaxGrade("优秀", colors.gradeExcellent)
+        vo2Max >= 43.0 -> Vo2MaxGrade("良好", colors.gradeGood)
+        vo2Max >= 34.0 -> Vo2MaxGrade("一般", colors.gradeAverage)
+        else -> Vo2MaxGrade("待提升", colors.gradePoor)
     }
 }

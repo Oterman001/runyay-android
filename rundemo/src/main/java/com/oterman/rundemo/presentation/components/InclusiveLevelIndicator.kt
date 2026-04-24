@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +24,7 @@ fun InclusiveLevelIndicator(
 ) {
     val color = when (inclusiveLevel) {
         0 -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-        1 -> Color(0xFF4CAF50)
+        1 -> RunTheme.colorScheme.success
         else -> RunTheme.colorScheme.blue
     }
     Box(

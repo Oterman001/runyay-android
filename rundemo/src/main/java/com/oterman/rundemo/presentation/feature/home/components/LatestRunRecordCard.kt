@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -110,8 +109,8 @@ fun LatestRunRecordCard(
                         .size(10.dp)
                         .clip(CircleShape)
                         .background(
-                            if (record.isVerified) Color(0xFF34C759)
-                            else Color(0xFF8E8E93)
+                            if (record.isVerified) RunTheme.colorScheme.success
+                            else RunTheme.colorScheme.neutral
                         )
                 )
             }

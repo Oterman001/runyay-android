@@ -1,6 +1,5 @@
 package com.oterman.rundemo.domain.model
 
-import androidx.compose.ui.graphics.Color
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -43,23 +42,6 @@ data class NextRaceInfo(
 
         val diffMs = raceDay - today
         return (diffMs / (1000 * 60 * 60 * 24)).toInt()
-    }
-
-    /**
-     * Get countdown circle color based on days remaining
-     * Red: <= 7 days
-     * Orange: <= 30 days
-     * Green: > 30 days
-     * Gray: already passed
-     */
-    fun getCountdownColor(): Color {
-        val days = getDaysRemaining()
-        return when {
-            days < 0 -> Color(0xFF8E8E93)      // Gray - passed
-            days <= 7 -> Color(0xFFFF3B30)    // Red - within a week
-            days <= 30 -> Color(0xFFFF9500)   // Orange - within a month
-            else -> Color(0xFF34C759)          // Green - more than a month
-        }
     }
 
     /**

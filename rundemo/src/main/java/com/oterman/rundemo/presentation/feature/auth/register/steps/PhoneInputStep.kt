@@ -14,13 +14,13 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.presentation.components.GradientButton
 import com.oterman.rundemo.presentation.components.ShakeBox
 import com.oterman.rundemo.presentation.components.SimpleTermsCheckbox
 import com.oterman.rundemo.presentation.feature.auth.register.RegisterUiState
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * 步骤1：手机号输入
@@ -97,7 +97,7 @@ private fun PhoneNumberField(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                errorBorderColor = Color.Red,
+                errorBorderColor = RunTheme.colorScheme.destructive,
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             ),
@@ -107,7 +107,7 @@ private fun PhoneNumberField(
         if (errorMessage != null) {
             Text(
                 text = errorMessage,
-                color = Color.Red,
+                color = RunTheme.colorScheme.destructive,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.fillMaxWidth()
             )

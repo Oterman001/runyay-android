@@ -37,9 +37,8 @@ fun WeekDetailTable(
     weekStats: WeekStatistics,
     modifier: Modifier = Modifier
 ) {
-    val isDark = RunTheme.isDark
-    val alternateRowColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF5F5F7)
-    val headerBgColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
+    val alternateRowColor = RunTheme.colorScheme.tableAlternateRow
+    val headerBgColor = RunTheme.colorScheme.tableHeader
 
     // Filter out future days
     val displayRecords = remember(dailyRecords) {

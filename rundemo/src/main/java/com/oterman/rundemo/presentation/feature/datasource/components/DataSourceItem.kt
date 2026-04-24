@@ -71,8 +71,8 @@ fun DataSourceItem(
                     Modifier.shadow(
                         elevation = 5.dp,
                         shape = cardShape,
-                        ambientColor = Color.Gray.copy(alpha = 0.1f),
-                        spotColor = Color.Gray.copy(alpha = 0.1f)
+                        ambientColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                        spotColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
                     )
                 } else {
                     Modifier
@@ -132,7 +132,7 @@ fun DataSourceItem(
                         text = if (dataSourceInfo.isAuthorized) "已授权" else "未授权",
                         style = MaterialTheme.typography.bodySmall,
                         color = if (dataSourceInfo.isAuthorized) {
-                            Color(0xFF4CAF50)
+                            RunTheme.colorScheme.success
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         }
@@ -191,17 +191,17 @@ fun DataSourceItem(
 private fun PriorityBadge(priority: Int) {
     val gradient = when (priority) {
         1 -> Brush.linearGradient(
-            colors = listOf(Color(0xFF2196F3), Color(0xFF00BCD4))
+            colors = listOf(RunTheme.colorScheme.chartPaceLine, RunTheme.colorScheme.chartCadenceLine)
         )
 
         2 -> Brush.linearGradient(
-            colors = listOf(Color(0xFF00BCD4), Color(0xFF2196F3).copy(alpha = 0.7f))
+            colors = listOf(RunTheme.colorScheme.chartCadenceLine, RunTheme.colorScheme.chartPaceLine.copy(alpha = 0.7f))
         )
 
         else -> Brush.linearGradient(
             colors = listOf(
-                Color(0xFF2196F3).copy(alpha = 0.7f),
-                Color(0xFF2196F3).copy(alpha = 0.5f)
+                RunTheme.colorScheme.chartPaceLine.copy(alpha = 0.7f),
+                RunTheme.colorScheme.chartPaceLine.copy(alpha = 0.5f)
             )
         )
     }

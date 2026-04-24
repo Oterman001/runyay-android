@@ -37,7 +37,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +50,7 @@ import com.oterman.rundemo.presentation.components.GradientButton
 import com.oterman.rundemo.presentation.components.PasswordTextField
 import com.oterman.rundemo.presentation.components.ShakeBox
 import com.oterman.rundemo.presentation.components.SimpleTermsCheckbox
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * 登录界面
@@ -280,7 +280,7 @@ private fun PhoneNumberField(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                errorBorderColor = Color.Red
+                errorBorderColor = RunTheme.colorScheme.destructive
             ),
             singleLine = true
         )
@@ -288,7 +288,7 @@ private fun PhoneNumberField(
         if (errorMessage != null) {
             Text(
                 text = errorMessage,
-                color = Color.Red,
+                color = RunTheme.colorScheme.destructive,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -328,7 +328,7 @@ private fun LoginErrorDialog(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "⚠️ 剩余尝试次数：$remainingAttempts",
-                                color = Color(0xFFFF9800),
+                                color = RunTheme.colorScheme.orange,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -370,7 +370,7 @@ private fun DebugAccountSelector(
             .fillMaxWidth()
             .border(
                 width = 1.dp,
-                color = Color(0xFFFF9800),
+                color = RunTheme.colorScheme.orange,
                 shape = RoundedCornerShape(8.dp)
             )
             .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -380,7 +380,7 @@ private fun DebugAccountSelector(
             text = "DEBUG 账号",
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFFFF9800)
+            color = RunTheme.colorScheme.orange
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -397,13 +397,13 @@ private fun DebugAccountSelector(
                     ),
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
-                        Color(0xFFFF9800).copy(alpha = 0.6f)
+                        RunTheme.colorScheme.orange.copy(alpha = 0.6f)
                     )
                 ) {
                     Text(
                         text = "账号${index + 1}",
                         fontSize = 12.sp,
-                        color = Color(0xFFFF9800),
+                        color = RunTheme.colorScheme.orange,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

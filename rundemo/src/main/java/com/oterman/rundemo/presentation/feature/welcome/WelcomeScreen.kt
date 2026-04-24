@@ -22,9 +22,10 @@ import com.oterman.rundemo.R
 import com.oterman.rundemo.ui.theme.RunBlue
 import com.oterman.rundemo.ui.theme.RunBlueGradient1
 import com.oterman.rundemo.ui.theme.RunBlueGradient2
+import com.oterman.rundemo.ui.theme.RunTheme
 
-private val DeepNavy = Color(0xFF0A1628)
-private val MidNavy = Color(0xFF0F2440)
+private val DeepNavy @Composable get() = RunTheme.colorScheme.welcomeGradientStart
+private val MidNavy @Composable get() = RunTheme.colorScheme.welcomeGradientMid
 
 @Composable
 fun WelcomeScreen(

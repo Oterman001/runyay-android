@@ -17,12 +17,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.presentation.components.GradientButton
 import com.oterman.rundemo.presentation.feature.auth.register.RegisterUiState
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * 步骤2：验证码验证
@@ -133,7 +133,7 @@ private fun SmsCodeField(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                errorBorderColor = Color.Red,
+                errorBorderColor = RunTheme.colorScheme.destructive,
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             ),
@@ -143,7 +143,7 @@ private fun SmsCodeField(
         if (errorMessage != null) {
             Text(
                 text = errorMessage,
-                color = Color.Red,
+                color = RunTheme.colorScheme.destructive,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.fillMaxWidth()
             )

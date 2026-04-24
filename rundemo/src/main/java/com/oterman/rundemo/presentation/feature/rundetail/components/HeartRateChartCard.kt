@@ -32,6 +32,7 @@ import com.oterman.rundemo.domain.model.AbilityZone
 import com.oterman.rundemo.domain.model.ChartDataPoint
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+import com.oterman.rundemo.ui.theme.RunTheme
 
 /**
  * 心率图表卡片（合并版）
@@ -95,7 +96,7 @@ fun HeartRateChartCard(
             // ========== 心率折线图（嵌入式，不含外层Card） ==========
             RunDataLineChartContent(
                 dataPoints = heartRateSeries,
-                lineColor = Color(0xFFE53935),
+                lineColor = RunTheme.colorScheme.chartHeartRateLine,
                 avgValue = avgHeartRate,
                 chartHeight = 160
             )

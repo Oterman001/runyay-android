@@ -46,7 +46,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,6 +54,7 @@ import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.DataSourceInfo
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.presentation.components.GradientButton
+import com.oterman.rundemo.ui.theme.RunTheme
 import kotlinx.coroutines.delay
 
 /**
@@ -319,7 +319,7 @@ private fun OnboardingPlatformCard(
                 text = if (isBound) "已绑定" else "点击绑定",
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isBound) {
-                    Color(0xFF4CAF50)
+                    RunTheme.colorScheme.success
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
@@ -331,7 +331,7 @@ private fun OnboardingPlatformCard(
             Icon(
                 imageVector = Icons.Filled.Check,
                 contentDescription = "已绑定",
-                tint = Color(0xFF4CAF50),
+                tint = RunTheme.colorScheme.success,
                 modifier = Modifier.size(24.dp)
             )
         } else {

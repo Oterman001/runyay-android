@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.NextRaceInfo
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
+import com.oterman.rundemo.ui.theme.countdownColorFor
+import com.oterman.rundemo.ui.theme.raceColorFor
 
 /**
  * Next race event card
@@ -99,7 +101,7 @@ fun NextRaceCard(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
-                                    .background(race.raceType.themeColor)
+                                    .background(RunTheme.colorScheme.raceColorFor(race.raceType))
                                     .padding(horizontal = 8.dp, vertical = 2.dp)
                             ) {
                                 Text(
@@ -128,7 +130,7 @@ fun NextRaceCard(
                     CountdownCircle(
                         mainText = countdownText.first,
                         subText = countdownText.second,
-                        color = race.getCountdownColor(),
+                        color = RunTheme.colorScheme.countdownColorFor(race.getDaysRemaining()),
                         size = 60.dp
                     )
                 }

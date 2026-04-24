@@ -176,7 +176,7 @@ fun DayTrajectoryCell(
                 Icon(
                     painter = painterResource(id = R.drawable.figure_run_treadmill),
                     contentDescription = "室内跑",
-                    tint = Color.Gray.copy(alpha = 0.4f),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -189,7 +189,7 @@ fun DayTrajectoryCell(
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = "加载失败",
-                        tint = Color(0xFFD32F2F),
+                        tint = RunTheme.colorScheme.destructive,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.height(2.dp))
@@ -197,7 +197,7 @@ fun DayTrajectoryCell(
                         text = "失败",
                         fontSize = 8.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFFD32F2F)
+                        color = RunTheme.colorScheme.destructive
                     )
                 }
             }
@@ -233,6 +233,7 @@ private fun TrajectoryImage(bitmap: Bitmap) {
 /**
  * 根据状态获取背景色
  */
+@Composable
 private fun getBackgroundColor(
     state: ThumbnailState,
     isDark: Boolean,
@@ -247,9 +248,9 @@ private fun getBackgroundColor(
         is ThumbnailState.Failed -> {
             // 失败 - 淡红色背景
             if (isDark) {
-                Color(0xFFB71C1C).copy(alpha = 0.25f)
+                RunTheme.colorScheme.destructive.copy(alpha = 0.25f)
             } else {
-                Color(0xFFFFEBEE)
+                RunTheme.colorScheme.destructiveContainer
             }
         }
         is ThumbnailState.Generating -> {

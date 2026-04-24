@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -22,8 +21,9 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.ChartDataPoint
 import com.oterman.rundemo.presentation.components.AppCard
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailLayoutConstants
+import com.oterman.rundemo.ui.theme.RunTheme
 
-private val AltitudeLineColor = Color(0xFF8D6E63)
+private val AltitudeLineColor @Composable get() = RunTheme.colorScheme.chartAltitudeLine
 
 /**
  * 海拔折线图卡片
@@ -166,7 +166,7 @@ fun StrideLengthChartCard(
     RunDataLineChart(
         title = "步幅",
         dataPoints = strideLengthSeries,
-        lineColor = Color(0xFF7E57C2),
+        lineColor = RunTheme.colorScheme.chartStrideLine,
         unit = "cm",
         avgValue = avgStrideLength,
         modifier = modifier
@@ -188,7 +188,7 @@ fun CadenceChartCard(
     RunDataLineChart(
         title = "步频",
         dataPoints = cadenceSeries,
-        lineColor = Color(0xFF26A69A),
+        lineColor = RunTheme.colorScheme.chartCadenceLine,
         unit = "spm",
         avgValue = avgCadence,
         modifier = modifier
@@ -210,7 +210,7 @@ fun ContactTimeChartCard(
     RunDataLineChart(
         title = "触地时间",
         dataPoints = contactTimeSeries,
-        lineColor = Color(0xFFFF7043),
+        lineColor = RunTheme.colorScheme.chartContactTimeLine,
         unit = "ms",
         avgValue = avgContactTime,
         modifier = modifier
@@ -232,7 +232,7 @@ fun VerticalOscillationChartCard(
     RunDataLineChart(
         title = "垂直振幅",
         dataPoints = verticalOscillationSeries,
-        lineColor = Color(0xFF5C6BC0),
+        lineColor = RunTheme.colorScheme.chartVerticalOscLine,
         unit = "cm",
         avgValue = avgVerticalOscillation,
         modifier = modifier
@@ -254,7 +254,7 @@ fun PowerChartCard(
     RunDataLineChart(
         title = "功率",
         dataPoints = powerSeries,
-        lineColor = Color(0xFFEF5350),
+        lineColor = RunTheme.colorScheme.chartPowerLine,
         unit = "W",
         avgValue = avgPower,
         modifier = modifier

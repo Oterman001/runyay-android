@@ -31,7 +31,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +43,7 @@ import com.oterman.rundemo.domain.model.RunningShoe
 import com.oterman.rundemo.ui.theme.CardBgDark
 import com.oterman.rundemo.ui.theme.CardBgLight
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.wearColorFor
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -66,8 +66,8 @@ fun ShoeCard(
                     Modifier.shadow(
                         elevation = 5.dp,
                         shape = cardShape,
-                        ambientColor = Color.Gray.copy(alpha = 0.1f),
-                        spotColor = Color.Gray.copy(alpha = 0.1f)
+                        ambientColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                        spotColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
                     )
                 } else {
                     Modifier
@@ -206,7 +206,7 @@ fun ShoeCard(
             // Wear indicator
             WearIndicator(
                 percentage = shoe.wearPercentage,
-                color = shoe.wearStatusColor
+                color = RunTheme.colorScheme.wearColorFor(shoe.wearPercentage)
             )
 
             Spacer(modifier = Modifier.width(12.dp))

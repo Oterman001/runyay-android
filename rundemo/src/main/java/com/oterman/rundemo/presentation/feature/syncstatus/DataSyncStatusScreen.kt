@@ -150,7 +150,7 @@ private fun SyncStatusHeaderCard(syncStatus: SyncStatusType) {
             Icon(
                 imageVector = if (isSyncing) Icons.Filled.Sync else Icons.Filled.CheckCircle,
                 contentDescription = null,
-                tint = if (isSyncing) RunTheme.colorScheme.blue else Color(0xFF34C759),
+                tint = if (isSyncing) RunTheme.colorScheme.blue else RunTheme.colorScheme.success,
                 modifier = Modifier
                     .size(24.dp)
                     .graphicsLayer {
@@ -184,7 +184,7 @@ private fun KeepInForegroundBanner() {
             Icon(
                 imageVector = Icons.Filled.FreeBreakfast,
                 contentDescription = null,
-                tint = Color(0xFFFF9800),
+                tint = RunTheme.colorScheme.warning,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -261,7 +261,7 @@ private fun ImportedRecordsSection(records: List<ImportedRecordItem>) {
                     Icon(
                         imageVector = Icons.Filled.CheckCircle,
                         contentDescription = null,
-                        tint = Color(0xFF34C759),
+                        tint = RunTheme.colorScheme.success,
                         modifier = Modifier
                             .size(16.dp)
                             .padding(top = 2.dp)
@@ -339,7 +339,7 @@ private fun SyncResultSummaryCard(result: UnifiedSyncResult) {
             icon = Icons.Filled.CheckCircle,
             title = "成功",
             value = "${result.successfulPlatforms} 个",
-            tintColor = Color(0xFF34C759)
+            tintColor = RunTheme.colorScheme.success
         )
         if (result.failedPlatforms > 0) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -347,7 +347,7 @@ private fun SyncResultSummaryCard(result: UnifiedSyncResult) {
                 icon = Icons.Filled.Close,
                 title = "失败",
                 value = "${result.failedPlatforms} 个",
-                tintColor = Color(0xFFFF3B30)
+                tintColor = RunTheme.colorScheme.destructive
             )
         }
         Spacer(modifier = Modifier.height(12.dp))

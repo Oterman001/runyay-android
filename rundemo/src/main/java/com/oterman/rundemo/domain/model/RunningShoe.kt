@@ -1,6 +1,5 @@
 package com.oterman.rundemo.domain.model
 
-import androidx.compose.ui.graphics.Color
 import com.oterman.rundemo.data.local.entity.RunningShoeEntity
 import java.util.concurrent.TimeUnit
 
@@ -58,14 +57,6 @@ data class RunningShoe(
         get() = if (expectedLifespan > 0) {
             (effectiveDistance / expectedLifespan * 100).coerceIn(0.0, 100.0)
         } else 0.0
-
-    val wearStatusColor: Color
-        get() = when {
-            wearPercentage < 60 -> Color(0xFF43A047)  // green
-            wearPercentage < 80 -> Color(0xFFFDD835)  // yellow
-            wearPercentage < 90 -> Color(0xFFFB8C00)  // orange
-            else -> Color(0xFFE53935)                   // red
-        }
 
     val wearStatusText: String
         get() = when {

@@ -116,7 +116,7 @@ fun WeChatQrCodeScreen(
                         append("公众号搜索")
                         withStyle(
                             SpanStyle(
-                                color = Color.Red,
+                                color = RunTheme.colorScheme.destructive,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
                             )
