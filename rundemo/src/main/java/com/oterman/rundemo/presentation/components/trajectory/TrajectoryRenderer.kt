@@ -14,8 +14,8 @@ import kotlin.math.min
  */
 object FixedTrackColors {
     val LIGHT_TRACK = androidx.compose.ui.graphics.Color(0xFFFB7B26)
-    val LIGHT_START = androidx.compose.ui.graphics.Color(0xFF008F00)
-    val LIGHT_END   = androidx.compose.ui.graphics.Color(0xFF941652)
+    val LIGHT_START = androidx.compose.ui.graphics.Color(0xFF34C759)
+    val LIGHT_END   = androidx.compose.ui.graphics.Color(0xFFFF3B30)
     val DARK_TRACK  = androidx.compose.ui.graphics.Color(0xFFDDFF04)
     val DARK_START  = androidx.compose.ui.graphics.Color(0xFF73FA79)
     val DARK_END    = androidx.compose.ui.graphics.Color(0xFFFF2F92)
@@ -41,8 +41,8 @@ object TrajectoryRenderer {
     // 亮色主题
     private val LightColors = ColorScheme(
         track = 0xFFFB7B26.toInt(),      // 橙色轨迹
-        start = 0xFF008F00.toInt(),      // 绿色起点
-        end = 0xFF941652.toInt(),        // 深红色终点
+        start = 0xFF34C759.toInt(),      // Apple 绿起点
+        end = 0xFFFF3B30.toInt(),        // Apple 红终点
         background = 0xFFF5F5F5.toInt()  // 浅灰背景
     )
 
@@ -56,7 +56,7 @@ object TrajectoryRenderer {
 
     // 渲染参数
     private const val TRACK_WIDTH_RATIO = 0.03f      // 轨迹线宽度占画布的比例
-    private const val MARKER_RADIUS_RATIO = 0.04f    // 起终点标记半径占画布的比例
+    private const val MARKER_RADIUS_RATIO = 0.030f   // 起终点标记半径占画布的比例（缩小以减轻视觉重量）
     private const val PADDING_RATIO = 0.12f          // 内边距占画布的比例
 
     /**
@@ -140,32 +140,26 @@ object TrajectoryRenderer {
         // 4. 绘制起点（绿色）
         val markerRadius = size * MARKER_RADIUS_RATIO
         val startPoint = validPoints.first()
+        val startX = toCanvasX(startPoint.longitude)
+        val startY = toCanvasY(startPoint.latitude)
         val startPaint = Paint().apply {
             color = colors.start
             style = Paint.Style.FILL
             isAntiAlias = true
         }
-        canvas.drawCircle(
-            toCanvasX(startPoint.longitude),
-            toCanvasY(startPoint.latitude),
-            markerRadius,
-            startPaint
-        )
+        canvas.drawCircle(startX, startY, markerRadius, startPaint)
 
         // 5. 绘制终点（红色）
         if (validPoints.size > 1) {
             val endPoint = validPoints.last()
+            val endX = toCanvasX(endPoint.longitude)
+            val endY = toCanvasY(endPoint.latitude)
             val endPaint = Paint().apply {
                 color = colors.end
                 style = Paint.Style.FILL
                 isAntiAlias = true
             }
-            canvas.drawCircle(
-                toCanvasX(endPoint.longitude),
-                toCanvasY(endPoint.latitude),
-                markerRadius,
-                endPaint
-            )
+            canvas.drawCircle(endX, endY, markerRadius, endPaint)
         }
 
         return bitmap
@@ -247,12 +241,12 @@ object TrajectoryRenderer {
         }
         canvas.drawPath(path, trackPaint)
 
-        val markerRadius = minDim * 0.035f
+        val markerRadius = minDim * MARKER_RADIUS_RATIO
         val startPoint = validPoints.first()
+        val startX = toCanvasX(startPoint.longitude)
+        val startY = toCanvasY(startPoint.latitude)
         canvas.drawCircle(
-            toCanvasX(startPoint.longitude),
-            toCanvasY(startPoint.latitude),
-            markerRadius,
+            startX, startY, markerRadius,
             Paint().apply {
                 color = applyAlpha(colors.start, markerAlpha)
                 style = Paint.Style.FILL
@@ -262,10 +256,10 @@ object TrajectoryRenderer {
 
         if (validPoints.size > 1) {
             val endPoint = validPoints.last()
+            val endX = toCanvasX(endPoint.longitude)
+            val endY = toCanvasY(endPoint.latitude)
             canvas.drawCircle(
-                toCanvasX(endPoint.longitude),
-                toCanvasY(endPoint.latitude),
-                markerRadius,
+                endX, endY, markerRadius,
                 Paint().apply {
                     color = applyAlpha(colors.end, markerAlpha)
                     style = Paint.Style.FILL
