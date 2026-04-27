@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.DayRunData
 import com.oterman.rundemo.ui.theme.DayCellBadgeBg
 import com.oterman.rundemo.ui.theme.DayCellBadgeText
-import com.oterman.rundemo.ui.theme.NoDataBg
+import com.oterman.rundemo.ui.theme.HeatmapNoDataBg
 import com.oterman.rundemo.ui.theme.NoDataBgDark
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
@@ -79,7 +79,7 @@ fun DayHeatmapBox(
     // Unified color calculation - all use RunTheme.colorScheme.dayCellActive (RunTheme.colorScheme.blue), no indoor/outdoor distinction
     val backgroundColor = when {
         dayData.isFuture -> Color.Transparent
-        dayData.totalDistance <= 0 -> if (isDark) NoDataBgDark else NoDataBg
+        dayData.totalDistance <= 0 -> if (isDark) NoDataBgDark else HeatmapNoDataBg
         dayData.totalDistance >= fullColorThreshold -> RunTheme.colorScheme.dayCellActive
         else -> {
             val intensity = (dayData.totalDistance / fullColorThreshold).coerceIn(0.0, 1.0)

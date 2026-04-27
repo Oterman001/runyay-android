@@ -77,7 +77,8 @@ internal fun MiniMonthHeatmapGrid(
     dailyRecords: List<DayRunData>,
     modifier: Modifier = Modifier,
     cellSpacing: Dp = 2.dp,
-    maxCellSize: Dp = Dp.Unspecified
+    maxCellSize: Dp = Dp.Unspecified,
+    noDataColor: Color = NoDataBg
 ) {
     val cellRadius = 2.dp
     val columns = 7
@@ -105,7 +106,8 @@ internal fun MiniMonthHeatmapGrid(
                             MiniDayCell(
                                 dayData = dailyRecords[index],
                                 cellSize = cellSize,
-                                cellRadius = cellRadius
+                                cellRadius = cellRadius,
+                                noDataColor = noDataColor
                             )
                         } else {
                             Spacer(modifier = Modifier.size(cellSize))
@@ -124,15 +126,16 @@ internal fun MiniMonthHeatmapGrid(
 internal fun MiniDayCell(
     dayData: DayRunData,
     cellSize: Dp,
-    cellRadius: Dp
+    cellRadius: Dp,
+    noDataColor: Color = NoDataBg
 ) {
     val isDark = RunTheme.isDark
     val fullColorThreshold = 5.0
 
     val backgroundColor = when {
         dayData.isPlaceholder -> Color.Transparent
-        dayData.isFuture -> if (isDark) NoDataBgDark else NoDataBg
-        dayData.totalDistance <= 0 -> if (isDark) NoDataBgDark else NoDataBg
+        dayData.isFuture -> if (isDark) NoDataBgDark else noDataColor
+        dayData.totalDistance <= 0 -> if (isDark) NoDataBgDark else noDataColor
         dayData.totalDistance >= fullColorThreshold -> RunTheme.colorScheme.blue
         else -> {
             val intensity = (dayData.totalDistance / fullColorThreshold).coerceIn(0.0, 1.0)

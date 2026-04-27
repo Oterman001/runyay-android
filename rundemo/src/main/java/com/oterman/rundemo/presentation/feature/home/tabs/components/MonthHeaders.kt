@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.domain.model.MonthRangeData
 import com.oterman.rundemo.presentation.feature.statistics.year.components.MiniMonthHeatmapGrid
+import com.oterman.rundemo.ui.theme.HeatmapNoDataBg
 import com.oterman.rundemo.ui.theme.RunYayFontFamily
 import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 
@@ -86,7 +87,8 @@ fun HeatmapMonthHeader(
             MiniMonthHeatmapGrid(
                 dailyRecords = monthData.dailyRecords,
                 cellSpacing = 5.dp,  // DataTab场景：较大间距
-                maxCellSize = 12.dp  // DataTab场景：限制格子大小
+                maxCellSize = 12.dp, // DataTab场景：限制格子大小
+                noDataColor = HeatmapNoDataBg
             )
         }
     }

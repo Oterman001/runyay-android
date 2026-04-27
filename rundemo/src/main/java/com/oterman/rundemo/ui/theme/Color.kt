@@ -19,6 +19,7 @@ val CardBgLight = Color(0xFFFFFFFF)
 val CardBgDark = Color(0xFF1C1C1E)
 val NoDataBg = Color(0xFFF2F2F7)
 val NoDataBgDark = Color(0xFF2C2C2E)
+val HeatmapNoDataBg = Color(0xFFE9E9EE)
 val DividerLight = Color(0xFFE5E5EA)
 val DividerDark = Color(0xFF3A3A3C)
 
