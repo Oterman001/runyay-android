@@ -23,6 +23,7 @@ import com.oterman.rundemo.domain.model.PBAbilityKey
 import com.oterman.rundemo.domain.model.PBSpeedInfo
 import com.oterman.rundemo.domain.model.PBSpeedKey
 import com.oterman.rundemo.domain.model.PeriodStatistics
+import com.oterman.rundemo.domain.model.StreakStats
 import com.oterman.rundemo.domain.model.TotalRunStatistics
 import com.oterman.rundemo.domain.model.WeekStatistics
 import java.text.SimpleDateFormat
@@ -129,6 +130,8 @@ class DashboardTabViewModel(
                     val nextRace = MockDataProvider.getMockNextRace()
                     val dailySentence = MockDataProvider.getRandomDailySentence()
 
+                    val streakStats = calculateStreakStats(statsRecords)
+
                     _uiState.value = HomeTabUiState(
                         isLoading = false,
                         totalStats = totalStats,
@@ -142,6 +145,7 @@ class DashboardTabViewModel(
                         pbSpeedList = pbSpeedList,
                         nextRace = nextRace,
                         dailySentence = dailySentence,
+                        streakStats = streakStats,
                         error = null
                     )
                 }
@@ -554,6 +558,111 @@ class DashboardTabViewModel(
                 workoutId = entity?.workoutId
             )
         }
+    }
+
+    private fun calculateStreakStats(records: List<RunRecordEntity>): StreakStats {
+        if (records.isEmpty()) return StreakStats()
+
+        val dateFormat = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
+
+        // Collect unique run dates as integers for fast lookup
+        val runDateSet = records.map { dateFormat.format(Date(it.startTime)) }.toHashSet()
+        val sortedDates = runDateSet.sorted()
+
+        // --- Current day streak ---
+        val todayCal = Calendar.getInstance()
+        // If no run today yet, start counting from yesterday so streak isn't broken prematurely
+        if (!runDateSet.contains(dateFormat.format(todayCal.time))) {
+            todayCal.add(Calendar.DAY_OF_YEAR, -1)
+        }
+        var currentDayStreak = 0
+        val checkCal = todayCal.clone() as Calendar
+        while (runDateSet.contains(dateFormat.format(checkCal.time))) {
+            currentDayStreak++
+            checkCal.add(Calendar.DAY_OF_YEAR, -1)
+        }
+
+        // --- Best day streak ---
+        var bestDayStreak = 0
+        var runningBest = 0
+        var prevCal: Calendar? = null
+        for (dateStr in sortedDates) {
+            val cal = Calendar.getInstance().apply { time = dateFormat.parse(dateStr)!! }
+            runningBest = if (prevCal == null) {
+                1
+            } else {
+                val diffMs = cal.timeInMillis - prevCal.timeInMillis
+                val diffDays = (diffMs / (1000L * 60 * 60 * 24)).toInt()
+                if (diffDays == 1) runningBest + 1 else 1
+            }
+            if (runningBest > bestDayStreak) bestDayStreak = runningBest
+            prevCal = cal
+        }
+
+        // --- Build ISO week key set ---
+        fun Calendar.isoWeekKey(): String {
+            val iso = Calendar.getInstance().apply {
+                firstDayOfWeek = Calendar.MONDAY
+                minimalDaysInFirstWeek = 4
+                timeInMillis = this@isoWeekKey.timeInMillis
+            }
+            return "${iso.get(Calendar.YEAR)}_${iso.get(Calendar.WEEK_OF_YEAR)}"
+        }
+        val runWeekSet = records.map {
+            Calendar.getInstance().apply { timeInMillis = it.startTime }.isoWeekKey()
+        }.toHashSet()
+
+        // Sorted week keys for best-streak traversal
+        val sortedWeeks = runWeekSet.toList().sortedWith(Comparator { a, b ->
+            val (ay, aw) = a.split("_").map { it.toInt() }
+            val (by, bw) = b.split("_").map { it.toInt() }
+            if (ay != by) ay - by else aw - bw
+        })
+
+        fun prevWeekKey(key: String): String {
+            val (y, w) = key.split("_").map { it.toInt() }
+            val cal = Calendar.getInstance().apply {
+                firstDayOfWeek = Calendar.MONDAY
+                minimalDaysInFirstWeek = 4
+                set(Calendar.YEAR, y)
+                set(Calendar.WEEK_OF_YEAR, w)
+                set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+                add(Calendar.DAY_OF_YEAR, -7)
+            }
+            return cal.isoWeekKey()
+        }
+
+        // --- Current week streak ---
+        val todayWeekKey = Calendar.getInstance().isoWeekKey()
+        val startWeekKey = if (runWeekSet.contains(todayWeekKey)) todayWeekKey
+                           else prevWeekKey(todayWeekKey)
+        var currentWeekStreak = 0
+        var scanWeekKey = startWeekKey
+        while (runWeekSet.contains(scanWeekKey)) {
+            currentWeekStreak++
+            scanWeekKey = prevWeekKey(scanWeekKey)
+        }
+
+        // --- Best week streak ---
+        var bestWeekStreak = 0
+        var runningWeekBest = 0
+        var prevWeekKeyStr: String? = null
+        for (wk in sortedWeeks) {
+            runningWeekBest = if (prevWeekKeyStr == null) {
+                1
+            } else {
+                if (prevWeekKey(wk) == prevWeekKeyStr) runningWeekBest + 1 else 1
+            }
+            if (runningWeekBest > bestWeekStreak) bestWeekStreak = runningWeekBest
+            prevWeekKeyStr = wk
+        }
+
+        return StreakStats(
+            currentDayStreak = currentDayStreak,
+            currentWeekStreak = currentWeekStreak,
+            bestDayStreak = bestDayStreak,
+            bestWeekStreak = bestWeekStreak
+        )
     }
 
     /**

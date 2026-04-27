@@ -22,6 +22,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -33,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.domain.model.DashboardCardId
 import com.oterman.rundemo.domain.model.DashboardCardItem
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -57,6 +59,16 @@ fun DashboardCardEditSheet(
         }
     }
 
+    // Default order: enum declaration order, preserving current visible state
+    fun resetToDefault() {
+        val visibilityMap = editableCards.associate { it.id to it.visible }
+        val defaultList = DashboardCardId.entries.map { id ->
+            DashboardCardItem(id, visibilityMap[id] ?: true)
+        }
+        editableCards.clear()
+        editableCards.addAll(defaultList)
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -75,11 +87,28 @@ fun DashboardCardEditSheet(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                 ) {
-                    Text(
-                        text = "编辑仪表盘",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "编辑仪表盘",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        OutlinedButton(
+                            onClick = { resetToDefault() },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text(
+                                text = "重置顺序",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "长按拖动调整顺序，开关控制显隐",

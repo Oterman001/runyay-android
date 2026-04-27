@@ -61,6 +61,8 @@ import com.oterman.rundemo.presentation.feature.home.components.NextRaceCard
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.presentation.components.EditInclusiveLevelDialog
 import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
+import com.oterman.rundemo.presentation.feature.home.components.StreakDayCard
+import com.oterman.rundemo.presentation.feature.home.components.StreakWeekCard
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.presentation.feature.home.components.PeriodStatisticsCard
 import com.oterman.rundemo.presentation.feature.home.components.TotalRunVdotCard
@@ -287,6 +289,25 @@ fun DashboardTabContent(
                                         modifier = cardModifier
                                     )
                                 }
+                            }
+                        }
+                        DashboardCardId.STREAK -> {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .then(cardModifier),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                StreakDayCard(
+                                    streakStats = uiState.streakStats,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { onNavigateToRunStatistics("year") }
+                                )
+                                StreakWeekCard(
+                                    streakStats = uiState.streakStats,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { onNavigateToRunStatistics("week") }
+                                )
                             }
                         }
                         DashboardCardId.PB_ABILITY -> {

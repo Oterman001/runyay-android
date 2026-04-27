@@ -297,6 +297,16 @@ enum class DataTabDisplayMode {
 }
 
 /**
+ * Streak statistics for consecutive running days and weeks
+ */
+data class StreakStats(
+    val currentDayStreak: Int = 0,
+    val currentWeekStreak: Int = 0,
+    val bestDayStreak: Int = 0,
+    val bestWeekStreak: Int = 0
+)
+
+/**
  * Combined HomeTab UI state
  */
 data class HomeTabUiState(
@@ -314,6 +324,8 @@ data class HomeTabUiState(
     val pbSpeedList: List<PBSpeedInfo> = emptyList(),
     val nextRace: NextRaceInfo? = null,
     val dailySentence: String = "",
+
+    val streakStats: StreakStats = StreakStats(),
 
     val error: String? = null
 )
