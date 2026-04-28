@@ -41,6 +41,7 @@ class DataSourcePreferences(context: Context) {
         // Debug: 同步开关（仅Debug版本使用）
         private const val KEY_DEBUG_SYNC_DISABLED_PLATFORMS = "debug_sync_disabled_platforms"
         private const val KEY_DEBUG_SYNC_INITIALIZED = "debug_sync_initialized"
+        private const val KEY_DEBUG_GPX_IMPORT_ENABLED = "debug_gpx_import_enabled"
 
         // 默认同步开始时间 (格式: yyyyMMddHHmmssSSS，17位)
         const val DEFAULT_SYNC_START_TIME = TimestampUtils.DEFAULT_SYNC_START_TIME
@@ -428,6 +429,15 @@ class DataSourcePreferences(context: Context) {
      */
     fun setDebugSyncInitialized() {
         prefs.edit().putBoolean(KEY_DEBUG_SYNC_INITIALIZED, true).apply()
+    }
+
+    // ============ Debug功能开关 ============
+
+    fun isGpxImportEnabled(): Boolean =
+        prefs.getBoolean(KEY_DEBUG_GPX_IMPORT_ENABLED, true)
+
+    fun setGpxImportEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_DEBUG_GPX_IMPORT_ENABLED, enabled).apply()
     }
 
     // ============ 清理 ============

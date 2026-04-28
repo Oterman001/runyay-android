@@ -170,7 +170,13 @@ fun ManualImportScreen(
             item {
                 ImportEntryCard(
                     isImporting = uiState.isImporting,
-                    onImportClick = { showFormatSheet = true },
+                    onImportClick = {
+                        if (uiState.isGpxEnabled) {
+                            showFormatSheet = true
+                        } else {
+                            fitLauncher.launch(arrayOf("*/*"))
+                        }
+                    },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                 )
             }

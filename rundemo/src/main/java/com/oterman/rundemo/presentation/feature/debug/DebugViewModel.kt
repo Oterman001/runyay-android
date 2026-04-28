@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.domain.trajectory.TrajectoryThumbnailManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,8 @@ import kotlinx.coroutines.withContext
  */
 data class DebugUiState(
     val isClearingThumbnailCache: Boolean = false,
-    val assetFiles: List<String> = emptyList()
+    val assetFiles: List<String> = emptyList(),
+    val isGpxImportEnabled: Boolean = true
 )
 
 /**
@@ -33,9 +35,11 @@ class DebugViewModel(
     val uiState: StateFlow<DebugUiState> = _uiState.asStateFlow()
 
     private val thumbnailManager = TrajectoryThumbnailManager.getInstance(context)
+    private val dataSourcePreferences = DataSourcePreferences(context)
 
     init {
         loadAssetFiles()
+        _uiState.update { it.copy(isGpxImportEnabled = dataSourcePreferences.isGpxImportEnabled()) }
     }
 
     private fun loadAssetFiles() {
@@ -63,6 +67,11 @@ class DebugViewModel(
             }
         }
         return result
+    }
+
+    fun setGpxImportEnabled(enabled: Boolean) {
+        dataSourcePreferences.setGpxImportEnabled(enabled)
+        _uiState.update { it.copy(isGpxImportEnabled = enabled) }
     }
 
     /**

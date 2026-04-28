@@ -73,7 +73,7 @@ fun FileFormatBottomSheet(
                 icon = Icons.Outlined.Map,
                 title = "GPX 文件",
                 description = "通用 GPS 轨迹格式，跨设备兼容",
-                extensions = ".gpx",
+                extensions = ".gpx  .zip  .gpx.gz",
                 onClick = { onSelectGpx(); onDismiss() }
             )
 

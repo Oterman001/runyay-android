@@ -7,7 +7,8 @@ data class ManualImportUiState(
     val isLoadingRecords: Boolean = true,
     val isImporting: Boolean = false,
     val importProgress: String? = null,
-    val importResult: ManualImportResult? = null
+    val importResult: ManualImportResult? = null,
+    val isGpxEnabled: Boolean = true
 )
 
 sealed class ManualImportResult {

@@ -56,12 +56,16 @@ object ZipFitExtractor {
     }
 
     /**
-     * 从 ZIP 压缩包中提取所有 .fit 文件，返回临时文件列表。
+     * 从 ZIP 压缩包中提取指定扩展名的文件，返回临时文件列表。
      *
-     * @throws IOException 当压缩包超出大小限制、无 FIT 内容或解压失败时
+     * @param extension 目标文件扩展名，默认 ".fit"，可传 ".gpx" 等
+     * @throws IOException 当压缩包超出大小限制、无匹配内容或解压失败时
      */
     @Throws(IOException::class)
-    fun extractZip(context: Context, uri: Uri): List<File> {
+    fun extractZip(context: Context, uri: Uri, extension: String = ".fit"): List<File> {
+        val extLower = extension.lowercase()
+        val extLabel = extension.uppercase().removePrefix(".")
+
         // 检查整包大小
         val zipSizeBytes = getFileSize(context, uri)
         if (zipSizeBytes > MAX_ZIP_SIZE_BYTES) {
@@ -78,9 +82,9 @@ object ZipFitExtractor {
 
                 while (entry != null) {
                     val entryName = entry.name
-                    if (!entry.isDirectory && entryName.lowercase().endsWith(".fit")) {
+                    if (!entry.isDirectory && entryName.lowercase().endsWith(extLower)) {
                         if (entryCount >= MAX_FIT_ENTRIES) {
-                            RLog.w(TAG, "ZIP 内 FIT 文件超过 $MAX_FIT_ENTRIES 个，已忽略剩余")
+                            RLog.w(TAG, "ZIP 内 $extLabel 文件超过 $MAX_FIT_ENTRIES 个，已忽略剩余")
                             break
                         }
 
@@ -105,7 +109,7 @@ object ZipFitExtractor {
                         if (outFile.exists() && outFile.length() > 0) {
                             extracted.add(outFile)
                             entryCount++
-                            RLog.d(TAG, "解压 FIT: $entryName → ${outFile.name} (${written} bytes)")
+                            RLog.d(TAG, "解压 $extLabel: $entryName → ${outFile.name} (${written} bytes)")
                         }
                     }
                     zis.closeEntry()
@@ -115,26 +119,28 @@ object ZipFitExtractor {
         } ?: throw IOException("无法读取压缩包内容")
 
         if (extracted.isEmpty()) {
-            throw IOException("压缩包中未找到 FIT 文件")
+            throw IOException("压缩包中未找到 $extLabel 文件")
         }
 
-        RLog.i(TAG, "ZIP 解压完成，共提取 ${extracted.size} 个 FIT 文件")
+        RLog.i(TAG, "ZIP 解压完成，共提取 ${extracted.size} 个 $extLabel 文件")
         return extracted
     }
 
     /**
-     * 解压单个 .fit.gz 文件，返回临时 FIT 文件。
+     * 解压单个 GZ 压缩文件，返回临时文件。
      *
+     * @param outputExtension 期望的输出扩展名，默认 ".fit"，可传 ".gpx" 等
      * @throws IOException 当文件超出大小限制或解压失败时
      */
     @Throws(IOException::class)
-    fun extractGz(context: Context, uri: Uri): File {
+    fun extractGz(context: Context, uri: Uri, outputExtension: String = ".fit"): File {
         val outDir = getTempDir(context)
-        val originalName = getFileName(context, uri) ?: "file.fit.gz"
-        val baseName = if (originalName.lowercase().endsWith(".fit.gz")) {
-            originalName.dropLast(3) // 去掉 ".gz"
+        val originalName = getFileName(context, uri) ?: "file${outputExtension}.gz"
+        val gzSuffix = outputExtension.lowercase() + ".gz"
+        val baseName = if (originalName.lowercase().endsWith(gzSuffix)) {
+            originalName.dropLast(3) // 去掉 ".gz"，保留目标扩展名
         } else {
-            originalName.dropLast(3) + ".fit"
+            originalName.substringBeforeLast('.') + outputExtension
         }
         val outFile = File(outDir, "gz_${System.currentTimeMillis()}_$baseName")
 

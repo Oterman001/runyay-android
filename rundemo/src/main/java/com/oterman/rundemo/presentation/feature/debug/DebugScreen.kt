@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.InsertDriveFile
@@ -35,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -211,6 +213,37 @@ fun DebugScreen(
                             subtitle = "选择文件并保存到手机",
                             showDivider = false,
                             onClick = { showAssetFileDialog = true }
+                        )
+                    }
+                }
+            }
+
+            // 功能开关（仅 Debug）
+            if (BuildConfig.DEBUG) {
+                item { Spacer(modifier = Modifier.height(16.dp)) }
+
+                item {
+                    Text(
+                        text = "功能开关",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                    )
+                }
+
+                item {
+                    SettingsCard {
+                        SettingsItem(
+                            icon = Icons.Outlined.Map,
+                            title = "GPX 文件导入",
+                            subtitle = if (uiState.isGpxImportEnabled) "已启用" else "已禁用",
+                            showDivider = false,
+                            trailingContent = {
+                                Switch(
+                                    checked = uiState.isGpxImportEnabled,
+                                    onCheckedChange = { viewModel.setGpxImportEnabled(it) }
+                                )
+                            }
                         )
                     }
                 }
