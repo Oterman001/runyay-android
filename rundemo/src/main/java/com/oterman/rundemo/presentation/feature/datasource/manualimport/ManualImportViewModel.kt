@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.fit.FitImportService
 import com.oterman.rundemo.data.fit.ZipFitExtractor
+import com.oterman.rundemo.data.gpx.GpxImportService
 import com.oterman.rundemo.data.repository.RunDataRepository
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.presentation.feature.home.FitImportResult
@@ -23,7 +24,8 @@ import kotlinx.coroutines.withContext
 class ManualImportViewModel(
     private val context: Context,
     private val repository: RunDataRepository,
-    private val fitImportService: FitImportService
+    private val fitImportService: FitImportService,
+    private val gpxImportService: GpxImportService
 ) : ViewModel() {
 
     companion object {
@@ -182,6 +184,84 @@ class ManualImportViewModel(
             // 导入完毕后清理临时解压文件
             withContext(Dispatchers.IO) {
                 ZipFitExtractor.cleanTempDir(context)
+            }
+
+            loadRecords()
+        }
+    }
+
+    fun importGpxFiles(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        RLog.i(TAG, "开始导入 ${uris.size} 个 GPX 文件")
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(isImporting = true, importProgress = "准备导入 ${uris.size} 个 GPX 文件...")
+            }
+
+            if (uris.size == 1) {
+                val uri = uris[0]
+                _uiState.update { it.copy(importProgress = "正在解析 GPX 文件...") }
+                val result = gpxImportService.importGpxFile(uri)
+                val importResult = when (result) {
+                    is FitImportResult.Success -> ManualImportResult.SingleSuccess(
+                        workoutId = result.workoutId ?: "",
+                        distance = result.distance,
+                        duration = result.duration
+                    )
+                    is FitImportResult.AlreadyExists -> ManualImportResult.SingleAlreadyExists
+                    is FitImportResult.ConflictFound -> {
+                        val forceResult = gpxImportService.importGpxFile(uri, forceImport = true)
+                        if (forceResult is FitImportResult.Success) {
+                            ManualImportResult.SingleSuccess(
+                                workoutId = forceResult.workoutId ?: "",
+                                distance = forceResult.distance,
+                                duration = forceResult.duration
+                            )
+                        } else {
+                            ManualImportResult.SingleError("导入失败（时间冲突）")
+                        }
+                    }
+                    is FitImportResult.Error -> ManualImportResult.SingleError(result.message)
+                    is FitImportResult.UploadFailed -> ManualImportResult.SingleError(result.message)
+                }
+                _uiState.update {
+                    it.copy(isImporting = false, importProgress = null, importResult = importResult)
+                }
+            } else {
+                var successCount = 0
+                var skipCount = 0
+                val failures = mutableListOf<Pair<String, String>>()
+
+                uris.forEachIndexed { index, uri ->
+                    val fileName = getFileName(uri) ?: uri.lastPathSegment ?: "文件${index + 1}"
+                    _uiState.update {
+                        it.copy(importProgress = "正在导入第 ${index + 1}/${uris.size} 个 GPX 文件...")
+                    }
+                    when (val result = gpxImportService.importGpxFile(uri)) {
+                        is FitImportResult.Success -> successCount++
+                        is FitImportResult.AlreadyExists -> skipCount++
+                        is FitImportResult.ConflictFound -> {
+                            val forceResult = gpxImportService.importGpxFile(uri, forceImport = true)
+                            if (forceResult is FitImportResult.Success) successCount++
+                            else failures.add(fileName to "时间冲突且强制导入失败")
+                        }
+                        is FitImportResult.Error -> failures.add(fileName to result.message)
+                        is FitImportResult.UploadFailed -> failures.add(fileName to result.message)
+                    }
+                }
+
+                _uiState.update {
+                    it.copy(
+                        isImporting = false,
+                        importProgress = null,
+                        importResult = ManualImportResult.BatchComplete(
+                            successCount = successCount,
+                            skipCount = skipCount,
+                            failures = failures
+                        )
+                    )
+                }
             }
 
             loadRecords()
