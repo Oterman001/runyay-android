@@ -88,6 +88,7 @@ import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
+import com.oterman.rundemo.data.repository.TokenRefreshManager
 import com.oterman.rundemo.data.repository.UserRepository
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -104,6 +105,18 @@ fun AppNavGraph(
     startDestination: String = Screen.Welcome.route,
     onThemeModeChanged: (ThemeMode) -> Unit = {}
 ) {
+    val context = LocalContext.current
+
+    // 全局监听 Token 作废事件：任何页面收到 0022 且 refreshToken 也失败时，
+    // 清空返回栈并跳转到登录页，避免用户停留在无效会话中
+    LaunchedEffect(Unit) {
+        TokenRefreshManager.getInstance(context).tokenExpiredEvent.collect {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination,

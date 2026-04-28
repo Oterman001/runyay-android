@@ -165,7 +165,7 @@ class TokenRefreshManager private constructor(
                 }
             } else {
                 RLog.w(TAG, "Token 刷新 API 失败: ${response.msg}")
-                if (preferencesManager.isTokenExpired()) {
+                if (response.code == "0022" || preferencesManager.isTokenExpired()) {
                     handleTokenExpired()
                 }
                 false

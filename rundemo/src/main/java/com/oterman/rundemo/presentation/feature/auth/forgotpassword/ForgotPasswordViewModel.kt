@@ -3,6 +3,7 @@ package com.oterman.rundemo.presentation.feature.auth.forgotpassword
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.repository.ResetPasswordException
 import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.util.RLog
@@ -21,7 +22,8 @@ import kotlinx.coroutines.launch
  */
 class ForgotPasswordViewModel(
     private val context: Context,
-    private val userRepository: UserRepository = UserRepository(context)
+    private val userRepository: UserRepository = UserRepository(context),
+    private val preferencesManager: PreferencesManager = PreferencesManager(context)
 ) : ViewModel() {
 
     companion object {
@@ -181,6 +183,11 @@ class ForgotPasswordViewModel(
             
             result.onSuccess { response ->
                 RLog.i(TAG, "验证码验证成功: userId=${response.userId}")
+                
+                // resetPassword 会使旧 Token 在服务端作废并返回新 Token；
+                // 立即写入 PreferencesManager，确保 AuthInterceptor 对后续 setPassword 使用新 Token
+                preferencesManager.saveUserToken(response.token ?: "")
+                preferencesManager.saveUserId(response.userId ?: "")
                 
                 _uiState.update { it.copy(
                     isLoading = false,
