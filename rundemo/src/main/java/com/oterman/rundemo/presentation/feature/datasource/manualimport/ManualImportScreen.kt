@@ -170,6 +170,7 @@ fun ManualImportScreen(
             item {
                 ImportEntryCard(
                     isImporting = uiState.isImporting,
+                    isGpxEnabled = uiState.isGpxEnabled,
                     onImportClick = {
                         if (uiState.isGpxEnabled) {
                             showFormatSheet = true
@@ -184,6 +185,7 @@ fun ManualImportScreen(
             // 支持格式说明 Banner
             item {
                 FileFormatInfoBanner(
+                    isGpxEnabled = uiState.isGpxEnabled,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
             }
@@ -252,6 +254,7 @@ fun ManualImportScreen(
 @Composable
 private fun ImportEntryCard(
     isImporting: Boolean,
+    isGpxEnabled: Boolean,
     onImportClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -281,12 +284,13 @@ private fun ImportEntryCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "导入运动文件",
+                    text = if (isGpxEnabled) "导入运动文件" else "导入 FIT 文件",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "支持 FIT、GPX 等格式，可同时选择多个文件",
+                    text = if (isGpxEnabled) "支持 FIT、GPX 等格式，可同时选择多个文件"
+                           else "支持 FIT 格式，可同时选择多个文件",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -317,7 +321,7 @@ private fun ImportEntryCard(
  * 支持文件格式与大小限制说明 Banner（可展开/折叠）
  */
 @Composable
-private fun FileFormatInfoBanner(modifier: Modifier = Modifier) {
+private fun FileFormatInfoBanner(isGpxEnabled: Boolean, modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
 
     Column(
@@ -362,12 +366,12 @@ private fun FileFormatInfoBanner(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(8.dp))
 
             // 格式列表
-            val formats = listOf(
-                ".fit" to "单个 FIT 运动文件",
-                ".zip" to "ZIP 压缩包（可包含多个 .fit 文件）",
-                ".fit.gz" to "GZ 压缩的单个 FIT 文件",
-                ".gpx" to "GPX 通用 GPS 轨迹文件（支持心率/步频扩展）"
-            )
+            val formats = buildList {
+                add(".fit" to "单个 FIT 运动文件")
+                add(".zip" to "ZIP 压缩包（可包含多个 .fit 文件）")
+                add(".fit.gz" to "GZ 压缩的单个 FIT 文件")
+                if (isGpxEnabled) add(".gpx" to "GPX 通用 GPS 轨迹文件（支持心率/步频扩展）")
+            }
             formats.forEach { (ext, desc) ->
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -418,7 +422,8 @@ private fun FileFormatInfoBanner(modifier: Modifier = Modifier) {
         } else {
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "支持 .fit、.zip、.fit.gz、.gpx，可同时选择多个",
+                text = if (isGpxEnabled) "支持 .fit、.zip、.fit.gz、.gpx，可同时选择多个"
+                       else "支持 .fit、.zip、.fit.gz，可同时选择多个",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
                 modifier = Modifier.padding(start = 26.dp)
