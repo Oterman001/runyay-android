@@ -40,6 +40,7 @@ import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.util.RLog
 import java.util.Calendar
 import java.util.Date
+import java.util.TimeZone
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -457,8 +458,8 @@ class DashboardTabViewModel(
         val latest = allRecords.maxByOrNull { it.startTime } ?: return null
         return LatestRunRecord(
             workoutId = latest.workoutId,
-            runDate = formatRunDate(latest.startTime),
-            startEndTime = formatStartEndTime(latest.startTime, latest.endTime),
+            runDate = formatRunDate(latest.startTime, latest.activityTimeZone),
+            startEndTime = formatStartEndTime(latest.startTime, latest.endTime, latest.activityTimeZone),
             totalDistance = latest.totalDistance,
             duration = formatDuration(latest.activeDuration),
             avgPace = formatPace(latest.averageSpeed),
@@ -668,8 +669,8 @@ class DashboardTabViewModel(
     /**
      * Format run date like "2月8日 周六"
      */
-    private fun formatRunDate(timestamp: Long): String {
-        val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
+    private fun formatRunDate(timestamp: Long, activityTimeZone: String? = null): String {
+        val calendar = Calendar.getInstance(resolveTimeZone(activityTimeZone)).apply { timeInMillis = timestamp }
         val month = calendar.get(Calendar.MONTH) + 1
         val day = calendar.get(Calendar.DAY_OF_MONTH)
         val weekDay = when (calendar.get(Calendar.DAY_OF_WEEK)) {
@@ -688,9 +689,19 @@ class DashboardTabViewModel(
     /**
      * Format start and end time like "06:30-07:15"
      */
-    private fun formatStartEndTime(startTime: Long, endTime: Long): String {
-        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+    private fun formatStartEndTime(startTime: Long, endTime: Long, activityTimeZone: String? = null): String {
+        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault()).apply {
+            timeZone = resolveTimeZone(activityTimeZone)
+        }
         return "${sdf.format(Date(startTime))}-${sdf.format(Date(endTime))}"
+    }
+
+    private fun resolveTimeZone(activityTimeZone: String?): TimeZone {
+        return if (activityTimeZone.isNullOrBlank()) {
+            TimeZone.getDefault()
+        } else {
+            TimeZone.getTimeZone(activityTimeZone)
+        }
     }
 
     /**

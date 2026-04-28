@@ -44,7 +44,7 @@ import com.oterman.rundemo.data.local.entity.RunningShoeEntity
         DailyHealthEntity::class,
         RunningShoeEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -126,6 +126,12 @@ abstract class RunDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE run_record ADD COLUMN activityTimeZone TEXT")
+            }
+        }
+
         /**
          * 获取数据库单例
          */
@@ -136,7 +142,7 @@ abstract class RunDatabase : RoomDatabase() {
                     RunDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
@@ -145,4 +151,3 @@ abstract class RunDatabase : RoomDatabase() {
         }
     }
 }
-

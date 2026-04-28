@@ -163,6 +163,12 @@ dependencies {
     // Garmin FIT SDK
     implementation("com.garmin:fit:21.171.0")
 
+    // Offline latitude/longitude -> IANA timezone lookup for imported FIT activities
+    implementation("net.iakovlev:timeshape:2025b.28") {
+        exclude(group = "com.github.luben", module = "zstd-jni")
+    }
+    implementation("com.github.luben:zstd-jni:1.5.5-11@aar")
+
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
 

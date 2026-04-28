@@ -77,6 +77,7 @@ class FitRecordProcessor(
         userConfig: UserPhysiologyConfig = DEFAULT_CONFIG,
         deviceInfo: String? = null,
         workoutIdFileName: String? = null,
+        activityTimeZone: String? = null,
         skipOverallVdot: Boolean = false
     ): FitProcessResult? {
         RLog.i(TAG, "========== 开始处理FIT数据 ==========")
@@ -93,6 +94,7 @@ class FitRecordProcessor(
         runRecord = runRecord.copy(
             datasource = datasource,
             originId = originId,
+            activityTimeZone = activityTimeZone ?: FitActivityTimeZoneResolver.resolve(parseResult),
             deviceInfo = deviceInfo ?: runRecord.deviceInfo
         )
 

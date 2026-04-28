@@ -72,6 +72,7 @@ import com.oterman.rundemo.ui.theme.RunYayFontFamily4
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * Data tab content with iOS-style NavigationTitle effect
@@ -460,9 +461,9 @@ private fun EmptyStateView(onBindDevice: () -> Unit) {
 /**
  * 格式化日期显示（完整格式）
  */
-fun formatDate(timestamp: Long): String {
+fun formatDate(timestamp: Long, activityTimeZone: String? = null): String {
     val date = Date(timestamp)
-    val format = SimpleDateFormat("yyyy年M月d日 EEEE HH:mm", Locale.CHINESE)
+    val format = SimpleDateFormat("yyyy年M月d日 EEEE HH:mm", Locale.CHINESE).withActivityTimeZone(activityTimeZone)
     return format.format(date)
 }
 
@@ -470,11 +471,11 @@ fun formatDate(timestamp: Long): String {
  * 格式化日期显示（紧凑格式）
  * 参考iOS: MM月dd日 HH:mm-HH:mm
  */
-fun formatDateCompact(startTime: Long, endTime: Long): String {
+fun formatDateCompact(startTime: Long, endTime: Long, activityTimeZone: String? = null): String {
     val startDate = Date(startTime)
     val endDate = Date(endTime)
-    val dateFormat = SimpleDateFormat("M月d日", Locale.CHINESE)
-    val timeFormat = SimpleDateFormat("HH:mm", Locale.CHINESE)
+    val dateFormat = SimpleDateFormat("M月d日", Locale.CHINESE).withActivityTimeZone(activityTimeZone)
+    val timeFormat = SimpleDateFormat("HH:mm", Locale.CHINESE).withActivityTimeZone(activityTimeZone)
     return "${dateFormat.format(startDate)} ${timeFormat.format(startDate)}-${timeFormat.format(endDate)}"
 }
 
@@ -482,13 +483,20 @@ fun formatDateCompact(startTime: Long, endTime: Long): String {
  * 格式化日期显示（带周几）
  * 示例: 2月28日 08:30 周六
  */
-fun formatDateWithWeekday(startTime: Long): String {
+fun formatDateWithWeekday(startTime: Long, activityTimeZone: String? = null): String {
     val date = Date(startTime)
-    val dateTimeFormat = SimpleDateFormat("M月d日 HH:mm", Locale.CHINESE)
-    val weekdayFormat = SimpleDateFormat("EEEE", Locale.CHINESE)
+    val dateTimeFormat = SimpleDateFormat("M月d日 HH:mm", Locale.CHINESE).withActivityTimeZone(activityTimeZone)
+    val weekdayFormat = SimpleDateFormat("EEEE", Locale.CHINESE).withActivityTimeZone(activityTimeZone)
     val weekdayFull = weekdayFormat.format(date) // e.g. 星期六
     val weekdayShort = weekdayFull.replace("星期", "周") // e.g. 周六
     return "${dateTimeFormat.format(date)} $weekdayShort"
+}
+
+private fun SimpleDateFormat.withActivityTimeZone(activityTimeZone: String?): SimpleDateFormat {
+    if (!activityTimeZone.isNullOrBlank()) {
+        timeZone = TimeZone.getTimeZone(activityTimeZone)
+    }
+    return this
 }
 
 /**

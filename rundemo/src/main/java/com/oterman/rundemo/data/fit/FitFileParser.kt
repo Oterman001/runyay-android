@@ -2,6 +2,7 @@ package com.oterman.rundemo.data.fit
 
 import android.content.Context
 import android.net.Uri
+import com.garmin.fit.ActivityMesgListener
 import com.garmin.fit.Decode
 import com.garmin.fit.DeviceInfoMesgListener
 import com.garmin.fit.EventMesgListener
@@ -19,6 +20,7 @@ import java.io.InputStream
  */
 data class FitParseResult(
     val fileId: FitFileId?,
+    val activity: FitActivity?,
     val session: FitSession?,
     val laps: List<FitLap>,
     val records: List<FitRecord>,
@@ -35,6 +37,14 @@ data class FitFileId(
     val product: Int?,
     val serialNumber: Long?,
     val timeCreated: Long?
+)
+
+/**
+ * Activity级元数据
+ */
+data class FitActivity(
+    val timestamp: Long?,
+    val localTimestamp: Long?
 )
 
 /**
@@ -190,6 +200,7 @@ class FitFileParser(private val context: Context) {
             
             // 数据收集器
             var fileId: FitFileId? = null
+            var activity: FitActivity? = null
             var session: FitSession? = null
             var deviceInfo: FitDeviceInfo? = null
             val laps = mutableListOf<FitLap>()
@@ -204,6 +215,14 @@ class FitFileParser(private val context: Context) {
                     product = mesg.product,
                     serialNumber = mesg.serialNumber,
                     timeCreated = mesg.timeCreated?.timestamp
+                )
+            })
+
+            // 监听Activity消息（部分设备会提供本地时间戳）
+            mesgBroadcaster.addListener(ActivityMesgListener { mesg ->
+                activity = FitActivity(
+                    timestamp = mesg.timestamp?.timestamp,
+                    localTimestamp = mesg.localTimestamp
                 )
             })
             
@@ -307,6 +326,7 @@ class FitFileParser(private val context: Context) {
             
             return FitParseResult(
                 fileId = fileId,
+                activity = activity,
                 session = session,
                 laps = laps,
                 records = records,
@@ -356,6 +376,7 @@ class FitFileParser(private val context: Context) {
         
         // 数据收集器
         var fileId: FitFileId? = null
+        var activity: FitActivity? = null
         var session: FitSession? = null
         var deviceInfo: FitDeviceInfo? = null
         val laps = mutableListOf<FitLap>()
@@ -370,6 +391,14 @@ class FitFileParser(private val context: Context) {
                 product = mesg.product,
                 serialNumber = mesg.serialNumber,
                 timeCreated = mesg.timeCreated?.timestamp
+            )
+        })
+
+        // 监听Activity消息（部分设备会提供本地时间戳）
+        mesgBroadcaster.addListener(ActivityMesgListener { mesg ->
+            activity = FitActivity(
+                timestamp = mesg.timestamp?.timestamp,
+                localTimestamp = mesg.localTimestamp
             )
         })
         
@@ -473,6 +502,7 @@ class FitFileParser(private val context: Context) {
         
         return FitParseResult(
             fileId = fileId,
+            activity = activity,
             session = session,
             laps = laps,
             records = records,
@@ -490,4 +520,3 @@ class FitFileParser(private val context: Context) {
         }
     }
 }
-

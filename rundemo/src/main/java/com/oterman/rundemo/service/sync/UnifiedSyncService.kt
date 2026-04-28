@@ -1,6 +1,7 @@
 package com.oterman.rundemo.service.sync
 
 import com.oterman.rundemo.data.fit.FitFileParser
+import com.oterman.rundemo.data.fit.FitActivityTimeZoneResolver
 import com.oterman.rundemo.data.fit.InclusiveLevelResolver
 import com.oterman.rundemo.data.fit.RunSummaryMapper
 import com.oterman.rundemo.data.fit.RunSummaryMerger
@@ -174,6 +175,7 @@ class UnifiedSyncService(
         val serverRunSummary = unifiedFileInfoCache[fileInfo.summaryId]?.runSummary
         val summaryRestHR = serverRunSummary?.restingHeartRate
         val summaryVo2Max = serverRunSummary?.vo2Max
+        val activityTimeZone = FitActivityTimeZoneResolver.resolve(parseResult)
 
         val userConfig: UserPhysiologyConfig
         val settings = preferencesManager?.getHearRateZoneSettings()
@@ -196,7 +198,7 @@ class UnifiedSyncService(
                 restHR = summaryRestHR.toDouble(),
                 isMale = settings?.isMale ?: true
             )
-            saveHealthDataFromSummary(parseResult, summaryRestHR, summaryVo2Max)
+            saveHealthDataFromSummary(parseResult, summaryRestHR, summaryVo2Max, activityTimeZone)
         } else if (isHKPlatform || isManualPlatform) {
             // HK/MANUAL平台 → 不触发网络请求，使用用户设置兜底
             RLog.i(logTag, "${targetPlatform.displayName}平台跳过健康数据网络请求，使用用户设置")
@@ -209,12 +211,12 @@ class UnifiedSyncService(
             } ?: UserPhysiologyConfig()
         } else {
             // 其他情况 → 走 buildUserConfig 流程（可能触发网络请求，内部已包含用户设置兜底）
-            userConfig = buildUserConfig(parseResult.session?.startTime)
+            userConfig = buildUserConfig(parseResult.session?.startTime, activityTimeZone)
         }
 
         // 同时存储有效的vo2Max（即使restHR无效，vo2Max可能有效）
         if (summaryVo2Max != null && summaryVo2Max > 0 && (summaryRestHR == null || summaryRestHR <= 0)) {
-            saveHealthDataFromSummary(parseResult, null, summaryVo2Max)
+            saveHealthDataFromSummary(parseResult, null, summaryVo2Max, activityTimeZone)
         }
 
         // Step 3: 使用FitRecordProcessor处理
@@ -224,6 +226,7 @@ class UnifiedSyncService(
             datasource = fileInfo.platformCode,
             userConfig = userConfig,
             deviceInfo = fileInfo.deviceName,
+            activityTimeZone = activityTimeZone,
             skipOverallVdot = true
         ) ?: return null
 
@@ -271,7 +274,7 @@ class UnifiedSyncService(
             runDate = Date(resolvedRecord.startTime),
             distance = resolvedRecord.totalDistance,
             duration = resolvedRecord.activeDuration,
-            displayText = formatDisplayText(resolvedRecord.startTime, resolvedRecord.totalDistance)
+            displayText = formatDisplayText(resolvedRecord.startTime, resolvedRecord.totalDistance, resolvedRecord.activityTimeZone)
         )
     }
 
@@ -322,11 +325,14 @@ class UnifiedSyncService(
     private suspend fun saveHealthDataFromSummary(
         parseResult: FitParseResult,
         restingHeartRate: Int?,
-        vo2Max: Double?
+        vo2Max: Double?,
+        activityTimeZone: String? = null
     ) {
         if (healthRepository == null) return
         val startTimeMs = parseResult.session?.startTime ?: return
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+            timeZone = FitActivityTimeZoneResolver.toTimeZone(activityTimeZone)
+        }
         val calendarDate = dateFormat.format(Date(FitFileParser.fitTimestampToMillis(startTimeMs)))
         healthRepository.saveHealthDataFromSummary(
             platformCode = targetPlatform.code,

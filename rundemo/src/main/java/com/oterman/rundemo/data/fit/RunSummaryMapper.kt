@@ -7,7 +7,6 @@ import com.oterman.rundemo.data.network.dto.request.RunRecordUploadItemDto
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 /**
  * RunRecordEntity <-> RunSummaryBasicInfoDto 双向映射
@@ -36,13 +35,14 @@ object RunSummaryMapper {
         settings: HearRateZoneSettings? = null
     ): RunRecordUploadItemDto {
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault())
-        sdf.timeZone = TimeZone.getDefault()
+        val activityTimeZone = FitActivityTimeZoneResolver.toTimeZone(entity.activityTimeZone)
+        sdf.timeZone = activityTimeZone
         return RunRecordUploadItemDto(
             hkUUid = entity.workoutId,
             deviceVersion = entity.deviceVersion,
             deviceInfo = entity.deviceInfo,
             deviceName = entity.deviceInfo,
-            timezone = TimeZone.getDefault().id,
+            timezone = activityTimeZone.id,
             startTime = sdf.format(Date(entity.startTime)),
             endTime = sdf.format(Date(entity.endTime)),
             duration = entity.duration * 60.0,

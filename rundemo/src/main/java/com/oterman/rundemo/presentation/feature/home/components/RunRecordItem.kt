@@ -93,7 +93,7 @@ fun RunRecordItem(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = formatDateWithWeekday(record.startTime),
+                        text = formatDateWithWeekday(record.startTime, record.activityTimeZone),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

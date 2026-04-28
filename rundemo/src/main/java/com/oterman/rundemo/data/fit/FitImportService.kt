@@ -139,7 +139,8 @@ class FitImportService(private val context: Context) {
             }
 
             // 5. 使用 FitRecordProcessor 处理（不保存）
-            val userConfig = buildUserConfig(parseResult.session?.startTime)
+            val activityTimeZone = FitActivityTimeZoneResolver.resolve(parseResult)
+            val userConfig = buildUserConfig(parseResult.session?.startTime, activityTimeZone)
             maybeUpdateMaxHR(parseResult.session?.maxHeartRate?.toDouble() ?: 0.0)
 
             var processResult = fitRecordProcessor.processFitData(
@@ -147,6 +148,7 @@ class FitImportService(private val context: Context) {
                 originId = originId,
                 datasource = FitDataConverter.Datasource.MANUAL,
                 userConfig = userConfig,
+                activityTimeZone = activityTimeZone,
                 workoutIdFileName = fileName
             ) ?: run {
                 RLog.e(TAG, "数据处理失败")
@@ -192,7 +194,7 @@ class FitImportService(private val context: Context) {
 
             // 9. 上传FIT文件
             val activityType = if (runRecord.outdoor == 1) "ir" else "or"
-            val activityStartTime = formatActivityStartTime(runRecord.startTime)
+            val activityStartTime = formatActivityStartTime(runRecord.startTime, runRecord.activityTimeZone)
             val fitUploadResult = remoteRepository.uploadFitFile(
                 workoutId = runRecord.workoutId,
                 fileBytes = fileBytes,
@@ -234,7 +236,7 @@ class FitImportService(private val context: Context) {
      * 构建用户生理参数配置
      * 优先级：isAutoSyncEnabled=false → 用户手动设置；isAutoSyncEnabled=true → DB查询当日/最近静息心率 → 用户设置兜底
      */
-    private suspend fun buildUserConfig(startTimeMs: Long?): UserPhysiologyConfig {
+    private suspend fun buildUserConfig(startTimeMs: Long?, activityTimeZone: String? = null): UserPhysiologyConfig {
         val settings = preferencesManager.getHearRateZoneSettings()
 
         if (!settings.isAutoSyncEnabled) {
@@ -249,7 +251,9 @@ class FitImportService(private val context: Context) {
         if (startTimeMs != null && startTimeMs > 0) {
             try {
                 val repo = healthRepository ?: return defaultConfig(settings)
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                    timeZone = FitActivityTimeZoneResolver.toTimeZone(activityTimeZone)
+                }
                 val calendarDate = dateFormat.format(Date(FitFileParser.fitTimestampToMillis(startTimeMs)))
                 val restHR = repo.getRestingHRForDate(calendarDate)
                 if (restHR != null && restHR > 0) {
@@ -306,8 +310,10 @@ class FitImportService(private val context: Context) {
         }
     }
 
-    private fun formatActivityStartTime(startTimeMs: Long): String {
-        return SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(Date(startTimeMs))
+    private fun formatActivityStartTime(startTimeMs: Long, activityTimeZone: String?): String {
+        return SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).apply {
+            timeZone = FitActivityTimeZoneResolver.toTimeZone(activityTimeZone)
+        }.format(Date(startTimeMs))
     }
 
 }

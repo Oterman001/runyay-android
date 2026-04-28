@@ -19,6 +19,7 @@ data class RunRecordEntity(
     // 基本信息
     val startTime: Long,                // 开始时间戳(ms)
     val endTime: Long,                  // 结束时间戳(ms)
+    val activityTimeZone: String? = null, // 运动发生地时区(IANA ID, e.g. Europe/Belgrade)
     val duration: Double = 0.0,         // 总时长(分钟)
     val activeDuration: Double = 0.0,   // 运动时长(分钟)
     val totalDistance: Double = 0.0,    // 总距离(公里)
@@ -91,4 +92,3 @@ data class RunRecordEntity(
     // 用户隔离
     val userId: String = ""                 // 所属用户ID
 )
-

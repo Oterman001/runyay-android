@@ -1,6 +1,7 @@
 package com.oterman.rundemo.service.sync
 
 import com.oterman.rundemo.data.fit.FitFileParser
+import com.oterman.rundemo.data.fit.FitActivityTimeZoneResolver
 import com.oterman.rundemo.data.fit.FitRecordProcessor
 import com.oterman.rundemo.data.fit.UserPhysiologyConfig
 import com.oterman.rundemo.data.local.DataSourcePreferences
@@ -380,13 +381,15 @@ abstract class BaseDataSyncService(
 
         RLog.d(logTag, "FIT文件解析成功: ${fileInfo.summaryId}")
 
-        val userConfig = buildUserConfig(parseResult.session?.startTime)
+        val activityTimeZone = FitActivityTimeZoneResolver.resolve(parseResult)
+        val userConfig = buildUserConfig(parseResult.session?.startTime, activityTimeZone)
 
         val processResult = fitRecordProcessor.processFitData(
             parseResult = parseResult,
             originId = fileInfo.summaryId,
             datasource = fileInfo.platformCode,
             userConfig = userConfig,
+            activityTimeZone = activityTimeZone,
             deviceInfo = fileInfo.deviceName
         ) ?: return null
 
@@ -407,7 +410,7 @@ abstract class BaseDataSyncService(
      * 构建用户生理参数配置
      * 优先级：isAutoSyncEnabled=false → 用户手动设置；isAutoSyncEnabled=true → 健康API → 用户设置兜底
      */
-    protected suspend fun buildUserConfig(startTimeMs: Long?): UserPhysiologyConfig {
+    protected suspend fun buildUserConfig(startTimeMs: Long?, activityTimeZone: String? = null): UserPhysiologyConfig {
         val settings = preferencesManager?.getHearRateZoneSettings()
 
         if (settings != null && !settings.isAutoSyncEnabled) {
@@ -421,7 +424,9 @@ abstract class BaseDataSyncService(
 
         if (healthRepository != null && startTimeMs != null && startTimeMs > 0) {
             try {
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                    timeZone = FitActivityTimeZoneResolver.toTimeZone(activityTimeZone)
+                }
                 val calendarDate = dateFormat.format(Date(FitFileParser.fitTimestampToMillis(startTimeMs)))
                 val restHR = healthRepository.fetchAndGetRestingHR(platform, calendarDate)
                 if (restHR != null && restHR > 0) {
@@ -475,8 +480,10 @@ abstract class BaseDataSyncService(
     /**
      * 格式化显示文本
      */
-    protected fun formatDisplayText(startTime: Long, distance: Double): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    protected fun formatDisplayText(startTime: Long, distance: Double, activityTimeZone: String? = null): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+            timeZone = FitActivityTimeZoneResolver.toTimeZone(activityTimeZone)
+        }
         val dateStr = dateFormat.format(Date(startTime))
         val distanceStr = String.format(Locale.getDefault(), "%.1f", distance)
         return "已导入记录 $dateStr ${distanceStr}KM"
