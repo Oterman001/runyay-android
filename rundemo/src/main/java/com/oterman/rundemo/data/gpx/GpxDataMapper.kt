@@ -116,7 +116,8 @@ object GpxDataMapper {
             laps = emptyList(),
             records = records,
             events = emptyList(),
-            deviceInfo = null
+            deviceInfo = null,
+            activity = null
         )
     }
 

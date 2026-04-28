@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
@@ -377,10 +377,15 @@ private fun HomeBottomNavigationBar(
     )
 
     Column(
-        modifier = Modifier.background(NavigationBarDefaults.containerColor)
+        modifier = Modifier.background(MaterialTheme.colorScheme.background)
     ) {
+        HorizontalDivider(
+            color = RunTheme.colorScheme.divider,
+            thickness = 0.5.dp
+        )
         NavigationBar(
             modifier = Modifier.height(56.dp),
+            containerColor = MaterialTheme.colorScheme.background,
             windowInsets = WindowInsets(0, 0, 0, 0)
         ) {
         NavigationBarItem(
