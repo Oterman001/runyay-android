@@ -17,10 +17,14 @@ import okio.Buffer
  *
  * 并发安全：发请求前先等待进行中的 Token 刷新完成，
  * 确保所有请求拿到最新 token 之后再发出。
+ *
+ * Token 自动续期：服务端在 Token 快要过期时会在响应头中返回新 Token（x-new-token），
+ * 拦截器检测到后会通过 onNewToken 回调通知调用方更新本地存储。
  */
 class AuthInterceptor(
     private val tokenProvider: () -> String?,
-    private val tokenRefreshManagerProvider: (() -> TokenRefreshManager?)? = null
+    private val tokenRefreshManagerProvider: (() -> TokenRefreshManager?)? = null,
+    private val onNewToken: ((String) -> Unit)? = null
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -53,7 +57,15 @@ class AuthInterceptor(
         }
         val request = builder.build()
 
-        return chain.proceed(request)
+        val response = chain.proceed(request)
+
+        // 检查服务端下发的新 Token（Token 即将过期时服务端会在响应头中返回新 Token）
+        val newToken = response.header("x-new-token")
+        if (!newToken.isNullOrEmpty()) {
+            onNewToken?.invoke(newToken)
+        }
+
+        return response
     }
 
     private fun rebuildBodyWithNewToken(originalBody: RequestBody?, newToken: String): RequestBody? {

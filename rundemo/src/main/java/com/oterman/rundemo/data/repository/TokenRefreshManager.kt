@@ -62,41 +62,13 @@ class TokenRefreshManager private constructor(
     val tokenExpiredEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     /**
-     * 每日刷新入口（在 HomeViewModel.init 中调用）
+     * 每日刷新入口（已停用）
      *
-     * 跳过条件：
-     * - 今天已经刷新过
-     * - 今天刚登录（登录时已获得最新 token）
-     * - 用户未登录
+     * Token 续期改为由服务端在响应头 x-new-token 中主动下发，
+     * 客户端在 AuthInterceptor 中被动接收，不再主动发起每日刷新请求。
      */
     suspend fun performDailyTokenRefreshIfNeeded() {
-        if (!preferencesManager.isUserLoggedIn()) {
-            RLog.d(TAG, "用户未登录，跳过每日刷新")
-            return
-        }
-
-        val today = LocalDate.now().toString()
-
-        val lastRefreshDate = preferencesManager.getLastDailyRefreshDate()
-        if (lastRefreshDate == today) {
-            RLog.d(TAG, "今日已刷新过 Token，跳过 ($today)")
-            return
-        }
-
-        val lastLoginDate = preferencesManager.getLastLoginDate()
-        if (lastLoginDate == today) {
-            RLog.d(TAG, "今日登录，Token 为最新，跳过每日刷新")
-            return
-        }
-
-        RLog.i(TAG, "触发每日 Token 刷新")
-        val success = refreshTokenIfNeeded()
-        if (success) {
-            preferencesManager.saveLastDailyRefreshDate(today)
-            RLog.i(TAG, "每日 Token 刷新成功，已记录日期: $today")
-        } else {
-            RLog.w(TAG, "每日 Token 刷新失败，下次启动将重试")
-        }
+        RLog.d(TAG, "每日主动刷新已停用，Token 由服务端通过响应头下发")
     }
 
     /**

@@ -74,6 +74,12 @@ class MainActivity : ComponentActivity() {
         }
         RetrofitClient.setContext(this)
 
+        // 注册服务端 Token 续期回调（服务端通过响应头 x-new-token 下发新 Token 时更新本地存储）
+        RetrofitClient.setOnNewTokenCallback { newToken ->
+            RLog.i(TAG, "🔄 收到服务端新Token，更新本地存储")
+            preferencesManager.saveUserToken(newToken)
+        }
+
         // 初始化跑步数据仓库的userId
         initRunDataUserId()
 

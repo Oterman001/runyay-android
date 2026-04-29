@@ -29,6 +29,7 @@ object RetrofitClient {
 
     private var tokenProvider: (() -> String?)? = null
     private var appContext: Context? = null
+    private var onNewTokenCallback: ((String) -> Unit)? = null
 
     /**
      * 设置token提供者
@@ -42,6 +43,13 @@ object RetrofitClient {
      */
     fun setContext(context: Context) {
         appContext = context.applicationContext
+    }
+
+    /**
+     * 设置新 Token 回调（服务端通过响应头 x-new-token 下发新 Token 时触发）
+     */
+    fun setOnNewTokenCallback(callback: (String) -> Unit) {
+        onNewTokenCallback = callback
     }
 
     private val tokenRefreshManager: TokenRefreshManager?
@@ -75,7 +83,8 @@ object RetrofitClient {
             .addInterceptor(TokenRefreshRetryInterceptor { tokenRefreshManager })
             .addInterceptor(AuthInterceptor(
                 tokenProvider = { tokenProvider?.invoke() },
-                tokenRefreshManagerProvider = { tokenRefreshManager }
+                tokenRefreshManagerProvider = { tokenRefreshManager },
+                onNewToken = { newToken -> onNewTokenCallback?.invoke(newToken) }
             ))
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
