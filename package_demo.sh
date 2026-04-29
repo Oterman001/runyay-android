@@ -19,6 +19,20 @@ echo "  DemoHub 打包脚本"
 echo "  日期: $DATE"
 echo "========================================"
 
+# 步骤 0：清理 assets 中已有的 DemoHub 压缩包
+echo ""
+echo "[0/5] 检查并清理 assets 中的旧 DemoHub 压缩包..."
+OLD_ZIPS=("$ASSETS_DIR"/DemoHub_*.zip)
+if [ -e "${OLD_ZIPS[0]}" ]; then
+    for f in "${OLD_ZIPS[@]}"; do
+        echo "  删除: $f"
+        rm -f "$f"
+    done
+    echo "  清理完成"
+else
+    echo "  无旧压缩包，跳过"
+fi
+
 # 步骤 1：执行 Gradle clean
 echo ""
 echo "[1/5] 执行 Gradle clean..."

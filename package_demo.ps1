@@ -18,6 +18,20 @@ Write-Host "  DemoHub 打包脚本"
 Write-Host "  日期: $Date"
 Write-Host "========================================"
 
+# 步骤 0：清理 assets 中已有的 DemoHub 压缩包
+Write-Host ""
+Write-Host "[0/5] 检查并清理 assets 中的旧 DemoHub 压缩包..."
+$OldZips = Get-ChildItem -Path $AssetsDir -Filter "DemoHub_*.zip" -ErrorAction SilentlyContinue
+if ($OldZips) {
+    foreach ($z in $OldZips) {
+        Write-Host "  删除: $($z.FullName)"
+        Remove-Item -Force $z.FullName
+    }
+    Write-Host "  清理完成"
+} else {
+    Write-Host "  无旧压缩包，跳过"
+}
+
 # 步骤 1：执行 Gradle clean
 Write-Host ""
 Write-Host "[1/5] 执行 Gradle clean..."
