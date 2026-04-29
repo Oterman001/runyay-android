@@ -1,4 +1,4 @@
-# 打包脚本 - Windows (PowerShell)
+﻿# 打包脚本 - Windows (PowerShell)
 # 步骤：clean -> 复制目录 -> 删除 zrun -> 压缩 -> 拷贝到 assets
 # 使用方式：右键 -> 用 PowerShell 运行，或在 PowerShell 中执行 .\package_demo.ps1
 
@@ -33,8 +33,9 @@ if (Test-Path $CopyDir) {
     Write-Host "  目标目录已存在，先删除旧的..."
     Remove-Item -Recurse -Force $CopyDir
 }
-Copy-Item -Recurse $ProjectDir $CopyDir
-Write-Host "  复制完成"
+robocopy $ProjectDir $CopyDir /E /XD ".cursor" ".gradle" ".idea" ".kotlin" /NP /NFL /NDL | Out-Null
+if ($LASTEXITCODE -ge 8) { throw "目录复制失败，退出码: $LASTEXITCODE" }
+Write-Host "  复制完成（已排除 .cursor .gradle .idea .kotlin）"
 
 # 步骤 3：删除副本中的 zrun 目录
 Write-Host ""
