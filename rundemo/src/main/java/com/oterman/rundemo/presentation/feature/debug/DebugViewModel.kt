@@ -21,7 +21,7 @@ import kotlinx.coroutines.withContext
 data class DebugUiState(
     val isClearingThumbnailCache: Boolean = false,
     val assetFiles: List<String> = emptyList(),
-    val isGpxImportEnabled: Boolean = true
+    val isGpxImportEnabled: Boolean = false
 )
 
 /**

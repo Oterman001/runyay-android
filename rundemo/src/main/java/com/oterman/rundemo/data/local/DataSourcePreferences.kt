@@ -434,7 +434,7 @@ class DataSourcePreferences(context: Context) {
     // ============ Debug功能开关 ============
 
     fun isGpxImportEnabled(): Boolean =
-        prefs.getBoolean(KEY_DEBUG_GPX_IMPORT_ENABLED, true)
+        prefs.getBoolean(KEY_DEBUG_GPX_IMPORT_ENABLED, false)
 
     fun setGpxImportEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_DEBUG_GPX_IMPORT_ENABLED, enabled).apply()
