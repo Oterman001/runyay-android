@@ -2,15 +2,21 @@ package com.oterman.rundemo.presentation.feature.share
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.ui.theme.ComopseDemoHubTheme
+import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.util.RLog
 
 /**
@@ -60,7 +66,23 @@ class ShareActivity : ComponentActivity() {
         val segmentGroupSize = intent.getIntExtra(EXTRA_SEGMENT_GROUP_SIZE, 1)
 
         setContent {
-            ComopseDemoHubTheme {
+            val preferencesManager = PreferencesManager(this)
+            val darkTheme = when (preferencesManager.getThemeMode()) {
+                ThemeMode.DARK -> true
+                ThemeMode.LIGHT -> false
+                ThemeMode.AUTO -> isSystemInDarkTheme()
+            }
+
+            LaunchedEffect(darkTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = if (darkTheme) SystemBarStyle.dark(Color.TRANSPARENT)
+                    else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+                    navigationBarStyle = if (darkTheme) SystemBarStyle.dark(Color.TRANSPARENT)
+                    else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                )
+            }
+
+            ComopseDemoHubTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

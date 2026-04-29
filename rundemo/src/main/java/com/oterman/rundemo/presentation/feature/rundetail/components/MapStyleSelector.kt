@@ -43,7 +43,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.domain.map.MapProvider
 import com.oterman.rundemo.domain.map.MapStyleInfo
 import com.oterman.rundemo.domain.map.TrackMapRenderer
@@ -146,6 +148,17 @@ fun RunMapSettingBottomSheet(
     val isDarkTheme = RunTheme.isDark
     val styles = renderer.getAvailableStyles(isDarkTheme)
 
+    // 根据登录账号过滤地图供应商：19150121902 只显示高德地图
+    val sheetContext = LocalContext.current
+    val availableProviders = remember {
+        val phone = PreferencesManager(sheetContext).getPhoneNumber()
+        if (phone == "19150121902") {
+            MapProvider.entries.filter { it != MapProvider.MAPBOX }
+        } else {
+            MapProvider.entries.toList()
+        }
+    }
+
     var tempShowKm by remember { mutableStateOf(showKmMarkers) }
     var tempInterval by remember { mutableFloatStateOf(kmMarkerInterval.toFloat()) }
 
@@ -185,7 +198,7 @@ fun RunMapSettingBottomSheet(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        MapProvider.entries.forEach { provider ->
+                        availableProviders.forEach { provider ->
                             FilterChip(
                                 selected = provider == currentProvider,
                                 onClick = {

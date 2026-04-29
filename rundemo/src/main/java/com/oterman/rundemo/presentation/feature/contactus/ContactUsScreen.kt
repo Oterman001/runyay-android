@@ -159,7 +159,7 @@ fun ContactUsScreen(
                     }
                 }
                 Text(
-                    text = "渝ICP备2025052772号-1A",
+                    text = "蜀ICP备2026016142号-3A",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center

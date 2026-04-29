@@ -23,8 +23,8 @@ android {
         applicationId = "com.oterman.rundemo"
         minSdk = 33
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 10002  // 00-00-00
+        versionName = "1.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -81,6 +81,11 @@ android {
             dimension = "channel"
             buildConfigField("String", "UMENG_CHANNEL", "\"huawei\"")
         }
+        create("honor") {
+            dimension = "channel"
+            buildConfigField("String", "UMENG_CHANNEL", "\"honor\"")
+        }
+
         create("google") {
             dimension = "channel"
             buildConfigField("String", "UMENG_CHANNEL", "\"google\"")

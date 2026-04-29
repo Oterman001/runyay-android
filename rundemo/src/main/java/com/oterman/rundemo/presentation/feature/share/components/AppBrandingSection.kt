@@ -93,7 +93,7 @@ fun AppBrandingSection(
 
             // 右侧：二维码
             Image(
-                painter = painterResource(id = R.drawable.ic_gzh_qcode),
+                painter = painterResource(id = R.drawable.ic_unifify_download_url),
                 contentDescription = "QR Code",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
