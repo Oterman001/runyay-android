@@ -69,7 +69,9 @@ if (Test-Path $ZipFile) {
     Write-Host "  压缩包已存在，先删除旧的..."
     Remove-Item -Force $ZipFile
 }
-Compress-Archive -Path $CopyDir -DestinationPath $ZipFile
+# 使用 .NET ZipFile，避免 Compress-Archive 跳过 Hidden 属性目录（如 .git）
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::CreateFromDirectory($CopyDir, $ZipFile)
 Write-Host "  压缩完成: $ZipFile"
 
 # 步骤 5：拷贝压缩包到 rundemo assets
