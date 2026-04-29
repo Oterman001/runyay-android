@@ -27,7 +27,7 @@ if ($OldZips) {
         Write-Host "  删除: $($z.FullName)"
         Remove-Item -Force $z.FullName
     }
-    Write-Host "  清理完成"
+    Write-Host "  清理zip完成"
 } else {
     Write-Host "  无旧压缩包，跳过"
 }

@@ -151,7 +151,7 @@ class TokenRefreshManager private constructor(
     /**
      * 处理 token 真正过期的情况：清除本地数据并发送过期事件
      */
-    private fun handleTokenExpired() {
+    internal fun handleTokenExpired() {
         RLog.w(TAG, "Token 已过期，清除用户数据并触发退出登录")
         preferencesManager.clearUserData()
         tokenExpiredEvent.tryEmit(Unit)

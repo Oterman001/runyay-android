@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
     
     private const val BASE_URL = "https://yayarun.cn/sys/"
-//    private const val BASE_URL = "http://192.168.31.31:8080"
+//    private const val BASE_URL = "http://192.168.31.130:8080"
 
     private var tokenProvider: (() -> String?)? = null
     private var appContext: Context? = null
@@ -80,7 +80,7 @@ object RetrofitClient {
      */
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
-//            .addInterceptor(TokenRefreshRetryInterceptor { tokenRefreshManager })
+            .addInterceptor(TokenRefreshRetryInterceptor { tokenRefreshManager })
             .addInterceptor(AuthInterceptor(
                 tokenProvider = { tokenProvider?.invoke() },
                 tokenRefreshManagerProvider = { tokenRefreshManager },

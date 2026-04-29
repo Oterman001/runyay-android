@@ -220,6 +220,9 @@ class HomeViewModel(
             RLog.d(TAG, "已在同步中，跳过手动同步")
             return
         }
+        // 立即在主线程设置isSyncing=true，确保PullToRefresh能感知到true→false的转换
+        // 同步管理器的scope在IO线程，若同步极快完成，StateFlow合并可能导致主线程收集器跳过Syncing状态
+        _uiState.update { it.copy(isSyncing = true) }
         lastAutoSyncTime = System.currentTimeMillis()
         RLog.i(TAG, "手动触发同步")
         DataSyncForegroundService.start(context)
