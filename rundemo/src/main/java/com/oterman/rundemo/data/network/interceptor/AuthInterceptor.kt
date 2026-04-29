@@ -2,6 +2,7 @@ package com.oterman.rundemo.data.network.interceptor
 
 import com.google.gson.JsonParser
 import com.oterman.rundemo.data.repository.TokenRefreshManager
+import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -26,6 +27,10 @@ class AuthInterceptor(
     private val tokenRefreshManagerProvider: (() -> TokenRefreshManager?)? = null,
     private val onNewToken: ((String) -> Unit)? = null
 ) : Interceptor {
+
+    companion object {
+        private const val TAG = "AuthInterceptor"
+    }
 
     override fun intercept(chain: Interceptor.Chain): Response {
         // 刷新 Token 接口本身不等待，避免死锁
@@ -62,7 +67,10 @@ class AuthInterceptor(
         // 检查服务端下发的新 Token（Token 即将过期时服务端会在响应头中返回新 Token）
         val newToken = response.header("x-new-token")
         if (!newToken.isNullOrEmpty()) {
+            RLog.d(TAG, "[x-new-token] renewal received for ${response.request.url}, token=${newToken.take(16)}…")
             onNewToken?.invoke(newToken)
+        } else {
+            RLog.d(TAG, "[x-new-token] none for ${response.request.url}")
         }
 
         return response

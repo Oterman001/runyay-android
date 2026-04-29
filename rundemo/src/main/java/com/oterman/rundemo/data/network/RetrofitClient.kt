@@ -80,11 +80,14 @@ object RetrofitClient {
      */
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .addInterceptor(TokenRefreshRetryInterceptor { tokenRefreshManager })
+//            .addInterceptor(TokenRefreshRetryInterceptor { tokenRefreshManager })
             .addInterceptor(AuthInterceptor(
                 tokenProvider = { tokenProvider?.invoke() },
                 tokenRefreshManagerProvider = { tokenRefreshManager },
-                onNewToken = { newToken -> onNewTokenCallback?.invoke(newToken) }
+                onNewToken = { newToken ->
+                    RLog.d("RetrofitClient", "[TokenRenewal] callback triggered, forwarding new token")
+                    onNewTokenCallback?.invoke(newToken)
+                }
             ))
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
