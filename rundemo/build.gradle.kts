@@ -23,8 +23,8 @@ android {
         applicationId = "cn.yayrun.android"
         minSdk = 29
         targetSdk = 36
-        versionCode = 10002  // 00-00-00
-        versionName = "1.0.2"
+        versionCode = 10003  // 00-00-00
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
