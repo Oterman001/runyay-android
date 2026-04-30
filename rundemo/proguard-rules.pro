@@ -105,6 +105,9 @@
 -dontwarn com.amap.api.**
 -dontwarn com.autonavi.**
 
+# slf4j (transitive dependency from timeshape)
+-dontwarn org.slf4j.**
+
 #umeng
 -keep class com.umeng.** {*;}
 
