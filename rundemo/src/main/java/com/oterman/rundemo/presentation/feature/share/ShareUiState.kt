@@ -15,10 +15,22 @@ import com.oterman.rundemo.presentation.feature.rundetail.RunMetricItem
  * 分享模式
  */
 enum class ShareMode(val displayName: String) {
+    TEMPLATE("模板"),
     SHORT("短图"),
-    LONG("长图"),
-    CUSTOM("其他")
+    LONG("长图")
 }
+
+/**
+ * 模板分享占位定义
+ */
+data class ShareTemplateSpec(
+    val id: String,
+    val name: String,
+    val description: String,
+    val tags: List<String>,
+    val isAvailable: Boolean = false,
+    val supportsBackgroundReplace: Boolean = false
+)
 
 /**
  * 短图可选指标类型
@@ -64,7 +76,11 @@ enum class ShareCardType(val displayName: String) {
  */
 data class ShareUiState(
     // 当前模式
-    val shareMode: ShareMode = ShareMode.SHORT,
+    val shareMode: ShareMode = ShareMode.TEMPLATE,
+
+    // 模板分享
+    val templates: List<ShareTemplateSpec> = defaultTemplates,
+    val selectedTemplateId: String = defaultTemplates.first().id,
 
     // 数据加载
     val isLoading: Boolean = true,
@@ -147,6 +163,34 @@ data class ShareUiState(
     val savedImageUri: Uri? = null
 ) {
     companion object {
+        val defaultTemplates = listOf(
+            ShareTemplateSpec(
+                id = "highlight",
+                name = "高光模板",
+                description = "突出距离、配速、跑力等核心成绩",
+                tags = listOf("可选指标", "成绩高光", "即将设计")
+            ),
+            ShareTemplateSpec(
+                id = "route",
+                name = "路线模板",
+                description = "突出地图轨迹和运动地点",
+                tags = listOf("可换背景", "轨迹优先", "即将设计"),
+                supportsBackgroundReplace = true
+            ),
+            ShareTemplateSpec(
+                id = "data",
+                name = "数据模板",
+                description = "适合训练复盘和多指标摘要",
+                tags = listOf("数据复盘", "可选模块", "即将设计")
+            ),
+            ShareTemplateSpec(
+                id = "poster",
+                name = "海报模板",
+                description = "固定背景的社交传播氛围图",
+                tags = listOf("固定背景", "海报风格", "即将设计")
+            )
+        )
+
         val defaultShortMetrics = listOf(
             ShareMetricType.DURATION,
             ShareMetricType.VDOT,

@@ -37,6 +37,8 @@ import com.oterman.rundemo.ui.theme.RunBlue
 fun ShareBottomBar(
     isGenerating: Boolean,
     isSaving: Boolean,
+    canEdit: Boolean = true,
+    canExport: Boolean = true,
     onEditClick: () -> Unit,
     onSaveClick: () -> Unit,
     onShareClick: () -> Unit,
@@ -62,7 +64,7 @@ fun ShareBottomBar(
                     .weight(1f)
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
-                enabled = !busy,
+                enabled = !busy && canEdit,
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
             ) {
                 Icon(
@@ -81,7 +83,7 @@ fun ShareBottomBar(
                     .weight(1f)
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
-                enabled = !busy,
+                enabled = !busy && canExport,
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
             ) {
                 if (isSaving) {
@@ -113,7 +115,7 @@ fun ShareBottomBar(
                     containerColor = RunBlue,
                     contentColor = Color.White
                 ),
-                enabled = !busy,
+                enabled = !busy && canExport,
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
             ) {
                 if (isGenerating) {

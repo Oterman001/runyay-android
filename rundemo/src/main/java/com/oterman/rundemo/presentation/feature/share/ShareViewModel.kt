@@ -208,6 +208,10 @@ class ShareViewModel(
         _uiState.value = _uiState.value.copy(shareMode = mode)
     }
 
+    fun selectTemplate(templateId: String) {
+        _uiState.value = _uiState.value.copy(selectedTemplateId = templateId)
+    }
+
     // ==================== 短图编辑 ====================
 
     fun updateSelectedMetrics(metrics: List<ShareMetricType>) {
@@ -309,6 +313,7 @@ class ShareViewModel(
         val widthPx = context.resources.displayMetrics.widthPixels
         return withContext(Dispatchers.Main) {
             when (state.shareMode) {
+                ShareMode.TEMPLATE -> null
                 ShareMode.SHORT -> ShareImageGenerator.renderToBitmap(context, widthPx, darkTheme) {
                     ShortSharePreview(
                         record = record,
@@ -363,7 +368,6 @@ class ShareViewModel(
                         segmentGroupSize = state.segmentBarChartGroupSize
                     )
                 }
-                ShareMode.CUSTOM -> null
             }
         }
     }
@@ -372,9 +376,9 @@ class ShareViewModel(
         val idPart = workoutId.take(8).ifEmpty { "unknown" }
         val ts = SimpleDateFormat("yyyyMMdd_HHmmssSSS", Locale.getDefault()).format(Date())
         val modeSuffix = when (state.shareMode) {
+            ShareMode.TEMPLATE -> state.selectedTemplateId
             ShareMode.SHORT -> "short"
             ShareMode.LONG -> "long"
-            else -> "other"
         }
         return "run_share_${idPart}_${ts}_${modeSuffix}.jpg"
     }
@@ -390,7 +394,12 @@ class ShareViewModel(
                 val bitmap = renderShareBitmap(context, state, record, darkTheme)
 
                 if (bitmap == null) {
-                    _uiState.value = _uiState.value.copy(isGenerating = false)
+                    _uiState.value = _uiState.value.copy(
+                        isGenerating = false,
+                        shareError = if (state.shareMode == ShareMode.TEMPLATE) {
+                            "模板样式设计中，暂不支持分享"
+                        } else null
+                    )
                     return@launch
                 }
 
@@ -424,10 +433,10 @@ class ShareViewModel(
             )
 
             try {
-                if (state.shareMode == ShareMode.CUSTOM) {
+                if (state.shareMode == ShareMode.TEMPLATE) {
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
-                        saveError = "当前模式不支持保存图片"
+                        saveError = "模板样式设计中，暂不支持保存图片"
                     )
                     return@launch
                 }
