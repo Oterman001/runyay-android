@@ -160,9 +160,9 @@ class MainActivity : ComponentActivity() {
 
 
         // TODO: 测试用，延迟 10s 触发崩溃，验证完后删除
-        Handler(Looper.getMainLooper()).postDelayed({
-            throw RuntimeException("模拟崩溃 - 测试 RLog crash 日志收集")
-        }, 10_000)
+//        Handler(Looper.getMainLooper()).postDelayed({
+//            throw RuntimeException("模拟崩溃 - 测试 RLog crash 日志收集")
+//        }, 10_000)
     }
 
     override fun onNewIntent(intent: Intent) {
