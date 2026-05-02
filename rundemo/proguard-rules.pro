@@ -108,6 +108,9 @@
 # slf4j (transitive dependency from timeshape)
 -dontwarn org.slf4j.**
 
+# zstd-jni (transitive dependency from timeshape, uses JNI field access)
+-keep class com.github.luben.zstd.** { *; }
+
 #umeng
 -keep class com.umeng.** {*;}
 
