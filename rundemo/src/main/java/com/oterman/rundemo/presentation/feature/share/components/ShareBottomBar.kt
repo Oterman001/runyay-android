@@ -46,13 +46,14 @@ fun ShareBottomBar(
 ) {
     val busy = isGenerating || isSaving
     Surface(
-        modifier = modifier.fillMaxWidth().navigationBarsPadding(),
+        modifier = modifier.fillMaxWidth(),
         shadowElevation = 8.dp,
         color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
