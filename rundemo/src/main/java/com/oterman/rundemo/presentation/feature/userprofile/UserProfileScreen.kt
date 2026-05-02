@@ -30,7 +30,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -65,7 +64,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -73,8 +71,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.SubcomposeAsyncImage
 import com.oterman.rundemo.presentation.components.BirthdayPickerDialog
+import com.oterman.rundemo.presentation.components.avatar.UserAvatar
 import java.io.File
 
 /**
@@ -224,6 +222,8 @@ fun UserProfileScreen(
                 AvatarSection(
                     avatarUrl = uiState.avatarUrl,
                     isLoading = uiState.isLoadingAvatar || uiState.isUploadingAvatar,
+                    userId = uiState.userId,
+                    userName = uiState.userName,
                     onClick = viewModel::showAvatarPicker
                 )
 
@@ -331,6 +331,8 @@ fun UserProfileScreen(
 private fun AvatarSection(
     avatarUrl: String?,
     isLoading: Boolean,
+    userId: String?,
+    userName: String?,
     onClick: () -> Unit
 ) {
     Column(
@@ -340,53 +342,16 @@ private fun AvatarSection(
             modifier = Modifier
                 .size(120.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
-            when {
-                isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(40.dp),
-                        strokeWidth = 3.dp
-                    )
-                }
-                avatarUrl.isNullOrBlank() -> {
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = "默认头像",
-                        modifier = Modifier.size(60.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                else -> {
-                    SubcomposeAsyncImage(
-                        model = avatarUrl,
-                        contentDescription = "头像",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        loading = {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(40.dp),
-                                    strokeWidth = 3.dp
-                                )
-                            }
-                        },
-                        error = {
-                            Icon(
-                                imageVector = Icons.Filled.Person,
-                                contentDescription = "默认头像",
-                                modifier = Modifier.size(60.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    )
-                }
-            }
+            UserAvatar(
+                avatarUrl = avatarUrl,
+                isLoading = isLoading,
+                userId = userId,
+                userName = userName,
+                size = 120.dp
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))

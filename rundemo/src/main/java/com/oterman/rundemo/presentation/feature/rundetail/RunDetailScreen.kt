@@ -532,6 +532,7 @@ fun RunDetailScreen(
                             metrics = uiState.metrics,
                             avatarUrl = uiState.avatarUrl,
                             isLoadingAvatar = uiState.isLoadingAvatar,
+                            userId = uiState.userId,
                             userName = uiState.userName,
                             inclusiveLevel = record.inclusiveLevel,
                             onInclusiveLevelClick = {

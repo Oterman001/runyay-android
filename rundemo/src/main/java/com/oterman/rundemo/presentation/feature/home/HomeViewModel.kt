@@ -100,6 +100,7 @@ class HomeViewModel(
         _uiState.update { state ->
             state.copy(
                 isLoggedIn = isLoggedIn,
+                userId = userId,
                 userName = userName,
                 phoneNumber = phoneNumber
             )
@@ -329,6 +330,7 @@ class HomeViewModel(
                 state.copy(
                     isLoggingOut = false,
                     isLoggedIn = false,
+                    userId = null,
                     userName = null,
                     phoneNumber = null,
                     avatarUrl = null,

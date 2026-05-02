@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.HorizontalDivider
@@ -34,7 +33,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
+import com.oterman.rundemo.presentation.components.avatar.UserAvatar
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -43,7 +42,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.domain.model.TrackPoint
 import com.oterman.rundemo.presentation.components.AppCard
@@ -67,6 +65,7 @@ fun ShortSharePreview(
     deviceName: String?,
     brandText: String,
     avatarUrl: String? = null,
+    userId: String? = null,
     userName: String? = null,
     showNickname: Boolean = true,
     isPrivacyMode: Boolean = false,
@@ -218,7 +217,7 @@ fun ShortSharePreview(
 
                 // 头像 + 昵称
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    ShareAvatar(avatarUrl = avatarUrl)
+                    ShareAvatar(avatarUrl = avatarUrl, userId = userId, userName = userName)
                     if (showNickname && !userName.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
@@ -264,55 +263,24 @@ fun ShortSharePreview(
 }
 
 /**
- * 分享图头像组件：有 URL 时加载网络图片，否则显示"跑"占位符
+ * 分享图头像组件（委托给统一 UserAvatar 组件）
  */
 @Composable
 private fun ShareAvatar(
     avatarUrl: String?,
+    userId: String?,
+    userName: String?,
     modifier: Modifier = Modifier
 ) {
     val size = RunDetailLayoutConstants.AvatarSize.dp
-
-    Box(
+    UserAvatar(
+        avatarUrl = avatarUrl,
+        isLoading = false,
+        userId = userId,
+        userName = userName,
+        size = size,
         modifier = modifier
-            .size(size)
-            .shadow(4.dp, CircleShape)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .border(
-                width = RunDetailLayoutConstants.AvatarBorderWidth.dp,
-                color = Color.White,
-                shape = CircleShape
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        if (avatarUrl.isNullOrBlank()) {
-            Text(
-                text = "跑",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        } else {
-            SubcomposeAsyncImage(
-                model = coil.request.ImageRequest.Builder(LocalContext.current)
-                    .data(avatarUrl)
-                    .allowHardware(false)
-                    .build(),
-                contentDescription = "Avatar",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                error = {
-                    Text(
-                        text = "跑",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            )
-        }
-    }
+    )
 }
 
 /**

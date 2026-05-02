@@ -86,6 +86,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ProfileTabContent(
     isLoggedIn: Boolean,
+    userId: String? = null,
     userName: String?,
     phoneNumber: String? = null,
     avatarUrl: String? = null,
@@ -217,6 +218,7 @@ fun ProfileTabContent(
             item {
                 UserProfileCard(
                     isLoggedIn = isLoggedIn,
+                    userId = userId,
                     userName = userName,
                     phoneNumber = phoneNumber,
                     avatarUrl = avatarUrl,

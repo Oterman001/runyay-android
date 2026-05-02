@@ -39,6 +39,7 @@ data class HomeUiState(
 
     // Auth state (from PreferencesManager)
     val isLoggedIn: Boolean = false,
+    val userId: String? = null,
     val userName: String? = null,
     val phoneNumber: String? = null,
     val avatarUrl: String? = null,

@@ -224,6 +224,7 @@ fun HomeScreen(
                 )
                 HomeTab.PROFILE -> ProfileTabContent(
                     isLoggedIn = uiState.isLoggedIn,
+                    userId = uiState.userId,
                     userName = uiState.userName,
                     phoneNumber = uiState.phoneNumber,
                     avatarUrl = uiState.avatarUrl,

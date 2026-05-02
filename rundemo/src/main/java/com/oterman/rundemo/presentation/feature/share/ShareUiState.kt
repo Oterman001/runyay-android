@@ -129,6 +129,7 @@ data class ShareUiState(
 
     // 头像
     val avatarUrl: String? = null,
+    val userId: String? = null,
     val userName: String? = null,
 
     // 关联跑鞋

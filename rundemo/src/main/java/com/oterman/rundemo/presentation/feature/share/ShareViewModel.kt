@@ -77,9 +77,10 @@ class ShareViewModel(
         if (!preferencesManager.isUserLoggedIn()) return
 
         val userName = preferencesManager.getUserName()
-        if (!userName.isNullOrBlank()) {
-            _uiState.value = _uiState.value.copy(userName = userName)
-        }
+        _uiState.value = _uiState.value.copy(
+            userId = userId,
+            userName = userName?.takeIf { it.isNotBlank() } ?: _uiState.value.userName
+        )
 
         viewModelScope.launch {
             avatarManager.getAvatarUrl(userId).onSuccess { url ->
@@ -323,6 +324,7 @@ class ShareViewModel(
                         deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
                         brandText = state.brandText,
                         avatarUrl = state.avatarUrl,
+                        userId = state.userId,
                         userName = state.userName,
                         showNickname = state.showNickname,
                         isPrivacyMode = state.isPrivacyMode,
@@ -356,6 +358,7 @@ class ShareViewModel(
                         deviceName = state.customDeviceName ?: DeviceNameUtils.resolveDisplayName(record),
                         brandText = state.brandText,
                         avatarUrl = state.avatarUrl,
+                        userId = state.userId,
                         userName = state.userName,
                         showNickname = state.showNickname,
                         linkedShoe = state.linkedShoe,

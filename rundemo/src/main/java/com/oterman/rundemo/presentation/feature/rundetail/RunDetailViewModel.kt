@@ -209,9 +209,11 @@ class RunDetailViewModel(
     private fun loadUserName() {
         if (!preferencesManager.isUserLoggedIn()) return
         val userName = preferencesManager.getUserName()
-        if (!userName.isNullOrBlank()) {
-            _uiState.value = _uiState.value.copy(userName = userName)
-        }
+        val userId = preferencesManager.getUserId()
+        _uiState.value = _uiState.value.copy(
+            userName = userName?.takeIf { it.isNotBlank() } ?: _uiState.value.userName,
+            userId = userId ?: _uiState.value.userId
+        )
     }
 
     /**
