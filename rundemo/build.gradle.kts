@@ -23,8 +23,8 @@ android {
         applicationId = "cn.yayrun.android"
         minSdk = 29
         targetSdk = 36
-        versionCode = 10003  // 00-00-00
-        versionName = "1.0.3"
+        versionCode = 10004  // 00-00-00
+        versionName = "1.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -36,18 +36,24 @@ android {
     }
 
     signingConfigs {
-        create("release") {
+        getByName("debug") {
             storeFile = file(providers.gradleProperty("RUNDEMO_STORE_FILE").get())
             storePassword = providers.gradleProperty("RUNDEMO_STORE_PASSWORD").get()
             keyAlias = providers.gradleProperty("RUNDEMO_KEY_ALIAS").get()
             keyPassword = providers.gradleProperty("RUNDEMO_KEY_PASSWORD").get()
+        }
+        create("release") {
+            storeFile = file(providers.gradleProperty("RUNDEMO_RELEASE_STORE_FILE").get())
+            storePassword = providers.gradleProperty("RUNDEMO_RELEASE_STORE_PASSWORD").get()
+            keyAlias = providers.gradleProperty("RUNDEMO_RELEASE_KEY_ALIAS").get()
+            keyPassword = providers.gradleProperty("RUNDEMO_RELEASE_KEY_PASSWORD").get()
         }
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("debug")
         }
         release {
             isMinifyEnabled = true
