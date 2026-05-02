@@ -5,6 +5,8 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -66,8 +68,6 @@ class MainActivity : ComponentActivity() {
         // 初始化PreferencesManager
         preferencesManager = PreferencesManager(this)
 
-        // 初始化Logger（默认启用文件日志，设置 tag 前缀为 XRUN）
-        RLog.init(this, prefix = "XRUN")
         RLog.i(TAG, "应用启动")
 
         // 设置Retrofit的token提供者
@@ -157,6 +157,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+
+        // TODO: 测试用，延迟 10s 触发崩溃，验证完后删除
+        Handler(Looper.getMainLooper()).postDelayed({
+            throw RuntimeException("模拟崩溃 - 测试 RLog crash 日志收集")
+        }, 10_000)
     }
 
     override fun onNewIntent(intent: Intent) {

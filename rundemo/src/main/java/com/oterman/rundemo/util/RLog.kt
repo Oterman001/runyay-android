@@ -79,6 +79,33 @@ object RLog {
             currentLogFile = getOrCreateLogFile()
             cleanupOldLogFiles()
         }
+        installCrashHandler()
+    }
+
+    private fun installCrashHandler() {
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            writeCrashToFile(thread, throwable)
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
+    }
+
+    private fun writeCrashToFile(thread: Thread, throwable: Throwable) {
+        if (!enableFileLogging) return
+        try {
+            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date())
+            val separator = "=".repeat(60)
+            val entry = buildString {
+                appendLine(separator)
+                appendLine("$timestamp | CRASH | Thread: ${thread.name} $versionSuffix")
+                appendLine(separator)
+                append(throwable.stackTraceToString())
+                appendLine(separator)
+            }
+            currentLogFile?.appendText(entry)
+        } catch (_: Exception) {
+            // 崩溃处理中不能再抛异常
+        }
     }
 
     /**

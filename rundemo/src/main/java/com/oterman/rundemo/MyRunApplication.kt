@@ -18,6 +18,7 @@ class MyRunApplication: Application() {
 
     override fun onCreate() {
         super.onCreate()
+        RLog.init(this, prefix = "XRUN")
         RLog.i("MyRunApplication","onCreate")
 
         initCoilImageLoader()
