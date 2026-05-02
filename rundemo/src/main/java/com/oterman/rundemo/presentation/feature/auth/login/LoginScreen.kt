@@ -143,7 +143,7 @@ fun LoginScreen(
             if (BuildConfig.DEBUG) {
                 DebugAccountSelector(
                     accounts = listOf(
-                        "17512081100" to "mrtian",
+                        "17512081100" to "qwerty",
                         "17512099302" to "qwerty",
                         "19183959302" to "mrtian"
                     ),

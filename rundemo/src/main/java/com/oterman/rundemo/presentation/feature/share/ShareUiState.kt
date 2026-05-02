@@ -76,7 +76,7 @@ enum class ShareCardType(val displayName: String) {
  */
 data class ShareUiState(
     // 当前模式
-    val shareMode: ShareMode = ShareMode.TEMPLATE,
+    val shareMode: ShareMode = ShareMode.SHORT,
 
     // 模板分享
     val templates: List<ShareTemplateSpec> = defaultTemplates,

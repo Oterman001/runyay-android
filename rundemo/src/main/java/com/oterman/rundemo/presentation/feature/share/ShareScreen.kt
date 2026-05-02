@@ -43,6 +43,7 @@ import com.oterman.rundemo.presentation.feature.share.components.ShareTemplateGa
 import com.oterman.rundemo.presentation.feature.share.components.ShortShareEditSheet
 import com.oterman.rundemo.presentation.feature.share.components.ShortSharePreview
 import com.oterman.rundemo.ui.theme.RunBlue
+import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.util.DeviceNameUtils
 
 /**
@@ -305,7 +306,8 @@ private fun ShareModeSelector(
     onModeSelected: (ShareMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val modes = ShareMode.entries
+    val modes = if (BuildConfig.DEBUG) ShareMode.entries
+                else ShareMode.entries.filter { it != ShareMode.TEMPLATE }
     SingleChoiceSegmentedButtonRow(modifier = modifier) {
         modes.forEachIndexed { index, mode ->
             SegmentedButton(
