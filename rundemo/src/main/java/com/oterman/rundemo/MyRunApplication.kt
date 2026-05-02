@@ -11,6 +11,7 @@ import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.oterman.rundemo.BuildConfig
 import com.oterman.rundemo.util.RLog
+import com.tencent.bugly.crashreport.CrashReport
 import com.umeng.commonsdk.UMConfigure
 
 class MyRunApplication: Application() {
@@ -30,10 +31,21 @@ class MyRunApplication: Application() {
 
         // 已同意隐私政策的后续冷启动，立即完成初始化；首次启动由 PrivacyConsentScreen 在用户同意后调用
         if (PreferencesManager(this).isPrivacyConsentAccepted()) {
-            UMConfigure.init(this, "69a930fe6f259537c76ddab0", BuildConfig.UMENG_CHANNEL, UMConfigure.DEVICE_TYPE_PHONE, "")
+            initPrivacyRequiredSDKs(this)
         }
 
         cleanupOldDownloadedApk()
+    }
+
+    companion object {
+        /**
+         * 需隐私同意后方可调用，由 Application.onCreate（已同意）和 PrivacyConsentScreen（首次同意）分别触发。
+         */
+        fun initPrivacyRequiredSDKs(context: Context) {
+            UMConfigure.init(context, "69a930fe6f259537c76ddab0", BuildConfig.UMENG_CHANNEL, UMConfigure.DEVICE_TYPE_PHONE, "")
+            CrashReport.initCrashReport(context.applicationContext, "ea1ea72caa", BuildConfig.DEBUG)
+            CrashReport.setAppChannel(context, BuildConfig.UMENG_CHANNEL)
+        }
     }
 
     /**

@@ -8,10 +8,12 @@ import com.oterman.rundemo.data.network.api.RunningShoeApi
 import com.oterman.rundemo.data.network.api.UserApi
 import com.oterman.rundemo.data.network.api.VersionApi
 import com.oterman.rundemo.data.network.interceptor.AuthInterceptor
+import com.oterman.rundemo.data.network.interceptor.NetworkMetricsEventListener
 import com.oterman.rundemo.data.network.interceptor.SmartLoggingInterceptor
 import com.oterman.rundemo.data.network.interceptor.TokenRefreshRetryInterceptor
 import com.oterman.rundemo.data.repository.TokenRefreshManager
 import com.oterman.rundemo.util.RLog
+import okhttp3.EventListener
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -90,6 +92,7 @@ object RetrofitClient {
                 }
             ))
             .addInterceptor(loggingInterceptor)
+            .eventListenerFactory(EventListener.Factory { appContext?.let { NetworkMetricsEventListener(it) } ?: EventListener.NONE })
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

@@ -8,6 +8,7 @@ import com.oterman.rundemo.data.repository.ResetPasswordException
 import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.ValidationUtils
+import com.umeng.analytics.MobclickAgent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,7 +71,8 @@ class ForgotPasswordViewModel(
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            
+            MobclickAgent.onEvent(context, "forgot_password_start")
+
             val result = userRepository.sendResetPasswordVerificationCode(state.phoneNumber, captchaParam)
             
             result.onSuccess { response ->
@@ -303,6 +305,7 @@ class ForgotPasswordViewModel(
             
             result.onSuccess {
                 RLog.i(TAG, "密码重置成功")
+                MobclickAgent.onEvent(context, "forgot_password_complete")
                 _uiState.update { it.copy(
                     isLoading = false,
                     resetSuccess = true

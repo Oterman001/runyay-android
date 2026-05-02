@@ -7,6 +7,7 @@ import com.oterman.rundemo.data.repository.LoginException
 import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.ValidationUtils
+import com.umeng.analytics.MobclickAgent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -110,15 +111,17 @@ class LoginViewModel(
         viewModelScope.launch {
             // 设置加载状态
             _uiState.update { it.copy(isLoading = true, errorMessage = null, remainingAttempts = null) }
+            MobclickAgent.onEvent(context, "login_attempt")
 
             try {
                 // 调用登录接口
                 RLog.i(TAG, "调用UserRepository.login")
                 val result = userRepository.login(state.phoneNumber, state.password)
-                
+
                 result.onSuccess { response ->
                     // 登录成功
                     RLog.i(TAG, "登录成功：userId=${response.userId}")
+                    MobclickAgent.onEvent(context, "login_success")
                     _uiState.update { currentState ->
                         currentState.copy(
                             isLoading = false,
@@ -128,6 +131,7 @@ class LoginViewModel(
                 }.onFailure { error ->
                     // 登录失败
                     RLog.e(TAG, "登录失败：${error.message}", error)
+                    MobclickAgent.onEvent(context, "login_failure")
                     handleLoginError(error)
                 }
                 

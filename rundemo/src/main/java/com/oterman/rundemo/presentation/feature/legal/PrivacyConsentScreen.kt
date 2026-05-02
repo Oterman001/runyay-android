@@ -28,9 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.layout.navigationBarsPadding
+import com.oterman.rundemo.MyRunApplication
 import com.oterman.rundemo.data.local.PreferencesManager
-import com.umeng.commonsdk.UMConfigure
-import com.oterman.rundemo.BuildConfig
 
 @Composable
 fun PrivacyConsentScreen(
@@ -152,13 +151,7 @@ fun PrivacyConsentScreen(
                     onClick = {
                         val prefs = PreferencesManager(context)
                         prefs.setPrivacyConsentAccepted(true)
-                        UMConfigure.init(
-                            context,
-                            "69a930fe6f259537c76ddab0",
-                            BuildConfig.UMENG_CHANNEL,
-                            UMConfigure.DEVICE_TYPE_PHONE,
-                            ""
-                        )
+                        MyRunApplication.initPrivacyRequiredSDKs(context)
                         onAgreed()
                     },
                     modifier = Modifier.weight(1f)

@@ -207,6 +207,17 @@ dependencies {
 //    implementation("com.umeng.umsdk:asms:+")
     implementation("com.umeng.umsdk:common:9.4.7")
     implementation("com.umeng.umsdk:asms:1.4.0")
+    // 友盟 U-APM 性能 & 崩溃监控（随 UMConfigure.init 自动激活）
+    implementation("com.umeng.umsdk:apm:1.9.0")
+
+    // 腾讯 Bugly 崩溃 / ANR 上报
+    implementation("com.tencent.bugly:crashreport:4.1.9.3")
+
+    // Firebase Crashlytics + Performance（仅 google 渠道）
+    // 前置条件：在模块根目录放置 google-services.json，并在 plugins 块启用 google-services 与 firebase-crashlytics 插件
+    add("googleImplementation", platform("com.google.firebase:firebase-bom:33.7.0"))
+    add("googleImplementation", "com.google.firebase:firebase-crashlytics-ktx")
+    add("googleImplementation", "com.google.firebase:firebase-perf-ktx")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

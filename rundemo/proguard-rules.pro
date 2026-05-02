@@ -113,6 +113,8 @@
 
 #umeng
 -keep class com.umeng.** {*;}
+-dontwarn com.efs.sdk.base.core.config.GlobalInfo
+-dontwarn com.efs.sdk.base.core.config.GlobalInfoManager
 
 -keep class org.repackage.** {*;}
 
@@ -133,3 +135,13 @@
 # Mapbox
 -keep class com.mapbox.** { *; }
 -dontwarn com.mapbox.**
+
+# Bugly
+-keep class com.tencent.bugly.** { *; }
+-dontwarn com.tencent.bugly.**
+
+# Firebase Crashlytics (google flavor)
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**

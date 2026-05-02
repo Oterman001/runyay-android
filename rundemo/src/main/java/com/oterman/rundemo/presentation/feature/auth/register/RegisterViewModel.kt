@@ -7,6 +7,7 @@ import com.oterman.rundemo.data.repository.RegisterException
 import com.oterman.rundemo.data.repository.UserRepository
 import com.oterman.rundemo.util.RLog
 import com.oterman.rundemo.util.ValidationUtils
+import com.umeng.analytics.MobclickAgent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -97,7 +98,8 @@ class RegisterViewModel(
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            
+            MobclickAgent.onEvent(context, "register_start")
+
             val result = userRepository.sendRegisterVerificationCode(state.phoneNumber, captchaParam)
             
             result.onSuccess { response ->
@@ -222,6 +224,7 @@ class RegisterViewModel(
                     )}
                 } else {
                     RLog.i(TAG, "注册完成，无需设置密码")
+                    MobclickAgent.onEvent(context, "register_complete")
                     _uiState.update { it.copy(
                         isLoading = false,
                         registerSuccess = true
@@ -349,6 +352,7 @@ class RegisterViewModel(
             
             result.onSuccess { success ->
                 RLog.i(TAG, "密码设置成功")
+                MobclickAgent.onEvent(context, "register_complete")
                 _uiState.update { it.copy(
                     isLoading = false,
                     registerSuccess = true
