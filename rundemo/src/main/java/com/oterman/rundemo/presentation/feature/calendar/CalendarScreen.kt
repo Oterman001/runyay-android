@@ -77,6 +77,7 @@ fun CalendarScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
                 title = { Text("训练日历", fontWeight = FontWeight.SemiBold) },

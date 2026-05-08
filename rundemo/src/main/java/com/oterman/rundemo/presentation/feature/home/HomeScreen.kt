@@ -216,13 +216,13 @@ fun HomeScreen(
                             android.widget.Toast.LENGTH_SHORT
                         ).show()
                     },
-                    onSwitchToDataTab = { viewModel.selectTab(HomeTab.DATA) }
+                    onSwitchToDataTab = { viewModel.selectTab(HomeTab.DATA) },
+                    onNavigateToCalendar = onNavigateToCalendar
                 )
                 HomeTab.DATA -> DataTabContent(
                     onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },
                     onRecordLongClick = { workoutId -> onNavigateToRunDetailDebug(workoutId) },
-                    onNavigateToDataSourceManage = onNavigateToDataSourceManage,
-                    onNavigateToCalendar = onNavigateToCalendar
+                    onNavigateToDataSourceManage = onNavigateToDataSourceManage
                 )
                 HomeTab.PROFILE -> ProfileTabContent(
                     isLoggedIn = uiState.isLoggedIn,

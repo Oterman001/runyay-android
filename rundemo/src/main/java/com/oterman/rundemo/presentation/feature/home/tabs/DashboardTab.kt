@@ -19,6 +19,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -88,7 +91,8 @@ fun DashboardTabContent(
     onNavigateToRunDetail: (workoutId: String) -> Unit = {},
     onNavigateToRunStatistics: (tab: String) -> Unit = {},
     onNavigateToVdotDetail: () -> Unit = {},
-    onSwitchToDataTab: () -> Unit = {}
+    onSwitchToDataTab: () -> Unit = {},
+    onNavigateToCalendar: () -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -158,8 +162,17 @@ fun DashboardTabContent(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground
             )
-            if (showSyncIcon) {
-                RotatingSyncIcon(isRotating = isSyncing, onClick = onSyncIconClick)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (showSyncIcon) {
+                    RotatingSyncIcon(isRotating = isSyncing, onClick = onSyncIconClick)
+                }
+                IconButton(onClick = onNavigateToCalendar, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        imageVector = Icons.Outlined.CalendarMonth,
+                        contentDescription = "训练日历",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
 
@@ -199,12 +212,21 @@ fun DashboardTabContent(
                     color = MaterialTheme.colorScheme.onBackground,
                     letterSpacing = 0.sp
                 )
-                AnimatedVisibility(
-                    visible = showSyncIcon,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    RotatingSyncIcon(isRotating = isSyncing, onClick = onSyncIconClick)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AnimatedVisibility(
+                        visible = showSyncIcon,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        RotatingSyncIcon(isRotating = isSyncing, onClick = onSyncIconClick)
+                    }
+                    IconButton(onClick = onNavigateToCalendar, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarMonth,
+                            contentDescription = "训练日历",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
 

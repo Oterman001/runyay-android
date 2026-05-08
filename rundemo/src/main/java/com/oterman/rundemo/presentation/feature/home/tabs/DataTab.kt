@@ -27,7 +27,6 @@ import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.DirectionsRun
 import androidx.compose.material.icons.outlined.FilterAlt
-import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -87,7 +86,6 @@ fun DataTabContent(
     onRecordClick: (workoutId: String) -> Unit = {},
     onRecordLongClick: (workoutId: String) -> Unit = {},
     onNavigateToDataSourceManage: () -> Unit = {},
-    onNavigateToCalendar: () -> Unit = {},
     viewModel: DataTabViewModel = viewModel(
         factory = DataTabViewModelFactory(LocalContext.current)
     )
@@ -167,18 +165,6 @@ fun DataTabContent(
                 )
 
                 Row {
-                    // 日历按钮
-                    IconButton(
-                        onClick = onNavigateToCalendar,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarMonth,
-                            contentDescription = "训练日历",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
                     // 过滤按钮
                     FilterButton(
                         isActive = uiState.isFilterActive,
