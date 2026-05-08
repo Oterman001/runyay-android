@@ -84,6 +84,7 @@ import com.oterman.rundemo.presentation.feature.runningshoes.addedit.AddEditRunn
 import com.oterman.rundemo.presentation.feature.runningshoes.linkedrecords.LinkedRunRecordsListScreen
 import com.oterman.rundemo.presentation.feature.vdotdetail.VdotDetailScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
+import com.oterman.rundemo.presentation.feature.calendar.CalendarScreen
 import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
@@ -316,6 +317,9 @@ fun AppNavGraph(
                 },
                 onNavigateToRunningShoes = {
                     navController.navigate(Screen.RunningShoes.route)
+                },
+                onNavigateToCalendar = {
+                    navController.navigate(Screen.TrainingCalendar.route)
                 },
                 onThemeModeChanged = onThemeModeChanged,
                 viewModel = homeViewModel
@@ -913,6 +917,19 @@ fun AppNavGraph(
                 onNavigateToRunDetail = { workoutId ->
                     context.startActivity(RunDetailActivity.createIntent(context, workoutId))
                 }
+            )
+        }
+
+        // 训练日历页面
+        composable(
+            route = Screen.TrainingCalendar.route,
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+        ) {
+            CalendarScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }

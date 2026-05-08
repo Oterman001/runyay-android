@@ -187,6 +187,9 @@ dependencies {
     // uCrop for image cropping
     implementation("com.github.yalantis:ucrop:2.2.9")
 
+    // Training calendar (kizitonwose/calendar)
+    implementation("com.kizitonwose.calendar:compose:2.6.1")
+
     // Mapbox Maps SDK
     implementation("com.mapbox.maps:android:11.18.0")
 

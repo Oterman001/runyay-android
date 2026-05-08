@@ -121,6 +121,11 @@ interface RunRecordDao {
     @Query("SELECT * FROM run_record WHERE userId = :userId AND inclusiveLevel != 0 ORDER BY startTime DESC LIMIT :limit")
     suspend fun getRecentRecordsForUser(userId: String, limit: Int): List<RunRecordEntity>
 
+    // ==================== 日历查询 ====================
+
+    @Query("SELECT * FROM run_record WHERE userId = :userId AND startTime >= :startMs AND startTime <= :endMs ORDER BY startTime ASC")
+    suspend fun getRecordsByMonthForUser(userId: String, startMs: Long, endMs: Long): List<RunRecordEntity>
+
     // ==================== 诊断导出 top N 查询 ====================
 
     @Query("SELECT * FROM run_record WHERE userId = :userId AND inclusiveLevel != 0 AND overallVdot > 0 ORDER BY overallVdot DESC LIMIT :limit")

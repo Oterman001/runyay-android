@@ -242,5 +242,11 @@ sealed class Screen(val route: String) {
     object LinkedRunRecords : Screen("linked_run_records/{shoeId}") {
         fun createRoute(shoeId: String) = "linked_run_records/$shoeId"
     }
+
+    /**
+     * 训练日历页面
+     * 月历视图，标记有跑步记录的日期，用于训练管理
+     */
+    object TrainingCalendar : Screen("training_calendar")
 }
 

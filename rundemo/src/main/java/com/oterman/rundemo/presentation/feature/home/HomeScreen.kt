@@ -91,6 +91,7 @@ fun HomeScreen(
     onNavigateToSyncStatus: () -> Unit = {},
     onNavigateToVdotDetail: () -> Unit = {},
     onNavigateToRunningShoes: () -> Unit = {},
+    onNavigateToCalendar: () -> Unit = {},
     onThemeModeChanged: (ThemeMode) -> Unit = {},
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(LocalContext.current)
@@ -220,7 +221,8 @@ fun HomeScreen(
                 HomeTab.DATA -> DataTabContent(
                     onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },
                     onRecordLongClick = { workoutId -> onNavigateToRunDetailDebug(workoutId) },
-                    onNavigateToDataSourceManage = onNavigateToDataSourceManage
+                    onNavigateToDataSourceManage = onNavigateToDataSourceManage,
+                    onNavigateToCalendar = onNavigateToCalendar
                 )
                 HomeTab.PROFILE -> ProfileTabContent(
                     isLoggedIn = uiState.isLoggedIn,
