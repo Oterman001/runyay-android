@@ -38,6 +38,7 @@ class CalendarViewModel(
     }
 
     fun onMonthChanged(month: YearMonth) {
+        if (month == _uiState.value.currentMonth) return
         _uiState.update { it.copy(currentMonth = month, selectedDate = null, selectedDateRecords = emptyList()) }
         loadMonth(month)
     }

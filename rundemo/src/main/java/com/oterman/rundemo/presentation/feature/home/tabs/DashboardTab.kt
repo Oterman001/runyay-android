@@ -145,14 +145,14 @@ fun DashboardTabContent(
             .fillMaxSize()
             .background(backgroundColor)
     ) {
-        // Collapsed header (small title) - appears when scrolled
+        // Fixed header: calendar button always visible; title + sync fade in when scrolled
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(48.dp)
                 .background(backgroundColor)
                 .zIndex(1f)
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-                .alpha(collapseProgress),
+                .padding(horizontal = 20.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -160,11 +160,14 @@ fun DashboardTabContent(
                 text = "仪表盘",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.alpha(collapseProgress)
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (showSyncIcon) {
-                    RotatingSyncIcon(isRotating = isSyncing, onClick = onSyncIconClick)
+                    Box(modifier = Modifier.alpha(collapseProgress)) {
+                        RotatingSyncIcon(isRotating = isSyncing, onClick = onSyncIconClick)
+                    }
                 }
                 IconButton(onClick = onNavigateToCalendar, modifier = Modifier.size(40.dp)) {
                     Icon(
@@ -212,21 +215,12 @@ fun DashboardTabContent(
                     color = MaterialTheme.colorScheme.onBackground,
                     letterSpacing = 0.sp
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AnimatedVisibility(
-                        visible = showSyncIcon,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        RotatingSyncIcon(isRotating = isSyncing, onClick = onSyncIconClick)
-                    }
-                    IconButton(onClick = onNavigateToCalendar, modifier = Modifier.size(40.dp)) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarMonth,
-                            contentDescription = "训练日历",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                AnimatedVisibility(
+                    visible = showSyncIcon,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    RotatingSyncIcon(isRotating = isSyncing, onClick = onSyncIconClick)
                 }
             }
 

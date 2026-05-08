@@ -32,6 +32,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,9 +74,16 @@ fun CalendarScreen(
         firstDayOfWeek = firstDayOfWeekFromLocale()
     )
 
-    // Scroll calendar to the month when navigation buttons are tapped
+    // Sync calendar position when nav arrows change the month
     LaunchedEffect(uiState.currentMonth) {
         calendarState.animateScrollToMonth(uiState.currentMonth)
+    }
+
+    // Detect swipe-based month changes and notify ViewModel
+    LaunchedEffect(calendarState) {
+        snapshotFlow { calendarState.firstVisibleMonth.yearMonth }
+            .distinctUntilChanged()
+            .collectLatest { month -> viewModel.onMonthChanged(month) }
     }
 
     Scaffold(
@@ -115,7 +125,6 @@ fun CalendarScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
-                    userScrollEnabled = false,
                     dayContent = { day ->
                         DayCell(
                             day = day,
