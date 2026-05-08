@@ -248,5 +248,18 @@ sealed class Screen(val route: String) {
      * 月历视图，标记有跑步记录的日期，用于训练管理
      */
     object TrainingCalendar : Screen("training_calendar")
+
+    /**
+     * 训练计划编辑页面
+     * 新增或编辑自定义训练计划
+     */
+    object TrainPlanEdit : Screen("train_plan_edit?planId={planId}&date={date}") {
+        fun createRoute(planId: String? = null, date: String? = null): String {
+            val params = mutableListOf<String>()
+            if (planId != null) params.add("planId=$planId")
+            if (date != null) params.add("date=$date")
+            return if (params.isEmpty()) "train_plan_edit" else "train_plan_edit?${params.joinToString("&")}"
+        }
+    }
 }
 

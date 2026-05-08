@@ -151,5 +151,12 @@ object RetrofitClient {
     val versionApi: VersionApi by lazy {
         retrofit.create(VersionApi::class.java)
     }
+
+    /**
+     * 训练计划API接口实例
+     */
+    val trainPlanApi: com.oterman.rundemo.data.network.api.TrainPlanApi by lazy {
+        retrofit.create(com.oterman.rundemo.data.network.api.TrainPlanApi::class.java)
+    }
 }
 

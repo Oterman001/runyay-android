@@ -85,6 +85,8 @@ import com.oterman.rundemo.presentation.feature.runningshoes.linkedrecords.Linke
 import com.oterman.rundemo.presentation.feature.vdotdetail.VdotDetailScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
 import com.oterman.rundemo.presentation.feature.calendar.CalendarScreen
+import com.oterman.rundemo.presentation.feature.trainplan.TrainPlanEditScreen
+import com.oterman.rundemo.presentation.feature.trainplan.TrainPlanEditViewModelFactory
 import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
@@ -927,9 +929,64 @@ fun AppNavGraph(
             exitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
-        ) {
+        ) { backStackEntry ->
+            val context = LocalContext.current
+            val calendarViewModel: com.oterman.rundemo.presentation.feature.calendar.CalendarViewModel = viewModel(
+                factory = com.oterman.rundemo.presentation.feature.calendar.CalendarViewModelFactory(context)
+            )
+            // Refresh plans when returning from edit screen
+            LaunchedEffect(Unit) {
+                backStackEntry.savedStateHandle.getStateFlow("plan_updated", false)
+                    .collect { updated ->
+                        if (updated) {
+                            calendarViewModel.refreshPlans()
+                            backStackEntry.savedStateHandle["plan_updated"] = false
+                        }
+                    }
+            }
+
             CalendarScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onAddPlan = { date ->
+                    navController.navigate(Screen.TrainPlanEdit.createRoute(date = date))
+                },
+                onEditPlan = { planId ->
+                    navController.navigate(Screen.TrainPlanEdit.createRoute(planId = planId))
+                },
+                viewModel = calendarViewModel
+            )
+        }
+
+        // 训练计划编辑页面
+        composable(
+            route = Screen.TrainPlanEdit.route,
+            arguments = listOf(
+                navArgument("planId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("date") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val planId = backStackEntry.arguments?.getString("planId")
+            val date = backStackEntry.arguments?.getString("date")
+            val calendarEntry = remember { navController.previousBackStackEntry }
+            DisposableEffect(Unit) {
+                onDispose {
+                    calendarEntry?.savedStateHandle?.set("plan_updated", true)
+                }
+            }
+            TrainPlanEditScreen(
+                planId = planId,
+                date = date,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
     }

@@ -1,0 +1,384 @@
+package com.oterman.rundemo.presentation.feature.trainplan
+
+import android.content.Context
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.repository.TrainPlanRepository
+import com.oterman.rundemo.domain.model.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.util.UUID
+
+class TrainPlanEditViewModel(
+    private val repository: TrainPlanRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(TrainPlanEditUiState())
+    val uiState: StateFlow<TrainPlanEditUiState> = _uiState.asStateFlow()
+
+    fun init(planId: String?, date: String?) {
+        if (planId != null) {
+            _uiState.update { it.copy(isNewPlan = false, planId = planId) }
+            loadPlan(planId)
+        } else {
+            _uiState.update { it.copy(isNewPlan = true, scheduledDate = date) }
+        }
+    }
+
+    // ==================== Basic Info ====================
+
+    fun onNameChange(name: String) {
+        _uiState.update { it.copy(name = name) }
+    }
+
+    fun onDateChange(date: String) {
+        _uiState.update { it.copy(scheduledDate = date, showDatePicker = false) }
+    }
+
+    fun onLocationTypeChange(type: LocationType) {
+        _uiState.update { it.copy(locationType = type) }
+    }
+
+    fun onTrainWholeTypeChange(type: TrainWholeType) {
+        _uiState.update { it.copy(trainWholeType = type) }
+    }
+
+    fun onDescriptionChange(desc: String) {
+        _uiState.update { it.copy(description = desc) }
+    }
+
+    fun toggleDatePicker(show: Boolean) {
+        _uiState.update { it.copy(showDatePicker = show) }
+    }
+
+    // ==================== Block Operations ====================
+
+    fun addWarmupBlock() {
+        if (_uiState.value.warmupBlock != null) return
+        _uiState.update {
+            it.copy(warmupBlock = TrainBlock(
+                blockId = UUID.randomUUID().toString(),
+                blockType = BlockType.WARMUP,
+                seq = 0,
+                loopCnt = 1,
+                stepList = listOf(createDefaultStep(TrainGoalType.TIME))
+            ))
+        }
+    }
+
+    fun addMainBlock() {
+        _uiState.update {
+            val blocks = it.mainBlocks.toMutableList()
+            blocks.add(TrainBlock(
+                blockId = UUID.randomUUID().toString(),
+                blockType = BlockType.MAIN,
+                seq = blocks.size + 1,
+                loopCnt = 1,
+                stepList = listOf(createDefaultStep(TrainGoalType.DISTANCE))
+            ))
+            it.copy(mainBlocks = blocks)
+        }
+    }
+
+    fun addCooldownBlock() {
+        if (_uiState.value.cooldownBlock != null) return
+        _uiState.update {
+            it.copy(cooldownBlock = TrainBlock(
+                blockId = UUID.randomUUID().toString(),
+                blockType = BlockType.COOLDOWN,
+                seq = 99,
+                loopCnt = 1,
+                stepList = listOf(createDefaultStep(TrainGoalType.TIME))
+            ))
+        }
+    }
+
+    fun removeBlock(blockType: BlockType, blockIndex: Int) {
+        _uiState.update {
+            when (blockType) {
+                BlockType.WARMUP -> it.copy(warmupBlock = null)
+                BlockType.COOLDOWN -> it.copy(cooldownBlock = null)
+                BlockType.MAIN -> {
+                    val blocks = it.mainBlocks.toMutableList()
+                    if (blockIndex in blocks.indices) blocks.removeAt(blockIndex)
+                    it.copy(mainBlocks = blocks)
+                }
+            }
+        }
+    }
+
+    fun updateLoopCount(blockIndex: Int, delta: Int) {
+        _uiState.update {
+            val blocks = it.mainBlocks.toMutableList()
+            if (blockIndex in blocks.indices) {
+                val block = blocks[blockIndex]
+                val newCount = (block.loopCnt + delta).coerceIn(1, 99)
+                blocks[blockIndex] = block.copy(loopCnt = newCount)
+            }
+            it.copy(mainBlocks = blocks)
+        }
+    }
+
+    // ==================== Step Operations ====================
+
+    fun addStepToBlock(blockType: BlockType, blockIndex: Int) {
+        _uiState.update {
+            when (blockType) {
+                BlockType.WARMUP -> {
+                    val block = it.warmupBlock ?: return@update it
+                    it.copy(warmupBlock = block.copy(
+                        stepList = block.stepList + createDefaultStep(TrainGoalType.TIME)
+                    ))
+                }
+                BlockType.COOLDOWN -> {
+                    val block = it.cooldownBlock ?: return@update it
+                    it.copy(cooldownBlock = block.copy(
+                        stepList = block.stepList + createDefaultStep(TrainGoalType.TIME)
+                    ))
+                }
+                BlockType.MAIN -> {
+                    val blocks = it.mainBlocks.toMutableList()
+                    if (blockIndex in blocks.indices) {
+                        val block = blocks[blockIndex]
+                        blocks[blockIndex] = block.copy(
+                            stepList = block.stepList + createDefaultStep(TrainGoalType.DISTANCE)
+                        )
+                    }
+                    it.copy(mainBlocks = blocks)
+                }
+            }
+        }
+    }
+
+    fun removeStep(blockType: BlockType, blockIndex: Int, stepIndex: Int) {
+        _uiState.update {
+            when (blockType) {
+                BlockType.WARMUP -> {
+                    val block = it.warmupBlock ?: return@update it
+                    val steps = block.stepList.toMutableList()
+                    if (stepIndex in steps.indices) steps.removeAt(stepIndex)
+                    if (steps.isEmpty()) it.copy(warmupBlock = null)
+                    else it.copy(warmupBlock = block.copy(stepList = steps))
+                }
+                BlockType.COOLDOWN -> {
+                    val block = it.cooldownBlock ?: return@update it
+                    val steps = block.stepList.toMutableList()
+                    if (stepIndex in steps.indices) steps.removeAt(stepIndex)
+                    if (steps.isEmpty()) it.copy(cooldownBlock = null)
+                    else it.copy(cooldownBlock = block.copy(stepList = steps))
+                }
+                BlockType.MAIN -> {
+                    val blocks = it.mainBlocks.toMutableList()
+                    if (blockIndex in blocks.indices) {
+                        val block = blocks[blockIndex]
+                        val steps = block.stepList.toMutableList()
+                        if (stepIndex in steps.indices) steps.removeAt(stepIndex)
+                        if (steps.isEmpty()) blocks.removeAt(blockIndex)
+                        else blocks[blockIndex] = block.copy(stepList = steps)
+                    }
+                    it.copy(mainBlocks = blocks)
+                }
+            }
+        }
+    }
+
+    fun openStepEditor(blockType: BlockType, blockIndex: Int, stepIndex: Int) {
+        val state = _uiState.value
+        val step = when (blockType) {
+            BlockType.WARMUP -> state.warmupBlock?.stepList?.getOrNull(stepIndex)
+            BlockType.COOLDOWN -> state.cooldownBlock?.stepList?.getOrNull(stepIndex)
+            BlockType.MAIN -> state.mainBlocks.getOrNull(blockIndex)?.stepList?.getOrNull(stepIndex)
+        } ?: return
+        _uiState.update {
+            it.copy(editingStep = EditingStepInfo(blockIndex, stepIndex, blockType, step))
+        }
+    }
+
+    fun saveStepEdit(updatedStep: TrainStep) {
+        val editing = _uiState.value.editingStep ?: return
+        _uiState.update {
+            val result = when (editing.blockType) {
+                BlockType.WARMUP -> {
+                    val block = it.warmupBlock ?: return@update it
+                    val steps = block.stepList.toMutableList()
+                    if (editing.stepIndex != null && editing.stepIndex in steps.indices) {
+                        steps[editing.stepIndex] = updatedStep
+                    }
+                    it.copy(warmupBlock = block.copy(stepList = steps))
+                }
+                BlockType.COOLDOWN -> {
+                    val block = it.cooldownBlock ?: return@update it
+                    val steps = block.stepList.toMutableList()
+                    if (editing.stepIndex != null && editing.stepIndex in steps.indices) {
+                        steps[editing.stepIndex] = updatedStep
+                    }
+                    it.copy(cooldownBlock = block.copy(stepList = steps))
+                }
+                BlockType.MAIN -> {
+                    val blocks = it.mainBlocks.toMutableList()
+                    if (editing.blockIndex in blocks.indices) {
+                        val block = blocks[editing.blockIndex]
+                        val steps = block.stepList.toMutableList()
+                        if (editing.stepIndex != null && editing.stepIndex in steps.indices) {
+                            steps[editing.stepIndex] = updatedStep
+                        }
+                        blocks[editing.blockIndex] = block.copy(stepList = steps)
+                    }
+                    it.copy(mainBlocks = blocks)
+                }
+            }
+            result.copy(editingStep = null)
+        }
+    }
+
+    fun dismissStepEditor() {
+        _uiState.update { it.copy(editingStep = null) }
+    }
+
+    // ==================== Single Goal ====================
+
+    fun updateDistanceGoal(value: Double?, unit: String = "KM") {
+        _uiState.update {
+            it.copy(distanceGoalStep = TrainStep(
+                stepId = it.distanceGoalStep?.stepId ?: UUID.randomUUID().toString(),
+                goalType = TrainGoalType.DISTANCE,
+                distanceUnit = unit,
+                distanceValue = value
+            ))
+        }
+    }
+
+    fun updateTimeGoal(seconds: Int?) {
+        _uiState.update {
+            it.copy(timeGoalStep = TrainStep(
+                stepId = it.timeGoalStep?.stepId ?: UUID.randomUUID().toString(),
+                goalType = TrainGoalType.TIME,
+                timeGoalSeconds = seconds
+            ))
+        }
+    }
+
+    fun updateCaloriesGoal(value: Int?, unit: String = "KCAL") {
+        _uiState.update {
+            it.copy(calGoalStep = TrainStep(
+                stepId = it.calGoalStep?.stepId ?: UUID.randomUUID().toString(),
+                goalType = TrainGoalType.CALORIES,
+                caloriesUnit = unit,
+                caloriesValue = value
+            ))
+        }
+    }
+
+    fun updatePacerGoal(minPace: Int?, maxPace: Int?) {
+        _uiState.update {
+            it.copy(pacerGoalStep = TrainStep(
+                stepId = it.pacerGoalStep?.stepId ?: UUID.randomUUID().toString(),
+                goalType = TrainGoalType.PACER,
+                minPace = minPace,
+                maxPace = maxPace
+            ))
+        }
+    }
+
+    // ==================== Save ====================
+
+    fun savePlan() {
+        val state = _uiState.value
+        if (state.name.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "请输入训练名称") }
+            return
+        }
+        _uiState.update { it.copy(isSaving = true, errorMessage = null) }
+        viewModelScope.launch {
+            val plan = buildTrainPlan()
+            val result = repository.savePlan(plan)
+            result.onSuccess {
+                _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+            }.onFailure { e ->
+                _uiState.update { it.copy(isSaving = false, errorMessage = e.message ?: "保存失败") }
+            }
+        }
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    // ==================== Load (edit mode) ====================
+
+    private fun loadPlan(planId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = repository.getPlanDetail(planId)
+            result.onSuccess { plan ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        planId = plan.planId,
+                        name = plan.name,
+                        scheduledDate = plan.scheduledDate,
+                        locationType = plan.locationType,
+                        trainWholeType = plan.trainWholeType,
+                        description = plan.description ?: "",
+                        hardLevel = plan.hardLevel,
+                        warmupBlock = plan.warmupBlock,
+                        mainBlocks = plan.blockList,
+                        cooldownBlock = plan.cooldownBlock,
+                        distanceGoalStep = plan.distanceGoalStep,
+                        timeGoalStep = plan.timeGoalStep,
+                        calGoalStep = plan.calGoalStep,
+                        pacerGoalStep = plan.pacerGoalStep
+                    )
+                }
+            }.onFailure { e ->
+                _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
+            }
+        }
+    }
+
+    private fun buildTrainPlan(): TrainPlan {
+        val state = _uiState.value
+        return TrainPlan(
+            planId = state.planId,
+            name = state.name,
+            description = state.description.takeIf { it.isNotBlank() },
+            trainWholeType = state.trainWholeType,
+            scheduledDate = state.scheduledDate,
+            hardLevel = state.hardLevel,
+            finishFlag = "N",
+            locationType = state.locationType,
+            warmupBlock = if (state.trainWholeType == TrainWholeType.SELF_DEFINE) state.warmupBlock else null,
+            blockList = if (state.trainWholeType == TrainWholeType.SELF_DEFINE) state.mainBlocks else emptyList(),
+            cooldownBlock = if (state.trainWholeType == TrainWholeType.SELF_DEFINE) state.cooldownBlock else null,
+            calGoalStep = if (state.trainWholeType == TrainWholeType.CALORIES) state.calGoalStep else null,
+            distanceGoalStep = if (state.trainWholeType == TrainWholeType.DISTANCE) state.distanceGoalStep else null,
+            timeGoalStep = if (state.trainWholeType == TrainWholeType.TIME) state.timeGoalStep else null,
+            pacerGoalStep = if (state.trainWholeType == TrainWholeType.PACER) state.pacerGoalStep else null
+        )
+    }
+
+    private fun createDefaultStep(goalType: TrainGoalType) = TrainStep(
+        stepId = UUID.randomUUID().toString(),
+        seq = 0,
+        goalType = goalType,
+        distanceValue = if (goalType == TrainGoalType.DISTANCE) 1.0 else null,
+        timeGoalSeconds = if (goalType == TrainGoalType.TIME) 300 else null
+    )
+}
+
+class TrainPlanEditViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(TrainPlanEditViewModel::class.java)) {
+            val prefs = PreferencesManager(context)
+            val repository = TrainPlanRepository(prefs)
+            return TrainPlanEditViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}

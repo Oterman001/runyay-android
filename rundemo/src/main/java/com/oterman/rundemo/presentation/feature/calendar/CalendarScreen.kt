@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -20,7 +21,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,9 +35,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,9 +55,11 @@ import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
+import com.oterman.rundemo.presentation.feature.trainplan.components.TrainPlanListItem
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -61,11 +67,14 @@ import java.util.Locale
 @Composable
 fun CalendarScreen(
     onBack: () -> Unit = {},
+    onAddPlan: (String?) -> Unit = {},
+    onEditPlan: (String) -> Unit = {},
     viewModel: CalendarViewModel = viewModel(
         factory = CalendarViewModelFactory(LocalContext.current)
     )
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
 
     val calendarState = rememberCalendarState(
         startMonth = YearMonth.now().minusMonths(24),
@@ -100,6 +109,16 @@ fun CalendarScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    val dateStr = uiState.selectedDate?.format(dateFormatter)
+                    onAddPlan(dateStr)
+                }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "新增训练")
+            }
         }
     ) { innerPadding ->
         LazyColumn(
@@ -130,6 +149,8 @@ fun CalendarScreen(
                             day = day,
                             hasRun = day.position == DayPosition.MonthDate &&
                                     uiState.daysWithRuns.contains(day.date),
+                            hasPlan = day.position == DayPosition.MonthDate &&
+                                    uiState.daysWithPlans.contains(day.date),
                             isSelected = day.date == uiState.selectedDate,
                             onClick = {
                                 if (day.position == DayPosition.MonthDate) {
@@ -145,8 +166,9 @@ fun CalendarScreen(
             item { HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp)) }
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
-            when {
-                uiState.selectedDate != null && uiState.selectedDateRecords.isNotEmpty() -> {
+            if (uiState.selectedDate != null) {
+                // Run records
+                if (uiState.selectedDateRecords.isNotEmpty()) {
                     items(uiState.selectedDateRecords) { record ->
                         RunRecordItem(
                             record = record,
@@ -155,19 +177,29 @@ fun CalendarScreen(
                         )
                     }
                 }
-                uiState.selectedDate != null -> {
-                    item {
-                        EmptyHint(text = "当天没有跑步记录")
+
+                // Plan items
+                if (uiState.selectedDatePlans.isNotEmpty()) {
+                    items(uiState.selectedDatePlans, key = { it.planId }) { plan ->
+                        TrainPlanListItem(
+                            plan = plan,
+                            onClick = { onEditPlan(plan.planId) }
+                        )
                     }
                 }
-                else -> {
+
+                if (uiState.selectedDateRecords.isEmpty() && uiState.selectedDatePlans.isEmpty()) {
                     item {
-                        EmptyHint(text = "点击日期查看当天记录")
+                        EmptyHint(text = "当天没有记录")
                     }
+                }
+            } else {
+                item {
+                    EmptyHint(text = "点击日期查看当天记录")
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(32.dp)) }
+            item { Spacer(modifier = Modifier.height(80.dp)) }
         }
     }
 }
@@ -226,12 +258,14 @@ private fun WeekDayLabels(firstDayOfWeek: DayOfWeek) {
 private fun DayCell(
     day: CalendarDay,
     hasRun: Boolean,
+    hasPlan: Boolean = false,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     val isCurrentMonth = day.position == DayPosition.MonthDate
     val isToday = day.date == LocalDate.now()
     val primaryColor = MaterialTheme.colorScheme.primary
+    val planColor = Color(0xFF2196F3) // Blue for plans
 
     Column(
         modifier = Modifier
@@ -253,14 +287,29 @@ private fun DayCell(
                 else -> MaterialTheme.colorScheme.onSurface
             }
         )
-        if (hasRun) {
+        if (hasRun || hasPlan) {
             Spacer(modifier = Modifier.height(2.dp))
-            Box(
-                modifier = Modifier
-                    .size(4.dp)
-                    .clip(CircleShape)
-                    .background(if (isSelected) Color.White else primaryColor)
-            )
+            Row(horizontalArrangement = Arrangement.Center) {
+                if (hasRun) {
+                    Box(
+                        modifier = Modifier
+                            .size(4.dp)
+                            .clip(CircleShape)
+                            .background(if (isSelected) Color.White else primaryColor)
+                    )
+                }
+                if (hasRun && hasPlan) {
+                    Spacer(modifier = Modifier.width(2.dp))
+                }
+                if (hasPlan) {
+                    Box(
+                        modifier = Modifier
+                            .size(4.dp)
+                            .clip(CircleShape)
+                            .background(if (isSelected) Color.White else planColor)
+                    )
+                }
+            }
         }
     }
 }
