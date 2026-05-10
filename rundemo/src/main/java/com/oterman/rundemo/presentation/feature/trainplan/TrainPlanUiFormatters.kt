@@ -41,6 +41,12 @@ internal fun TrainStep.displayName(): String {
     }
 }
 
+internal fun TrainStep.canRemoveLikeIos(): Boolean =
+    warmupFlag != "Y" && cooldownFlag != "Y"
+
+internal fun TrainStep.canMoveLikeIos(): Boolean =
+    warmupFlag != "Y" && cooldownFlag != "Y"
+
 internal fun TrainStep.goalText(): String = when (goalType) {
     TrainGoalType.DISTANCE -> formatDistance(distanceMeters())
     TrainGoalType.TIME -> formatDuration(timeGoalSeconds ?: 0)

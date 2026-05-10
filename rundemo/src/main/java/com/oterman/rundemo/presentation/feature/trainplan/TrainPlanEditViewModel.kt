@@ -26,7 +26,14 @@ class TrainPlanEditViewModel(
             _uiState.update { it.copy(isNewPlan = false, planId = planId) }
             loadPlan(planId)
         } else {
-            _uiState.update { it.copy(isNewPlan = true, scheduledDate = date) }
+            _uiState.update {
+                it.copy(
+                    isNewPlan = true,
+                    scheduledDate = date,
+                    warmupBlock = createBlock(BlockType.WARMUP, 0, "热身", "WARMUP", TrainGoalType.TIME),
+                    cooldownBlock = createBlock(BlockType.COOLDOWN, 99, "放松", "COOLDOWN", TrainGoalType.TIME)
+                )
+            }
         }
     }
 
@@ -70,6 +77,21 @@ class TrainPlanEditViewModel(
             ))
         }
     }
+
+    private fun createBlock(
+        blockType: BlockType,
+        seq: Int,
+        descName: String,
+        purpose: String,
+        goalType: TrainGoalType,
+        loopCnt: Int = 1
+    ): TrainBlock = TrainBlock(
+        blockId = UUID.randomUUID().toString(),
+        blockType = blockType,
+        seq = seq,
+        loopCnt = loopCnt,
+        stepList = listOf(createDefaultStep(goalType, descName, purpose))
+    )
 
     fun addMainBlock() {
         _uiState.update {
@@ -409,6 +431,8 @@ class TrainPlanEditViewModel(
         seq = 0,
         descName = descName,
         purpose = purpose,
+        warmupFlag = if (purpose == "WARMUP") "Y" else "N",
+        cooldownFlag = if (purpose == "COOLDOWN") "Y" else "N",
         goalType = goalType,
         distanceValue = if (goalType == TrainGoalType.DISTANCE) 1.0 else null,
         timeGoalSeconds = if (goalType == TrainGoalType.TIME) 300 else null

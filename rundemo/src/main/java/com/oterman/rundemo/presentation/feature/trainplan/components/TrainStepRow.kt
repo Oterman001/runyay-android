@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.domain.model.IntensityType
 import com.oterman.rundemo.domain.model.TrainGoalType
 import com.oterman.rundemo.domain.model.TrainStep
+import com.oterman.rundemo.presentation.feature.trainplan.canMoveLikeIos
+import com.oterman.rundemo.presentation.feature.trainplan.canRemoveLikeIos
 import com.oterman.rundemo.presentation.feature.trainplan.displayName
 import com.oterman.rundemo.presentation.feature.trainplan.goalText
 import com.oterman.rundemo.presentation.feature.trainplan.intensityText
@@ -81,19 +83,23 @@ fun TrainStepRow(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.weight(1f))
-                Icon(
-                    imageVector = Icons.Default.DragHandle,
-                    contentDescription = "拖动",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
-                )
-                IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
+                if (step.canMoveLikeIos()) {
                     Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "删除",
+                        imageVector = Icons.Default.DragHandle,
+                        contentDescription = "拖动",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
+                }
+                if (step.canRemoveLikeIos()) {
+                    IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "删除",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
 

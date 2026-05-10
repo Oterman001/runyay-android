@@ -1,6 +1,8 @@
 package com.oterman.rundemo.presentation.feature.trainplan
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -25,6 +28,8 @@ import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -32,20 +37,20 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -61,7 +66,6 @@ import com.oterman.rundemo.domain.model.TrainWholeType
 import com.oterman.rundemo.presentation.feature.trainplan.components.SingleGoalEditor
 import com.oterman.rundemo.presentation.feature.trainplan.components.StepEditSheet
 import com.oterman.rundemo.presentation.feature.trainplan.components.TrainBlockCard
-import com.oterman.rundemo.presentation.feature.trainplan.components.TrainWholeTypeSelector
 import com.oterman.rundemo.ui.theme.RunTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -116,6 +120,10 @@ fun TrainPlanEditScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background
+                ),
                 title = {
                     Text(
                         if (uiState.isNewPlan) "新增课程" else "编辑课程",
@@ -327,22 +335,102 @@ private fun BasicInfoCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("地点", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.width(160.dp)) {
-                listOf(LocationType.OUTDOOR to "室外", LocationType.INDOOR to "室内").forEachIndexed { index, (type, label) ->
-                    SegmentedButton(
-                        selected = locationType == type,
-                        onClick = { onLocationTypeChange(type) },
-                        shape = SegmentedButtonDefaults.itemShape(index, 2)
-                    ) { Text(label) }
-                }
-            }
+            InlineChoiceGroup(
+                options = listOf(LocationType.OUTDOOR to "室外", LocationType.INDOOR to "室内"),
+                selected = locationType,
+                onSelected = onLocationTypeChange
+            )
         }
         HorizontalDivider(color = RunTheme.colorScheme.divider)
-        Text("类型", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        TrainWholeTypeSelector(
-            selected = trainWholeType,
-            onSelected = onTrainWholeTypeChange
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("类型", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.weight(1f))
+            TypeDropdown(
+                options = listOf(
+                    TrainWholeType.SELF_DEFINE to "自定义",
+                    TrainWholeType.DISTANCE to "距离",
+                    TrainWholeType.TIME to "时间",
+                    TrainWholeType.CALORIES to "卡路里",
+                    TrainWholeType.PACER to "配速员"
+                ),
+                selected = trainWholeType,
+                onSelected = onTrainWholeTypeChange,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun TypeDropdown(
+    options: List<Pair<TrainWholeType, String>>,
+    selected: TrainWholeType,
+    onSelected: (TrainWholeType) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.first == selected }?.second ?: selected.displayName()
+    Box(modifier = modifier, contentAlignment = Alignment.CenterEnd) {
+        Text(
+            text = selectedLabel,
+            style = MaterialTheme.typography.bodyLarge,
+            color = RunTheme.colorScheme.blue,
+            modifier = Modifier
+                .background(RunTheme.colorScheme.blue.copy(alpha = 0.10f), RoundedCornerShape(8.dp))
+                .clickable { expanded = true }
+                .padding(horizontal = 12.dp, vertical = 7.dp)
         )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            containerColor = RunTheme.colorScheme.cardBg
+        ) {
+            options.forEach { (value, label) ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            label,
+                            color = if (value == selected) RunTheme.colorScheme.blue else MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSelected(value)
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> InlineChoiceGroup(
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelected: (T) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        options.forEach { (value, label) ->
+            val isSelected = selected == value
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isSelected) RunTheme.colorScheme.blue else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .background(
+                        color = if (isSelected) RunTheme.colorScheme.blue.copy(alpha = 0.10f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .clickable { onSelected(value) }
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            )
+        }
     }
 }
 

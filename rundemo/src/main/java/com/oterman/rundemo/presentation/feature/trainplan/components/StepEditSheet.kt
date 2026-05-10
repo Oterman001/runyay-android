@@ -47,6 +47,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.oterman.rundemo.domain.model.IntensityType
 import com.oterman.rundemo.domain.model.TrainGoalType
 import com.oterman.rundemo.domain.model.TrainStep
+import com.oterman.rundemo.presentation.feature.trainplan.canMoveLikeIos
 import com.oterman.rundemo.presentation.feature.trainplan.formatDuration
 import com.oterman.rundemo.presentation.feature.trainplan.formatPace
 import com.oterman.rundemo.presentation.feature.trainplan.formatPaceInput
@@ -102,6 +103,7 @@ fun StepEditSheet(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 ActionCard(
+                    canModifyPurpose = step.canMoveLikeIos(),
                     purpose = purpose,
                     onPurposeChange = { purpose = it },
                     skipStatus = skipStatus,
@@ -203,6 +205,7 @@ private fun SheetHeader(onDismiss: () -> Unit) {
 
 @Composable
 private fun ActionCard(
+    canModifyPurpose: Boolean,
     purpose: String,
     onPurposeChange: (String) -> Unit,
     skipStatus: Int,
@@ -213,11 +216,23 @@ private fun ActionCard(
     SectionCard {
         Text("动作", style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.height(8.dp))
-        Segmented(
-            items = listOf("WORK" to "训练", "RECOVERY" to "恢复", "WARMUP" to "热身", "COOLDOWN" to "放松"),
-            selected = purpose,
-            onSelected = onPurposeChange
-        )
+        if (canModifyPurpose) {
+            Segmented(
+                items = listOf("WORK" to "训练", "RECOVERY" to "恢复"),
+                selected = purpose,
+                onSelected = onPurposeChange
+            )
+        } else {
+            Text(
+                text = when (purpose) {
+                    "WARMUP" -> "热身"
+                    "COOLDOWN" -> "放松"
+                    else -> purpose
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("是否跳过")

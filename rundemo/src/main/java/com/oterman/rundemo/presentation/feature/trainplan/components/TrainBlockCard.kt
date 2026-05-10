@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,6 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.domain.model.BlockType
@@ -46,51 +48,34 @@ fun TrainBlockCard(
     modifier: Modifier = Modifier
 ) {
     val accent = blockAccent(block)
+    val isSimpleSingleStep = block.stepList.size == 1 && block.loopCnt <= 1
+
+    if (isSimpleSingleStep) {
+        block.stepList.forEachIndexed { index, step ->
+            TrainStepRow(
+                step = step,
+                onClick = { onStepClick(index) },
+                onRemove = { onRemoveStep(index) },
+                modifier = modifier.padding(horizontal = 20.dp)
+            )
+        }
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .background(RunTheme.colorScheme.cardBg, RoundedCornerShape(12.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(horizontal = 10.dp)
+            .dashedBorder(accent.copy(alpha = 0.5f))
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = blockIcon(block),
-                    contentDescription = null,
-                    tint = accent,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = blockTitle(block),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                if (block.blockType == BlockType.MAIN && onLoopCountChange != null) {
-                    Spacer(Modifier.width(14.dp))
-                    LoopCounter(
-                        loopCnt = block.loopCnt,
-                        accent = accent,
-                        onLoopCountChange = onLoopCountChange
-                    )
-                }
-            }
-            IconButton(onClick = onRemoveBlock, modifier = Modifier.size(30.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "删除分段",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
+        BlockHeader(
+            block = block,
+            accent = accent,
+            onRemoveBlock = onRemoveBlock,
+            onLoopCountChange = if (block.blockType == BlockType.MAIN) onLoopCountChange else null
+        )
 
         block.stepList.forEachIndexed { index, step ->
             TrainStepRow(
@@ -107,6 +92,65 @@ fun TrainBlockCard(
             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(4.dp))
             Text("添加步骤")
+        }
+    }
+}
+
+private fun Modifier.dashedBorder(color: Color): Modifier = drawBehind {
+    val strokeWidth = 1.5.dp.toPx()
+    drawRoundRect(
+        color = color,
+        size = size,
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(12.dp.toPx(), 12.dp.toPx()),
+        style = Stroke(
+            width = strokeWidth,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10.dp.toPx(), 8.dp.toPx()), 0f)
+        )
+    )
+}
+
+@Composable
+private fun BlockHeader(
+    block: TrainBlock,
+    accent: Color,
+    onRemoveBlock: () -> Unit,
+    onLoopCountChange: ((delta: Int) -> Unit)?
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (onLoopCountChange != null) {
+                LoopCounter(
+                    loopCnt = block.loopCnt,
+                    accent = accent,
+                    onLoopCountChange = onLoopCountChange
+                )
+            } else {
+                Icon(
+                    imageVector = blockIcon(block),
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = blockTitle(block),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+        IconButton(onClick = onRemoveBlock, modifier = Modifier.size(30.dp)) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "删除分段",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }
