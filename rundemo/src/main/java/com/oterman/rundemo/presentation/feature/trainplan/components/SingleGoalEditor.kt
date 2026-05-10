@@ -1,5 +1,7 @@
 package com.oterman.rundemo.presentation.feature.trainplan.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -7,8 +9,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DirectionsRun
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -23,6 +31,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.domain.model.TrainStep
 import com.oterman.rundemo.domain.model.TrainWholeType
+import com.oterman.rundemo.presentation.feature.trainplan.formatDuration
+import com.oterman.rundemo.presentation.feature.trainplan.formatPaceInput
+import com.oterman.rundemo.presentation.feature.trainplan.parsePaceInput
+import com.oterman.rundemo.ui.theme.RunTheme
 
 @Composable
 fun SingleGoalEditor(
@@ -37,144 +49,141 @@ fun SingleGoalEditor(
     onPacerChange: (Int?, Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            when (trainWholeType) {
-                TrainWholeType.DISTANCE -> {
-                    Text("距离目标", style = MaterialTheme.typography.titleSmall)
-                    Spacer(Modifier.height(8.dp))
-                    var text by remember(distanceGoalStep?.distanceValue) {
-                        mutableStateOf(distanceGoalStep?.distanceValue?.toString() ?: "")
-                    }
-                    OutlinedTextField(
-                        value = text,
-                        onValueChange = {
-                            text = it
-                            onDistanceChange(it.toDoubleOrNull())
-                        },
-                        label = { Text("距离") },
-                        suffix = { Text("km") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                TrainWholeType.TIME -> {
-                    Text("时间目标", style = MaterialTheme.typography.titleSmall)
-                    Spacer(Modifier.height(8.dp))
-                    val totalSeconds = timeGoalStep?.timeGoalSeconds ?: 0
-                    var minutes by remember(totalSeconds) {
-                        mutableStateOf(if (totalSeconds > 0) (totalSeconds / 60).toString() else "")
-                    }
-                    var seconds by remember(totalSeconds) {
-                        mutableStateOf(if (totalSeconds > 0) (totalSeconds % 60).toString() else "")
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = minutes,
-                            onValueChange = {
-                                minutes = it
-                                val m = it.toIntOrNull() ?: 0
-                                val s = seconds.toIntOrNull() ?: 0
-                                onTimeChange((m * 60 + s).takeIf { total -> total > 0 })
-                            },
-                            label = { Text("分钟") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        OutlinedTextField(
-                            value = seconds,
-                            onValueChange = {
-                                seconds = it
-                                val m = minutes.toIntOrNull() ?: 0
-                                val s = it.toIntOrNull() ?: 0
-                                onTimeChange((m * 60 + s).takeIf { total -> total > 0 })
-                            },
-                            label = { Text("秒") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                TrainWholeType.CALORIES -> {
-                    Text("卡路里目标", style = MaterialTheme.typography.titleSmall)
-                    Spacer(Modifier.height(8.dp))
-                    var text by remember(calGoalStep?.caloriesValue) {
-                        mutableStateOf(calGoalStep?.caloriesValue?.toString() ?: "")
-                    }
-                    OutlinedTextField(
-                        value = text,
-                        onValueChange = {
-                            text = it
-                            onCaloriesChange(it.toIntOrNull())
-                        },
-                        label = { Text("卡路里") },
-                        suffix = { Text("kcal") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                TrainWholeType.PACER -> {
-                    Text("配速目标", style = MaterialTheme.typography.titleSmall)
-                    Spacer(Modifier.height(8.dp))
-                    var minText by remember(pacerGoalStep?.minPace) {
-                        mutableStateOf(pacerGoalStep?.minPace?.let { formatPace(it) } ?: "")
-                    }
-                    var maxText by remember(pacerGoalStep?.maxPace) {
-                        mutableStateOf(pacerGoalStep?.maxPace?.let { formatPace(it) } ?: "")
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = minText,
-                            onValueChange = {
-                                minText = it
-                                onPacerChange(parsePace(it), parsePace(maxText))
-                            },
-                            label = { Text("最快配速") },
-                            placeholder = { Text("如 4:30") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("~")
-                        Spacer(Modifier.width(8.dp))
-                        OutlinedTextField(
-                            value = maxText,
-                            onValueChange = {
-                                maxText = it
-                                onPacerChange(parsePace(minText), parsePace(it))
-                            },
-                            label = { Text("最慢配速") },
-                            placeholder = { Text("如 6:00") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Text(
-                        "格式: 分:秒/公里",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                else -> {}
-            }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .background(RunTheme.colorScheme.cardBg, RoundedCornerShape(12.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        when (trainWholeType) {
+            TrainWholeType.DISTANCE -> DistanceGoal(distanceGoalStep, onDistanceChange)
+            TrainWholeType.TIME -> TimeGoal(timeGoalStep, onTimeChange)
+            TrainWholeType.CALORIES -> CaloriesGoal(calGoalStep, onCaloriesChange)
+            TrainWholeType.PACER -> PacerGoal(pacerGoalStep, onPacerChange)
+            TrainWholeType.SELF_DEFINE -> Unit
         }
     }
 }
 
-private fun formatPace(seconds: Int): String {
-    val min = seconds / 60
-    val sec = seconds % 60
-    return "$min:${sec.toString().padStart(2, '0')}"
+@Composable
+private fun DistanceGoal(step: TrainStep?, onDistanceChange: (Double?) -> Unit) {
+    var text by remember(step?.distanceValue) { mutableStateOf(step?.distanceValue?.toString() ?: "") }
+    GoalHeader("距离", Icons.Outlined.DirectionsRun)
+    OutlinedTextField(
+        value = text,
+        onValueChange = {
+            text = it
+            onDistanceChange(it.toDoubleOrNull())
+        },
+        label = { Text("距离") },
+        suffix = { Text("km") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
-private fun parsePace(text: String): Int? {
-    val parts = text.split(":")
-    if (parts.size != 2) return null
-    val min = parts[0].toIntOrNull() ?: return null
-    val sec = parts[1].toIntOrNull() ?: return null
-    return min * 60 + sec
+@Composable
+private fun TimeGoal(step: TrainStep?, onTimeChange: (Int?) -> Unit) {
+    val totalSeconds = step?.timeGoalSeconds ?: 0
+    var minutes by remember(totalSeconds) { mutableStateOf(if (totalSeconds > 0) (totalSeconds / 60).toString() else "") }
+    var seconds by remember(totalSeconds) { mutableStateOf(if (totalSeconds > 0) (totalSeconds % 60).toString() else "") }
+    GoalHeader("时间", Icons.Outlined.Timer)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = minutes,
+            onValueChange = {
+                minutes = it
+                val m = it.toIntOrNull() ?: 0
+                val s = seconds.toIntOrNull() ?: 0
+                onTimeChange((m * 60 + s).takeIf { total -> total > 0 })
+            },
+            label = { Text("分钟") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(Modifier.width(8.dp))
+        OutlinedTextField(
+            value = seconds,
+            onValueChange = {
+                seconds = it
+                val m = minutes.toIntOrNull() ?: 0
+                val s = it.toIntOrNull() ?: 0
+                onTimeChange((m * 60 + s).takeIf { total -> total > 0 })
+            },
+            label = { Text("秒") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            modifier = Modifier.weight(1f)
+        )
+    }
+    if (totalSeconds > 0) {
+        Text(formatDuration(totalSeconds), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun CaloriesGoal(step: TrainStep?, onCaloriesChange: (Int?) -> Unit) {
+    var text by remember(step?.caloriesValue) { mutableStateOf(step?.caloriesValue?.toString() ?: "") }
+    GoalHeader("卡路里", Icons.Outlined.FavoriteBorder)
+    OutlinedTextField(
+        value = text,
+        onValueChange = {
+            text = it
+            onCaloriesChange(it.toIntOrNull())
+        },
+        label = { Text("卡路里") },
+        suffix = { Text("kcal") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+private fun PacerGoal(step: TrainStep?, onPacerChange: (Int?, Int?) -> Unit) {
+    var minText by remember(step?.minPace) { mutableStateOf(step?.minPace?.let { formatPaceInput(it) } ?: "") }
+    var maxText by remember(step?.maxPace) { mutableStateOf(step?.maxPace?.let { formatPaceInput(it) } ?: "") }
+    GoalHeader("配速员", Icons.Outlined.Speed)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = minText,
+            onValueChange = {
+                minText = it
+                onPacerChange(parsePaceInput(it), parsePaceInput(maxText))
+            },
+            label = { Text("最快") },
+            placeholder = { Text("4:30") },
+            singleLine = true,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text("-", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(8.dp))
+        OutlinedTextField(
+            value = maxText,
+            onValueChange = {
+                maxText = it
+                onPacerChange(parsePaceInput(minText), parsePaceInput(it))
+            },
+            label = { Text("最慢") },
+            placeholder = { Text("6:00") },
+            singleLine = true,
+            modifier = Modifier.weight(1f)
+        )
+    }
+    Text("格式: 分:秒/公里", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable
+private fun GoalHeader(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, contentDescription = null, tint = RunTheme.colorScheme.blue)
+        Spacer(Modifier.width(8.dp))
+        Text(label, style = MaterialTheme.typography.titleMedium)
+    }
+    Spacer(Modifier.height(2.dp))
 }

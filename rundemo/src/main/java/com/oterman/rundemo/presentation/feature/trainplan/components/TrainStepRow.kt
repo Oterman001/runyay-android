@@ -1,5 +1,6 @@
 package com.oterman.rundemo.presentation.feature.trainplan.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,8 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.outlined.DirectionsRun
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Speed
@@ -22,10 +26,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.oterman.rundemo.domain.model.TrainGoalType
 import com.oterman.rundemo.domain.model.IntensityType
+import com.oterman.rundemo.domain.model.TrainGoalType
 import com.oterman.rundemo.domain.model.TrainStep
+import com.oterman.rundemo.presentation.feature.trainplan.displayName
+import com.oterman.rundemo.presentation.feature.trainplan.goalText
+import com.oterman.rundemo.presentation.feature.trainplan.intensityText
+import com.oterman.rundemo.ui.theme.RunTheme
 
 @Composable
 fun TrainStepRow(
@@ -34,110 +44,135 @@ fun TrainStepRow(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val accent = when {
+        step.warmupFlag == "Y" -> RunTheme.colorScheme.orange
+        step.cooldownFlag == "Y" -> MaterialTheme.colorScheme.tertiary
+        step.purpose.equals("RECOVERY", ignoreCase = true) -> MaterialTheme.colorScheme.tertiary
+        else -> RunTheme.colorScheme.blue
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .background(RunTheme.colorScheme.cardBg, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(14.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        // Goal icon
-        val goalIcon = when (step.goalType) {
-            TrainGoalType.DISTANCE -> Icons.Outlined.DirectionsRun
-            TrainGoalType.TIME -> Icons.Outlined.Timer
-            TrainGoalType.CALORIES -> Icons.Outlined.FavoriteBorder
-            TrainGoalType.PACER -> Icons.Outlined.Speed
-        }
         Icon(
-            goalIcon,
+            imageVector = stepIcon(step),
             contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.primary
+            modifier = Modifier
+                .size(28.dp)
+                .background(accent.copy(alpha = 0.12f), CircleShape)
+                .padding(5.dp),
+            tint = accent
         )
-
-        Spacer(Modifier.width(8.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            // Goal value
-            Text(
-                text = formatGoalText(step),
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            // Intensity
-            val intensityText = formatIntensityText(step)
-            if (intensityText != null) {
+        Spacer(Modifier.width(10.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = intensityText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    text = step.displayName(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(Modifier.weight(1f))
+                Icon(
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = "拖动",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "删除",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            if (step.skipStatus == 1) {
+                Text(
+                    text = "跳过",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MetricText(
+                        icon = goalIcon(step.goalType),
+                        value = step.goalText(),
+                        tint = accent,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    MetricText(
+                        icon = intensityIcon(step.intensityType),
+                        value = step.intensityText() ?: "自由练",
+                        tint = accent,
+                        muted = step.intensityType == null,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
-
-        IconButton(onClick = onRemove, modifier = Modifier.size(24.dp)) {
-            Icon(
-                Icons.Default.Close,
-                contentDescription = "删除",
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-            )
-        }
     }
 }
 
-private fun formatGoalText(step: TrainStep): String {
-    return when (step.goalType) {
-        TrainGoalType.DISTANCE -> {
-            val value = step.distanceValue ?: 0.0
-            val unit = if (step.distanceUnit == "M") "m" else "km"
-            "${formatNumber(value)} $unit"
-        }
-        TrainGoalType.TIME -> {
-            val seconds = step.timeGoalSeconds ?: 0
-            val min = seconds / 60
-            val sec = seconds % 60
-            if (sec > 0) "${min}分${sec}秒" else "${min}分钟"
-        }
-        TrainGoalType.CALORIES -> {
-            "${step.caloriesValue ?: 0} kcal"
-        }
-        TrainGoalType.PACER -> {
-            val min = step.minPace?.let { formatPaceValue(it) } ?: "--"
-            val max = step.maxPace?.let { formatPaceValue(it) } ?: "--"
-            "$min ~ $max /km"
-        }
+@Composable
+private fun MetricText(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    value: String,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    muted: Boolean = false
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else tint
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            maxLines = 2
+        )
     }
 }
 
-private fun formatIntensityText(step: TrainStep): String? {
-    val type = step.intensityType ?: return null
-    return when (type) {
-        IntensityType.HEART_RATE -> {
-            val zone = step.heartZoneType
-            val range = if (step.minHeartRate != null && step.maxHeartRate != null) {
-                "${step.minHeartRate}-${step.maxHeartRate} bpm"
-            } else null
-            listOfNotNull(zone, range).joinToString(" ").takeIf { it.isNotBlank() }
-        }
-        IntensityType.SPEED -> {
-            val min = step.minPace?.let { formatPaceValue(it) }
-            val max = step.maxPace?.let { formatPaceValue(it) }
-            if (min != null && max != null) "$min ~ $max /km" else null
-        }
-    }
+private fun stepIcon(step: TrainStep) = when {
+    step.intensityType == IntensityType.SPEED -> Icons.Outlined.Speed
+    step.goalType == TrainGoalType.TIME -> Icons.Outlined.Timer
+    step.goalType == TrainGoalType.CALORIES -> Icons.Outlined.FavoriteBorder
+    else -> Icons.Outlined.DirectionsRun
 }
 
-private fun formatPaceValue(seconds: Int): String {
-    val min = seconds / 60
-    val sec = seconds % 60
-    return "$min:${sec.toString().padStart(2, '0')}"
+private fun goalIcon(type: TrainGoalType) = when (type) {
+    TrainGoalType.DISTANCE -> Icons.Outlined.DirectionsRun
+    TrainGoalType.TIME -> Icons.Outlined.Timer
+    TrainGoalType.CALORIES -> Icons.Outlined.FavoriteBorder
+    TrainGoalType.PACER -> Icons.Outlined.Speed
 }
 
-private fun formatNumber(value: Double): String {
-    return if (value == value.toLong().toDouble()) {
-        value.toLong().toString()
-    } else {
-        "%.1f".format(value)
-    }
+private fun intensityIcon(type: IntensityType?) = when (type) {
+    IntensityType.HEART_RATE -> Icons.Outlined.FavoriteBorder
+    IntensityType.SPEED -> Icons.Outlined.Speed
+    null -> Icons.Outlined.DirectionsRun
 }
