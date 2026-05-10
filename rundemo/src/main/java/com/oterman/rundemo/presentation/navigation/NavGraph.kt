@@ -64,6 +64,7 @@ import com.oterman.rundemo.presentation.feature.home.HomeViewModelFactory
 import com.oterman.rundemo.presentation.feature.rundetail.RunDetailDebugScreen
 import com.oterman.rundemo.presentation.feature.settings.goal.RunGoalSetPage
 import com.oterman.rundemo.presentation.feature.settings.heartrate.HearRateZoneScreen
+import com.oterman.rundemo.presentation.feature.mcp.McpConnectionManageScreen
 import com.oterman.rundemo.presentation.feature.statistics.RunStatisticTab
 import com.oterman.rundemo.presentation.feature.statistics.RunStatisticsScreen
 import com.oterman.rundemo.presentation.feature.userprofile.UserProfileScreen
@@ -293,6 +294,9 @@ fun AppNavGraph(
                 onNavigateToDataSourceManage = {
                     navController.navigate(Screen.DataSourceManage.route)
                 },
+                onNavigateToMcpConnectionManage = {
+                    navController.navigate(Screen.McpConnectionManage.route)
+                },
                 onNavigateToUserProfile = {
                     navController.navigate(Screen.UserProfile.route)
                 },
@@ -325,6 +329,15 @@ fun AppNavGraph(
                 },
                 onThemeModeChanged = onThemeModeChanged,
                 viewModel = homeViewModel
+            )
+        }
+
+        // 连接与授权管理页面
+        composable(Screen.McpConnectionManage.route) {
+            McpConnectionManageScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
 
@@ -1008,4 +1021,3 @@ private fun PlaceholderScreen(title: String) {
         )
     }
 }
-

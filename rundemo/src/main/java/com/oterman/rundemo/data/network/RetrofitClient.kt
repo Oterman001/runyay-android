@@ -3,6 +3,8 @@ package com.oterman.rundemo.data.network
 import android.content.Context
 import com.oterman.rundemo.data.network.api.DataSourceApi
 import com.oterman.rundemo.data.network.api.FitFileApi
+import com.oterman.rundemo.data.network.api.McpAuthorizationApi
+import com.oterman.rundemo.data.network.api.OAuth2AuthorizationApi
 import com.oterman.rundemo.data.network.api.RunDataApi
 import com.oterman.rundemo.data.network.api.RunningShoeApi
 import com.oterman.rundemo.data.network.api.UserApi
@@ -153,10 +155,23 @@ object RetrofitClient {
     }
 
     /**
+     * MCP连接授权管理API接口实例
+     */
+    val mcpAuthorizationApi: McpAuthorizationApi by lazy {
+        retrofit.create(McpAuthorizationApi::class.java)
+    }
+
+    /**
+     * OAuth2合作方授权管理API接口实例
+     */
+    val oauth2AuthorizationApi: OAuth2AuthorizationApi by lazy {
+        retrofit.create(OAuth2AuthorizationApi::class.java)
+    }
+
+    /**
      * 训练计划API接口实例
      */
     val trainPlanApi: com.oterman.rundemo.data.network.api.TrainPlanApi by lazy {
         retrofit.create(com.oterman.rundemo.data.network.api.TrainPlanApi::class.java)
     }
 }
-

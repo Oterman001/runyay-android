@@ -81,6 +81,12 @@ sealed class Screen(val route: String) {
     object DataSourceManage : Screen("data_source_manage")
 
     /**
+     * 连接与授权管理页面
+     * 用于管理 MCP AI 连接和合作方数据授权
+     */
+    object McpConnectionManage : Screen("mcp_connection_manage")
+
+    /**
      * 手动导入落地页
      * 统一的 FIT 文件导入入口，支持多选批量导入，并展示已导入记录列表（支持删除）
      */
@@ -262,4 +268,3 @@ sealed class Screen(val route: String) {
         }
     }
 }
-

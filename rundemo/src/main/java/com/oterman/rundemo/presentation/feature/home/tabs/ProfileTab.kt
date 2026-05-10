@@ -29,6 +29,7 @@ import com.oterman.rundemo.R
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Star
@@ -74,9 +75,12 @@ import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.presentation.components.settings.SettingsCard
 import com.oterman.rundemo.presentation.components.settings.SettingsItem
 import com.oterman.rundemo.presentation.components.settings.UserProfileCard
+import com.oterman.rundemo.presentation.feature.mcp.AuthorizationSummaryViewModel
+import com.oterman.rundemo.presentation.feature.mcp.AuthorizationSummaryViewModelFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 /**
  * Profile/Settings tab content with iOS-style NavigationTitle effect
@@ -97,6 +101,7 @@ fun ProfileTabContent(
     onShowWelcomeClick: () -> Unit,
     onResetFirstLaunchClick: () -> Unit,
     onDataSourceManageClick: () -> Unit = {},
+    onMcpConnectionManageClick: () -> Unit = {},
     onRunGoalClick: () -> Unit = {},
     onHearRateZoneClick: () -> Unit = {},
     onRunningShoesClick: () -> Unit = {},
@@ -111,6 +116,14 @@ fun ProfileTabContent(
     val coroutineScope = rememberCoroutineScope()
 
     val preferencesManager = remember { PreferencesManager(context) }
+    val authorizationSummaryViewModel: AuthorizationSummaryViewModel = viewModel(
+        factory = AuthorizationSummaryViewModelFactory(context)
+    )
+    val authorizationSummary by authorizationSummaryViewModel.uiState.collectAsState()
+
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) authorizationSummaryViewModel.load()
+    }
 
     // App update state
     var isCheckingUpdate by remember { mutableStateOf(false) }
@@ -269,6 +282,29 @@ fun ProfileTabContent(
                         subtitle = "管理你的跑鞋装备",
                         iconTint = RunTheme.colorScheme.blue,
                         onClick = onRunningShoesClick,
+                        showDivider = true
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.Key,
+                        title = "连接与授权管理",
+                        subtitle = "AI 连接与合作方数据授权",
+                        iconTint = RunTheme.colorScheme.blue,
+                        onClick = onMcpConnectionManageClick,
+                        trailingContent = {
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = authorizationSummary.mcpConnectionCount?.let { "$it 个连接" } ?: "MCP",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = RunTheme.colorScheme.blue,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = authorizationSummary.partnerAuthorizationCount?.let { "$it 个合作方" } ?: "合作方授权",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
                         showDivider = false
                     )
                 }
