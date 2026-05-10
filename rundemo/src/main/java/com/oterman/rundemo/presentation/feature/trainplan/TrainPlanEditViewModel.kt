@@ -23,12 +23,13 @@ class TrainPlanEditViewModel(
 
     fun init(planId: String?, date: String?) {
         if (planId != null) {
-            _uiState.update { it.copy(isNewPlan = false, planId = planId) }
+            _uiState.update { it.copy(isNewPlan = false, planId = planId, isEditMode = false) }
             loadPlan(planId)
         } else {
             _uiState.update {
                 it.copy(
                     isNewPlan = true,
+                    isEditMode = true,
                     scheduledDate = date,
                     warmupBlock = createBlock(BlockType.WARMUP, 0, "热身", "WARMUP", TrainGoalType.TIME),
                     cooldownBlock = createBlock(BlockType.COOLDOWN, 99, "放松", "COOLDOWN", TrainGoalType.TIME)
@@ -40,32 +41,55 @@ class TrainPlanEditViewModel(
     // ==================== Basic Info ====================
 
     fun onNameChange(name: String) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update { it.copy(name = name) }
     }
 
     fun onDateChange(date: String) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update { it.copy(scheduledDate = date, showDatePicker = false) }
     }
 
     fun onLocationTypeChange(type: LocationType) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update { it.copy(locationType = type) }
     }
 
     fun onTrainWholeTypeChange(type: TrainWholeType) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update { it.copy(trainWholeType = type) }
     }
 
     fun onDescriptionChange(desc: String) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update { it.copy(description = desc) }
     }
 
     fun toggleDatePicker(show: Boolean) {
+        if (show && !_uiState.value.isEditMode) return
         _uiState.update { it.copy(showDatePicker = show) }
+    }
+
+    fun enterEditMode() {
+        if (canEditCurrentPlan()) {
+            _uiState.update { it.copy(isEditMode = true) }
+        }
+    }
+
+    fun canEditCurrentPlan(): Boolean {
+        val state = _uiState.value
+        if (state.isNewPlan) return true
+        if (state.finishFlag != null && state.finishFlag != "N") return false
+        val date = state.scheduledDate ?: return true
+        return runCatching {
+            java.time.LocalDate.parse(date).isBefore(java.time.LocalDate.now()).not()
+        }.getOrDefault(true)
     }
 
     // ==================== Block Operations ====================
 
     fun addWarmupBlock() {
+        if (!_uiState.value.isEditMode) return
         if (_uiState.value.warmupBlock != null) return
         _uiState.update {
             it.copy(warmupBlock = TrainBlock(
@@ -94,6 +118,7 @@ class TrainPlanEditViewModel(
     )
 
     fun addMainBlock() {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             val blocks = it.mainBlocks.toMutableList()
             blocks.add(TrainBlock(
@@ -108,6 +133,7 @@ class TrainPlanEditViewModel(
     }
 
     fun addRecoveryBlock() {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             val blocks = it.mainBlocks.toMutableList()
             blocks.add(TrainBlock(
@@ -122,6 +148,7 @@ class TrainPlanEditViewModel(
     }
 
     fun addIntervalBlock() {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             val blocks = it.mainBlocks.toMutableList()
             blocks.add(TrainBlock(
@@ -139,6 +166,7 @@ class TrainPlanEditViewModel(
     }
 
     fun addCooldownBlock() {
+        if (!_uiState.value.isEditMode) return
         if (_uiState.value.cooldownBlock != null) return
         _uiState.update {
             it.copy(cooldownBlock = TrainBlock(
@@ -152,6 +180,7 @@ class TrainPlanEditViewModel(
     }
 
     fun removeBlock(blockType: BlockType, blockIndex: Int) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             when (blockType) {
                 BlockType.WARMUP -> it.copy(warmupBlock = null)
@@ -166,6 +195,7 @@ class TrainPlanEditViewModel(
     }
 
     fun updateLoopCount(blockIndex: Int, delta: Int) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             val blocks = it.mainBlocks.toMutableList()
             if (blockIndex in blocks.indices) {
@@ -180,6 +210,7 @@ class TrainPlanEditViewModel(
     // ==================== Step Operations ====================
 
     fun addStepToBlock(blockType: BlockType, blockIndex: Int) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             when (blockType) {
                 BlockType.WARMUP -> {
@@ -209,6 +240,7 @@ class TrainPlanEditViewModel(
     }
 
     fun removeStep(blockType: BlockType, blockIndex: Int, stepIndex: Int) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             when (blockType) {
                 BlockType.WARMUP -> {
@@ -241,6 +273,7 @@ class TrainPlanEditViewModel(
     }
 
     fun openStepEditor(blockType: BlockType, blockIndex: Int, stepIndex: Int) {
+        if (!_uiState.value.isEditMode) return
         val state = _uiState.value
         val step = when (blockType) {
             BlockType.WARMUP -> state.warmupBlock?.stepList?.getOrNull(stepIndex)
@@ -253,6 +286,7 @@ class TrainPlanEditViewModel(
     }
 
     fun saveStepEdit(updatedStep: TrainStep) {
+        if (!_uiState.value.isEditMode) return
         val editing = _uiState.value.editingStep ?: return
         _uiState.update {
             val result = when (editing.blockType) {
@@ -293,9 +327,23 @@ class TrainPlanEditViewModel(
         _uiState.update { it.copy(editingStep = null) }
     }
 
+    fun moveMainBlock(fromIndex: Int, toIndex: Int) {
+        _uiState.update {
+            if (!it.isEditMode) return@update it
+            val blocks = it.mainBlocks.toMutableList()
+            if (fromIndex !in blocks.indices || toIndex !in blocks.indices || fromIndex == toIndex) {
+                return@update it
+            }
+            val item = blocks.removeAt(fromIndex)
+            blocks.add(toIndex, item)
+            it.copy(mainBlocks = blocks.resequenceBlocks())
+        }
+    }
+
     // ==================== Single Goal ====================
 
     fun updateDistanceGoal(value: Double?, unit: String = "KM") {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             it.copy(distanceGoalStep = TrainStep(
                 stepId = it.distanceGoalStep?.stepId ?: UUID.randomUUID().toString(),
@@ -307,6 +355,7 @@ class TrainPlanEditViewModel(
     }
 
     fun updateTimeGoal(seconds: Int?) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             it.copy(timeGoalStep = TrainStep(
                 stepId = it.timeGoalStep?.stepId ?: UUID.randomUUID().toString(),
@@ -317,6 +366,7 @@ class TrainPlanEditViewModel(
     }
 
     fun updateCaloriesGoal(value: Int?, unit: String = "KCAL") {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             it.copy(calGoalStep = TrainStep(
                 stepId = it.calGoalStep?.stepId ?: UUID.randomUUID().toString(),
@@ -328,6 +378,7 @@ class TrainPlanEditViewModel(
     }
 
     fun updatePacerGoal(minPace: Int?, maxPace: Int?) {
+        if (!_uiState.value.isEditMode) return
         _uiState.update {
             it.copy(pacerGoalStep = TrainStep(
                 stepId = it.pacerGoalStep?.stepId ?: UUID.randomUUID().toString(),
@@ -342,6 +393,7 @@ class TrainPlanEditViewModel(
 
     fun savePlan() {
         val state = _uiState.value
+        if (!state.isEditMode) return
         if (state.name.isBlank()) {
             _uiState.update { it.copy(errorMessage = "请输入训练名称") }
             return
@@ -355,7 +407,13 @@ class TrainPlanEditViewModel(
             val plan = buildTrainPlan()
             val result = repository.savePlan(plan)
             result.onSuccess {
-                _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+                _uiState.update {
+                    if (state.isNewPlan) {
+                        it.copy(isSaving = false, saveSuccess = true)
+                    } else {
+                        it.copy(isSaving = false, isEditMode = false)
+                    }
+                }
             }.onFailure { e ->
                 _uiState.update { it.copy(isSaving = false, errorMessage = e.message ?: "保存失败") }
             }
@@ -379,6 +437,7 @@ class TrainPlanEditViewModel(
                         planId = plan.planId,
                         name = plan.name,
                         scheduledDate = plan.scheduledDate,
+                        finishFlag = plan.finishFlag,
                         locationType = plan.locationType,
                         trainWholeType = plan.trainWholeType,
                         description = plan.description ?: "",
@@ -407,7 +466,7 @@ class TrainPlanEditViewModel(
             trainWholeType = state.trainWholeType,
             scheduledDate = state.scheduledDate,
             hardLevel = state.hardLevel,
-            finishFlag = "N",
+            finishFlag = state.finishFlag ?: "N",
             locationType = state.locationType,
             warmupBlock = if (state.trainWholeType == TrainWholeType.SELF_DEFINE) state.warmupBlock else null,
             blockList = if (state.trainWholeType == TrainWholeType.SELF_DEFINE) state.mainBlocks else emptyList(),
@@ -438,6 +497,14 @@ class TrainPlanEditViewModel(
         timeGoalSeconds = if (goalType == TrainGoalType.TIME) 300 else null
     )
 }
+
+private fun List<TrainBlock>.resequenceBlocks(): List<TrainBlock> =
+    mapIndexed { index, block ->
+        block.copy(
+            seq = index + 1,
+            stepList = block.stepList.mapIndexed { stepIndex, step -> step.copy(seq = stepIndex) }
+        )
+    }
 
 class TrainPlanEditViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")

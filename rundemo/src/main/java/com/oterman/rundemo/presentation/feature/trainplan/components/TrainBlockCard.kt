@@ -44,6 +44,8 @@ fun TrainBlockCard(
     onAddStep: () -> Unit,
     onStepClick: (stepIndex: Int) -> Unit,
     onRemoveStep: (stepIndex: Int) -> Unit,
+    isEditMode: Boolean,
+    dragHandleModifier: Modifier = Modifier,
     onLoopCountChange: ((delta: Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -56,6 +58,8 @@ fun TrainBlockCard(
                 step = step,
                 onClick = { onStepClick(index) },
                 onRemove = { onRemoveStep(index) },
+                isEditMode = isEditMode,
+                dragHandleModifier = dragHandleModifier,
                 modifier = modifier.padding(horizontal = 20.dp)
             )
         }
@@ -74,24 +78,29 @@ fun TrainBlockCard(
             block = block,
             accent = accent,
             onRemoveBlock = onRemoveBlock,
-            onLoopCountChange = if (block.blockType == BlockType.MAIN) onLoopCountChange else null
+            isEditMode = isEditMode,
+            onLoopCountChange = if (isEditMode && block.blockType == BlockType.MAIN) onLoopCountChange else null
         )
 
         block.stepList.forEachIndexed { index, step ->
             TrainStepRow(
                 step = step,
                 onClick = { onStepClick(index) },
-                onRemove = { onRemoveStep(index) }
+                onRemove = { onRemoveStep(index) },
+                isEditMode = isEditMode,
+                dragHandleModifier = dragHandleModifier
             )
         }
 
-        TextButton(
-            onClick = onAddStep,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(4.dp))
-            Text("添加步骤")
+        if (isEditMode) {
+            TextButton(
+                onClick = onAddStep,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("添加步骤")
+            }
         }
     }
 }
@@ -114,6 +123,7 @@ private fun BlockHeader(
     block: TrainBlock,
     accent: Color,
     onRemoveBlock: () -> Unit,
+    isEditMode: Boolean,
     onLoopCountChange: ((delta: Int) -> Unit)?
 ) {
     Row(
@@ -144,13 +154,15 @@ private fun BlockHeader(
                 )
             }
         }
-        IconButton(onClick = onRemoveBlock, modifier = Modifier.size(30.dp)) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "删除分段",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
-            )
+        if (isEditMode && block.blockType == BlockType.MAIN) {
+            IconButton(onClick = onRemoveBlock, modifier = Modifier.size(30.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "删除分段",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }

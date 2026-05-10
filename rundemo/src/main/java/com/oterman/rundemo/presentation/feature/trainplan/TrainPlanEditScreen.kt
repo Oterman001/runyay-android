@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Cached
 import androidx.compose.material.icons.outlined.DirectionsRun
 import androidx.compose.material.icons.outlined.KeyboardDoubleArrowDown
@@ -31,6 +34,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,6 +71,8 @@ import com.oterman.rundemo.presentation.feature.trainplan.components.SingleGoalE
 import com.oterman.rundemo.presentation.feature.trainplan.components.StepEditSheet
 import com.oterman.rundemo.presentation.feature.trainplan.components.TrainBlockCard
 import com.oterman.rundemo.ui.theme.RunTheme
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -84,6 +90,25 @@ fun TrainPlanEditScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val lazyListState = rememberLazyListState()
+    val mainBlockStartIndex = remember(
+        uiState.trainWholeType,
+        uiState.warmupBlock,
+        uiState.mainBlocks.size
+    ) {
+        if (uiState.trainWholeType == TrainWholeType.SELF_DEFINE) {
+            6 + if (uiState.warmupBlock != null) 1 else 0
+        } else {
+            -1
+        }
+    }
+    val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        val fromIndex = from.index - mainBlockStartIndex
+        val toIndex = to.index - mainBlockStartIndex
+        if (uiState.isEditMode && fromIndex in uiState.mainBlocks.indices && toIndex in uiState.mainBlocks.indices) {
+            viewModel.moveMainBlock(fromIndex, toIndex)
+        }
+    }
 
     LaunchedEffect(planId, date) {
         viewModel.init(planId, date)
@@ -126,7 +151,7 @@ fun TrainPlanEditScreen(
                 ),
                 title = {
                     Text(
-                        if (uiState.isNewPlan) "新增课程" else "编辑课程",
+                        if (uiState.isNewPlan) "新增课程" else if (uiState.isEditMode) "编辑课程" else "课程详情",
                         fontWeight = FontWeight.SemiBold
                     )
                 },
@@ -136,7 +161,9 @@ fun TrainPlanEditScreen(
                     }
                 },
                 actions = {
-                    if (uiState.isSaving) {
+                    if (!uiState.isEditMode) {
+                        // Details mode has only the floating edit action.
+                    } else if (uiState.isSaving) {
                         CircularProgressIndicator(
                             modifier = Modifier.padding(end = 16.dp).size(20.dp),
                             strokeWidth = 2.dp
@@ -151,12 +178,22 @@ fun TrainPlanEditScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            if (!uiState.isLoading && uiState.trainWholeType == TrainWholeType.SELF_DEFINE) {
+            if (!uiState.isLoading && uiState.isEditMode && uiState.trainWholeType == TrainWholeType.SELF_DEFINE) {
                 TrainBlockActionBar(
                     onAddTrain = { viewModel.addMainBlock() },
                     onAddRecovery = { viewModel.addRecoveryBlock() },
                     onAddInterval = { viewModel.addIntervalBlock() }
                 )
+            }
+        },
+        floatingActionButton = {
+            if (!uiState.isLoading && !uiState.isEditMode && viewModel.canEditCurrentPlan()) {
+                FloatingActionButton(
+                    onClick = { viewModel.enterEditMode() },
+                    containerColor = RunTheme.colorScheme.blue
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "编辑")
+                }
             }
         }
     ) { innerPadding ->
@@ -171,6 +208,7 @@ fun TrainPlanEditScreen(
         }
 
         LazyColumn(
+            state = lazyListState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -188,7 +226,8 @@ fun TrainPlanEditScreen(
                     locationType = uiState.locationType,
                     onLocationTypeChange = viewModel::onLocationTypeChange,
                     trainWholeType = uiState.trainWholeType,
-                    onTrainWholeTypeChange = viewModel::onTrainWholeTypeChange
+                    onTrainWholeTypeChange = viewModel::onTrainWholeTypeChange,
+                    isEditMode = uiState.isEditMode
                 )
             }
 
@@ -217,20 +256,38 @@ fun TrainPlanEditScreen(
                             onRemoveBlock = { viewModel.removeBlock(BlockType.WARMUP, 0) },
                             onAddStep = { viewModel.addStepToBlock(BlockType.WARMUP, 0) },
                             onStepClick = { viewModel.openStepEditor(BlockType.WARMUP, 0, it) },
-                            onRemoveStep = { viewModel.removeStep(BlockType.WARMUP, 0, it) }
+                            onRemoveStep = { viewModel.removeStep(BlockType.WARMUP, 0, it) },
+                            isEditMode = uiState.isEditMode
                         )
                     }
                 }
-                uiState.mainBlocks.forEachIndexed { index, block ->
-                    item(key = "main_$index") {
+                itemsIndexed(
+                    items = uiState.mainBlocks,
+                    key = { _, block -> block.blockId ?: "main_${block.seq}" }
+                ) { index, block ->
+                    if (uiState.isEditMode) {
+                        ReorderableItem(reorderState, key = block.blockId ?: "main_${block.seq}") { _ ->
+                            TrainBlockCard(
+                                block = block,
+                                blockIndex = index,
+                                onRemoveBlock = { viewModel.removeBlock(BlockType.MAIN, index) },
+                                onAddStep = { viewModel.addStepToBlock(BlockType.MAIN, index) },
+                                onStepClick = { viewModel.openStepEditor(BlockType.MAIN, index, it) },
+                                onRemoveStep = { viewModel.removeStep(BlockType.MAIN, index, it) },
+                                isEditMode = true,
+                                dragHandleModifier = Modifier.draggableHandle(),
+                                onLoopCountChange = { viewModel.updateLoopCount(index, it) }
+                            )
+                        }
+                    } else {
                         TrainBlockCard(
                             block = block,
                             blockIndex = index,
-                            onRemoveBlock = { viewModel.removeBlock(BlockType.MAIN, index) },
-                            onAddStep = { viewModel.addStepToBlock(BlockType.MAIN, index) },
-                            onStepClick = { viewModel.openStepEditor(BlockType.MAIN, index, it) },
-                            onRemoveStep = { viewModel.removeStep(BlockType.MAIN, index, it) },
-                            onLoopCountChange = { viewModel.updateLoopCount(index, it) }
+                            onRemoveBlock = { },
+                            onAddStep = { },
+                            onStepClick = { },
+                            onRemoveStep = { },
+                            isEditMode = false
                         )
                     }
                 }
@@ -242,7 +299,8 @@ fun TrainPlanEditScreen(
                             onRemoveBlock = { viewModel.removeBlock(BlockType.COOLDOWN, 0) },
                             onAddStep = { viewModel.addStepToBlock(BlockType.COOLDOWN, 0) },
                             onStepClick = { viewModel.openStepEditor(BlockType.COOLDOWN, 0, it) },
-                            onRemoveStep = { viewModel.removeStep(BlockType.COOLDOWN, 0, it) }
+                            onRemoveStep = { viewModel.removeStep(BlockType.COOLDOWN, 0, it) },
+                            isEditMode = uiState.isEditMode
                         )
                     }
                 }
@@ -258,7 +316,8 @@ fun TrainPlanEditScreen(
                         onDistanceChange = { viewModel.updateDistanceGoal(it) },
                         onTimeChange = { viewModel.updateTimeGoal(it) },
                         onCaloriesChange = { viewModel.updateCaloriesGoal(it) },
-                        onPacerChange = { min, max -> viewModel.updatePacerGoal(min, max) }
+                        onPacerChange = { min, max -> viewModel.updatePacerGoal(min, max) },
+                        isEditMode = uiState.isEditMode
                     )
                 }
             }
@@ -271,6 +330,7 @@ fun TrainPlanEditScreen(
                     placeholder = { Text("添加训练备注...") },
                     minLines = 4,
                     maxLines = 6,
+                    enabled = uiState.isEditMode,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
@@ -301,7 +361,8 @@ private fun BasicInfoCard(
     locationType: LocationType,
     onLocationTypeChange: (LocationType) -> Unit,
     trainWholeType: TrainWholeType,
-    onTrainWholeTypeChange: (TrainWholeType) -> Unit
+    onTrainWholeTypeChange: (TrainWholeType) -> Unit,
+    isEditMode: Boolean
 ) {
     Column(
         modifier = Modifier
@@ -314,49 +375,84 @@ private fun BasicInfoCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("名称", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(18.dp))
-            OutlinedTextField(
-                value = name,
-                onValueChange = onNameChange,
-                placeholder = { Text("起个名字") },
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.End),
-                modifier = Modifier.weight(1f)
-            )
+            if (isEditMode) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChange,
+                    placeholder = { Text("起个名字") },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.End),
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                Text(
+                    text = name.ifBlank { "未命名课程" },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
         HorizontalDivider(color = RunTheme.colorScheme.divider)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("时间", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDateClick) {
-                Text(scheduledDate ?: "选择日期")
+            if (isEditMode) {
+                TextButton(onClick = onDateClick) {
+                    Text(scheduledDate ?: "选择日期")
+                }
+            } else {
+                Text(
+                    text = scheduledDate ?: "未选择日期",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
         HorizontalDivider(color = RunTheme.colorScheme.divider)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("地点", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
-            InlineChoiceGroup(
-                options = listOf(LocationType.OUTDOOR to "室外", LocationType.INDOOR to "室内"),
-                selected = locationType,
-                onSelected = onLocationTypeChange
-            )
+            if (isEditMode) {
+                InlineChoiceGroup(
+                    options = listOf(LocationType.OUTDOOR to "室外", LocationType.INDOOR to "室内"),
+                    selected = locationType,
+                    onSelected = onLocationTypeChange
+                )
+            } else {
+                Text(
+                    text = locationType.displayName(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
         HorizontalDivider(color = RunTheme.colorScheme.divider)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("类型", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
-            TypeDropdown(
-                options = listOf(
-                    TrainWholeType.SELF_DEFINE to "自定义",
-                    TrainWholeType.DISTANCE to "距离",
-                    TrainWholeType.TIME to "时间",
-                    TrainWholeType.CALORIES to "卡路里",
-                    TrainWholeType.PACER to "配速员"
-                ),
-                selected = trainWholeType,
-                onSelected = onTrainWholeTypeChange,
-                modifier = Modifier.weight(1f)
-            )
+            if (isEditMode) {
+                TypeDropdown(
+                    options = listOf(
+                        TrainWholeType.SELF_DEFINE to "自定义",
+                        TrainWholeType.DISTANCE to "距离",
+                        TrainWholeType.TIME to "时间",
+                        TrainWholeType.CALORIES to "卡路里",
+                        TrainWholeType.PACER to "配速员"
+                    ),
+                    selected = trainWholeType,
+                    onSelected = onTrainWholeTypeChange,
+                    enabled = true,
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                Text(
+                    text = trainWholeType.displayName(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
@@ -366,6 +462,7 @@ private fun TypeDropdown(
     options: List<Pair<TrainWholeType, String>>,
     selected: TrainWholeType,
     onSelected: (TrainWholeType) -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -377,7 +474,7 @@ private fun TypeDropdown(
             color = RunTheme.colorScheme.blue,
             modifier = Modifier
                 .background(RunTheme.colorScheme.blue.copy(alpha = 0.10f), RoundedCornerShape(8.dp))
-                .clickable { expanded = true }
+                .clickable(enabled = enabled) { expanded = true }
                 .padding(horizontal = 12.dp, vertical = 7.dp)
         )
         DropdownMenu(
@@ -408,6 +505,7 @@ private fun <T> InlineChoiceGroup(
     options: List<Pair<T, String>>,
     selected: T,
     onSelected: (T) -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -427,7 +525,7 @@ private fun <T> InlineChoiceGroup(
                         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
                         shape = RoundedCornerShape(8.dp)
                     )
-                    .clickable { onSelected(value) }
+                    .clickable(enabled = enabled) { onSelected(value) }
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             )
         }

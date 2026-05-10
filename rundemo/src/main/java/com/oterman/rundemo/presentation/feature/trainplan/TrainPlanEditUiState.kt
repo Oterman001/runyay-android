@@ -13,6 +13,7 @@ data class TrainPlanEditUiState(
     val planId: String? = null,
     val name: String = "",
     val scheduledDate: String? = null,
+    val finishFlag: String? = "N",
     val locationType: LocationType = LocationType.OUTDOOR,
     val trainWholeType: TrainWholeType = TrainWholeType.SELF_DEFINE,
     val description: String = "",
@@ -33,5 +34,6 @@ data class TrainPlanEditUiState(
     val errorMessage: String? = null,
     val editingStep: EditingStepInfo? = null,
     val showDatePicker: Boolean = false,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val isEditMode: Boolean = true
 )

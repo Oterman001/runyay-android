@@ -123,3 +123,26 @@ Token in `settings.gradle.kts`. Override via `MAPBOX_DOWNLOADS_TOKEN` env variab
 **fitdemo**: Uses Storage Access Framework (no permissions). FIT parsing on `Dispatchers.IO`. Mapbox requires `ACCESS_FINE_LOCATION`.
 
 **rundemo**: Retrofit for networking. Login has failure tracking with attempt limits. DataStore for persistence.
+
+## Codex Commit Rules
+
+When Codex creates a Git commit, the commit message must be written in Simplified Chinese and must include:
+
+1. A concise subject line describing the change.
+2. A `修改方案:` section explaining the implementation approach in detail.
+3. A `测试验证:` section listing the exact commands or manual checks used to verify the change.
+4. If tests were not run, explicitly state the reason under `测试验证:`.
+
+Commit message format:
+
+```text
+<简短标题>
+
+修改方案:
+- ...
+
+测试验证:
+- ...
+```
+
+Codex must not create vague commit messages such as `fix bug`, `update code`, or `minor changes`.

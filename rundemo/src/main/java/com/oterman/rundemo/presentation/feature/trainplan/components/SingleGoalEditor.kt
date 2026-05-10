@@ -47,6 +47,7 @@ fun SingleGoalEditor(
     onTimeChange: (Int?) -> Unit,
     onCaloriesChange: (Int?) -> Unit,
     onPacerChange: (Int?, Int?) -> Unit,
+    isEditMode: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -58,17 +59,17 @@ fun SingleGoalEditor(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         when (trainWholeType) {
-            TrainWholeType.DISTANCE -> DistanceGoal(distanceGoalStep, onDistanceChange)
-            TrainWholeType.TIME -> TimeGoal(timeGoalStep, onTimeChange)
-            TrainWholeType.CALORIES -> CaloriesGoal(calGoalStep, onCaloriesChange)
-            TrainWholeType.PACER -> PacerGoal(pacerGoalStep, onPacerChange)
+            TrainWholeType.DISTANCE -> DistanceGoal(distanceGoalStep, onDistanceChange, isEditMode)
+            TrainWholeType.TIME -> TimeGoal(timeGoalStep, onTimeChange, isEditMode)
+            TrainWholeType.CALORIES -> CaloriesGoal(calGoalStep, onCaloriesChange, isEditMode)
+            TrainWholeType.PACER -> PacerGoal(pacerGoalStep, onPacerChange, isEditMode)
             TrainWholeType.SELF_DEFINE -> Unit
         }
     }
 }
 
 @Composable
-private fun DistanceGoal(step: TrainStep?, onDistanceChange: (Double?) -> Unit) {
+private fun DistanceGoal(step: TrainStep?, onDistanceChange: (Double?) -> Unit, isEditMode: Boolean) {
     var text by remember(step?.distanceValue) { mutableStateOf(step?.distanceValue?.toString() ?: "") }
     GoalHeader("距离", Icons.Outlined.DirectionsRun)
     OutlinedTextField(
@@ -81,12 +82,13 @@ private fun DistanceGoal(step: TrainStep?, onDistanceChange: (Double?) -> Unit) 
         suffix = { Text("km") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         singleLine = true,
+        enabled = isEditMode,
         modifier = Modifier.fillMaxWidth()
     )
 }
 
 @Composable
-private fun TimeGoal(step: TrainStep?, onTimeChange: (Int?) -> Unit) {
+private fun TimeGoal(step: TrainStep?, onTimeChange: (Int?) -> Unit, isEditMode: Boolean) {
     val totalSeconds = step?.timeGoalSeconds ?: 0
     var minutes by remember(totalSeconds) { mutableStateOf(if (totalSeconds > 0) (totalSeconds / 60).toString() else "") }
     var seconds by remember(totalSeconds) { mutableStateOf(if (totalSeconds > 0) (totalSeconds % 60).toString() else "") }
@@ -103,6 +105,7 @@ private fun TimeGoal(step: TrainStep?, onTimeChange: (Int?) -> Unit) {
             label = { Text("分钟") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
+            enabled = isEditMode,
             modifier = Modifier.weight(1f)
         )
         Spacer(Modifier.width(8.dp))
@@ -117,6 +120,7 @@ private fun TimeGoal(step: TrainStep?, onTimeChange: (Int?) -> Unit) {
             label = { Text("秒") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
+            enabled = isEditMode,
             modifier = Modifier.weight(1f)
         )
     }
@@ -126,7 +130,7 @@ private fun TimeGoal(step: TrainStep?, onTimeChange: (Int?) -> Unit) {
 }
 
 @Composable
-private fun CaloriesGoal(step: TrainStep?, onCaloriesChange: (Int?) -> Unit) {
+private fun CaloriesGoal(step: TrainStep?, onCaloriesChange: (Int?) -> Unit, isEditMode: Boolean) {
     var text by remember(step?.caloriesValue) { mutableStateOf(step?.caloriesValue?.toString() ?: "") }
     GoalHeader("卡路里", Icons.Outlined.FavoriteBorder)
     OutlinedTextField(
@@ -139,12 +143,13 @@ private fun CaloriesGoal(step: TrainStep?, onCaloriesChange: (Int?) -> Unit) {
         suffix = { Text("kcal") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         singleLine = true,
+        enabled = isEditMode,
         modifier = Modifier.fillMaxWidth()
     )
 }
 
 @Composable
-private fun PacerGoal(step: TrainStep?, onPacerChange: (Int?, Int?) -> Unit) {
+private fun PacerGoal(step: TrainStep?, onPacerChange: (Int?, Int?) -> Unit, isEditMode: Boolean) {
     var minText by remember(step?.minPace) { mutableStateOf(step?.minPace?.let { formatPaceInput(it) } ?: "") }
     var maxText by remember(step?.maxPace) { mutableStateOf(step?.maxPace?.let { formatPaceInput(it) } ?: "") }
     GoalHeader("配速员", Icons.Outlined.Speed)
@@ -158,6 +163,7 @@ private fun PacerGoal(step: TrainStep?, onPacerChange: (Int?, Int?) -> Unit) {
             label = { Text("最快") },
             placeholder = { Text("4:30") },
             singleLine = true,
+            enabled = isEditMode,
             modifier = Modifier.weight(1f)
         )
         Spacer(Modifier.width(8.dp))
@@ -172,6 +178,7 @@ private fun PacerGoal(step: TrainStep?, onPacerChange: (Int?, Int?) -> Unit) {
             label = { Text("最慢") },
             placeholder = { Text("6:00") },
             singleLine = true,
+            enabled = isEditMode,
             modifier = Modifier.weight(1f)
         )
     }

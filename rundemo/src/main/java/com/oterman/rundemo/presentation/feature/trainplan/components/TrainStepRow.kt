@@ -44,6 +44,8 @@ fun TrainStepRow(
     step: TrainStep,
     onClick: () -> Unit,
     onRemove: () -> Unit,
+    isEditMode: Boolean,
+    dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier
 ) {
     val accent = when {
@@ -57,7 +59,7 @@ fun TrainStepRow(
         modifier = modifier
             .fillMaxWidth()
             .background(RunTheme.colorScheme.cardBg, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+            .clickable(enabled = isEditMode, onClick = onClick)
             .padding(14.dp),
         verticalAlignment = Alignment.Top
     ) {
@@ -83,15 +85,15 @@ fun TrainStepRow(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.weight(1f))
-                if (step.canMoveLikeIos()) {
+                if (isEditMode && step.canMoveLikeIos()) {
                     Icon(
                         imageVector = Icons.Default.DragHandle,
                         contentDescription = "拖动",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        modifier = dragHandleModifier.size(18.dp)
                     )
                 }
-                if (step.canRemoveLikeIos()) {
+                if (isEditMode && step.canRemoveLikeIos()) {
                     IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
                         Icon(
                             imageVector = Icons.Default.Close,
