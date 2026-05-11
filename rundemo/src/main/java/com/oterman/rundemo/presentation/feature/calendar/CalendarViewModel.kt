@@ -8,7 +8,6 @@ import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
-import com.oterman.rundemo.data.network.dto.response.toDomain
 import com.oterman.rundemo.data.repository.TrainPlanRepository
 import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.util.RLog
@@ -30,6 +29,8 @@ data class CalendarUiState(
     val selectedDateRecords: List<RunRecordEntity> = emptyList(),
     val selectedDatePlans: List<TrainPlanSummary> = emptyList(),
     val isLoading: Boolean = false,
+    val isLoadingPlans: Boolean = false,
+    val planLoadError: String? = null,
     val isDeletingPlan: Boolean = false
 )
 
@@ -74,8 +75,6 @@ class CalendarViewModel(
             result.onSuccess {
                 // Refresh current month
                 loadPlansForMonth(_uiState.value.currentMonth)
-                // Refresh selected date
-                _uiState.value.selectedDate?.let { loadPlansForDate(it) }
             }.onFailure { e ->
                 RLog.e("CalendarVM", "deletePlan failed", e)
             }
@@ -83,9 +82,12 @@ class CalendarViewModel(
         }
     }
 
-    fun refreshPlans() {
+    fun refreshPlans(force: Boolean = true) {
         loadPlansForMonth(_uiState.value.currentMonth)
-        _uiState.value.selectedDate?.let { loadPlansForDate(it) }
+    }
+
+    fun retryLoadPlans() {
+        refreshPlans()
     }
 
     private fun loadMonth(month: YearMonth) {
@@ -108,32 +110,47 @@ class CalendarViewModel(
 
     private fun loadPlansForMonth(month: YearMonth) {
         viewModelScope.launch {
-            val startDate = month.atDay(1).format(dateFormatter)
-            val endDate = month.atEndOfMonth().format(dateFormatter)
-            val result = trainPlanRepository.listPlans(
-                startDate = startDate,
-                endDate = endDate,
-                pageSize = 100
+            _uiState.update { it.copy(isLoadingPlans = true, planLoadError = null) }
+            val result = trainPlanRepository.listPlanSummaries(
+                startDate = month.atDay(1),
+                endDate = month.atEndOfMonth()
             )
-            result.onSuccess { data ->
-                val plans = data.records?.map { it.toDomain() } ?: emptyList()
+            result.onSuccess { plans ->
                 monthPlans = plans
                 val planDays = plans.mapNotNull { plan ->
                     plan.scheduledDate?.let {
-                        try { LocalDate.parse(it, dateFormatter) } catch (_: Exception) { null }
+                        parsePlanDate(it)
                     }
                 }.toSet()
-                _uiState.update { it.copy(daysWithPlans = planDays) }
-            }.onFailure {
-                RLog.w("CalendarVM", "loadPlansForMonth failed: ${it.message}")
+                _uiState.update { state ->
+                    state.copy(
+                        daysWithPlans = planDays,
+                        selectedDatePlans = state.selectedDate?.let { loadPlansForDateValue(it) } ?: emptyList(),
+                        isLoadingPlans = false,
+                        planLoadError = null
+                    )
+                }
+            }.onFailure { e ->
+                RLog.w("CalendarVM", "loadPlansForMonth failed: ${e.message}")
+                _uiState.update {
+                    it.copy(
+                        isLoadingPlans = false,
+                        planLoadError = e.message ?: "训练计划加载失败"
+                    )
+                }
             }
         }
     }
 
     private fun loadPlansForDate(date: LocalDate) {
-        val dateStr = date.format(dateFormatter)
-        val plans = monthPlans.filter { it.scheduledDate == dateStr }
+        val plans = loadPlansForDateValue(date)
         _uiState.update { it.copy(selectedDatePlans = plans) }
+    }
+
+    private fun loadPlansForDateValue(date: LocalDate): List<TrainPlanSummary> {
+        return monthPlans.filter { plan ->
+            plan.scheduledDate?.let { parsePlanDate(it) } == date
+        }
     }
 
     private fun loadRecordsForDate(date: LocalDate) {
@@ -149,6 +166,16 @@ class CalendarViewModel(
 
     private fun Long.toLocalDate(zoneId: ZoneId): LocalDate =
         java.time.Instant.ofEpochMilli(this).atZone(zoneId).toLocalDate()
+
+    private fun parsePlanDate(value: String): LocalDate? {
+        return runCatching {
+            if (value.contains("-")) {
+                LocalDate.parse(value, dateFormatter)
+            } else {
+                LocalDate.parse(value, DateTimeFormatter.BASIC_ISO_DATE)
+            }
+        }.getOrNull()
+    }
 }
 
 class CalendarViewModelFactory(private val context: Context) : ViewModelProvider.Factory {

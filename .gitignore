@@ -50,6 +50,8 @@ captures/
 # Keystore files
 runyay_001.jks
 #*.keystore
+pepk.jar
+sign.zip
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild

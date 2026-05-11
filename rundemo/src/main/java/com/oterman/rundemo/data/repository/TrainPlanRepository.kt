@@ -19,6 +19,8 @@ import com.oterman.rundemo.domain.model.TrainPlan
 import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.domain.model.TrainStep
 import com.oterman.rundemo.util.RLog
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class TrainPlanRepository(
     private val preferencesManager: PreferencesManager,
@@ -26,6 +28,7 @@ class TrainPlanRepository(
 ) {
     companion object {
         private const val TAG = "TrainPlanRepo"
+        private val SERVER_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.BASIC_ISO_DATE
     }
 
     suspend fun savePlan(plan: TrainPlan): Result<Unit> {
@@ -95,6 +98,20 @@ class TrainPlanRepository(
         } catch (e: Exception) {
             RLog.e(TAG, "listPlans failed", e)
             Result.failure(e)
+        }
+    }
+
+    suspend fun listPlanSummaries(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        pageSize: Int = 500
+    ): Result<List<TrainPlanSummary>> {
+        return listPlans(
+            startDate = startDate.format(SERVER_DATE_FORMATTER),
+            endDate = endDate.format(SERVER_DATE_FORMATTER),
+            pageSize = pageSize
+        ).map { data ->
+            data.records?.map { it.toDomain() } ?: emptyList()
         }
     }
 

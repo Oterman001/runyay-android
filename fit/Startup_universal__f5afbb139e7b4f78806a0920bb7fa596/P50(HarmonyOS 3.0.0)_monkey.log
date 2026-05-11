@@ -1,0 +1,388 @@
+04-28 13:12:02.254   bash arg: -s
+04-28 13:12:02.256   bash arg: 3553
+04-28 13:12:02.256   bash arg: --throttle
+04-28 13:12:02.257   bash arg: 400
+04-28 13:12:02.257   bash arg: -p
+04-28 13:12:02.257   bash arg: cn.yayrun.android
+04-28 13:12:02.257   bash arg: --ignore-security-exceptions
+04-28 13:12:02.257   bash arg: --ignore-timeouts
+04-28 13:12:02.258   bash arg: --ignore-crashes
+04-28 13:12:02.258   bash arg: --ignore-native-crashes
+04-28 13:12:02.258   bash arg: -c
+04-28 13:12:02.259   bash arg: android.intent.category.LAUNCHER
+04-28 13:12:02.259   bash arg: -c
+04-28 13:12:02.259   bash arg: android.intent.category.MONKEY
+04-28 13:12:02.259   bash arg: -c
+04-28 13:12:02.259   bash arg: android.intent.category.DEFAULT
+04-28 13:12:02.259   bash arg: -c
+04-28 13:12:02.259   bash arg: android.intent.category.BROWSABLE
+04-28 13:12:02.259   bash arg: -c
+04-28 13:12:02.259   bash arg: android.intent.category.TAB
+04-28 13:12:02.259   bash arg: -c
+04-28 13:12:02.260   bash arg: android.intent.category.ALTERNATIVE
+04-28 13:12:02.260   bash arg: -c
+04-28 13:12:02.260   bash arg: android.intent.category.SELECTED_ALTERNATIVE
+04-28 13:12:02.260   bash arg: -c
+04-28 13:12:02.260   bash arg: android.intent.category.INFO
+04-28 13:12:02.260   bash arg: -c
+04-28 13:12:02.260   bash arg: android.intent.category.HOME
+04-28 13:12:02.260   bash arg: -c
+04-28 13:12:02.260   bash arg: android.intent.category.PREFERENCE
+04-28 13:12:02.261   bash arg: -c
+04-28 13:12:02.261   bash arg: android.intent.category.TEST
+04-28 13:12:02.261   bash arg: -c
+04-28 13:12:02.261   bash arg: android.intent.category.CAR_DOCK
+04-28 13:12:02.261   bash arg: -c
+04-28 13:12:02.261   bash arg: android.intent.category.DESK_DOCK
+04-28 13:12:02.261   bash arg: -c
+04-28 13:12:02.261   bash arg: android.intent.category.CAR_MODE
+04-28 13:12:02.261   bash arg: -v
+04-28 13:12:02.265   bash arg: -v
+04-28 13:12:02.265   bash arg: -v
+04-28 13:12:02.265   bash arg: 20
+04-28 13:12:02.561 args: [-s, 3553, --throttle, 400, -p, cn.yayrun.android, --ignore-security-exceptions, --ignore-timeouts, --ignore-crashes, --ignore-native-crashes, -c, android.intent.category.LAUNCHER, -c, android.intent.category.MONKEY, -c, android.intent.category.DEFAULT, -c, android.intent.category.BROWSABLE, -c, android.intent.category.TAB, -c, android.intent.category.ALTERNATIVE, -c, android.intent.category.SELECTED_ALTERNATIVE, -c, android.intent.category.INFO, -c, android.intent.category.HOME, -c, android.intent.category.PREFERENCE, -c, android.intent.category.TEST, -c, android.intent.category.CAR_DOCK, -c, android.intent.category.DESK_DOCK, -c, android.intent.category.CAR_MODE, -v, -v, -v, 20]
+04-28 13:12:02.562  arg: "-s"
+04-28 13:12:02.562  arg: "3553"
+04-28 13:12:02.562  arg: "--throttle"
+04-28 13:12:02.562  arg: "400"
+04-28 13:12:02.563  arg: "-p"
+04-28 13:12:02.563  arg: "cn.yayrun.android"
+04-28 13:12:02.563  arg: "--ignore-security-exceptions"
+04-28 13:12:02.563  arg: "--ignore-timeouts"
+04-28 13:12:02.563  arg: "--ignore-crashes"
+04-28 13:12:02.563  arg: "--ignore-native-crashes"
+04-28 13:12:02.564  arg: "-c"
+04-28 13:12:02.564  arg: "android.intent.category.LAUNCHER"
+04-28 13:12:02.564  arg: "-c"
+04-28 13:12:02.564  arg: "android.intent.category.MONKEY"
+04-28 13:12:02.565  arg: "-c"
+04-28 13:12:02.565  arg: "android.intent.category.DEFAULT"
+04-28 13:12:02.565  arg: "-c"
+04-28 13:12:02.565  arg: "android.intent.category.BROWSABLE"
+04-28 13:12:02.565  arg: "-c"
+04-28 13:12:02.566  arg: "android.intent.category.TAB"
+04-28 13:12:02.566  arg: "-c"
+04-28 13:12:02.566  arg: "android.intent.category.ALTERNATIVE"
+04-28 13:12:02.566  arg: "-c"
+04-28 13:12:02.566  arg: "android.intent.category.SELECTED_ALTERNATIVE"
+04-28 13:12:02.567  arg: "-c"
+04-28 13:12:02.567  arg: "android.intent.category.INFO"
+04-28 13:12:02.567  arg: "-c"
+04-28 13:12:02.567  arg: "android.intent.category.HOME"
+04-28 13:12:02.568  arg: "-c"
+04-28 13:12:02.568  arg: "android.intent.category.PREFERENCE"
+04-28 13:12:02.568  arg: "-c"
+04-28 13:12:02.568  arg: "android.intent.category.TEST"
+04-28 13:12:02.568  arg: "-c"
+04-28 13:12:02.569  arg: "android.intent.category.CAR_DOCK"
+04-28 13:12:02.569  arg: "-c"
+04-28 13:12:02.569  arg: "android.intent.category.DESK_DOCK"
+04-28 13:12:02.569  arg: "-c"
+04-28 13:12:02.569  arg: "android.intent.category.CAR_MODE"
+04-28 13:12:02.570  arg: "-v"
+04-28 13:12:02.570  arg: "-v"
+04-28 13:12:02.570  arg: "-v"
+04-28 13:12:02.570  arg: "20"
+04-28 13:12:02.571 data="3553"
+04-28 13:12:02.571 arg="--throttle" mCurArgData="null" mNextArg=3 argwas="--throttle" nextarg="400"
+04-28 13:12:02.571 data="400"
+04-28 13:12:02.571 data="cn.yayrun.android"
+04-28 13:12:02.572 arg="--ignore-security-exceptions" mCurArgData="null" mNextArg=7 argwas="--ignore-security-exceptions" nextarg="--ignore-timeouts"
+04-28 13:12:02.572 arg="--ignore-timeouts" mCurArgData="null" mNextArg=8 argwas="--ignore-timeouts" nextarg="--ignore-crashes"
+04-28 13:12:02.572 arg="--ignore-crashes" mCurArgData="null" mNextArg=9 argwas="--ignore-crashes" nextarg="--ignore-native-crashes"
+04-28 13:12:02.572 arg="--ignore-native-crashes" mCurArgData="null" mNextArg=10 argwas="--ignore-native-crashes" nextarg="-c"
+04-28 13:12:02.572 data="android.intent.category.LAUNCHER"
+04-28 13:12:02.572 data="android.intent.category.MONKEY"
+04-28 13:12:02.572 data="android.intent.category.DEFAULT"
+04-28 13:12:02.573 data="android.intent.category.BROWSABLE"
+04-28 13:12:02.573 data="android.intent.category.TAB"
+04-28 13:12:02.573 data="android.intent.category.ALTERNATIVE"
+04-28 13:12:02.573 data="android.intent.category.SELECTED_ALTERNATIVE"
+04-28 13:12:02.573 data="android.intent.category.INFO"
+04-28 13:12:02.573 data="android.intent.category.HOME"
+04-28 13:12:02.573 data="android.intent.category.PREFERENCE"
+04-28 13:12:02.573 data="android.intent.category.TEST"
+04-28 13:12:02.574 data="android.intent.category.CAR_DOCK"
+04-28 13:12:02.574 data="android.intent.category.DESK_DOCK"
+04-28 13:12:02.574 data="android.intent.category.CAR_MODE"
+04-28 13:12:02.584 :Monkey: seed=3553 count=20
+04-28 13:12:02.584 :AllowPackage: cn.yayrun.android
+04-28 13:12:02.585 :IncludeCategory: android.intent.category.LAUNCHER
+04-28 13:12:02.585 :IncludeCategory: android.intent.category.MONKEY
+04-28 13:12:02.585 :IncludeCategory: android.intent.category.DEFAULT
+04-28 13:12:02.585 :IncludeCategory: android.intent.category.BROWSABLE
+04-28 13:12:02.585 :IncludeCategory: android.intent.category.TAB
+04-28 13:12:02.585 :IncludeCategory: android.intent.category.ALTERNATIVE
+04-28 13:12:02.585 :IncludeCategory: android.intent.category.SELECTED_ALTERNATIVE
+04-28 13:12:02.585 :IncludeCategory: android.intent.category.INFO
+04-28 13:12:02.586 :IncludeCategory: android.intent.category.HOME
+04-28 13:12:02.586 :IncludeCategory: android.intent.category.PREFERENCE
+04-28 13:12:02.586 :IncludeCategory: android.intent.category.TEST
+04-28 13:12:02.586 :IncludeCategory: android.intent.category.CAR_DOCK
+04-28 13:12:02.586 :IncludeCategory: android.intent.category.DESK_DOCK
+04-28 13:12:02.586 :IncludeCategory: android.intent.category.CAR_MODE
+04-28 13:12:02.610 // Selecting main activities from category android.intent.category.LAUNCHER
+04-28 13:12:02.610 //   - NOT USING main activity com.android.mms.ui.ConversationList (from package com.android.mms)
+04-28 13:12:02.610 //   - NOT USING main activity com.android.settings.HWSettings (from package com.android.settings)
+04-28 13:12:02.611 //   - NOT USING main activity com.huawei.android.findmyphone.ui.findphone.FindMyPhoneActivity (from package com.huawei.android.findmyphone)
+04-28 13:12:02.611 //   - NOT USING main activity com.huawei.browser.Main2 (from package com.huawei.browser)
+04-28 13:12:02.611 //   - NOT USING main activity com.android.calendar.AllInOneActivity (from package com.huawei.calendar)
+04-28 13:12:02.611 //   - NOT USING main activity com.huawei.camera (from package com.huawei.camera)
+04-28 13:12:02.612 //   - NOT USING main activity com.android.contacts.activities.PeopleActivity (from package com.huawei.contacts)
+04-28 13:12:02.612 //   - NOT USING main activity com.android.contacts.activities.DialtactsActivity (from package com.huawei.contacts)
+04-28 13:12:02.612 //   - NOT USING main activity com.android.deskclock.AlarmsMainActivity (from package com.huawei.deskclock)
+04-28 13:12:02.612 //   - NOT USING main activity com.android.email.activity.Welcome (from package com.huawei.email)
+04-28 13:12:02.612 //   - NOT USING main activity com.huawei.hidisk.filemanager.FileManager (from package com.huawei.filemanager)
+04-28 13:12:02.612 //   - NOT USING main activity com.huawei.betaclub.launch.LauncherActivity (from package com.huawei.fut)
+04-28 13:12:02.612 //   - NOT USING main activity com.huawei.gamebox.GameBoxActivity (from package com.huawei.gamebox)
+04-28 13:12:02.613 //   - NOT USING main activity com.huawei.himovie.ui.login.SplashScreenActivity (from package com.huawei.himovie)
+04-28 13:12:02.613 //   - NOT USING main activity com.huawei.skytone.account.welcome.SplashActivity (from package com.huawei.hiskytone)
+04-28 13:12:02.613 //   - NOT USING main activity com.android.mediacenter.PageActivity (from package com.huawei.music)
+04-28 13:12:02.613 //   - NOT USING main activity com.huawei.gallery.app.GalleryMain (from package com.huawei.photos)
+04-28 13:12:02.613 //   - NOT USING main activity com.huawei.vassistant.ui.main.VAssistantActivity (from package com.huawei.vassistant)
+04-28 13:12:02.613 //   - NOT USING main activity com.android36kr.app.ui.LogoActivity (from package com.android36kr.app)
+04-28 13:12:02.613 //   - NOT USING main activity com.android.documentsui.LauncherActivity (from package com.android.documentsui)
+04-28 13:12:02.613 //   - NOT USING main activity com.android.stk.StkLauncherActivity (from package com.android.stk)
+04-28 13:12:02.613 //   - NOT USING main activity com.android.stk.StkLauncherActivity2 (from package com.android.stk)
+04-28 13:12:02.613 //   - NOT USING main activity com.huawei.android.clone.activity.sender.ChooseReceiveSendActivity (from package com.hicloud.android.clone)
+04-28 13:12:02.614 //   - NOT USING main activity com.android.systemui.flashlight.FlashlightActivity (from package com.huawei.HwMultiScreenShot)
+04-28 13:12:02.614 //   - NOT USING main activity com.huawei.android.thememanager.PageActivity (from package com.huawei.android.thememanager)
+04-28 13:12:02.614 //   - NOT USING main activity com.huawei.appmarket.MainActivity (from package com.huawei.appmarket)
+04-28 13:12:02.614 //   - NOT USING main activity com.huawei.calculator.Calculator (from package com.huawei.calculator)
+04-28 13:12:02.614 //   - NOT USING main activity com.huawei.compass.MainActivity (from package com.huawei.compass)
+04-28 13:12:02.614 //   - NOT USING main activity com.huawei.gameassistant.views.GameassistantMainActivity (from package com.huawei.gameassistant)
+04-28 13:12:02.614 //   - NOT USING main activity com.huawei.android.hicloud.ui.activity.NewHiSyncSettingAliasActivity (from package com.huawei.hidisk)
+04-28 13:12:02.614 //   - NOT USING main activity com.huawei.lifeservice.basefunction.ui.entry.LandingActivity (from package com.huawei.lives)
+04-28 13:12:02.614 //   - NOT USING main activity com.huawei.mirror.main.MainActivity (from package com.huawei.mirror)
+04-28 13:12:02.614 //   - NOT USING main activity com.huawei.mycenter.module.main.view.MainActivity (from package com.huawei.mycenter)
+04-28 13:12:02.615 //   - NOT USING main activity com.appstore.view.activity.PrimaryActivity (from package com.huawei.ohos.inputmethod)
+04-28 13:12:02.615 //   - NOT USING main activity com.huawei.phoneservice.LaunchActivity (from package com.huawei.phoneservice)
+04-28 13:12:02.615 //   - NOT USING main activity com.huawei.smarthome.login.LauncherActivity (from package com.huawei.smarthome)
+04-28 13:12:02.615 //   - NOT USING main activity com.android.soundrecorder.RecordListActivity (from package com.huawei.soundrecorder)
+04-28 13:12:02.615 //   - NOT USING main activity com.huawei.systemmanager.mainscreen.MainScreenActivity (from package com.huawei.systemmanager)
+04-28 13:12:02.615 //   - NOT USING main activity com.huawei.hms.ml.mediacreative.LauncherActivity (from package com.huawei.videoeditor)
+04-28 13:12:02.615 //   - NOT USING main activity com.huawei.wallet.view.MainActivity (from package com.huawei.wallet)
+04-28 13:12:02.615 //   - NOT USING main activity com.vmall.client.splash.fragment.SplashActivity (from package com.vmall.client)
+04-28 13:12:02.615 //   + Using main activity com.oterman.rundemo.MainActivity (from package cn.yayrun.android)
+04-28 13:12:02.615 //   - NOT USING main activity com.android.dazhihui.dzh.dzh (from package com.android.dazhihui)
+04-28 13:12:02.616 //   - NOT USING main activity com.android.icredit.ui.SplashActivity (from package com.android.icredit)
+04-28 13:12:02.616 //   - NOT USING main activity com.huawei.mtf.android.MainActivity (from package com.huawei.deveco.apptest.plrdtest)
+04-28 13:12:02.616 //   - NOT USING main activity com.huawei.deveco.automator.plrdtest.ui.LockScreenActivity (from package com.huawei.deveco.automator.plrdtest)
+04-28 13:12:02.616 //   - NOT USING main activity com.huawei.deveco.harmony.system.MainActivity (from package com.huawei.deveco.harmony.system)
+04-28 13:12:02.616 //   - NOT USING main activity com.huawei.appgallery.collectdm.MainActivity (from package com.huawei.packageinstaller.demo)
+04-28 13:12:02.616 //   - NOT USING main activity com.huawei.welinklite.MainActivity (from package com.huawei.welinknow)
+04-28 13:12:02.616 //   - NOT USING main activity io.appium.settings.Settings (from package io.appium.settings)
+04-28 13:12:02.621 // Selecting main activities from category android.intent.category.MONKEY
+04-28 13:12:02.621 //   - NOT USING main activity com.android.emergency.view.ViewInfoActivity (from package com.android.emergency)
+04-28 13:12:02.621 //   - NOT USING main activity com.android.phone.MobileNetworkSettings (from package com.android.phone)
+04-28 13:12:02.621 //   - NOT USING main activity com.android.phone.MSimCallFeaturesSetting (from package com.android.phone)
+04-28 13:12:02.621 //   - NOT USING main activity com.android.phone.MSimMobileNetworkSettings (from package com.android.phone)
+04-28 13:12:02.621 //   - NOT USING main activity com.android.phone.CallFeaturesSetting (from package com.android.phone)
+04-28 13:12:02.621 //   - NOT USING main activity com.android.settings.Settings$RunningServicesActivity (from package com.android.settings)
+04-28 13:12:02.621 //   - NOT USING main activity com.android.settings.Settings$StorageUseActivity (from package com.android.settings)
+04-28 13:12:02.621 //   - NOT USING main activity com.huawei.android.launcher.unihome.UniHomeLauncher (from package com.huawei.android.launcher)
+04-28 13:12:02.622 //   - NOT USING main activity com.huawei.aod.ui.AODSettingsActivity (from package com.huawei.aod)
+04-28 13:12:02.622 //   - NOT USING main activity com.huawei.dsdscardmanager.HWCardManagerActivity (from package com.huawei.dsdscardmanager)
+04-28 13:12:02.622 //   - NOT USING main activity com.huawei.parentcontrol.ui.activity.HomeActivity (from package com.huawei.parentcontrol)
+04-28 13:12:02.622 //   - NOT USING main activity com.huawei.vassistant.ui.main.VAssistantActivity (from package com.huawei.vassistant)
+04-28 13:12:02.622 //   - NOT USING main activity com.android.emergency.settings.SosEmergencyContactSettings (from package com.android.emergency)
+04-28 13:12:02.622 //   - NOT USING main activity com.android.providers.contacts.hap.activities.RequestPermissionsActivity (from package com.android.providers.contacts)
+04-28 13:12:02.622 //   - NOT USING main activity com.huawei.android.FloatTasks.settings.FloatTaskSuggestionSettings (from package com.huawei.android.FloatTasks)
+04-28 13:12:02.622 //   - NOT USING main activity com.huawei.android.airsharing.player.DeviceListActivity (from package com.huawei.android.airsharing)
+04-28 13:12:02.622 //   - NOT USING main activity com.huawei.filemanager.desktopinstruction.EasyProjection (from package com.huawei.desktop.explorer)
+04-28 13:12:02.622 //   - NOT USING main activity com.huawei.systemui.mk.activity.ImitateActivity (from package com.huawei.desktop.systemui)
+04-28 13:12:02.623 //   - NOT USING main activity com.huawei.localBackup.InitializeActivity (from package com.huawei.localBackup)
+04-28 13:12:02.623 //   - NOT USING main activity com.huawei.keyguard.magazine.settings.MagazineUnlockPicMgrActivity (from package com.huawei.magazine)
+04-28 13:12:02.627 // Selecting main activities from category android.intent.category.DEFAULT
+04-28 13:12:02.628 //   - NOT USING main activity com.android.settings.FaceUnLockSuggestionActivity (from package com.android.settings)
+04-28 13:12:02.628 //   - NOT USING main activity com.android.cellbroadcastreceiver.CellBroadcastListActivity (from package com.android.cellbroadcastreceiver)
+04-28 13:12:02.628 //   - NOT USING main activity com.android.cellbroadcastreceiver.ui.CellBroadcastListActivity (from package com.android.cellbroadcastreceiver)
+04-28 13:12:02.628 //   - NOT USING main activity com.android.dreams.phototable.PhotoTableDreamSettings (from package com.android.dreams.phototable)
+04-28 13:12:02.628 //   - NOT USING main activity com.android.dreams.phototable.FlipperDreamSettings (from package com.android.dreams.phototable)
+04-28 13:12:02.628 //   - NOT USING main activity com.android.emergency.view.ViewInfoActivity (from package com.android.emergency)
+04-28 13:12:02.628 //   - NOT USING main activity com.android.mms.ui.ConversationList (from package com.android.mms)
+04-28 13:12:02.628 //   - NOT USING main activity com.android.phone.MobileNetworkSettings (from package com.android.phone)
+04-28 13:12:02.628 //   - NOT USING main activity com.android.phone.NetworkSetting (from package com.android.phone)
+04-28 13:12:02.628 //   - NOT USING main activity com.android.phone.MSimCallFeaturesSetting (from package com.android.phone)
+04-28 13:12:02.629 //   - NOT USING main activity com.android.phone.MSimMobileNetworkSettings (from package com.android.phone)
+04-28 13:12:02.629 //   - NOT USING main activity com.android.phone.CallFeaturesSetting (from package com.android.phone)
+04-28 13:12:02.629 //   - NOT USING main activity com.android.phone.settings.AccessibilitySettingsActivity (from package com.android.phone)
+04-28 13:12:02.629 //   - NOT USING main activity com.android.phone.NetworkSettingForNetworkExtenders (from package com.android.phone)
+04-28 13:12:02.629 //   - NOT USING main activity com.android.phone.NetworkSettingForSearchCSG (from package com.android.phone)
+04-28 13:12:02.629 //   - NOT USING main activity com.android.providers.calendar.CalendarDebug (from package com.android.providers.calendar)
+04-28 13:12:02.629 //   - NOT USING main activity com.android.server.telecom.RespondViaSmsSettings (from package com.android.server.telecom)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.server.telecom.settings.EnableAccountPreferenceActivity (from package com.android.server.telecom)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.settings.Settings (from package com.android.settings)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.settings.HWSettings (from package com.android.settings)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.settings.Settings$WirelessSettingsActivity (from package com.android.settings)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.settings.Settings$ReduceBrightColorsSettingsActivity (from package com.android.settings)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.settings.wifi.WifiPickerActivity (from package com.android.settings)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.settings.Settings$AdvancedWifiSettingsActivity (from package com.android.settings)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.settings.Settings$WifiInfoActivity (from package com.android.settings)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.settings.wifi.WifiConfigInfo (from package com.android.settings)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.settings.Settings$WifiAPITestActivity (from package com.android.settings)
+04-28 13:12:02.630 //   - NOT USING main activity com.android.settings.wifi.WifiStatusTest (from package com.android.settings)
+04-28 13:12:02.631 //   - NOT USING main activity com.android.settings.Settings$ApnSettingsActivity (from package com.android.settings)
+04-28 13:12:02.631 //   - NOT USING main activity com.android.settings.Settings$TetherSettingsActivity (from package com.android.settings)
+04-28 13:12:02.631 //   - NOT USING main activity com.android.settings.HwTetherSettings (from package com.android.settings)
+04-28 13:12:02.631 //   - NOT USING main activity com.android.settings.Settings$WifiP2pSettingsActivity (from package com.android.settings)
+04-28 13:12:02.631 //   - NOT USING main activity com.android.settings.Settings$DateTimeSettingsActivity (from package com.android.settings)
+04-28 13:12:02.631 //   - NOT USING main activity com.android.settings.Settings$LocalePickerActivity (from package com.android.settings)
+04-28 13:12:02.632 //   - NOT USING main activity com.android.settings.Settings$SpellCheckersSettingsActivity (from package com.android.settings)
+04-28 13:12:02.632 //   - NOT USING main activity com.android.settings.inputmethod.InputMethodAndSubtypeEnablerActivity (from package com.android.settings)
+04-28 13:12:02.632 //   - NOT USING main activity com.android.settings.Settings$UserDictionarySettingsActivity (from package com.android.settings)
+04-28 13:12:02.632 //   - NOT USING main activity com.android.settings.Settings$ZenModeSettingsActivity (from package com.android.settings)
+04-28 13:12:02.632 //   - NOT USING main activity com.android.settings.Settings$ZenModeAutomationSettingsActivity (from package com.android.settings)
+04-28 13:12:02.632 //   - NOT USING main activity com.android.settings.Settings$ZenModeScheduleRuleSettingsActivity (from package com.android.settings)
+04-28 13:12:02.632 //   - NOT USING main activity com.android.settings.Settings$DeviceInfoSettingsActivity (from package com.android.settings)
+04-28 13:12:02.632 //   - NOT USING main activity com.android.settings.Settings$RunningServicesActivity (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.Settings$StorageUseActivity (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.Settings$SecurityDashboardActivity (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.Settings$TrustedCredentialsSettingsActivity (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.Settings$DeviceAdminSettingsActivity (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.Settings$IccLockSettingsActivity (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.Settings$AccessibilityDaltonizerSettingsActivity (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.Settings$StorageDashboardActivity (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.Settings$PrintSettingsActivity (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.Settings$WifiDisplaySettingsActivity (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.BandMode (from package com.android.settings)
+04-28 13:12:02.633 //   - NOT USING main activity com.android.settings.Settings$TestingSettingsActivity (from package com.android.settings)
+04-28 13:12:02.634 //   - NOT USING main activity com.android.settings.Settings$PowerUsageSummaryActivity (from package com.android.settings)
+04-28 13:12:02.634 //   - NOT USING main activity com.android.settings.accounts.SyncSettingsActivity (from package com.android.settings)
+04-28 13:12:02.634 //   - NOT USING main activity com.android.settings.Settings$DataUsageSummaryActivity (from package com.android.settings)
+04-28 13:12:02.634 //   - NOT USING main activity com.android.settings.Settings$DreamSettingsActivity (from package com.android.settings)
+04-28 13:12:02.634 //   - NOT USING main activity com.android.settings.Settings$PaymentSettingsActivity (from package com.android.settings)
+04-28 13:12:02.634 //   - NOT USING main activity com.android.settings.Settings$PictureInPictureSettingsActivity (from package com.android.settings)
+04-28 13:12:02.634 //   - NOT USING main activity com.android.settings.Settings$WifiCallingSettingsActivity (from package com.android.settings)
+04-28 13:12:02.634 //   - NOT USING main activity com.android.settings.Settings$HwWifiCallingSettingsActivity (from package com.android.settings)
+04-28 13:12:02.634 //   - NOT USING main activity com.android.settings.Settings$WifiCallingDisclaimerActivity (from package com.android.settings)
+04-28 13:12:02.634 //   - NOT USING main activity com.android.settings.Settings$VersionRequireActivity (from package com.android.settings)
+04-28 13:12:02.635 //   - NOT USING main activity com.android.settings.Settings$ZonePickerActivity (from package com.android.settings)
+04-28 13:12:02.635 //   - NOT USING main activity com.android.settings.Settings$SingleHandeSettingsActivity (from package com.android.settings)
+04-28 13:12:02.635 //   - NOT USING main activity com.android.settings.Settings$SuspendButtonSettingsActivity (from package com.android.settings)
+04-28 13:12:02.635 //   - NOT USING main activity com.android.settings.Settings$SmartCoverSettingsActivity (from package com.android.settings)
+04-28 13:12:02.635 //   - NOT USING main activity com.android.settings.Settings$PreferredListSettingsActivity (from package com.android.settings)
+04-28 13:12:02.635 //   - NOT USING main activity com.android.settings.Settings$WifiApSettingsActivity (from package com.android.settings)
+04-28 13:12:02.635 //   - NOT USING main activity com.android.settings.Settings$AGPSSettingsActivity (from package com.android.settings)
+04-28 13:12:02.635 //   - NOT USING main activity com.android.settings.deviceinfo.UsbConnectedHelp (from package com.android.settings)
+04-28 13:12:02.635 //   - NOT USING main activity com.android.settings.deviceinfo.UsbConnectedOsTypeHelp (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.Settings$OtgSettingsActivity (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.NotificationAndStatusSettingsActivity (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.Settings$VirtualKeySettingsActivity (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.navigation.NavigationSettingsActivity (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.wifi.WifiHelpActivity (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.Settings$BatteryHistoryDetailActivity (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.FaqHelpActivity (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.FaqGuideActivity (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.Settings$DeviceProfilesSettingsActivity (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.sdencryption.SdEncryptionSettingsActivity (from package com.android.settings)
+04-28 13:12:02.636 //   - NOT USING main activity com.android.settings.Settings$CallEncryptionSettingsActivity (from package com.android.settings)
+04-28 13:12:02.637 //   - NOT USING main activity com.android.settings.Settings$AccessibilityShortcutSettings (from package com.android.settings)
+04-28 13:12:02.637 //   - NOT USING main activity com.android.settings.Settings$FontSizeActivity (from package com.android.settings)
+04-28 13:12:02.637 //   - NOT USING main activity com.android.settings.Settings$ScreenZoomFontSizeActivity (from package com.android.settings)
+04-28 13:12:02.637 //   - NOT USING main activity com.android.settings.Settings$UKeyApplicationSettingsActivity (from package com.android.settings)
+04-28 13:12:02.637 //   - NOT USING main activity com.android.settings.AccessibilityBigFontScaleSettings (from package com.android.settings)
+04-28 13:12:02.637 //   - NOT USING main activity com.huawei.soundbooster.ui.SmartHearingSettingActivity (from package com.android.settings)
+04-28 13:12:02.637 //   - NOT USING main activity com.huawei.keyguard.onekeylock.shortcut.ApproachActivity (from package com.android.systemui)
+04-28 13:12:02.637 //   - NOT USING main activity com.android.systemui.flashlight.FlashlightShortcutActivity (from package com.android.systemui)
+04-28 13:12:02.637 //   - NOT USING main activity com.android.systemui.Somnambulator (from package com.android.systemui)
+04-28 13:12:02.637 //   - NOT USING main activity com.android.vpndialogs.ConfirmDialog (from package com.android.vpndialogs)
+04-28 13:12:02.638 //   - NOT USING main activity com.baidu.input.ImeAppMainActivity (from package com.baidu.input_huawei)
+04-28 13:12:02.638 //   - NOT USING main activity com.baidu.input_huawei.ImeUserExperienceActivity (from package com.baidu.input_huawei)
+04-28 13:12:02.638 //   - NOT USING main activity com.baidu.input.ImeAppRecommendActivity (from package com.baidu.input_huawei)
+04-28 13:12:02.638 //   - NOT USING main activity com.huawei.android.findmyphone.ui.findphone.FindMyPhoneActivity (from package com.huawei.android.findmyphone)
+04-28 13:12:02.638 //   - NOT USING main activity com.huawei.android.launcher.HomeMoreSettings (from package com.huawei.android.launcher)
+04-28 13:12:02.638 //   - NOT USING main activity com.huawei.android.launcher.unihome.UniHomeLauncher (from package com.huawei.android.launcher)
+04-28 13:12:02.638 //   - NOT USING main activity com.huawei.android.launcher.simpleui.SimpleFolder (from package com.huawei.android.launcher)
+04-28 13:12:02.638 //   - NOT USING main activity com.huawei.android.launcher.streetmode.StreetModeLauncher (from package com.huawei.android.launcher)
+04-28 13:12:02.638 //   - NOT USING main activity com.huawei.android.launcher.powersavemode.PowerSaveModeAdd (from package com.huawei.android.launcher)
+04-28 13:12:02.638 //   - NOT USING main activity com.huawei.android.launcher.newhomescreen.NewHomeRecommendActivity (from package com.huawei.android.launcher)
+04-28 13:12:02.638 //   - NOT USING main activity com.huawei.android.launcher.oobe.AddSystemShortcutsActivity (from package com.huawei.android.launcher)
+04-28 13:12:02.638 //   - NOT USING main activity com.huawei.android.launcher.secondarydisplay.SecondaryDisplayLauncher (from package com.huawei.android.launcher)
+04-28 13:12:02.639 //   - NOT USING main activity com.huawei.android.projectmenu.ProjectMenuActivity (from package com.huawei.android.projectmenu)
+04-28 13:12:02.639 //   - NOT USING main activity com.huawei.android.wfdft.ui.FtcDeviceListActivity (from package com.huawei.android.wfdft)
+04-28 13:12:02.639 //   - NOT USING main activity com.huawei.aod.ui.AODSettingsActivity (from package com.huawei.aod)
+04-28 13:12:02.639 //   - NOT USING main activity com.huawei.gamebox.GameBoxActivity (from package com.huawei.appmarket)
+04-28 13:12:02.639 //   - NOT USING main activity com.huawei.gamebox.GameBoxMainActivity (from package com.huawei.appmarket)
+04-28 13:12:02.639 //   - NOT USING main activity com.huawei.bluetooth.BluetoothPbapDevices (from package com.huawei.bluetooth)
+04-28 13:12:02.639 //   - NOT USING main activity com.huawei.browser.Main2 (from package com.huawei.browser)
+04-28 13:12:02.639 //   - NOT USING main activity com.android.calendar.AllInOneActivity (from package com.huawei.calendar)
+04-28 13:12:02.639 //   - NOT USING main activity com.huawei.camera (from package com.huawei.camera)
+04-28 13:12:02.639 //   - NOT USING main activity com.android.contacts.activities.PeopleActivity (from package com.huawei.contacts)
+04-28 13:12:02.640 //   - NOT USING main activity com.android.contacts.activities.DialtactsActivity (from package com.huawei.contacts)
+04-28 13:12:02.640 //   - NOT USING main activity com.android.contacts.activities.CallLogActivity (from package com.huawei.contacts)
+04-28 13:12:02.640 //   - NOT USING main activity com.android.deskclock.AlarmsMainActivity (from package com.huawei.deskclock)
+04-28 13:12:02.640 //   - NOT USING main activity com.huawei.dsdscardmanager.HWCardManagerActivity (from package com.huawei.dsdscardmanager)
+04-28 13:12:02.640 //   - NOT USING main activity com.android.email.activity.Welcome (from package com.huawei.email)
+04-28 13:12:02.640 //   - NOT USING main activity com.huawei.fastapp.app.processManager.RpkLoaderActivityEntry (from package com.huawei.fastapp)
+04-28 13:12:02.640 //   - NOT USING main activity com.huawei.hidisk.filemanager.FileManager (from package com.huawei.filemanager)
+04-28 13:12:02.640 //   - NOT USING main activity com.huawei.betaclub.launch.LauncherActivity (from package com.huawei.fut)
+04-28 13:12:02.640 //   - NOT USING main activity com.huawei.gameassistant.gamespace.activity.GameSpaceMainActivity (from package com.huawei.gameassistant)
+04-28 13:12:02.640 //   - NOT USING main activity com.huawei.gamebox.GameBoxActivity (from package com.huawei.gamebox)
+04-28 13:12:02.640 //   - NOT USING main activity com.huawei.android.hicloud.oobe.ui.activity.OOBEStartActivity (from package com.huawei.hicloud)
+04-28 13:12:02.641 //   - NOT USING main activity com.huawei.android.hicloud.ui.activity.NewHiSyncSettingActivity (from package com.huawei.hidisk)
+04-28 13:12:02.641 //   - NOT USING main activity com.huawei.himovie.ui.login.SplashScreenActivity (from package com.huawei.himovie)
+04-28 13:12:02.641 //   - NOT USING main activity com.huawei.skytone.account.welcome.SplashActivity (from package com.huawei.hiskytone)
+04-28 13:12:02.641 //   - NOT USING main activity com.huawei.mmitest.MMITestManuNormal (from package com.huawei.mmitest)
+04-28 13:12:02.641 //   - NOT USING main activity com.huawei.mmitest.MmiManualSimple (from package com.huawei.mmitest)
+04-28 13:12:02.641 //   - NOT USING main activity com.huawei.mmitest.MMITestAutoSimple (from package com.huawei.mmitest)
+04-28 13:12:02.641 //   - NOT USING main activity com.huawei.mmitest.MMITestAudioSimple (from package com.huawei.mmitest)
+04-28 13:12:02.641 //   - NOT USING main activity com.huawei.mmitest.MMITestFactoryExtend (from package com.huawei.mmitest)
+04-28 13:12:02.641 //   - NOT USING main activity com.huawei.mmitest.MMITestBackupBoard (from package com.huawei.mmitest)
+04-28 13:12:02.642 //   - NOT USING main activity com.huawei.mmitest.MmiSingleItemMenu (from package com.huawei.mmitest)
+04-28 13:12:02.642 //   - NOT USING main activity com.android.mediacenter.PageActivity (from package com.huawei.music)
+04-28 13:12:02.642 //   - NOT USING main activity com.huawei.numberidentity.numbermark.NumberMarkSettings (from package com.huawei.numberidentity)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.abilitygallery.ui.AbilityGalleryActivity (from package com.huawei.ohos.famanager)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.parentcontrol.ui.activity.HomeActivity (from package com.huawei.parentcontrol)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.gallery.app.GalleryMain (from package com.huawei.photos)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.rcs.callplus.CallPlusSetting (from package com.huawei.rcsserviceapplication)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.scanner.view.ScannerActivity (from package com.huawei.scanner)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.scanner (from package com.huawei.scanner)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.scenepack.splash.SplashActivity (from package com.huawei.scenepack)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.harassmentinterception.ui.InterceptionActivity (from package com.huawei.systemmanager)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.notificationmanager.ui.NotificationManagmentActivity (from package com.huawei.systemmanager)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.systemmanager.netassistant.netapp.ui.NetAppListActivity (from package com.huawei.systemmanager)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.securitycenter.antivirus.ui.AntiVirusActivity (from package com.huawei.systemmanager)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.securitycenter.permission.ui.activity.MainActivity (from package com.huawei.systemmanager)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.trustagent.ui.ConductActivity (from package com.huawei.trustagent)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.vassistant.ui.main.VAssistantActivity (from package com.huawei.vassistant)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.vassistant.platform.ui.setting.AssistantStartActivity (from package com.huawei.vassistant)
+04-28 13:12:02.643 //   - NOT USING main activity com.android36kr.app.ui.LogoActivity (from package com.android36kr.app)
+04-28 13:12:02.643 //   - NOT USING main activity com.android.contacts.activities.NonPhoneActivity (from package com.huawei.contacts)
+04-28 13:12:02.643 //   - NOT USING main activity com.android.settings.FallbackHome (from package com.android.settings)
+04-28 13:12:02.643 // Selecting main activities from category android.intent.category.BROWSABLE
+04-28 13:12:02.643 //   - NOT USING main activity com.android.contacts.activities.PeopleActivity (from package com.huawei.contacts)
+04-28 13:12:02.643 //   - NOT USING main activity com.android.contacts.activities.CallLogActivity (from package com.huawei.contacts)
+04-28 13:12:02.643 //   - NOT USING main activity com.android.contacts.activities.NonPhoneActivity (from package com.huawei.contacts)
+04-28 13:12:02.643 // Warning: no activities found for category android.intent.category.TAB
+04-28 13:12:02.643 // Warning: no activities found for category android.intent.category.ALTERNATIVE
+04-28 13:12:02.643 // Warning: no activities found for category android.intent.category.SELECTED_ALTERNATIVE
+04-28 13:12:02.643 // Selecting main activities from category android.intent.category.INFO
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.android.hicloud.ui.activity.NewHiSyncSettingActivity (from package com.huawei.hidisk)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.abilitygallery.ui.AbilityGalleryActivity (from package com.huawei.ohos.famanager)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.search.MainActivity (from package com.huawei.search)
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.videoeditor.uri.LauncherActivity (from package com.huawei.videoeditor)
+04-28 13:12:02.643 // Selecting main activities from category android.intent.category.HOME
+04-28 13:12:02.643 //   - NOT USING main activity com.huawei.android.launcher.unihome.UniHomeLauncher (from package com.huawei.android.launcher)
+04-28 13:12:02.643 //   - NOT USING main activity com.android.settings.FallbackHome (from package com.android.settings)
+04-28 13:12:02.643 // Warning: no activities found for category android.intent.category.PREFERENCE
+04-28 13:12:02.643 // Warning: no activities found for category android.intent.category.TEST
+04-28 13:12:02.644 // Warning: no activities found for category android.intent.category.CAR_DOCK
+04-28 13:12:02.644 // Selecting main activities from category android.intent.category.DESK_DOCK
+04-28 13:12:02.644 //   - NOT USING main activity com.android.systemui.Somnambulator (from package com.android.systemui)
+04-28 13:12:02.644 // Warning: no activities found for category android.intent.category.CAR_MODE
+04-28 13:12:02.644 // Seeded: 3553
+04-28 13:12:02.644 // Event percentages:
+04-28 13:12:02.644 //   0: 15.0%
+04-28 13:12:02.644 //   1: 10.0%
+04-28 13:12:02.644 //   2: 2.0%
+04-28 13:12:02.644 //   3: 15.0%
+04-28 13:12:02.644 //   4: -0.0%
+04-28 13:12:02.644 //   5: -0.0%
+04-28 13:12:02.644 //   6: 25.0%
+04-28 13:12:02.644 //   7: 15.0%
+04-28 13:12:02.644 //   8: 2.0%
+04-28 13:12:02.644 //   9: 2.0%
+04-28 13:12:02.644 //   10: 1.0%
+04-28 13:12:02.644 //   11: 13.0%
+04-28 13:12:02.644 :Switch: #Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launch

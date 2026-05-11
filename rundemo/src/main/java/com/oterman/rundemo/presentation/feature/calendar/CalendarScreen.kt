@@ -22,6 +22,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -188,7 +190,18 @@ fun CalendarScreen(
                     }
                 }
 
-                if (uiState.selectedDateRecords.isEmpty() && uiState.selectedDatePlans.isEmpty()) {
+                if (uiState.isLoadingPlans && uiState.selectedDatePlans.isEmpty()) {
+                    item {
+                        LoadingHint(text = "正在加载训练计划")
+                    }
+                } else if (uiState.planLoadError != null && uiState.selectedDatePlans.isEmpty()) {
+                    item {
+                        PlanLoadError(
+                            message = uiState.planLoadError ?: "训练计划加载失败",
+                            onRetry = viewModel::retryLoadPlans
+                        )
+                    }
+                } else if (uiState.selectedDateRecords.isEmpty() && uiState.selectedDatePlans.isEmpty()) {
                     item {
                         EmptyHint(text = "当天没有记录")
                     }
@@ -327,5 +340,48 @@ private fun EmptyHint(text: String) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
         )
+    }
+}
+
+@Composable
+private fun LoadingHint(text: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+        )
+    }
+}
+
+@Composable
+private fun PlanLoadError(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(onClick = onRetry) {
+            Text("重试")
+        }
     }
 }
