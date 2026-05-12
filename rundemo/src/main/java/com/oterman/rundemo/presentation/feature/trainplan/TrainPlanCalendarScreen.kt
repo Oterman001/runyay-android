@@ -1,4 +1,4 @@
-package com.oterman.rundemo.presentation.feature.calendar
+package com.oterman.rundemo.presentation.feature.trainplan
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -67,7 +67,7 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarScreen(
+fun TrainPlanCalendarScreen(
     onBack: () -> Unit = {},
     onAddPlan: (String?) -> Unit = {},
     onEditPlan: (String) -> Unit = {},

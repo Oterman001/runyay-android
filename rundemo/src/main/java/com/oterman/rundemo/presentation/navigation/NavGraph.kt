@@ -85,18 +85,18 @@ import com.oterman.rundemo.presentation.feature.runningshoes.addedit.AddEditRunn
 import com.oterman.rundemo.presentation.feature.runningshoes.linkedrecords.LinkedRunRecordsListScreen
 import com.oterman.rundemo.presentation.feature.vdotdetail.VdotDetailScreen
 import com.oterman.rundemo.presentation.feature.welcome.WelcomeScreen
-import com.oterman.rundemo.presentation.feature.calendar.CalendarScreen
+import com.oterman.rundemo.presentation.feature.trainplan.TrainPlanCalendarScreen
 import com.oterman.rundemo.presentation.feature.trainplan.TrainPlanEditScreen
-import com.oterman.rundemo.presentation.feature.trainplan.TrainPlanEditViewModelFactory
 import com.oterman.rundemo.ui.theme.ThemeMode
 import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.repository.RunDataRepositoryImpl
 import com.oterman.rundemo.data.repository.TokenRefreshManager
 import com.oterman.rundemo.data.repository.UserRepository
+import com.oterman.rundemo.presentation.feature.trainplan.CalendarViewModel
+import com.oterman.rundemo.presentation.feature.trainplan.CalendarViewModelFactory
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 /**
@@ -944,8 +944,8 @@ fun AppNavGraph(
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
         ) { backStackEntry ->
             val context = LocalContext.current
-            val calendarViewModel: com.oterman.rundemo.presentation.feature.calendar.CalendarViewModel = viewModel(
-                factory = com.oterman.rundemo.presentation.feature.calendar.CalendarViewModelFactory(context)
+            val calendarViewModel: CalendarViewModel = viewModel(
+                factory = CalendarViewModelFactory(context)
             )
             // Refresh plans when returning from edit screen
             LaunchedEffect(Unit) {
@@ -958,7 +958,7 @@ fun AppNavGraph(
                     }
             }
 
-            CalendarScreen(
+            TrainPlanCalendarScreen(
                 onBack = { navController.popBackStack() },
                 onAddPlan = { date ->
                     navController.navigate(Screen.TrainPlanEdit.createRoute(date = date))

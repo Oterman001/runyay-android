@@ -1,4 +1,4 @@
-package com.oterman.rundemo.presentation.feature.calendar
+package com.oterman.rundemo.presentation.feature.trainplan
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -165,7 +166,7 @@ class CalendarViewModel(
     }
 
     private fun Long.toLocalDate(zoneId: ZoneId): LocalDate =
-        java.time.Instant.ofEpochMilli(this).atZone(zoneId).toLocalDate()
+        Instant.ofEpochMilli(this).atZone(zoneId).toLocalDate()
 
     private fun parsePlanDate(value: String): LocalDate? {
         return runCatching {
