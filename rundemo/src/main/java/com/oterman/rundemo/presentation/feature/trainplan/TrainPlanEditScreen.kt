@@ -24,11 +24,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Cached
 import androidx.compose.material.icons.outlined.DirectionsRun
 import androidx.compose.material.icons.outlined.KeyboardDoubleArrowDown
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -67,6 +69,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.domain.model.BlockType
+import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.LocationType
 import com.oterman.rundemo.domain.model.TrainBlock
 import com.oterman.rundemo.domain.model.TrainWholeType
@@ -93,6 +96,13 @@ fun TrainPlanEditScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showPushPlatformSelect by remember { mutableStateOf(false) }
+    var showDeletePushPlatformSelect by remember { mutableStateOf(false) }
+    val pushPlatforms = remember {
+        DataSourcePlatform.entries.filter { it.isEnabled && it.requiresOAuthBinding }
+    }
     val lazyListState = rememberLazyListState()
     val mainBlockStartIndex = remember(
         uiState.trainWholeType,
@@ -121,6 +131,10 @@ fun TrainPlanEditScreen(
         if (uiState.saveSuccess) onNavigateBack()
     }
 
+    LaunchedEffect(uiState.deleteSuccess) {
+        if (uiState.deleteSuccess) onNavigateBack()
+    }
+
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -141,6 +155,71 @@ fun TrainPlanEditScreen(
             selectedDate = uiState.scheduledDate,
             onDismiss = { viewModel.toggleDatePicker(false) },
             onDateSelected = { viewModel.onDateChange(it) }
+        )
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("删除课程") },
+            text = { Text("确定要删除「${uiState.name}」吗？删除后无法恢复。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    viewModel.deletePlan()
+                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("取消") }
+            }
+        )
+    }
+
+    if (showPushPlatformSelect) {
+        AlertDialog(
+            onDismissRequest = { showPushPlatformSelect = false },
+            title = { Text("选择推送平台") },
+            text = {
+                androidx.compose.foundation.layout.Column {
+                    pushPlatforms.forEach { platform ->
+                        TextButton(
+                            onClick = {
+                                showPushPlatformSelect = false
+                                viewModel.pushPlan(platform.code)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text(platform.displayName) }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showPushPlatformSelect = false }) { Text("取消") }
+            }
+        )
+    }
+
+    if (showDeletePushPlatformSelect) {
+        AlertDialog(
+            onDismissRequest = { showDeletePushPlatformSelect = false },
+            title = { Text("从手表删除推送") },
+            text = {
+                androidx.compose.foundation.layout.Column {
+                    pushPlatforms.forEach { platform ->
+                        TextButton(
+                            onClick = {
+                                showDeletePushPlatformSelect = false
+                                viewModel.deletePushedPlan(platform.code)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text(platform.displayName) }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showDeletePushPlatformSelect = false }) { Text("取消") }
+            }
         )
     }
 
@@ -165,7 +244,48 @@ fun TrainPlanEditScreen(
                 },
                 actions = {
                     if (!uiState.isEditMode) {
-                        // Details mode has only the floating edit action.
+                        val isActioning = uiState.isDeleting || uiState.isPushing || uiState.isDeletingPush
+                        if (isActioning) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.padding(end = 16.dp).size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Box {
+                                IconButton(onClick = { showMoreMenu = true }) {
+                                    Icon(Icons.Default.MoreVert, contentDescription = "更多操作")
+                                }
+                                DropdownMenu(
+                                    expanded = showMoreMenu,
+                                    onDismissRequest = { showMoreMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("删除课程", color = MaterialTheme.colorScheme.error) },
+                                        onClick = {
+                                            showMoreMenu = false
+                                            showDeleteConfirm = true
+                                        }
+                                    )
+                                    HorizontalDivider()
+                                    DropdownMenuItem(
+                                        text = { Text("推送到手表") },
+                                        onClick = {
+                                            showMoreMenu = false
+                                            showPushPlatformSelect = true
+                                        }
+                                    )
+                                    if (uiState.workoutId != null) {
+                                        DropdownMenuItem(
+                                            text = { Text("从手表删除推送") },
+                                            onClick = {
+                                                showMoreMenu = false
+                                                showDeletePushPlatformSelect = true
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     } else if (uiState.isSaving) {
                         CircularProgressIndicator(
                             modifier = Modifier.padding(end = 16.dp).size(20.dp),

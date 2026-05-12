@@ -939,7 +939,7 @@ fun AppNavGraph(
         composable(
             route = Screen.TrainingCalendar.route,
             enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
-            exitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) + fadeOut() },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
         ) { backStackEntry ->
@@ -973,6 +973,10 @@ fun AppNavGraph(
         // 训练计划编辑页面
         composable(
             route = Screen.TrainPlanEdit.route,
+            enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) + fadeOut() },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() },
             arguments = listOf(
                 navArgument("planId") {
                     type = NavType.StringType

@@ -424,6 +424,36 @@ class TrainPlanEditViewModel(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
+    fun deletePlan() {
+        val planId = _uiState.value.planId ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeleting = true) }
+            repository.deletePlans(listOf(planId))
+                .onSuccess { _uiState.update { it.copy(isDeleting = false, deleteSuccess = true) } }
+                .onFailure { e -> _uiState.update { it.copy(isDeleting = false, errorMessage = e.message ?: "删除失败") } }
+        }
+    }
+
+    fun pushPlan(platformCode: String) {
+        val planId = _uiState.value.planId ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isPushing = true) }
+            repository.pushPlan(planId, platformCode)
+                .onSuccess { result -> _uiState.update { it.copy(isPushing = false, workoutId = result.extWorkoutId) } }
+                .onFailure { e -> _uiState.update { it.copy(isPushing = false, errorMessage = e.message ?: "推送失败") } }
+        }
+    }
+
+    fun deletePushedPlan(platformCode: String) {
+        val planId = _uiState.value.planId ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeletingPush = true) }
+            repository.deletePushedPlan(planId, platformCode)
+                .onSuccess { _uiState.update { it.copy(isDeletingPush = false, workoutId = null) } }
+                .onFailure { e -> _uiState.update { it.copy(isDeletingPush = false, errorMessage = e.message ?: "从手表删除失败") } }
+        }
+    }
+
     // ==================== Load (edit mode) ====================
 
     private fun loadPlan(planId: String) {
@@ -448,7 +478,8 @@ class TrainPlanEditViewModel(
                         distanceGoalStep = plan.distanceGoalStep,
                         timeGoalStep = plan.timeGoalStep,
                         calGoalStep = plan.calGoalStep,
-                        pacerGoalStep = plan.pacerGoalStep
+                        pacerGoalStep = plan.pacerGoalStep,
+                        workoutId = plan.workoutId
                     )
                 }
             }.onFailure { e ->
