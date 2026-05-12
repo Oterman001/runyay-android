@@ -249,10 +249,10 @@ class CalendarViewModelFactory(private val context: Context) : ViewModelProvider
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CalendarViewModel::class.java)) {
-            val dao = RunDatabase.getInstance(context).runRecordDao()
+            val db = RunDatabase.getInstance(context)
             val prefs = PreferencesManager(context)
-            val trainPlanRepo = TrainPlanRepository(prefs)
-            return CalendarViewModel(dao, prefs, trainPlanRepo) as T
+            val trainPlanRepo = TrainPlanRepository(prefs, localDao = db.trainPlanDao())
+            return CalendarViewModel(db.runRecordDao(), prefs, trainPlanRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -542,7 +542,8 @@ class TrainPlanEditViewModelFactory(private val context: Context) : ViewModelPro
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TrainPlanEditViewModel::class.java)) {
             val prefs = PreferencesManager(context)
-            val repository = TrainPlanRepository(prefs)
+            val db = com.oterman.rundemo.data.local.database.RunDatabase.getInstance(context)
+            val repository = TrainPlanRepository(prefs, localDao = db.trainPlanDao())
             return TrainPlanEditViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

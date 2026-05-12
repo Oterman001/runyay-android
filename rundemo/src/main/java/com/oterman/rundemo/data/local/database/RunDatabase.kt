@@ -15,6 +15,7 @@ import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.dao.RunSamplePointDao
 import com.oterman.rundemo.data.local.dao.RunSegmentDao
 import com.oterman.rundemo.data.local.dao.RunningShoeDao
+import com.oterman.rundemo.data.local.dao.TrainPlanDao
 import com.oterman.rundemo.data.local.entity.DailyHealthEntity
 import com.oterman.rundemo.data.local.entity.OverallVdotEntity
 import com.oterman.rundemo.data.local.entity.PBRecordEntity
@@ -23,6 +24,7 @@ import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.local.entity.RunSamplePointEntity
 import com.oterman.rundemo.data.local.entity.RunSegmentEntity
 import com.oterman.rundemo.data.local.entity.RunningShoeEntity
+import com.oterman.rundemo.data.local.entity.TrainPlanEntity
 
 /**
  * Room数据库定义
@@ -42,9 +44,10 @@ import com.oterman.rundemo.data.local.entity.RunningShoeEntity
         PBRecordEntity::class,
         OverallVdotEntity::class,
         DailyHealthEntity::class,
-        RunningShoeEntity::class
+        RunningShoeEntity::class,
+        TrainPlanEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -58,6 +61,7 @@ abstract class RunDatabase : RoomDatabase() {
     abstract fun overallVdotDao(): OverallVdotDao
     abstract fun dailyHealthDao(): DailyHealthDao
     abstract fun runningShoeDao(): RunningShoeDao
+    abstract fun trainPlanDao(): TrainPlanDao
     
     companion object {
         private const val DATABASE_NAME = "run_database"
@@ -132,6 +136,31 @@ abstract class RunDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS train_plan (
+                        planId TEXT NOT NULL PRIMARY KEY,
+                        userId TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT,
+                        trainWholeType TEXT NOT NULL DEFAULT 'SELF_DEFINE',
+                        scheduledDate TEXT,
+                        hardLevel INTEGER,
+                        finishFlag TEXT DEFAULT 'N',
+                        locationType TEXT,
+                        workoutId TEXT,
+                        version INTEGER,
+                        detailJson TEXT,
+                        lastSyncAt INTEGER NOT NULL DEFAULT 0,
+                        isDirty INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_train_plan_userId ON train_plan(userId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_train_plan_scheduledDate ON train_plan(scheduledDate)")
+            }
+        }
+
         /**
          * 获取数据库单例
          */
@@ -142,7 +171,7 @@ abstract class RunDatabase : RoomDatabase() {
                     RunDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
