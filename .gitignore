@@ -92,3 +92,6 @@ lint/tmp/
 *.swp
 *~
 .directory
+
+# Generated patch archives (created by generate_patches.ps1/sh)
+rundemo/src/main/assets/patches_*.zip
