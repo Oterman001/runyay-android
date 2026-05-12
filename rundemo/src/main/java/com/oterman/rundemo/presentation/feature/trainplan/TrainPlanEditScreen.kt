@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -57,6 +59,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -334,7 +337,15 @@ fun TrainPlanEditScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
-                        .background(RunTheme.colorScheme.cardBg, RoundedCornerShape(12.dp))
+                        .background(RunTheme.colorScheme.cardBg, RoundedCornerShape(12.dp)),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedBorderColor = RunTheme.colorScheme.blue.copy(alpha = 0.5f),
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        disabledBorderColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent
+                    )
                 )
             }
             item { Spacer(Modifier.height(28.dp)) }
@@ -382,7 +393,13 @@ private fun BasicInfoCard(
                     placeholder = { Text("起个名字") },
                     singleLine = true,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.End),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedBorderColor = RunTheme.colorScheme.blue.copy(alpha = 0.5f),
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent
+                    )
                 )
             } else {
                 Text(
@@ -394,12 +411,15 @@ private fun BasicInfoCard(
                 )
             }
         }
-        HorizontalDivider(color = RunTheme.colorScheme.divider)
+        HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("时间", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             if (isEditMode) {
-                TextButton(onClick = onDateClick) {
+                TextButton(
+                    onClick = onDateClick,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                ) {
                     Text(scheduledDate ?: "选择日期")
                 }
             } else {
@@ -410,7 +430,7 @@ private fun BasicInfoCard(
                 )
             }
         }
-        HorizontalDivider(color = RunTheme.colorScheme.divider)
+        HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("地点", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
@@ -428,7 +448,7 @@ private fun BasicInfoCard(
                 )
             }
         }
-        HorizontalDivider(color = RunTheme.colorScheme.divider)
+        HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("类型", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))

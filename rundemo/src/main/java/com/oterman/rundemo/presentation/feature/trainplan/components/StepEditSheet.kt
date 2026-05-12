@@ -1,10 +1,15 @@
 package com.oterman.rundemo.presentation.feature.trainplan.components
 
-import android.widget.NumberPicker
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,12 +17,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,13 +31,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,11 +45,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.oterman.rundemo.domain.model.IntensityType
 import com.oterman.rundemo.domain.model.TrainGoalType
 import com.oterman.rundemo.domain.model.TrainStep
@@ -214,43 +224,50 @@ private fun ActionCard(
     onDescNameChange: (String) -> Unit
 ) {
     SectionCard {
-        Text("动作", style = MaterialTheme.typography.bodyLarge)
-        Spacer(Modifier.height(8.dp))
-        if (canModifyPurpose) {
-            Segmented(
-                items = listOf("WORK" to "训练", "RECOVERY" to "恢复"),
-                selected = purpose,
-                onSelected = onPurposeChange
-            )
-        } else {
-            Text(
-                text = when (purpose) {
-                    "WARMUP" -> "热身"
-                    "COOLDOWN" -> "放松"
-                    else -> purpose
-                },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("动作", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.weight(1f))
+            if (canModifyPurpose) {
+                InlineChoiceGroup(
+                    options = listOf("WORK" to "训练", "RECOVERY" to "恢复"),
+                    selected = purpose,
+                    onSelected = onPurposeChange
+                )
+            } else {
+                Text(
+                    text = when (purpose) {
+                        "WARMUP" -> "热身"
+                        "COOLDOWN" -> "放松"
+                        else -> purpose
+                    },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
-        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider)
+        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("是否跳过")
             Spacer(Modifier.weight(1f))
-            Segmented(
-                items = listOf(0 to "否", 1 to "是"),
+            InlineChoiceGroup(
+                options = listOf(0 to "否", 1 to "是"),
                 selected = skipStatus,
-                onSelected = onSkipStatusChange,
-                modifier = Modifier.width(160.dp)
+                onSelected = onSkipStatusChange
             )
         }
-        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider)
+        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
         OutlinedTextField(
             value = descName,
             onValueChange = onDescNameChange,
             label = { Text("单段名字") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = Color.Transparent,
+                focusedBorderColor = RunTheme.colorScheme.blue.copy(alpha = 0.5f),
+                unfocusedContainerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent
+            )
         )
     }
 }
@@ -278,14 +295,13 @@ private fun GoalCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("目标类型")
             Spacer(Modifier.weight(1f))
-            Segmented(
-                items = listOf(TrainGoalType.DISTANCE to "距离", TrainGoalType.TIME to "时间"),
+            InlineChoiceGroup(
+                options = listOf(TrainGoalType.DISTANCE to "距离", TrainGoalType.TIME to "时间"),
                 selected = goalType,
-                onSelected = onGoalTypeChange,
-                modifier = Modifier.width(180.dp)
+                onSelected = onGoalTypeChange
             )
         }
-        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider)
+        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
         Text(
             text = if (goalType == TrainGoalType.DISTANCE) {
                 val value = if (distanceUnit == "M") "${distanceMeters}m" else "${distanceKmMajor}.${distanceKmMinor.toString().padStart(2, '0')}km"
@@ -297,11 +313,10 @@ private fun GoalCard(
         )
         Spacer(Modifier.height(8.dp))
         if (goalType == TrainGoalType.DISTANCE) {
-            Segmented(
-                items = listOf("KM" to "公里", "M" to "米"),
+            InlineChoiceGroup(
+                options = listOf("KM" to "公里", "M" to "米"),
                 selected = distanceUnit,
-                onSelected = onDistanceUnitChange,
-                modifier = Modifier.fillMaxWidth()
+                onSelected = onDistanceUnitChange
             )
             Spacer(Modifier.height(8.dp))
             if (distanceUnit == "KM") {
@@ -339,14 +354,13 @@ private fun IntensityCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("强度类型")
             Spacer(Modifier.weight(1f))
-            Segmented(
-                items = listOf(null to "无", IntensityType.HEART_RATE to "心率", IntensityType.SPEED to "配速"),
+            InlineChoiceGroup(
+                options = listOf(null to "无", IntensityType.HEART_RATE to "心率", IntensityType.SPEED to "配速"),
                 selected = intensityType,
-                onSelected = onIntensityTypeChange,
-                modifier = Modifier.width(220.dp)
+                onSelected = onIntensityTypeChange
             )
         }
-        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider)
+        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
         when (intensityType) {
             IntensityType.HEART_RATE -> {
                 Text("范围 $minHeartRate-$maxHeartRate bpm", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -365,7 +379,13 @@ private fun IntensityCard(
                         label = { Text("最快") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedBorderColor = RunTheme.colorScheme.blue.copy(alpha = 0.5f),
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent
+                        )
                     )
                     Spacer(Modifier.width(8.dp))
                     Text("-")
@@ -376,7 +396,13 @@ private fun IntensityCard(
                         label = { Text("最慢") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedBorderColor = RunTheme.colorScheme.blue.copy(alpha = 0.5f),
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent
+                        )
                     )
                 }
             }
@@ -397,23 +423,38 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun <T> Segmented(
-    items: List<Pair<T, String>>,
+private fun <T> InlineChoiceGroup(
+    options: List<Pair<T, String>>,
     selected: T,
     onSelected: (T) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    SingleChoiceSegmentedButtonRow(modifier = modifier) {
-        items.forEachIndexed { index, (value, label) ->
-            SegmentedButton(
-                selected = selected == value,
-                onClick = { onSelected(value) },
-                shape = SegmentedButtonDefaults.itemShape(index, items.size)
-            ) { Text(label, maxLines = 1) }
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        options.forEach { (value, label) ->
+            val isSelected = selected == value
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isSelected) RunTheme.colorScheme.blue
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .background(
+                        color = if (isSelected) RunTheme.colorScheme.blue.copy(alpha = 0.10f)
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .clickable { onSelected(value) }
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun WheelPicker(
     value: Int,
@@ -422,24 +463,60 @@ private fun WheelPicker(
     modifier: Modifier = Modifier,
     label: (Int) -> String
 ) {
-    val values = remember(range.first, range.last) { range.toList() }
-    AndroidView(
-        modifier = modifier.height(150.dp),
-        factory = { context ->
-            NumberPicker(context).apply {
-                minValue = 0
-                maxValue = values.lastIndex
-                displayedValues = values.map(label).toTypedArray()
-                wrapSelectorWheel = true
-                this.value = values.indexOf(value).coerceAtLeast(0)
-                setOnValueChangedListener { _, _, newVal -> onValueChange(values[newVal]) }
-            }
-        },
-        update = { picker ->
-            val index = values.indexOf(value).coerceAtLeast(0)
-            if (picker.value != index) picker.value = index
-        }
+    val items = remember(range.first, range.last) { range.toList() }
+    val itemHeight = 44.dp
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = items.indexOf(value).coerceAtLeast(0)
     )
+    val snapBehavior = rememberSnapFlingBehavior(listState)
+    val centeredIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
+    val consumeAllScroll = remember {
+        object : NestedScrollConnection {
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource) = available
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity) = available
+        }
+    }
+
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (!listState.isScrollInProgress) {
+            val idx = listState.firstVisibleItemIndex.coerceIn(items.indices)
+            onValueChange(items[idx])
+        }
+    }
+
+    Box(
+        modifier = modifier.height(itemHeight * 3).nestedScroll(consumeAllScroll),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(itemHeight)
+                .background(RunTheme.colorScheme.blue.copy(alpha = 0.10f), RoundedCornerShape(8.dp))
+        )
+        LazyColumn(
+            state = listState,
+            flingBehavior = snapBehavior,
+            contentPadding = PaddingValues(vertical = itemHeight),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            itemsIndexed(items, key = { _, v -> v }) { index, item ->
+                val isSelected = index == centeredIndex
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(itemHeight),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label(item),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (isSelected) RunTheme.colorScheme.blue
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)
+                    )
+                }
+            }
+        }
+    }
 }
 
 private fun defaultPurpose(step: TrainStep): String = when {
