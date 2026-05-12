@@ -285,7 +285,7 @@ fun ProfileTabContent(
                         showDivider = true
                     )
                     SettingsItem(
-                        icon = Icons.Outlined.Key,
+                        iconResId = R.drawable.svg_point_3_connected_trianglepath_dotted,
                         title = "连接与授权管理",
                         subtitle = "AI 连接与合作方数据授权",
                         iconTint = RunTheme.colorScheme.blue,
