@@ -66,5 +66,6 @@ Write-Host ""
 Write-Host "========================================"
 Write-Host "  完成！已成功应用 $($Patches.Count) 个 patch。"
 Write-Host "  提交历史（最新 $($Patches.Count) 条）："
-git log --oneline -$Patches.Count
+$n = $Patches.Count
+git log --oneline -$n
 Write-Host "========================================"
