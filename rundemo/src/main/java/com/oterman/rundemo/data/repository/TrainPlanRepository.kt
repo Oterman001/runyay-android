@@ -28,7 +28,7 @@ class TrainPlanRepository(
 ) {
     companion object {
         private const val TAG = "TrainPlanRepo"
-        private val SERVER_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+        private val SERVER_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.BASIC_ISO_DATE
     }
 
     suspend fun savePlan(plan: TrainPlan): Result<Unit> {
@@ -179,7 +179,11 @@ class TrainPlanRepository(
         name = name,
         description = description,
         trainWholeType = trainWholeType.value,
-        scheduledDate = scheduledDate,
+        scheduledDate = scheduledDate?.let { d ->
+            runCatching {
+                LocalDate.parse(d, DateTimeFormatter.ISO_LOCAL_DATE).format(SERVER_DATE_FORMATTER)
+            }.getOrElse { d }
+        },
         hardLevel = hardLevel,
         finishFlag = finishFlag,
         locationType = locationType.value,
