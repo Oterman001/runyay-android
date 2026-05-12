@@ -185,7 +185,9 @@ fun TrainPlanCalendarScreen(
                     items(uiState.selectedDatePlans, key = { it.planId }) { plan ->
                         TrainPlanListItem(
                             plan = plan,
-                            onClick = { onEditPlan(plan.planId) }
+                            onClick = { onEditPlan(plan.planId) },
+                            detail = uiState.selectedDateDetails[plan.planId],
+                            isLoadingDetail = uiState.isLoadingDetails && !uiState.selectedDateDetails.containsKey(plan.planId)
                         )
                     }
                 }

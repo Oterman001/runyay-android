@@ -13,6 +13,7 @@ import com.oterman.rundemo.data.network.dto.request.TrainPlanListRequestDto
 import com.oterman.rundemo.data.network.dto.request.TrainStepDto
 import com.oterman.rundemo.data.network.dto.response.PushTrainPlanResponseData
 import com.oterman.rundemo.data.network.dto.response.TrainPlanListResponseData
+import com.oterman.rundemo.data.network.dto.response.TrainPlanListWrapperResponseData
 import com.oterman.rundemo.data.network.dto.response.toDomain
 import com.oterman.rundemo.domain.model.TrainBlock
 import com.oterman.rundemo.domain.model.TrainPlan
@@ -90,8 +91,9 @@ class TrainPlanRepository(
                 preferencesManager = preferencesManager
             )
             val response = api.listTrainPlans(request)
-            if (response.isSuccess() && response.data != null) {
-                Result.success(response.data)
+            val listData = response.data?.trainPlanListResult?.firstOrNull()
+            if (response.isSuccess() && listData != null) {
+                Result.success(listData)
             } else {
                 Result.failure(Exception(response.msg))
             }

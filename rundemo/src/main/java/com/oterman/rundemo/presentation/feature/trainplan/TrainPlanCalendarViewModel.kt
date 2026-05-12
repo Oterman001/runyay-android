@@ -9,8 +9,11 @@ import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.repository.TrainPlanRepository
+import com.oterman.rundemo.domain.model.TrainPlan
 import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.util.RLog
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,7 +35,9 @@ data class CalendarUiState(
     val isLoading: Boolean = false,
     val isLoadingPlans: Boolean = false,
     val planLoadError: String? = null,
-    val isDeletingPlan: Boolean = false
+    val isDeletingPlan: Boolean = false,
+    val selectedDateDetails: Map<String, TrainPlan> = emptyMap(),
+    val isLoadingDetails: Boolean = false
 )
 
 class CalendarViewModel(
@@ -48,6 +53,8 @@ class CalendarViewModel(
 
     // Cache all plans for current month to avoid re-fetching per date
     private var monthPlans: List<TrainPlanSummary> = emptyList()
+    private var monthDetailCache: MutableMap<String, TrainPlan> = mutableMapOf()
+    private var detailLoadJob: Job? = null
 
     init {
         loadMonth(YearMonth.now())
@@ -55,18 +62,38 @@ class CalendarViewModel(
 
     fun onMonthChanged(month: YearMonth) {
         if (month == _uiState.value.currentMonth) return
-        _uiState.update { it.copy(currentMonth = month, selectedDate = null, selectedDateRecords = emptyList(), selectedDatePlans = emptyList()) }
+        detailLoadJob?.cancel()
+        monthDetailCache.clear()
+        _uiState.update {
+            it.copy(
+                currentMonth = month,
+                selectedDate = null,
+                selectedDateRecords = emptyList(),
+                selectedDatePlans = emptyList(),
+                selectedDateDetails = emptyMap(),
+                isLoadingDetails = false
+            )
+        }
         loadMonth(month)
     }
 
     fun onDateSelected(date: LocalDate) {
         if (_uiState.value.selectedDate == date) {
-            _uiState.update { it.copy(selectedDate = null, selectedDateRecords = emptyList(), selectedDatePlans = emptyList()) }
+            detailLoadJob?.cancel()
+            _uiState.update {
+                it.copy(
+                    selectedDate = null,
+                    selectedDateRecords = emptyList(),
+                    selectedDatePlans = emptyList(),
+                    selectedDateDetails = emptyMap()
+                )
+            }
             return
         }
         _uiState.update { it.copy(selectedDate = date) }
         loadRecordsForDate(date)
         loadPlansForDate(date)
+        loadPlanDetailsForDate(date)
     }
 
     fun deletePlan(planId: String) {
@@ -118,6 +145,8 @@ class CalendarViewModel(
             )
             result.onSuccess { plans ->
                 monthPlans = plans
+                val validIds = plans.map { it.planId }.toSet()
+                monthDetailCache.keys.retainAll(validIds)
                 val planDays = plans.mapNotNull { plan ->
                     plan.scheduledDate?.let {
                         parsePlanDate(it)
@@ -146,6 +175,43 @@ class CalendarViewModel(
     private fun loadPlansForDate(date: LocalDate) {
         val plans = loadPlansForDateValue(date)
         _uiState.update { it.copy(selectedDatePlans = plans) }
+    }
+
+    private fun loadPlanDetailsForDate(date: LocalDate) {
+        detailLoadJob?.cancel()
+        val plansForDate = loadPlansForDateValue(date)
+        if (plansForDate.isEmpty()) return
+
+        val cachedDetails = plansForDate
+            .mapNotNull { summary -> monthDetailCache[summary.planId]?.let { summary.planId to it } }
+            .toMap()
+        if (cachedDetails.isNotEmpty()) {
+            _uiState.update { it.copy(selectedDateDetails = cachedDetails) }
+        }
+
+        val uncachedIds = plansForDate.map { it.planId }.filter { !monthDetailCache.containsKey(it) }
+        if (uncachedIds.isEmpty()) return
+
+        detailLoadJob = viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingDetails = true) }
+            val deferreds = uncachedIds.map { planId ->
+                async { planId to trainPlanRepository.getPlanDetail(planId) }
+            }
+            for (deferred in deferreds) {
+                val (planId, result) = deferred.await()
+                result.onSuccess { detail ->
+                    monthDetailCache[planId] = detail
+                    if (_uiState.value.selectedDate == date) {
+                        _uiState.update { state ->
+                            state.copy(selectedDateDetails = state.selectedDateDetails + (planId to detail))
+                        }
+                    }
+                }.onFailure { e ->
+                    RLog.w("CalendarVM", "loadDetail failed for $planId: ${e.message}")
+                }
+            }
+            _uiState.update { it.copy(isLoadingDetails = false) }
+        }
     }
 
     private fun loadPlansForDateValue(date: LocalDate): List<TrainPlanSummary> {

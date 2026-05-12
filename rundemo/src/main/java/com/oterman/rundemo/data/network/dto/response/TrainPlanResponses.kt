@@ -75,6 +75,10 @@ data class TrainStepResponseDto(
 
 // ==================== List ====================
 
+data class TrainPlanListWrapperResponseData(
+    @SerializedName("TrainPlanListResult") val trainPlanListResult: List<TrainPlanListResponseData>? = null
+)
+
 data class TrainPlanListResponseData(
     @SerializedName("records") val records: List<TrainPlanSummaryDto>? = null,
     @SerializedName("total") val total: Long = 0,
