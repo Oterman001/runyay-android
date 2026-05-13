@@ -28,11 +28,12 @@ enum class TrainGoalType(val value: String) {
     DISTANCE("DISTANCE"),
     TIME("TIME"),
     CALORIES("CALORIES"),
-    PACER("PACER");
+    PACER("PACER"),
+    OPEN("OPEN");
 
     companion object {
         fun fromValue(value: String?): TrainGoalType =
-            entries.find { it.value == value } ?: DISTANCE
+            entries.find { it.value.equals(value, ignoreCase = true) } ?: DISTANCE
     }
 }
 

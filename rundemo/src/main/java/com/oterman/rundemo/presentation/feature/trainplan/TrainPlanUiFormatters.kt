@@ -56,6 +56,7 @@ internal fun TrainStep.goalText(): String = when (goalType) {
         val max = maxPace?.let(::formatPace) ?: "--"
         "$min - $max /km"
     }
+    TrainGoalType.OPEN -> "自由训练"
 }
 
 internal fun TrainStep.intensityText(): String? = when (intensityType) {

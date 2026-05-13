@@ -279,7 +279,7 @@ class TrainPlanRepository(
             localDao?.upsert(entity)
             RLog.d(TAG, "cacheDetail: saved $planId to DB")
         } catch (e: Exception) {
-            RLog.w(TAG, "cacheDetail failed for $planId", e)
+            RLog.w(TAG, "cacheDetail failed for $planId: ${e.message}")
         }
     }
 
@@ -291,7 +291,7 @@ class TrainPlanRepository(
             localDao?.upsert(entity)
             RLog.d(TAG, "saveLocalDirty: $planId saved offline")
         } catch (e: Exception) {
-            RLog.w(TAG, "saveLocalDirty failed for $planId", e)
+            RLog.w(TAG, "saveLocalDirty failed for $planId: ${e.message}")
         }
     }
 
@@ -343,7 +343,7 @@ class TrainPlanRepository(
             dao.upsertAll(entities)
             RLog.d(TAG, "cacheSummaries: upserted ${entities.size} plans")
         } catch (e: Exception) {
-            RLog.w(TAG, "cacheSummaries failed", e)
+            RLog.w(TAG, "cacheSummaries failed: ${e.message}")
         }
     }
 

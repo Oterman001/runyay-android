@@ -177,6 +177,7 @@ private fun goalIcon(type: TrainGoalType) = when (type) {
     TrainGoalType.TIME -> Icons.Outlined.Timer
     TrainGoalType.CALORIES -> Icons.Outlined.FavoriteBorder
     TrainGoalType.PACER -> Icons.Outlined.Speed
+    TrainGoalType.OPEN -> Icons.Outlined.DirectionsRun
 }
 
 private fun intensityIcon(type: IntensityType?) = when (type) {
