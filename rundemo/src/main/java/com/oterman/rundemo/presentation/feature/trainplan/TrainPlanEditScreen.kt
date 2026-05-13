@@ -2,7 +2,6 @@ package com.oterman.rundemo.presentation.feature.trainplan
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,23 +12,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Cached
-import androidx.compose.material.icons.outlined.DirectionsRun
-import androidx.compose.material.icons.outlined.KeyboardDoubleArrowDown
-import androidx.compose.material.icons.outlined.Speed
-import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.painterResource
+import com.oterman.rundemo.R
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -45,6 +44,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -62,7 +64,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -495,31 +496,52 @@ private fun BasicInfoCard(
     onTrainWholeTypeChange: (TrainWholeType) -> Unit,
     isEditMode: Boolean
 ) {
+    val rowHeight = 44.dp
+    val locationOptions = listOf(
+        LocationType.OUTDOOR to "室外",
+        LocationType.INDOOR to "室内",
+        LocationType.PENDING to "待定"
+    )
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
             .background(RunTheme.colorScheme.cardBg, RoundedCornerShape(12.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(horizontal = 14.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(rowHeight),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text("名称", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(18.dp))
             if (isEditMode) {
-                OutlinedTextField(
+                BasicTextField(
                     value = name,
                     onValueChange = onNameChange,
-                    placeholder = { Text("起个名字") },
                     singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.End),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        textAlign = TextAlign.End,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
                     modifier = Modifier.weight(1f),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedBorderColor = RunTheme.colorScheme.blue.copy(alpha = 0.5f),
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent
-                    )
+                    decorationBox = { innerTextField ->
+                        Box(contentAlignment = Alignment.CenterEnd) {
+                            if (name.isEmpty()) {
+                                Text(
+                                    "起个名字",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                    textAlign = TextAlign.End,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
                 )
             } else {
                 Text(
@@ -532,16 +554,23 @@ private fun BasicInfoCard(
             }
         }
         HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(rowHeight),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text("时间", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             if (isEditMode) {
-                TextButton(
-                    onClick = onDateClick,
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                ) {
-                    Text(scheduledDate ?: "选择日期")
-                }
+                Text(
+                    text = scheduledDate ?: "选择日期",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = RunTheme.colorScheme.blue,
+                    modifier = Modifier
+                        .clickable { onDateClick() }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
             } else {
                 Text(
                     text = scheduledDate ?: "未选择日期",
@@ -551,15 +580,31 @@ private fun BasicInfoCard(
             }
         }
         HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(rowHeight),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text("地点", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             if (isEditMode) {
-                InlineChoiceGroup(
-                    options = listOf(LocationType.OUTDOOR to "室外", LocationType.INDOOR to "室内"),
-                    selected = locationType,
-                    onSelected = onLocationTypeChange
-                )
+                SingleChoiceSegmentedButtonRow {
+                    locationOptions.forEachIndexed { index, (type, label) ->
+                        SegmentedButton(
+                            selected = locationType == type,
+                            onClick = { onLocationTypeChange(type) },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = locationOptions.size),
+                            colors = SegmentedButtonDefaults.colors(
+                                activeContainerColor = RunTheme.colorScheme.blue.copy(alpha = 0.15f),
+                                activeContentColor = RunTheme.colorScheme.blue,
+                                activeBorderColor = RunTheme.colorScheme.blue
+                            ),
+                            icon = {},
+                            label = { Text(label, style = MaterialTheme.typography.bodySmall) }
+                        )
+                    }
+                }
             } else {
                 Text(
                     text = locationType.displayName(),
@@ -569,7 +614,12 @@ private fun BasicInfoCard(
             }
         }
         HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(rowHeight),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text("类型", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             if (isEditMode) {
@@ -583,8 +633,7 @@ private fun BasicInfoCard(
                     ),
                     selected = trainWholeType,
                     onSelected = onTrainWholeTypeChange,
-                    enabled = true,
-                    modifier = Modifier.weight(1f)
+                    enabled = true
                 )
             } else {
                 Text(
@@ -608,15 +657,26 @@ private fun TypeDropdown(
     var expanded by remember { mutableStateOf(false) }
     val selectedLabel = options.firstOrNull { it.first == selected }?.second ?: selected.displayName()
     Box(modifier = modifier, contentAlignment = Alignment.CenterEnd) {
-        Text(
-            text = selectedLabel,
-            style = MaterialTheme.typography.bodyLarge,
-            color = RunTheme.colorScheme.blue,
+        Row(
             modifier = Modifier
                 .background(RunTheme.colorScheme.blue.copy(alpha = 0.10f), RoundedCornerShape(8.dp))
                 .clickable(enabled = enabled) { expanded = true }
-                .padding(horizontal = 12.dp, vertical = 7.dp)
-        )
+                .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = selectedLabel,
+                style = MaterialTheme.typography.bodyLarge,
+                color = RunTheme.colorScheme.blue
+            )
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = RunTheme.colorScheme.blue,
+                modifier = Modifier.size(18.dp)
+            )
+        }
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
@@ -640,37 +700,6 @@ private fun TypeDropdown(
     }
 }
 
-@Composable
-private fun <T> InlineChoiceGroup(
-    options: List<Pair<T, String>>,
-    selected: T,
-    onSelected: (T) -> Unit,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        options.forEach { (value, label) ->
-            val isSelected = selected == value
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isSelected) RunTheme.colorScheme.blue else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .background(
-                        color = if (isSelected) RunTheme.colorScheme.blue.copy(alpha = 0.10f)
-                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .clickable(enabled = enabled) { onSelected(value) }
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            )
-        }
-    }
-}
 
 @Composable
 private fun TotalSummaryCard(
@@ -682,18 +711,18 @@ private fun TotalSummaryCard(
     val distance = if (trainWholeType == TrainWholeType.DISTANCE) distanceGoal else blocks.totalDistanceMeters()
     val duration = if (trainWholeType == TrainWholeType.TIME) timeGoalSeconds else blocks.totalDurationSeconds()
     SummaryCard {
-        SummaryMetric(Icons.Outlined.DirectionsRun, formatDistance(distance), RunTheme.colorScheme.blue, Modifier.weight(1f))
+        SummaryMetric(painterResource(R.drawable.ic_goal_distance), formatDistance(distance), RunTheme.colorScheme.blue, Modifier.weight(1f))
         VerticalDivider()
-        SummaryMetric(Icons.Outlined.Timer, formatDuration(duration), RunTheme.colorScheme.orange, Modifier.weight(1f))
+        SummaryMetric(painterResource(R.drawable.ic_goal_time), formatDuration(duration), RunTheme.colorScheme.orange, Modifier.weight(1f))
     }
 }
 
 @Composable
 private fun PacerSummaryCard(minPace: Int?, maxPace: Int?) {
     SummaryCard {
-        SummaryMetric(Icons.Outlined.Speed, minPace?.let(::formatPace) ?: "--", RunTheme.colorScheme.blue, Modifier.weight(1f))
+        SummaryMetric(painterResource(R.drawable.ic_intensity_pace), minPace?.let(::formatPace) ?: "--", RunTheme.colorScheme.blue, Modifier.weight(1f))
         VerticalDivider()
-        SummaryMetric(Icons.Outlined.Timer, maxPace?.let(::formatPace) ?: "--", RunTheme.colorScheme.orange, Modifier.weight(1f))
+        SummaryMetric(painterResource(R.drawable.ic_intensity_pace), maxPace?.let(::formatPace) ?: "--", RunTheme.colorScheme.orange, Modifier.weight(1f))
     }
 }
 
@@ -712,7 +741,7 @@ private fun SummaryCard(content: @Composable RowScope.() -> Unit) {
 }
 
 @Composable
-private fun SummaryMetric(icon: ImageVector, value: String, tint: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
+private fun SummaryMetric(icon: Painter, value: String, tint: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.Center,
@@ -747,22 +776,34 @@ private fun TrainBlockActionBar(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        ActionButton("+训练", Icons.Outlined.DirectionsRun, onAddTrain, Modifier.weight(1f))
-        ActionButton("+恢复", Icons.Outlined.KeyboardDoubleArrowDown, onAddRecovery, Modifier.weight(1f))
-        ActionButton("+循环", Icons.Outlined.Cached, onAddInterval, Modifier.weight(1f))
+        ActionButton("+训练", painterResource(R.drawable.ic_step_training), onAddTrain, iconAfterText = true, modifier = Modifier.weight(1f))
+        ActionButton("+恢复", painterResource(R.drawable.ic_step_recovery), onAddRecovery, iconAfterText = true, modifier = Modifier.weight(1f))
+        ActionButton("+循环", rememberVectorPainter(Icons.Outlined.Cached), onAddInterval, modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun ActionButton(label: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ActionButton(
+    label: String,
+    icon: Painter,
+    onClick: () -> Unit,
+    iconAfterText: Boolean = false,
+    modifier: Modifier = Modifier
+) {
     TextButton(
         onClick = onClick,
         modifier = modifier
             .background(RunTheme.colorScheme.blue.copy(alpha = 0.10f), RoundedCornerShape(12.dp))
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = RunTheme.colorScheme.blue)
-        Spacer(Modifier.width(4.dp))
+        if (!iconAfterText) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = RunTheme.colorScheme.blue)
+            Spacer(Modifier.width(4.dp))
+        }
         Text(label, color = RunTheme.colorScheme.blue)
+        if (iconAfterText) {
+            Spacer(Modifier.width(4.dp))
+            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = RunTheme.colorScheme.blue)
+        }
     }
 }
 

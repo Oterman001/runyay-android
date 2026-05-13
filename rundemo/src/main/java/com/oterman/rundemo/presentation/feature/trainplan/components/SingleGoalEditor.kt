@@ -11,13 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.DirectionsRun
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Speed
-import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
+import com.oterman.rundemo.R
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -71,7 +69,7 @@ fun SingleGoalEditor(
 @Composable
 private fun DistanceGoal(step: TrainStep?, onDistanceChange: (Double?) -> Unit, isEditMode: Boolean) {
     var text by remember(step?.distanceValue) { mutableStateOf(step?.distanceValue?.toString() ?: "") }
-    GoalHeader("距离", Icons.Outlined.DirectionsRun)
+    GoalHeader("距离", painterResource(R.drawable.ic_goal_distance))
     OutlinedTextField(
         value = text,
         onValueChange = {
@@ -92,7 +90,7 @@ private fun TimeGoal(step: TrainStep?, onTimeChange: (Int?) -> Unit, isEditMode:
     val totalSeconds = step?.timeGoalSeconds ?: 0
     var minutes by remember(totalSeconds) { mutableStateOf(if (totalSeconds > 0) (totalSeconds / 60).toString() else "") }
     var seconds by remember(totalSeconds) { mutableStateOf(if (totalSeconds > 0) (totalSeconds % 60).toString() else "") }
-    GoalHeader("时间", Icons.Outlined.Timer)
+    GoalHeader("时间", painterResource(R.drawable.ic_goal_time))
     Row(verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(
             value = minutes,
@@ -132,7 +130,7 @@ private fun TimeGoal(step: TrainStep?, onTimeChange: (Int?) -> Unit, isEditMode:
 @Composable
 private fun CaloriesGoal(step: TrainStep?, onCaloriesChange: (Int?) -> Unit, isEditMode: Boolean) {
     var text by remember(step?.caloriesValue) { mutableStateOf(step?.caloriesValue?.toString() ?: "") }
-    GoalHeader("卡路里", Icons.Outlined.FavoriteBorder)
+    GoalHeader("卡路里", painterResource(R.drawable.ic_goal_calories))
     OutlinedTextField(
         value = text,
         onValueChange = {
@@ -152,7 +150,7 @@ private fun CaloriesGoal(step: TrainStep?, onCaloriesChange: (Int?) -> Unit, isE
 private fun PacerGoal(step: TrainStep?, onPacerChange: (Int?, Int?) -> Unit, isEditMode: Boolean) {
     var minText by remember(step?.minPace) { mutableStateOf(step?.minPace?.let { formatPaceInput(it) } ?: "") }
     var maxText by remember(step?.maxPace) { mutableStateOf(step?.maxPace?.let { formatPaceInput(it) } ?: "") }
-    GoalHeader("配速员", Icons.Outlined.Speed)
+    GoalHeader("配速员", painterResource(R.drawable.ic_intensity_pace))
     Row(verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(
             value = minText,
@@ -186,7 +184,7 @@ private fun PacerGoal(step: TrainStep?, onPacerChange: (Int?, Int?) -> Unit, isE
 }
 
 @Composable
-private fun GoalHeader(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun GoalHeader(label: String, icon: Painter) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = RunTheme.colorScheme.blue)
         Spacer(Modifier.width(8.dp))

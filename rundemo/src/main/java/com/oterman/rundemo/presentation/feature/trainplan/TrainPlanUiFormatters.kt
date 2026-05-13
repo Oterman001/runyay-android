@@ -20,6 +20,7 @@ internal fun TrainWholeType.displayName(): String = when (this) {
 internal fun LocationType.displayName(): String = when (this) {
     LocationType.OUTDOOR -> "室外"
     LocationType.INDOOR -> "室内"
+    LocationType.PENDING -> "待定"
 }
 
 internal fun BlockType.displayName(loopCnt: Int = 1): String = when {

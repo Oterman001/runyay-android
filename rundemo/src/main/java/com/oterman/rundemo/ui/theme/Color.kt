@@ -70,6 +70,12 @@ val SegmentRecovery = Color(0xFF2E7D32)
 val SegmentCooldown = Color(0xFF6A1B9A)
 val SegmentUnknown = Color(0xFF616161)
 
+// ─── 训练步骤 Purpose 类型色（对齐 iOS abilityZone1-4）────────────────────────
+val StepWarmupColor = Color(0xFFE5D64A)   // abilityZone3 - 热身
+val StepTrainingColor = Color(0xFFEEB23C) // abilityZone4 - 训练
+val StepRecoveryColor = Color(0xFF69BD85) // abilityZone2 - 恢复
+val StepCooldownColor = Color(0xFF60C5FF) // abilityZone1 - 放松
+
 // ─── 跑鞋磨损色 Wear Colors ───────────────────────────────────────────────────
 val WearLow = Color(0xFF43A047)
 val WearMedium = Color(0xFFFDD835)

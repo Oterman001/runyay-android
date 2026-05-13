@@ -10,15 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material.icons.outlined.DirectionsRun
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Speed
-import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,8 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.IntensityType
 import com.oterman.rundemo.domain.model.TrainGoalType
 import com.oterman.rundemo.domain.model.TrainStep
@@ -38,6 +36,10 @@ import com.oterman.rundemo.presentation.feature.trainplan.displayName
 import com.oterman.rundemo.presentation.feature.trainplan.goalText
 import com.oterman.rundemo.presentation.feature.trainplan.intensityText
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.StepCooldownColor
+import com.oterman.rundemo.ui.theme.StepRecoveryColor
+import com.oterman.rundemo.ui.theme.StepTrainingColor
+import com.oterman.rundemo.ui.theme.StepWarmupColor
 
 @Composable
 fun TrainStepRow(
@@ -48,12 +50,7 @@ fun TrainStepRow(
     dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier
 ) {
-    val accent = when {
-        step.warmupFlag == "Y" -> RunTheme.colorScheme.orange
-        step.cooldownFlag == "Y" -> MaterialTheme.colorScheme.tertiary
-        step.purpose.equals("RECOVERY", ignoreCase = true) -> MaterialTheme.colorScheme.tertiary
-        else -> RunTheme.colorScheme.blue
-    }
+    val accent = stepAccent(step)
 
     Row(
         modifier = modifier
@@ -64,12 +61,9 @@ fun TrainStepRow(
         verticalAlignment = Alignment.Top
     ) {
         Icon(
-            imageVector = stepIcon(step),
+            painter = stepPurposePainter(step),
             contentDescription = null,
-            modifier = Modifier
-                .size(28.dp)
-                .background(accent.copy(alpha = 0.12f), CircleShape)
-                .padding(5.dp),
+            modifier = Modifier.size(16.dp),
             tint = accent
         )
         Spacer(Modifier.width(10.dp))
@@ -118,16 +112,17 @@ fun TrainStepRow(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     MetricText(
-                        icon = goalIcon(step.goalType),
+                        painter = goalPainter(step.goalType),
                         value = step.goalText(),
                         tint = accent,
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(10.dp))
                     MetricText(
-                        icon = intensityIcon(step.intensityType),
+                        painter = intensityPainter(step.intensityType),
                         value = step.intensityText() ?: "自由练",
                         tint = accent,
+                        showIcon = step.intensityType != null,
                         muted = step.intensityType == null,
                         modifier = Modifier.weight(1f)
                     )
@@ -139,23 +134,26 @@ fun TrainStepRow(
 
 @Composable
 private fun MetricText(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    painter: Painter,
     value: String,
     tint: Color,
     modifier: Modifier = Modifier,
+    showIcon: Boolean = true,
     muted: Boolean = false
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else tint
-        )
-        Spacer(Modifier.width(4.dp))
+        if (showIcon) {
+            Icon(
+                painter = painter,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else tint
+            )
+            Spacer(Modifier.width(4.dp))
+        }
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
@@ -165,23 +163,38 @@ private fun MetricText(
     }
 }
 
-private fun stepIcon(step: TrainStep) = when {
-    step.intensityType == IntensityType.SPEED -> Icons.Outlined.Speed
-    step.goalType == TrainGoalType.TIME -> Icons.Outlined.Timer
-    step.goalType == TrainGoalType.CALORIES -> Icons.Outlined.FavoriteBorder
-    else -> Icons.Outlined.DirectionsRun
+private fun stepAccent(step: TrainStep): Color = when {
+    step.warmupFlag == "Y" -> StepWarmupColor
+    step.cooldownFlag == "Y" -> StepCooldownColor
+    step.purpose.equals("RECOVERY", ignoreCase = true) -> StepRecoveryColor
+    else -> StepTrainingColor
 }
 
-private fun goalIcon(type: TrainGoalType) = when (type) {
-    TrainGoalType.DISTANCE -> Icons.Outlined.DirectionsRun
-    TrainGoalType.TIME -> Icons.Outlined.Timer
-    TrainGoalType.CALORIES -> Icons.Outlined.FavoriteBorder
-    TrainGoalType.PACER -> Icons.Outlined.Speed
-    TrainGoalType.OPEN -> Icons.Outlined.DirectionsRun
-}
+@Composable
+private fun stepPurposePainter(step: TrainStep): Painter = painterResource(
+    when {
+        step.warmupFlag == "Y" -> R.drawable.ic_step_warmup
+        step.cooldownFlag == "Y" -> R.drawable.ic_step_cooldown
+        step.purpose.equals("RECOVERY", ignoreCase = true) -> R.drawable.ic_step_recovery
+        else -> R.drawable.ic_step_training
+    }
+)
 
-private fun intensityIcon(type: IntensityType?) = when (type) {
-    IntensityType.HEART_RATE -> Icons.Outlined.FavoriteBorder
-    IntensityType.SPEED -> Icons.Outlined.Speed
-    null -> Icons.Outlined.DirectionsRun
-}
+@Composable
+private fun goalPainter(type: TrainGoalType): Painter = painterResource(
+    when (type) {
+        TrainGoalType.DISTANCE, TrainGoalType.OPEN -> R.drawable.ic_goal_distance
+        TrainGoalType.TIME -> R.drawable.ic_goal_time
+        TrainGoalType.CALORIES -> R.drawable.ic_goal_calories
+        TrainGoalType.PACER -> R.drawable.ic_intensity_pace
+    }
+)
+
+@Composable
+private fun intensityPainter(type: IntensityType?): Painter = painterResource(
+    when (type) {
+        IntensityType.HEART_RATE -> R.drawable.ic_intensity_heartrate
+        IntensityType.SPEED -> R.drawable.ic_intensity_pace
+        null -> R.drawable.ic_step_training
+    }
+)

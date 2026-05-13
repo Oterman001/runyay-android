@@ -14,9 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.outlined.Cached
-import androidx.compose.material.icons.outlined.KeyboardDoubleArrowDown
-import androidx.compose.material.icons.outlined.KeyboardDoubleArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,12 +26,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.BlockType
 import com.oterman.rundemo.domain.model.TrainBlock
 import com.oterman.rundemo.presentation.feature.trainplan.displayName
 import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.StepCooldownColor
+import com.oterman.rundemo.ui.theme.StepRecoveryColor
+import com.oterman.rundemo.ui.theme.StepTrainingColor
+import com.oterman.rundemo.ui.theme.StepWarmupColor
 
 @Composable
 fun TrainBlockCard(
@@ -140,7 +143,7 @@ private fun BlockHeader(
                 )
             } else {
                 Icon(
-                    imageVector = blockIcon(block),
+                    painter = blockPainter(block),
                     contentDescription = null,
                     tint = accent,
                     modifier = Modifier.size(20.dp)
@@ -196,11 +199,11 @@ private fun LoopCounter(
 
 @Composable
 private fun blockAccent(block: TrainBlock): Color = when {
-    block.blockType == BlockType.WARMUP -> RunTheme.colorScheme.orange
-    block.blockType == BlockType.COOLDOWN -> MaterialTheme.colorScheme.tertiary
-    block.stepList.firstOrNull()?.purpose.equals("RECOVERY", ignoreCase = true) -> MaterialTheme.colorScheme.tertiary
-    block.loopCnt > 1 -> MaterialTheme.colorScheme.secondary
-    else -> RunTheme.colorScheme.blue
+    block.blockType == BlockType.WARMUP -> StepWarmupColor
+    block.blockType == BlockType.COOLDOWN -> StepCooldownColor
+    block.stepList.firstOrNull()?.purpose.equals("RECOVERY", ignoreCase = true) -> StepRecoveryColor
+    block.loopCnt > 1 -> StepTrainingColor
+    else -> StepTrainingColor
 }
 
 private fun blockTitle(block: TrainBlock): String = when {
@@ -209,10 +212,12 @@ private fun blockTitle(block: TrainBlock): String = when {
     else -> block.blockType.displayName(block.loopCnt)
 }
 
-private fun blockIcon(block: TrainBlock) = when {
-    block.blockType == BlockType.WARMUP -> Icons.Outlined.KeyboardDoubleArrowUp
-    block.blockType == BlockType.COOLDOWN -> Icons.Outlined.KeyboardDoubleArrowDown
-    block.loopCnt > 1 -> Icons.Outlined.Cached
-    block.stepList.firstOrNull()?.purpose.equals("RECOVERY", ignoreCase = true) -> Icons.Outlined.KeyboardDoubleArrowDown
-    else -> Icons.Outlined.KeyboardDoubleArrowUp
-}
+@Composable
+private fun blockPainter(block: TrainBlock) = painterResource(
+    when {
+        block.blockType == BlockType.WARMUP -> R.drawable.ic_step_warmup
+        block.blockType == BlockType.COOLDOWN -> R.drawable.ic_step_cooldown
+        block.stepList.firstOrNull()?.purpose.equals("RECOVERY", ignoreCase = true) -> R.drawable.ic_step_recovery
+        else -> R.drawable.ic_step_training
+    }
+)

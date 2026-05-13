@@ -49,7 +49,8 @@ enum class IntensityType(val value: String) {
 
 enum class LocationType(val value: String) {
     INDOOR("INDOOR"),
-    OUTDOOR("OUTDOOR");
+    OUTDOOR("OUTDOOR"),
+    PENDING("PENDING");
 
     companion object {
         fun fromValue(value: String?): LocationType =

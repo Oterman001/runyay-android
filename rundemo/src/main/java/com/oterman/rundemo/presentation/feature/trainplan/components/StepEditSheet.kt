@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +22,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -33,8 +33,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -58,6 +56,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -100,6 +99,7 @@ fun StepEditSheet(
     var maxPaceSecond by remember { mutableIntStateOf(paceSecond(step.maxPace ?: 360)) }
     var isGoalPickerExpanded by remember { mutableStateOf(false) }
     var isIntensityPickerExpanded by remember { mutableStateOf(false) }
+    var validationMessage by remember { mutableStateOf<String?>(null) }
     val effectiveSkipStatus = if (isWarmupOrCooldown) skipStatus else 0
     val shouldShowGoalAndIntensity = !isWarmupOrCooldown || effectiveSkipStatus != 1
 
@@ -111,14 +111,14 @@ fun StepEditSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(720.dp)
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 20.dp)
         ) {
             SheetHeader(onDismiss)
             Column(
                 modifier = Modifier
-                    .weight(1f, fill = false)
-                    .heightIn(max = 620.dp)
+                    .weight(1f)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
@@ -207,6 +207,14 @@ fun StepEditSheet(
             }
 
             Spacer(Modifier.height(14.dp))
+            validationMessage?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
             Button(
                 onClick = {
                     val distanceValue = if (distanceUnit == "M") {
@@ -215,6 +223,20 @@ fun StepEditSheet(
                         distanceKmMajor + distanceKmMinor / 100.0
                     }
                     val timeSeconds = hours * 3600 + minutes * 60 + seconds
+                    val minPaceSeconds = paceSeconds(minPaceMinute, minPaceSecond)
+                    val maxPaceSeconds = paceSeconds(maxPaceMinute, maxPaceSecond)
+                    validationMessage = validateStepEdit(
+                        skipStatus = effectiveSkipStatus,
+                        goalType = goalType,
+                        distanceValue = distanceValue,
+                        timeSeconds = timeSeconds,
+                        intensityType = intensityType,
+                        minHeartRate = minHeartRate,
+                        maxHeartRate = maxHeartRate,
+                        minPaceSeconds = minPaceSeconds,
+                        maxPaceSeconds = maxPaceSeconds
+                    )
+                    if (validationMessage != null) return@Button
                     onSave(
                         step.copy(
                             descName = descName.takeIf { it.isNotBlank() },
@@ -227,8 +249,8 @@ fun StepEditSheet(
                             intensityType = intensityType,
                             minHeartRate = if (intensityType == IntensityType.HEART_RATE) minHeartRate else null,
                             maxHeartRate = if (intensityType == IntensityType.HEART_RATE) maxHeartRate else null,
-                            minPace = if (intensityType == IntensityType.SPEED) paceSeconds(minPaceMinute, minPaceSecond) else null,
-                            maxPace = if (intensityType == IntensityType.SPEED) paceSeconds(maxPaceMinute, maxPaceSecond) else null
+                            minPace = if (intensityType == IntensityType.SPEED) minPaceSeconds else null,
+                            maxPace = if (intensityType == IntensityType.SPEED) maxPaceSeconds else null
                         )
                     )
                 },
@@ -269,7 +291,7 @@ private fun ActionCard(
 ) {
     SectionCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("动作", style = MaterialTheme.typography.bodyLarge)
+            Text("动作类型", style = MaterialTheme.typography.bodyLarge)
             Spacer(Modifier.weight(1f))
             if (canModifyPurpose) {
                 SegmentedChoiceGroup(
@@ -305,19 +327,34 @@ private fun ActionCard(
             if (isWarmupOrCooldown) {
                 HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
             }
-            OutlinedTextField(
-                value = descName,
-                onValueChange = onDescNameChange,
-                label = { Text("单段名字") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = RunTheme.colorScheme.blue.copy(alpha = 0.5f),
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("单段名字")
+                Spacer(Modifier.width(18.dp))
+                BasicTextField(
+                    value = descName,
+                    onValueChange = onDescNameChange,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        textAlign = TextAlign.End,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    modifier = Modifier.weight(1f),
+                    decorationBox = { innerTextField ->
+                        Box(contentAlignment = Alignment.CenterEnd) {
+                            if (descName.isEmpty()) {
+                                Text(
+                                    text = "输入单段名称",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                    textAlign = TextAlign.End,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
                 )
-            )
+            }
         }
     }
 }
@@ -380,18 +417,24 @@ private fun GoalCard(
                     }
                     HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
                     if (distanceUnit == "KM") {
-                        Row {
-                            WheelPicker(distanceKmMajor, 0..100, onDistanceKmMajorChange, Modifier.weight(1f)) { it.toString() }
-                            WheelPicker(distanceKmMinor, 0..99, onDistanceKmMinorChange, Modifier.weight(1f)) { ".${it.toString().padStart(2, '0')}" }
+                        WheelPickerGroup {
+                            Row {
+                                WheelPicker(distanceKmMajor, 0..100, onDistanceKmMajorChange, Modifier.weight(1f)) { it.toString() }
+                                WheelPicker(distanceKmMinor, 0..99, onDistanceKmMinorChange, Modifier.weight(1f)) { ".${it.toString().padStart(2, '0')}" }
+                            }
                         }
                     } else {
-                        WheelPicker(distanceMeters, 10..1000, onDistanceMetersChange, Modifier.fillMaxWidth()) { "${it}m" }
+                        WheelPickerGroup {
+                            WheelPicker(distanceMeters, 10..1000, onDistanceMetersChange, Modifier.fillMaxWidth()) { "${it}m" }
+                        }
                     }
                 } else if (goalType == TrainGoalType.TIME) {
-                    Row {
-                        WheelPicker(hours, 0..23, onHoursChange, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
-                        WheelPicker(minutes, 0..59, onMinutesChange, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
-                        WheelPicker(seconds, 0..59, onSecondsChange, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
+                    WheelPickerGroup {
+                        Row {
+                            WheelPicker(hours, 0..23, onHoursChange, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
+                            WheelPicker(minutes, 0..59, onMinutesChange, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
+                            WheelPicker(seconds, 0..59, onSecondsChange, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
+                        }
                     }
                 }
             }
@@ -500,18 +543,22 @@ private fun IntensityCard(
                 HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
                 when (intensityType) {
                     IntensityType.HEART_RATE -> {
-                        Row {
-                            WheelPicker(minHeartRate, 40..240, onMinHeartRateChange, Modifier.weight(1f)) { it.toString() }
-                            WheelPicker(maxHeartRate, 41..241, onMaxHeartRateChange, Modifier.weight(1f)) { it.toString() }
+                        WheelPickerGroup {
+                            Row {
+                                WheelPicker(minHeartRate, 40..240, onMinHeartRateChange, Modifier.weight(1f)) { it.toString() }
+                                WheelPicker(maxHeartRate, 41..241, onMaxHeartRateChange, Modifier.weight(1f)) { it.toString() }
+                            }
                         }
                     }
                     IntensityType.SPEED -> {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            WheelPicker(minPaceMinute, 2..23, onMinPaceMinuteChange, Modifier.weight(1f)) { "$it'" }
-                            WheelPicker(minPaceSecond, 0..59, onMinPaceSecondChange, Modifier.weight(1f)) { "${it.toString().padStart(2, '0')}\"" }
-                            Text("-", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            WheelPicker(maxPaceMinute, 2..23, onMaxPaceMinuteChange, Modifier.weight(1f)) { "$it'" }
-                            WheelPicker(maxPaceSecond, 0..59, onMaxPaceSecondChange, Modifier.weight(1f)) { "${it.toString().padStart(2, '0')}\"" }
+                        WheelPickerGroup {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                WheelPicker(minPaceMinute, 2..23, onMinPaceMinuteChange, Modifier.weight(1f)) { "$it'" }
+                                WheelPicker(minPaceSecond, 0..59, onMinPaceSecondChange, Modifier.weight(1f)) { "${it.toString().padStart(2, '0')}\"" }
+                                Text("-", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                WheelPicker(maxPaceMinute, 2..23, onMaxPaceMinuteChange, Modifier.weight(1f)) { "$it'" }
+                                WheelPicker(maxPaceSecond, 0..59, onMaxPaceSecondChange, Modifier.weight(1f)) { "${it.toString().padStart(2, '0')}\"" }
+                            }
                         }
                     }
                     null -> Unit
@@ -535,6 +582,40 @@ private fun intensityResultText(
         "${formatPace(paceSeconds(minPaceMinute, minPaceSecond))}-${formatPace(paceSeconds(maxPaceMinute, maxPaceSecond))} /km"
     }
     null -> "无强度要求"
+}
+
+private fun validateStepEdit(
+    skipStatus: Int,
+    goalType: TrainGoalType,
+    distanceValue: Double,
+    timeSeconds: Int,
+    intensityType: IntensityType?,
+    minHeartRate: Int,
+    maxHeartRate: Int,
+    minPaceSeconds: Int,
+    maxPaceSeconds: Int
+): String? {
+    if (skipStatus == 1) return null
+
+    when (goalType) {
+        TrainGoalType.DISTANCE -> if (distanceValue <= 0.0) return "目标距离必须大于 0"
+        TrainGoalType.TIME -> if (timeSeconds <= 0) return "目标时间不能为 00:00:00"
+        TrainGoalType.OPEN -> Unit
+        TrainGoalType.CALORIES -> Unit
+        TrainGoalType.PACER -> Unit
+    }
+
+    return when (intensityType) {
+        IntensityType.HEART_RATE -> {
+            if (minHeartRate >= maxHeartRate) "心率范围应从低到高，例如 150-160 bpm" else null
+        }
+        IntensityType.SPEED -> {
+            if (minPaceSeconds >= maxPaceSeconds) {
+                "配速范围应从快到慢，例如 4'00\"-6'00\" /km"
+            } else null
+        }
+        null -> null
+    }
 }
 
 @Composable
@@ -586,6 +667,29 @@ private fun <T> SegmentedChoiceGroup(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+private fun WheelPickerGroup(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val itemHeight = 44.dp
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(itemHeight * 3),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(itemHeight)
+                .background(RunTheme.colorScheme.blue.copy(alpha = 0.10f), RoundedCornerShape(8.dp))
+        )
+        content()
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
 private fun WheelPicker(
     value: Int,
     range: IntRange,
@@ -618,12 +722,6 @@ private fun WheelPicker(
         modifier = modifier.height(itemHeight * 3).nestedScroll(consumeAllScroll),
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(itemHeight)
-                .background(RunTheme.colorScheme.blue.copy(alpha = 0.10f), RoundedCornerShape(8.dp))
-        )
         LazyColumn(
             state = listState,
             flingBehavior = snapBehavior,

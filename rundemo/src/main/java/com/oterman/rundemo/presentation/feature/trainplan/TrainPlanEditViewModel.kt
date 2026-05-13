@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 class TrainPlanEditViewModel(
@@ -31,11 +33,19 @@ class TrainPlanEditViewModel(
                     isNewPlan = true,
                     isEditMode = true,
                     scheduledDate = date,
+                    name = generateDefaultName(date),
                     warmupBlock = createBlock(BlockType.WARMUP, 0, "热身", "WARMUP", TrainGoalType.TIME),
                     cooldownBlock = createBlock(BlockType.COOLDOWN, 99, "放松", "COOLDOWN", TrainGoalType.TIME)
                 )
             }
         }
+    }
+
+    private fun generateDefaultName(date: String?): String {
+        val localDate = runCatching {
+            LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        }.getOrElse { LocalDate.now() }
+        return "${localDate.monthValue}.${localDate.dayOfMonth}日训练"
     }
 
     // ==================== Basic Info ====================
