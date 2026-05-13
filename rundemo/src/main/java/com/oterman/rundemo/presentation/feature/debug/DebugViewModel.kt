@@ -31,6 +31,10 @@ class DebugViewModel(
     private val context: Context
 ) : ViewModel() {
 
+    companion object {
+        private const val TAG = "AssetDebug"
+    }
+
     private val _uiState = MutableStateFlow(DebugUiState())
     val uiState: StateFlow<DebugUiState> = _uiState.asStateFlow()
 
@@ -47,6 +51,7 @@ class DebugViewModel(
             val files = withContext(Dispatchers.IO) {
                 listAssetsRecursively(context.assets, "")
             }
+            android.util.Log.d(TAG, "loadAssetFiles: found ${files.size} files → $files")
             _uiState.update { it.copy(assetFiles = files) }
         }
     }
@@ -56,13 +61,21 @@ class DebugViewModel(
         path: String
     ): List<String> {
         val result = mutableListOf<String>()
-        val children = assetManager.list(path) ?: return result
+        val children = assetManager.list(path)
+        android.util.Log.d(TAG, "list(\"$path\") → ${children?.size ?: "null"} items: ${children?.toList()}")
+        children ?: return result
         for (child in children) {
             val fullPath = if (path.isEmpty()) child else "$path/$child"
-            val subChildren = assetManager.list(fullPath)
+            // AssetManager.list() peeks inside ZIP archives and returns their entries,
+            // making the ZIP look like a directory. Treat known archive types as leaf files.
+            val isArchive = child.endsWith(".zip", ignoreCase = true)
+                    || child.endsWith(".jar", ignoreCase = true)
+            val subChildren = if (isArchive) null else assetManager.list(fullPath)
+            android.util.Log.d(TAG, "  child=\"$child\" isArchive=$isArchive subChildren=${subChildren?.size ?: "null"}")
             if (subChildren != null && subChildren.isNotEmpty()) {
                 result.addAll(listAssetsRecursively(assetManager, fullPath))
             } else {
+                android.util.Log.d(TAG, "  → leaf file: $fullPath")
                 result.add(fullPath)
             }
         }
