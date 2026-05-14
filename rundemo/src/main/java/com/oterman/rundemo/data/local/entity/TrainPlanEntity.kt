@@ -26,8 +26,8 @@ data class TrainPlanEntity(
     val userId: String,
     val name: String,
     val description: String? = null,
-    /** 存原始字符串值，与 API 一致（如 SELF_DEFINE / DISTANCE / TIME / CALORIES / PACER） */
-    val trainWholeType: String = "SELF_DEFINE",
+    /** 存原始字符串值，与 API 一致（如 selfDefine / distance / time / calories / pacer） */
+    val trainWholeType: String = "selfDefine",
     /** 统一存 yyyy-MM-dd 格式，保证 SQL BETWEEN 字符串比较正确 */
     val scheduledDate: String? = null,
     val hardLevel: Int? = null,

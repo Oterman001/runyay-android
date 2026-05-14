@@ -1,11 +1,11 @@
 package com.oterman.rundemo.domain.model
 
 enum class TrainWholeType(val value: String) {
-    SELF_DEFINE("SELF_DEFINE"),
-    DISTANCE("DISTANCE"),
-    TIME("TIME"),
-    CALORIES("CALORIES"),
-    PACER("PACER");
+    SELF_DEFINE("selfDefine"),
+    DISTANCE("distance"),
+    TIME("time"),
+    CALORIES("calories"),
+    PACER("pacer");
 
     companion object {
         fun fromValue(value: String?): TrainWholeType =
