@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,12 +33,16 @@ import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.BlockType
 import com.oterman.rundemo.domain.model.TrainBlock
+import com.oterman.rundemo.presentation.feature.trainplan.canMoveLikeIos
 import com.oterman.rundemo.presentation.feature.trainplan.displayName
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.StepCooldownColor
+import com.oterman.rundemo.ui.theme.StepTrainingColor
 import com.oterman.rundemo.ui.theme.StepRecoveryColor
 import com.oterman.rundemo.ui.theme.StepTrainingColor
 import com.oterman.rundemo.ui.theme.StepWarmupColor
+import androidx.compose.runtime.key
+import sh.calvin.reorderable.ReorderableColumn
 
 @Composable
 fun TrainBlockCard(
@@ -47,8 +52,9 @@ fun TrainBlockCard(
     onAddStep: () -> Unit,
     onStepClick: (stepIndex: Int) -> Unit,
     onRemoveStep: (stepIndex: Int) -> Unit,
+    onMoveStep: ((fromIndex: Int, toIndex: Int) -> Unit)? = null,
     isEditMode: Boolean,
-    dragHandleModifier: Modifier = Modifier,
+    blockDragHandleModifier: Modifier = Modifier,
     onLoopCountChange: ((delta: Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -62,8 +68,12 @@ fun TrainBlockCard(
                 onClick = { onStepClick(index) },
                 onRemove = { onRemoveStep(index) },
                 isEditMode = isEditMode,
-                dragHandleModifier = dragHandleModifier,
-                modifier = modifier.padding(horizontal = 20.dp)
+                // 单 Step Block：整行是 Block 级拖动热区
+                modifier = if (isEditMode && step.canMoveLikeIos()) {
+                    modifier.padding(horizontal = 20.dp).then(blockDragHandleModifier)
+                } else {
+                    modifier.padding(horizontal = 20.dp)
+                }
             )
         }
         return
@@ -82,17 +92,37 @@ fun TrainBlockCard(
             accent = accent,
             onRemoveBlock = onRemoveBlock,
             isEditMode = isEditMode,
+            blockDragHandleModifier = blockDragHandleModifier,
             onLoopCountChange = if (isEditMode && block.blockType == BlockType.MAIN) onLoopCountChange else null
         )
 
-        block.stepList.forEachIndexed { index, step ->
-            TrainStepRow(
-                step = step,
-                onClick = { onStepClick(index) },
-                onRemove = { onRemoveStep(index) },
-                isEditMode = isEditMode,
-                dragHandleModifier = dragHandleModifier
-            )
+        if (isEditMode && onMoveStep != null && block.stepList.size > 1) {
+            ReorderableColumn(
+                list = block.stepList,
+                onSettle = { fromIndex, toIndex -> onMoveStep(fromIndex, toIndex) },
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) { index, step, _ ->
+                key(step.stepId ?: "step_${block.blockId}_$index") {
+                    TrainStepRow(
+                        step = step,
+                        onClick = { onStepClick(index) },
+                        onRemove = { onRemoveStep(index) },
+                        isEditMode = isEditMode,
+                        // 整行是 Step 级拖动热区
+                        modifier = if (step.canMoveLikeIos()) Modifier.draggableHandle() else Modifier
+                    )
+                }
+            }
+        } else {
+            block.stepList.forEachIndexed { index, step ->
+                TrainStepRow(
+                    step = step,
+                    onClick = { onStepClick(index) },
+                    onRemove = { onRemoveStep(index) },
+                    isEditMode = isEditMode
+                )
+            }
         }
 
         if (isEditMode) {
@@ -127,6 +157,7 @@ private fun BlockHeader(
     accent: Color,
     onRemoveBlock: () -> Unit,
     isEditMode: Boolean,
+    blockDragHandleModifier: Modifier = Modifier,
     onLoopCountChange: ((delta: Int) -> Unit)?
 ) {
     Row(
@@ -157,14 +188,25 @@ private fun BlockHeader(
                 )
             }
         }
-        if (isEditMode && block.blockType == BlockType.MAIN) {
-            IconButton(onClick = onRemoveBlock, modifier = Modifier.size(30.dp)) {
+        // 右侧操作区：多 Step 时显示 Block 拖动手柄，MAIN Block 显示删除
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (isEditMode && block.stepList.size > 1 && block.blockType == BlockType.MAIN) {
                 Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "删除分段",
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = "拖动整段",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
+                    modifier = blockDragHandleModifier.size(20.dp)
                 )
+            }
+            if (isEditMode && block.blockType == BlockType.MAIN) {
+                IconButton(onClick = onRemoveBlock, modifier = Modifier.size(30.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "删除分段",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }
@@ -185,12 +227,24 @@ private fun LoopCounter(
         IconButton(onClick = { onLoopCountChange(-1) }, modifier = Modifier.size(28.dp)) {
             Icon(Icons.Default.Remove, contentDescription = "减少循环", modifier = Modifier.size(16.dp), tint = accent)
         }
-        Text(
-            text = "${loopCnt.coerceAtLeast(1)}x",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = accent
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "重复 ",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "${loopCnt.coerceAtLeast(1)}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = RunTheme.colorScheme.blue
+            )
+            Text(
+                text = " 次",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
         IconButton(onClick = { onLoopCountChange(1) }, modifier = Modifier.size(28.dp)) {
             Icon(Icons.Default.Add, contentDescription = "增加循环", modifier = Modifier.size(16.dp), tint = accent)
         }

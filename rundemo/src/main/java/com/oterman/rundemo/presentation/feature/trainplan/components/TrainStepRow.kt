@@ -47,10 +47,12 @@ fun TrainStepRow(
     onClick: () -> Unit,
     onRemove: () -> Unit,
     isEditMode: Boolean,
-    dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier
 ) {
     val accent = stepAccent(step)
+    val isTrainingOrRecovery = step.warmupFlag != "Y" && step.cooldownFlag != "Y"
+    // 训练/恢复图标略大，视觉上更粗重；热身/放松图标保持标准大小
+    val purposeIconSize = if (isTrainingOrRecovery) 18.dp else 16.dp
 
     Row(
         modifier = modifier
@@ -60,10 +62,14 @@ fun TrainStepRow(
             .padding(14.dp),
         verticalAlignment = Alignment.Top
     ) {
+        // 目的图标：添加 top padding 使其与第一行文字视觉对齐
+        // 第一行右侧有 28dp 的 IconButton，文字在其内部垂直居中，偏移约 6dp
         Icon(
             painter = stepPurposePainter(step),
             contentDescription = null,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier
+                .size(purposeIconSize)
+                .padding(top = 6.dp),
             tint = accent
         )
         Spacer(Modifier.width(10.dp))
@@ -79,12 +85,13 @@ fun TrainStepRow(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.weight(1f))
+                // 拖动图标仅作为视觉提示，实际手势由外层 modifier 承载
                 if (isEditMode && step.canMoveLikeIos()) {
                     Icon(
                         imageVector = Icons.Default.DragHandle,
                         contentDescription = "拖动",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = dragHandleModifier.size(18.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
                 if (isEditMode && step.canRemoveLikeIos()) {
@@ -111,20 +118,19 @@ fun TrainStepRow(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // 目标靠左
                     MetricText(
                         painter = goalPainter(step.goalType),
                         value = step.goalText(),
-                        tint = accent,
-                        modifier = Modifier.weight(1f)
+                        tint = accent
                     )
-                    Spacer(Modifier.width(10.dp))
+                    // 强度靠右，与上方删除/拖动按钮右对齐
                     MetricText(
                         painter = intensityPainter(step.intensityType),
                         value = step.intensityText() ?: "自由练",
                         tint = accent,
                         showIcon = step.intensityType != null,
-                        muted = step.intensityType == null,
-                        modifier = Modifier.weight(1f)
+                        muted = step.intensityType == null
                     )
                 }
             }

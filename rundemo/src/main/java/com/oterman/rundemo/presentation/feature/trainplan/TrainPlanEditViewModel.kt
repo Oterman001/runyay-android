@@ -350,6 +350,28 @@ class TrainPlanEditViewModel(
         }
     }
 
+    fun moveStep(blockType: BlockType, blockIndex: Int, fromIndex: Int, toIndex: Int) {
+        if (!_uiState.value.isEditMode) return
+        _uiState.update {
+            when (blockType) {
+                BlockType.MAIN -> {
+                    val blocks = it.mainBlocks.toMutableList()
+                    if (blockIndex in blocks.indices) {
+                        val block = blocks[blockIndex]
+                        val steps = block.stepList.toMutableList()
+                        if (fromIndex in steps.indices && toIndex in steps.indices && fromIndex != toIndex) {
+                            val item = steps.removeAt(fromIndex)
+                            steps.add(toIndex, item)
+                            blocks[blockIndex] = block.copy(stepList = steps)
+                        }
+                    }
+                    it.copy(mainBlocks = blocks)
+                }
+                BlockType.WARMUP, BlockType.COOLDOWN -> it
+            }
+        }
+    }
+
     // ==================== Single Goal ====================
 
     fun updateDistanceGoal(value: Double?, unit: String = "KM") {

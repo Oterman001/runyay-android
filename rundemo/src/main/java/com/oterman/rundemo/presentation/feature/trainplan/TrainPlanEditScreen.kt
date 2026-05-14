@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -398,8 +399,9 @@ fun TrainPlanEditScreen(
                                 onAddStep = { viewModel.addStepToBlock(BlockType.MAIN, index) },
                                 onStepClick = { viewModel.openStepEditor(BlockType.MAIN, index, it) },
                                 onRemoveStep = { viewModel.removeStep(BlockType.MAIN, index, it) },
+                                onMoveStep = { from, to -> viewModel.moveStep(BlockType.MAIN, index, from, to) },
                                 isEditMode = true,
-                                dragHandleModifier = Modifier.draggableHandle(),
+                                blockDragHandleModifier = Modifier.draggableHandle(),
                                 onLoopCountChange = { viewModel.updateLoopCount(index, it) }
                             )
                         }
@@ -600,6 +602,7 @@ private fun BasicInfoCard(
                                 activeContentColor = RunTheme.colorScheme.blue,
                                 activeBorderColor = RunTheme.colorScheme.blue
                             ),
+//                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                             icon = {},
                             label = { Text(label, style = MaterialTheme.typography.bodySmall) }
                         )
@@ -773,12 +776,13 @@ private fun TrainBlockActionBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
+            .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        ActionButton("+训练", painterResource(R.drawable.ic_step_training), onAddTrain, iconAfterText = true, modifier = Modifier.weight(1f))
-        ActionButton("+恢复", painterResource(R.drawable.ic_step_recovery), onAddRecovery, iconAfterText = true, modifier = Modifier.weight(1f))
-        ActionButton("+循环", rememberVectorPainter(Icons.Outlined.Cached), onAddInterval, modifier = Modifier.weight(1f))
+        ActionButton("+训练", painterResource(R.drawable.ic_step_training), onAddTrain, iconAfterText = true, iconSize = 14.dp, modifier = Modifier.weight(1f))
+        ActionButton("+恢复", painterResource(R.drawable.ic_step_recovery), onAddRecovery, iconAfterText = true, iconSize = 14.dp, modifier = Modifier.weight(1f))
+        ActionButton("+循环", rememberVectorPainter(Icons.Outlined.Cached), onAddInterval, iconAfterText = true, iconSize = 18.dp, modifier = Modifier.weight(1f))
     }
 }
 
@@ -788,6 +792,7 @@ private fun ActionButton(
     icon: Painter,
     onClick: () -> Unit,
     iconAfterText: Boolean = false,
+    iconSize: androidx.compose.ui.unit.Dp = 16.dp,
     modifier: Modifier = Modifier
 ) {
     TextButton(
@@ -796,13 +801,13 @@ private fun ActionButton(
             .background(RunTheme.colorScheme.blue.copy(alpha = 0.10f), RoundedCornerShape(12.dp))
     ) {
         if (!iconAfterText) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = RunTheme.colorScheme.blue)
+            Icon(icon, contentDescription = null, modifier = Modifier.size(iconSize), tint = RunTheme.colorScheme.blue)
             Spacer(Modifier.width(4.dp))
         }
         Text(label, color = RunTheme.colorScheme.blue)
         if (iconAfterText) {
             Spacer(Modifier.width(4.dp))
-            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = RunTheme.colorScheme.blue)
+            Icon(icon, contentDescription = null, modifier = Modifier.size(iconSize), tint = RunTheme.colorScheme.blue)
         }
     }
 }
