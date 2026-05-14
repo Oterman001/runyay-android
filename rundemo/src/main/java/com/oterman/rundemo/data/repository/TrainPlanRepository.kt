@@ -41,10 +41,24 @@ class TrainPlanRepository(
 
     /**
      * 保存训练计划。
-     * 策略：网络优先；成功后将完整计划缓存到本地 DB；失败时将计划标记 isDirty 存入 DB（离线暂存）。
+     * 策略：本地优先；先写本地 DB（isDirty=true），再后台同步服务端；同步成功则更新 isDirty=false。
      */
     suspend fun savePlan(plan: TrainPlan): Result<Unit> {
-        return try {
+        plan.planId ?: return Result.failure(Exception("planId 不能为空"))
+        val userId = preferencesManager.getUserId()
+            ?: return Result.failure(Exception("用户未登录"))
+
+        // 1. 先写本地，保证数据安全
+        try {
+            val entity = plan.toEntity(userId, lastSyncAt = 0L, isDirty = true)
+            localDao?.upsert(entity)
+        } catch (e: Exception) {
+            RLog.e(TAG, "savePlan local write failed", e)
+            return Result.failure(Exception("本地保存失败：${e.message}"))
+        }
+
+        // 2. 后台同步服务端（失败不影响主流程）
+        try {
             val dto = plan.toSaveDto()
             val request = RequestBuilder.createRequest(
                 dtoName = "SaveTrainPlanRequestDto",
@@ -53,36 +67,37 @@ class TrainPlanRepository(
             )
             val response = api.saveTrainPlans(request)
             if (response.isSuccess()) {
-                // 网络保存成功：若 planId 非空则更新本地缓存
-                plan.planId?.let { id ->
-                    cacheDetail(plan.copy(planId = id))
-                }
-                Result.success(Unit)
+                cacheDetail(plan)
+                RLog.d(TAG, "savePlan synced to server: ${plan.planId}")
             } else {
-                // 网络失败：本地暂存
-                saveLocalDirty(plan)
-                Result.failure(Exception(response.msg))
+                RLog.w(TAG, "savePlan server rejected, kept dirty: ${response.msg}")
             }
         } catch (e: Exception) {
-            RLog.e(TAG, "savePlan failed", e)
-            saveLocalDirty(plan)
-            Result.failure(e)
+            RLog.w(TAG, "savePlan network failed, kept dirty: ${plan.planId}")
         }
+
+        return Result.success(Unit)
     }
 
     /**
      * 查询训练计划详情。
      * 策略：
-     *  1. 查本地 DB；若 detailJson 非空且版本未过期，直接返回缓存
-     *  2. 否则请求网络，成功后更新本地 DB
-     *  3. 网络失败时，尝试返回旧缓存（detailJson 可能存在）
+     *  1. dirty 计划（本地未同步）：直接返回本地，不请求网络（本地是最新版本）
+     *  2. 干净缓存：返回缓存并后台静默刷新
+     *  3. 无缓存：请求网络，成功后写入本地 DB
+     *  4. 网络失败时：尝试返回旧缓存（兜底）
      */
     suspend fun getPlanDetail(planId: String): Result<TrainPlan> {
         val cached = localDao?.getById(planId)
         val cachedDetail = cached?.toDetailDomain()
+
+        if (cachedDetail != null && cached?.isDirty == true) {
+            RLog.d(TAG, "getPlanDetail: returning dirty local plan $planId")
+            return Result.success(cachedDetail)
+        }
+
         if (cachedDetail != null && cached?.isDirty == false) {
             RLog.d(TAG, "getPlanDetail from cache: $planId v${cached.version}")
-            // 后台静默刷新（fire-and-forget），不阻塞 UI
             refreshDetailAsync(planId, cached.version)
             return Result.success(cachedDetail)
         }
@@ -109,7 +124,7 @@ class TrainPlanRepository(
 
         networkResult.onSuccess { summaries ->
             cacheSummaries(summaries, startDate, endDate)
-            return Result.success(summaries)
+            return Result.success(mergeDirtyPlans(summaries, startDate, endDate))
         }
 
         // 网络失败：尝试本地兜底
@@ -295,6 +310,23 @@ class TrainPlanRepository(
         }
     }
 
+    /** 将服务端未收录的本地 dirty 计划追加到列表末尾 */
+    private suspend fun mergeDirtyPlans(
+        summaries: List<TrainPlanSummary>,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): List<TrainPlanSummary> {
+        val userId = preferencesManager.getUserId() ?: return summaries
+        val dao = localDao ?: return summaries
+        val localStartStr = startDate.format(ISO_DATE_FORMATTER)
+        val localEndStr = endDate.format(ISO_DATE_FORMATTER)
+        val serverIds = summaries.map { it.planId }.toSet()
+        val dirtyOnly = dao.getByDateRange(userId, localStartStr, localEndStr)
+            .filter { it.isDirty && it.planId !in serverIds }
+            .map { it.toSummaryDomain() }
+        return if (dirtyOnly.isEmpty()) summaries else summaries + dirtyOnly
+    }
+
     /**
      * 将网络返回的摘要列表 upsert 到 DB。
      * 若本地 detailJson 的 version 仍与服务端一致，保留旧 detailJson；
@@ -316,8 +348,10 @@ class TrainPlanRepository(
             val now = System.currentTimeMillis()
             val newIds = summaries.map { it.planId }.toSet()
 
-            // 删除本地有但服务端已不存在的计划（在此日期范围内）
-            val toDelete = existingMap.keys.filter { it !in newIds }
+            // 删除本地有但服务端已不存在的计划（isDirty=true 的跳过，保留未同步数据）
+            val toDelete = existingMap.values
+                .filter { it.planId !in newIds && !it.isDirty }
+                .map { it.planId }
             if (toDelete.isNotEmpty()) dao.deleteByIds(toDelete)
 
             val entities = summaries.map { summary ->

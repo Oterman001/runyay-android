@@ -401,7 +401,7 @@ fun TrainPlanEditScreen(
                                 onRemoveStep = { viewModel.removeStep(BlockType.MAIN, index, it) },
                                 onMoveStep = { from, to -> viewModel.moveStep(BlockType.MAIN, index, from, to) },
                                 isEditMode = true,
-                                blockDragHandleModifier = Modifier.draggableHandle(),
+                                blockDragHandleModifier = Modifier.longPressDraggableHandle(),
                                 onLoopCountChange = { viewModel.updateLoopCount(index, it) }
                             )
                         }

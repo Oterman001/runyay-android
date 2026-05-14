@@ -110,7 +110,7 @@ fun TrainBlockCard(
                         onRemove = { onRemoveStep(index) },
                         isEditMode = isEditMode,
                         // 整行是 Step 级拖动热区
-                        modifier = if (step.canMoveLikeIos()) Modifier.draggableHandle() else Modifier
+                        modifier = if (step.canMoveLikeIos()) Modifier.longPressDraggableHandle() else Modifier
                     )
                 }
             }
@@ -189,7 +189,11 @@ private fun BlockHeader(
             }
         }
         // 右侧操作区：多 Step 时显示 Block 拖动手柄，MAIN Block 显示删除
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // padding(end=14dp) 使按钮与 TrainStepRow 内 padding(14dp) 对齐
+        Row(
+            modifier = Modifier.padding(end = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             if (isEditMode && block.stepList.size > 1 && block.blockType == BlockType.MAIN) {
                 Icon(
                     imageVector = Icons.Default.DragHandle,
@@ -197,9 +201,10 @@ private fun BlockHeader(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = blockDragHandleModifier.size(20.dp)
                 )
+                Spacer(Modifier.width(8.dp))
             }
             if (isEditMode && block.blockType == BlockType.MAIN) {
-                IconButton(onClick = onRemoveBlock, modifier = Modifier.size(30.dp)) {
+                IconButton(onClick = onRemoveBlock, modifier = Modifier.size(28.dp)) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "删除分段",
@@ -256,7 +261,7 @@ private fun blockAccent(block: TrainBlock): Color = when {
     block.blockType == BlockType.WARMUP -> StepWarmupColor
     block.blockType == BlockType.COOLDOWN -> StepCooldownColor
     block.stepList.firstOrNull()?.purpose.equals("RECOVERY", ignoreCase = true) -> StepRecoveryColor
-    block.loopCnt > 1 -> StepTrainingColor
+    block.stepList.size > 1 -> RunTheme.colorScheme.blue
     else -> StepTrainingColor
 }
 

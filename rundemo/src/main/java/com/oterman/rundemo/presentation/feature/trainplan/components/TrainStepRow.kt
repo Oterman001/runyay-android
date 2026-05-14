@@ -93,6 +93,7 @@ fun TrainStepRow(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
+                    Spacer(Modifier.width(8.dp))
                 }
                 if (isEditMode && step.canRemoveLikeIos()) {
                     IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {

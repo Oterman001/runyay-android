@@ -32,6 +32,7 @@ class TrainPlanEditViewModel(
                 it.copy(
                     isNewPlan = true,
                     isEditMode = true,
+                    planId = UUID.randomUUID().toString(),
                     scheduledDate = date,
                     name = generateDefaultName(date),
                     warmupBlock = createBlock(BlockType.WARMUP, 0, "热身", "WARMUP", TrainGoalType.TIME),
