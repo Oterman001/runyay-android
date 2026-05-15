@@ -78,7 +78,23 @@ class TrainPlanEditViewModel(
 
     fun onTrainWholeTypeChange(type: TrainWholeType) {
         if (!_uiState.value.isEditMode) return
-        _uiState.update { it.copy(trainWholeType = type) }
+        _uiState.update {
+            it.copy(
+                trainWholeType = type,
+                distanceGoalStep = if (type == TrainWholeType.DISTANCE) {
+                    it.distanceGoalStep ?: createSingleGoalStep(TrainWholeType.DISTANCE)
+                } else it.distanceGoalStep,
+                timeGoalStep = if (type == TrainWholeType.TIME) {
+                    it.timeGoalStep ?: createSingleGoalStep(TrainWholeType.TIME)
+                } else it.timeGoalStep,
+                calGoalStep = if (type == TrainWholeType.CALORIES) {
+                    it.calGoalStep ?: createSingleGoalStep(TrainWholeType.CALORIES)
+                } else it.calGoalStep,
+                pacerGoalStep = if (type == TrainWholeType.PACER) {
+                    it.pacerGoalStep ?: createSingleGoalStep(TrainWholeType.PACER)
+                } else it.pacerGoalStep
+            )
+        }
     }
 
     fun onDescriptionChange(desc: String) {
@@ -545,23 +561,40 @@ class TrainPlanEditViewModel(
     }
 
     private fun buildTrainPlan(): TrainPlan {
-        val state = _uiState.value
-        return TrainPlan(
-            planId = state.planId,
-            name = state.name,
-            description = state.description.takeIf { it.isNotBlank() },
-            trainWholeType = state.trainWholeType,
-            scheduledDate = state.scheduledDate,
-            hardLevel = state.hardLevel,
-            finishFlag = state.finishFlag ?: "N",
-            locationType = state.locationType,
-            warmupBlock = if (state.trainWholeType == TrainWholeType.SELF_DEFINE) state.warmupBlock else null,
-            blockList = if (state.trainWholeType == TrainWholeType.SELF_DEFINE) state.mainBlocks else emptyList(),
-            cooldownBlock = if (state.trainWholeType == TrainWholeType.SELF_DEFINE) state.cooldownBlock else null,
-            calGoalStep = if (state.trainWholeType == TrainWholeType.CALORIES) state.calGoalStep else null,
-            distanceGoalStep = if (state.trainWholeType == TrainWholeType.DISTANCE) state.distanceGoalStep else null,
-            timeGoalStep = if (state.trainWholeType == TrainWholeType.TIME) state.timeGoalStep else null,
-            pacerGoalStep = if (state.trainWholeType == TrainWholeType.PACER) state.pacerGoalStep else null
+        return buildTrainPlanForSave(_uiState.value)
+    }
+
+    internal fun buildTrainPlanForTest(): TrainPlan = buildTrainPlan()
+
+    private fun createSingleGoalStep(type: TrainWholeType): TrainStep {
+        val goalType = when (type) {
+            TrainWholeType.DISTANCE -> TrainGoalType.DISTANCE
+            TrainWholeType.TIME -> TrainGoalType.TIME
+            TrainWholeType.CALORIES -> TrainGoalType.CALORIES
+            TrainWholeType.PACER -> TrainGoalType.PACER
+            TrainWholeType.SELF_DEFINE -> TrainGoalType.OPEN
+        }
+        return TrainStep(
+            stepId = UUID.randomUUID().toString(),
+            seq = 0,
+            descName = "训练",
+            goalType = goalType,
+            distanceUnit = "KM",
+            distanceValue = when (goalType) {
+                TrainGoalType.DISTANCE -> 5.0
+                TrainGoalType.PACER -> 5.0
+                else -> null
+            },
+            timeGoalSeconds = when (goalType) {
+                TrainGoalType.TIME -> 1800
+                TrainGoalType.PACER -> 1800
+                else -> null
+            },
+            caloriesUnit = "KCAL",
+            caloriesValue = if (goalType == TrainGoalType.CALORIES) 300 else null,
+            intensityType = IntensityType.NONE,
+            minPace = if (goalType == TrainGoalType.PACER) 360 else null,
+            maxPace = if (goalType == TrainGoalType.PACER) 360 else null
         )
     }
 
@@ -581,7 +614,129 @@ class TrainPlanEditViewModel(
         cooldownFlag = if (purpose == "cooldown") "Y" else "N",
         goalType = goalType,
         distanceValue = if (goalType == TrainGoalType.DISTANCE) 1.0 else null,
-        timeGoalSeconds = if (goalType == TrainGoalType.TIME) 300 else null
+        timeGoalSeconds = if (goalType == TrainGoalType.TIME) 300 else null,
+        intensityType = IntensityType.NONE
+    )
+}
+
+internal data class NormalBlocks(
+    val warmupBlock: TrainBlock,
+    val mainBlocks: List<TrainBlock>,
+    val cooldownBlock: TrainBlock
+)
+
+internal fun buildTrainPlanForSave(state: TrainPlanEditUiState): TrainPlan {
+    val normalBlocks = buildRequiredBlocksForSaveState(state)
+    return TrainPlan(
+        planId = state.planId,
+        name = state.name,
+        description = state.description.takeIf { it.isNotBlank() },
+        trainWholeType = state.trainWholeType,
+        scheduledDate = state.scheduledDate,
+        hardLevel = state.hardLevel,
+        finishFlag = state.finishFlag ?: "N",
+        locationType = state.locationType,
+        warmupBlock = normalBlocks.warmupBlock,
+        blockList = normalBlocks.mainBlocks,
+        cooldownBlock = normalBlocks.cooldownBlock,
+        calGoalStep = if (state.trainWholeType == TrainWholeType.CALORIES) {
+            state.calGoalStep ?: createSingleGoalStepForSave(TrainWholeType.CALORIES)
+        } else null,
+        distanceGoalStep = if (state.trainWholeType == TrainWholeType.DISTANCE) {
+            state.distanceGoalStep ?: createSingleGoalStepForSave(TrainWholeType.DISTANCE)
+        } else null,
+        timeGoalStep = if (state.trainWholeType == TrainWholeType.TIME) {
+            state.timeGoalStep ?: createSingleGoalStepForSave(TrainWholeType.TIME)
+        } else null,
+        pacerGoalStep = if (state.trainWholeType == TrainWholeType.PACER) {
+            state.pacerGoalStep ?: createSingleGoalStepForSave(TrainWholeType.PACER)
+        } else null
+    )
+}
+
+private fun buildRequiredBlocksForSaveState(state: TrainPlanEditUiState): NormalBlocks {
+    val warmup = state.warmupBlock
+        ?: createBlockForSave(BlockType.WARMUP, 0, "热身", "warmUp", TrainGoalType.TIME)
+    val mains = state.mainBlocks.ifEmpty {
+        listOf(createBlockForSave(BlockType.MAIN, 1, "训练", "training", TrainGoalType.OPEN))
+    }
+    val cooldown = state.cooldownBlock
+        ?: createBlockForSave(BlockType.COOLDOWN, 99, "放松", "cooldown", TrainGoalType.TIME)
+
+    val resequencedMains = mains.resequenceBlocks()
+    return NormalBlocks(
+        warmupBlock = warmup.copy(
+            seq = 0,
+            stepList = warmup.stepList.mapIndexed { index, step -> step.copy(seq = index) }
+        ),
+        mainBlocks = resequencedMains,
+        cooldownBlock = cooldown.copy(
+            seq = resequencedMains.size + 1,
+            stepList = cooldown.stepList.mapIndexed { index, step -> step.copy(seq = index) }
+        )
+    )
+}
+
+private fun createBlockForSave(
+    blockType: BlockType,
+    seq: Int,
+    descName: String,
+    purpose: String,
+    goalType: TrainGoalType
+): TrainBlock = TrainBlock(
+    blockId = UUID.randomUUID().toString(),
+    blockType = blockType,
+    seq = seq,
+    loopCnt = 1,
+    stepList = listOf(createDefaultStepForSave(goalType, descName, purpose))
+)
+
+private fun createDefaultStepForSave(
+    goalType: TrainGoalType,
+    descName: String,
+    purpose: String
+): TrainStep = TrainStep(
+    stepId = UUID.randomUUID().toString(),
+    seq = 0,
+    descName = descName,
+    purpose = purpose,
+    warmupFlag = if (purpose == "warmUp") "Y" else "N",
+    cooldownFlag = if (purpose == "cooldown") "Y" else "N",
+    goalType = goalType,
+    distanceValue = if (goalType == TrainGoalType.DISTANCE) 1.0 else null,
+    timeGoalSeconds = if (goalType == TrainGoalType.TIME) 300 else null,
+    intensityType = IntensityType.NONE
+)
+
+private fun createSingleGoalStepForSave(type: TrainWholeType): TrainStep {
+    val goalType = when (type) {
+        TrainWholeType.DISTANCE -> TrainGoalType.DISTANCE
+        TrainWholeType.TIME -> TrainGoalType.TIME
+        TrainWholeType.CALORIES -> TrainGoalType.CALORIES
+        TrainWholeType.PACER -> TrainGoalType.PACER
+        TrainWholeType.SELF_DEFINE -> TrainGoalType.OPEN
+    }
+    return TrainStep(
+        stepId = UUID.randomUUID().toString(),
+        seq = 0,
+        descName = "训练",
+        goalType = goalType,
+        distanceUnit = "KM",
+        distanceValue = when (goalType) {
+            TrainGoalType.DISTANCE -> 5.0
+            TrainGoalType.PACER -> 5.0
+            else -> null
+        },
+        timeGoalSeconds = when (goalType) {
+            TrainGoalType.TIME -> 1800
+            TrainGoalType.PACER -> 1800
+            else -> null
+        },
+        caloriesUnit = "KCAL",
+        caloriesValue = if (goalType == TrainGoalType.CALORIES) 300 else null,
+        intensityType = IntensityType.NONE,
+        minPace = if (goalType == TrainGoalType.PACER) 360 else null,
+        maxPace = if (goalType == TrainGoalType.PACER) 360 else null
     )
 }
 

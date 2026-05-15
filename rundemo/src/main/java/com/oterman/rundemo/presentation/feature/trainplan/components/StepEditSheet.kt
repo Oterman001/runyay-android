@@ -91,7 +91,7 @@ fun StepEditSheet(
     var hours by remember { mutableIntStateOf((initialSeconds / 3600).coerceIn(0, 23)) }
     var minutes by remember { mutableIntStateOf(((initialSeconds % 3600) / 60).coerceIn(0, 59)) }
     var seconds by remember { mutableIntStateOf((initialSeconds % 60).coerceIn(0, 59)) }
-    var intensityType by remember { mutableStateOf(step.intensityType) }
+    var intensityType by remember { mutableStateOf(step.intensityType ?: IntensityType.NONE) }
     var minHeartRate by remember { mutableIntStateOf((step.minHeartRate ?: 120).coerceIn(40, 240)) }
     var maxHeartRate by remember { mutableIntStateOf((step.maxHeartRate ?: 150).coerceIn(41, 241)) }
     var minPaceMinute by remember { mutableIntStateOf(paceMinute(step.minPace ?: 300)) }
@@ -178,12 +178,12 @@ fun StepEditSheet(
                         intensityType = intensityType,
                         onIntensityTypeChange = {
                             intensityType = it
-                            isIntensityPickerExpanded = it != null
+                            isIntensityPickerExpanded = it != IntensityType.NONE
                             isGoalPickerExpanded = false
                         },
                         isExpanded = isIntensityPickerExpanded,
                         onExpandedChange = {
-                            if (intensityType != null) {
+                            if (intensityType != IntensityType.NONE) {
                                 isIntensityPickerExpanded = it
                                 if (it) isGoalPickerExpanded = false
                             }
@@ -503,8 +503,8 @@ private fun goalResultText(
 
 @Composable
 private fun IntensityCard(
-    intensityType: IntensityType?,
-    onIntensityTypeChange: (IntensityType?) -> Unit,
+    intensityType: IntensityType,
+    onIntensityTypeChange: (IntensityType) -> Unit,
     isExpanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     minHeartRate: Int,
@@ -525,10 +525,10 @@ private fun IntensityCard(
             Text("强度类型")
             Spacer(Modifier.weight(1f))
             SegmentedChoiceGroup(
-                options = listOf<Pair<IntensityType?, String>>(
+                options = listOf(
                     IntensityType.HEART_RATE to "心率",
                     IntensityType.SPEED to "配速",
-                    null to "无"
+                    IntensityType.NONE to "无"
                 ),
                 selected = intensityType,
                 onSelected = onIntensityTypeChange
@@ -538,11 +538,11 @@ private fun IntensityCard(
         ExpandableResultRow(
             title = "范围",
             value = intensityResultText(intensityType, minHeartRate, maxHeartRate, minPaceMinute, minPaceSecond, maxPaceMinute, maxPaceSecond),
-            expandable = intensityType != null,
+            expandable = intensityType != IntensityType.NONE,
             expanded = isExpanded,
             onClick = { onExpandedChange(!isExpanded) }
         )
-        AnimatedVisibility(visible = isExpanded && intensityType != null) {
+        AnimatedVisibility(visible = isExpanded && intensityType != IntensityType.NONE) {
             Column {
                 HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
                 when (intensityType) {
@@ -565,7 +565,7 @@ private fun IntensityCard(
                             }
                         }
                     }
-                    null -> Unit
+                    IntensityType.NONE -> Unit
                 }
             }
         }
@@ -573,7 +573,7 @@ private fun IntensityCard(
 }
 
 private fun intensityResultText(
-    intensityType: IntensityType?,
+    intensityType: IntensityType,
     minHeartRate: Int,
     maxHeartRate: Int,
     minPaceMinute: Int,
@@ -585,7 +585,7 @@ private fun intensityResultText(
     IntensityType.SPEED -> {
         "${formatPace(paceSeconds(minPaceMinute, minPaceSecond))}-${formatPace(paceSeconds(maxPaceMinute, maxPaceSecond))} /km"
     }
-    null -> "无强度要求"
+    IntensityType.NONE -> "无强度要求"
 }
 
 private fun validateStepEdit(
@@ -593,7 +593,7 @@ private fun validateStepEdit(
     goalType: TrainGoalType,
     distanceValue: Double,
     timeSeconds: Int,
-    intensityType: IntensityType?,
+    intensityType: IntensityType,
     minHeartRate: Int,
     maxHeartRate: Int,
     minPaceSeconds: Int,
@@ -618,7 +618,7 @@ private fun validateStepEdit(
                 "配速范围应从快到慢，例如 4'00\"-6'00\" /km"
             } else null
         }
-        null -> null
+        IntensityType.NONE -> null
     }
 }
 

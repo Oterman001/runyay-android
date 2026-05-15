@@ -432,7 +432,7 @@ class TrainPlanRepository(
         timeGoalSeconds = timeGoalSeconds,
         caloriesUnit = caloriesUnit,
         caloriesValue = caloriesValue,
-        intensityType = intensityType?.value,
+        intensityType = (intensityType ?: com.oterman.rundemo.domain.model.IntensityType.NONE).value,
         minHeartRate = minHeartRate,
         maxHeartRate = maxHeartRate,
         heartZoneType = heartZoneType,

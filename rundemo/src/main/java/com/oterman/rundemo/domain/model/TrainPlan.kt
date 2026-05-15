@@ -39,12 +39,12 @@ enum class TrainGoalType(val value: String) {
 
 enum class IntensityType(val value: String) {
     HEART_RATE("heartRate"),
-    SPEED("speed");
-//    NONE("none");
+    SPEED("speed"),
+    NONE("none");
 
     companion object {
         fun fromValue(value: String?): IntensityType =
-            entries.find { it.value == value } ?: HEART_RATE
+            entries.find { it.value == value } ?: NONE
     }
 }
 

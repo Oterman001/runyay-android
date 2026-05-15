@@ -164,6 +164,7 @@ internal fun TrainStep.intensityText(): String? = when (intensityType) {
         val max = maxPace?.let(::formatPace)
         if (min != null && max != null) "$min - $max /km" else null
     }
+    IntensityType.NONE -> null
     null -> null
 }
 

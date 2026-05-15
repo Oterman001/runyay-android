@@ -202,6 +202,7 @@ private fun intensityPainter(type: IntensityType?): Painter = painterResource(
     when (type) {
         IntensityType.HEART_RATE -> R.drawable.ic_intensity_heartrate
         IntensityType.SPEED -> R.drawable.ic_intensity_pace
+        IntensityType.NONE -> R.drawable.ic_step_training
         null -> R.drawable.ic_step_training
     }
 )
