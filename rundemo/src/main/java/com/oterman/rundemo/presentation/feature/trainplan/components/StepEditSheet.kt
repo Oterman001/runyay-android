@@ -86,7 +86,7 @@ fun StepEditSheet(
     var distanceKmMinor by remember {
         mutableIntStateOf((((step.distanceValue ?: 1.0) - (step.distanceValue ?: 1.0).toInt()) * 100).toInt().coerceIn(0, 99))
     }
-    var distanceMeters by remember { mutableIntStateOf(((step.distanceValue ?: 400.0).toInt()).coerceIn(10, 1000)) }
+    var distanceMeters by remember { mutableIntStateOf(((step.distanceValue ?: 400.0).toInt() / 10 * 10).coerceIn(10, 1000)) }
     val initialSeconds = step.timeGoalSeconds ?: 300
     var hours by remember { mutableIntStateOf((initialSeconds / 3600).coerceIn(0, 23)) }
     var minutes by remember { mutableIntStateOf(((initialSeconds % 3600) / 60).coerceIn(0, 59)) }
@@ -429,7 +429,7 @@ private fun GoalCard(
                         }
                     } else {
                         WheelPickerGroup {
-                            WheelPicker(distanceMeters, 10..1000, onDistanceMetersChange, Modifier.fillMaxWidth()) { "${it}m" }
+                            WheelPicker(distanceMeters, 10..1000, onDistanceMetersChange, Modifier.fillMaxWidth(), step = 10) { "${it}m" }
                         }
                     }
                 } else if (goalType == TrainGoalType.TIME) {
@@ -699,9 +699,10 @@ private fun WheelPicker(
     range: IntRange,
     onValueChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    step: Int = 1,
     label: (Int) -> String
 ) {
-    val items = remember(range.first, range.last) { range.toList() }
+    val items = remember(range.first, range.last, step) { (range step step).toList() }
     val itemHeight = 44.dp
     val listState = rememberLazyListState(
         initialFirstVisibleItemIndex = items.indexOf(value).coerceAtLeast(0)

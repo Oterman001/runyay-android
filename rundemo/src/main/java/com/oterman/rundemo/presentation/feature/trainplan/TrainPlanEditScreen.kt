@@ -735,10 +735,6 @@ private fun SelfDefineSummaryCard(est: TrainEstimate) {
         SummaryMetric(painterResource(R.drawable.ic_goal_distance), distText, RunTheme.colorScheme.blue, Modifier.weight(1f))
         VerticalDivider()
         SummaryMetric(painterResource(R.drawable.ic_goal_time), durText, RunTheme.colorScheme.orange, Modifier.weight(1f))
-        est.avgPaceSecPerKm?.let { pace ->
-            VerticalDivider()
-            SummaryMetric(painterResource(R.drawable.ic_intensity_pace), formatPace(pace) + "/km", RunTheme.colorScheme.success, Modifier.weight(1f))
-        }
     }
 }
 

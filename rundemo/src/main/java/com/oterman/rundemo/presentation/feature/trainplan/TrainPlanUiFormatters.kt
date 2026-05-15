@@ -38,6 +38,7 @@ internal fun estimateSelfDefine(blocks: List<TrainBlock>, vdot: Double?): TrainE
     for (block in blocks) {
         val loops = block.loopCnt.coerceAtLeast(1)
         for (step in block.stepList) {
+            if (step.skipStatus == 1) continue
             val stepPace: Double = when {
                 step.minPace != null && step.maxPace != null -> (step.minPace + step.maxPace) / 2.0
                 step.minPace != null -> step.minPace.toDouble()
