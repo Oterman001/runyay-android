@@ -77,7 +77,7 @@ fun StepEditSheet(
     onDismiss: () -> Unit
 ) {
     val isWarmupOrCooldown = step.isWarmupOrCooldownStep()
-    var purpose by remember { mutableStateOf(step.purpose ?: defaultPurpose(step)) }
+    var purpose by remember { mutableStateOf(editorPurpose(step)) }
     var descName by remember { mutableStateOf(step.descName ?: "") }
     var skipStatus by remember { mutableIntStateOf(if (isWarmupOrCooldown) step.skipStatus else 0) }
     var goalType by remember { mutableStateOf(step.goalType) }
@@ -299,17 +299,13 @@ private fun ActionCard(
             Spacer(Modifier.weight(1f))
             if (canModifyPurpose) {
                 SegmentedChoiceGroup(
-                    options = listOf("WORK" to "训练", "RECOVERY" to "恢复"),
+                    options = listOf("training" to "训练", "recovery" to "恢复"),
                     selected = purpose,
                     onSelected = onPurposeChange
                 )
             } else {
                 Text(
-                    text = when (purpose) {
-                        "WARMUP" -> "热身"
-                        "COOLDOWN" -> "放松"
-                        else -> purpose
-                    },
+                    text = purposeDisplayName(purpose),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -752,11 +748,30 @@ internal fun WheelPicker(
     }
 }
 
-private fun defaultPurpose(step: TrainStep): String = when {
-    step.purpose != null -> step.purpose
-    step.warmupFlag == "Y" -> "WARMUP"
-    step.cooldownFlag == "Y" -> "COOLDOWN"
-    else -> "WORK"
+private fun editorPurpose(step: TrainStep): String = when {
+    step.warmupFlag == "Y" -> "warmUp"
+    step.cooldownFlag == "Y" -> "cooldown"
+    step.purpose.equals("warmUp", ignoreCase = true) ||
+        step.purpose.equals("WARMUP", ignoreCase = true) -> "warmUp"
+    step.purpose.equals("cooldown", ignoreCase = true) ||
+        step.purpose.equals("COOLDOWN", ignoreCase = true) -> "cooldown"
+    step.purpose.equals("recovery", ignoreCase = true) ||
+        step.purpose.equals("RECOVERY", ignoreCase = true) -> "recovery"
+    step.purpose.equals("training", ignoreCase = true) ||
+        step.purpose.equals("WORK", ignoreCase = true) -> "training"
+    else -> "training"
+}
+
+private fun purposeDisplayName(purpose: String): String = when {
+    purpose.equals("warmUp", ignoreCase = true) ||
+        purpose.equals("WARMUP", ignoreCase = true) -> "热身"
+    purpose.equals("cooldown", ignoreCase = true) ||
+        purpose.equals("COOLDOWN", ignoreCase = true) -> "放松"
+    purpose.equals("recovery", ignoreCase = true) ||
+        purpose.equals("RECOVERY", ignoreCase = true) -> "恢复"
+    purpose.equals("training", ignoreCase = true) ||
+        purpose.equals("WORK", ignoreCase = true) -> "训练"
+    else -> "训练"
 }
 
 private fun TrainStep.isWarmupOrCooldownStep(): Boolean =

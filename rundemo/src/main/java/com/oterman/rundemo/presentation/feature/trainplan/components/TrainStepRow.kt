@@ -130,8 +130,8 @@ fun TrainStepRow(
                         painter = intensityPainter(step.intensityType),
                         value = step.intensityText() ?: "自由练",
                         tint = accent,
-                        showIcon = step.intensityType != null,
-                        muted = step.intensityType == null
+                        showIcon = step.intensityType != null && step.intensityType != IntensityType.NONE,
+                        muted = step.intensityType == null || step.intensityType == IntensityType.NONE
                     )
                 }
             }
