@@ -25,11 +25,11 @@ enum class BlockType(val value: String) {
 }
 
 enum class TrainGoalType(val value: String) {
-    DISTANCE("DISTANCE"),
-    TIME("TIME"),
-    CALORIES("CALORIES"),
-    PACER("PACER"),
-    OPEN("OPEN");
+    DISTANCE("distance"),
+    TIME("time"),
+    CALORIES("calories"),
+    PACER("pacer"),
+    OPEN("open");
 
     companion object {
         fun fromValue(value: String?): TrainGoalType =
@@ -38,8 +38,9 @@ enum class TrainGoalType(val value: String) {
 }
 
 enum class IntensityType(val value: String) {
-    HEART_RATE("HEART_RATE"),
-    SPEED("SPEED");
+    HEART_RATE("heartRate"),
+    SPEED("speed");
+//    NONE("none");
 
     companion object {
         fun fromValue(value: String?): IntensityType =

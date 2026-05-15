@@ -37,8 +37,8 @@ class TrainPlanEditViewModel(
                     planId = UUID.randomUUID().toString(),
                     scheduledDate = date,
                     name = generateDefaultName(date),
-                    warmupBlock = createBlock(BlockType.WARMUP, 0, "热身", "WARMUP", TrainGoalType.TIME),
-                    cooldownBlock = createBlock(BlockType.COOLDOWN, 99, "放松", "COOLDOWN", TrainGoalType.TIME)
+                    warmupBlock = createBlock(BlockType.WARMUP, 0, "热身", "warmUp", TrainGoalType.TIME),
+                    cooldownBlock = createBlock(BlockType.COOLDOWN, 99, "放松", "cooldown", TrainGoalType.TIME)
                 )
             }
         }
@@ -118,7 +118,7 @@ class TrainPlanEditViewModel(
                 blockType = BlockType.WARMUP,
                 seq = 0,
                 loopCnt = 1,
-                stepList = listOf(createDefaultStep(TrainGoalType.TIME, "热身", "WARMUP"))
+                stepList = listOf(createDefaultStep(TrainGoalType.TIME, "热身", "warmUp"))
             ))
         }
     }
@@ -147,7 +147,7 @@ class TrainPlanEditViewModel(
                 blockType = BlockType.MAIN,
                 seq = blocks.size + 1,
                 loopCnt = 1,
-                stepList = listOf(createDefaultStep(TrainGoalType.DISTANCE, "训练", "WORK"))
+                stepList = listOf(createDefaultStep(TrainGoalType.DISTANCE, "训练", "training"))
             ))
             it.copy(mainBlocks = blocks)
         }
@@ -162,7 +162,7 @@ class TrainPlanEditViewModel(
                 blockType = BlockType.MAIN,
                 seq = blocks.size + 1,
                 loopCnt = 1,
-                stepList = listOf(createDefaultStep(TrainGoalType.TIME, "恢复", "RECOVERY"))
+                stepList = listOf(createDefaultStep(TrainGoalType.TIME, "恢复", "recovery"))
             ))
             it.copy(mainBlocks = blocks)
         }
@@ -178,8 +178,8 @@ class TrainPlanEditViewModel(
                 seq = blocks.size + 1,
                 loopCnt = 2,
                 stepList = listOf(
-                    createDefaultStep(TrainGoalType.DISTANCE, "训练", "WORK"),
-                    createDefaultStep(TrainGoalType.TIME, "恢复", "RECOVERY")
+                    createDefaultStep(TrainGoalType.DISTANCE, "训练", "training"),
+                    createDefaultStep(TrainGoalType.TIME, "恢复", "recovery")
                 )
             ))
             it.copy(mainBlocks = blocks)
@@ -195,7 +195,7 @@ class TrainPlanEditViewModel(
                 blockType = BlockType.COOLDOWN,
                 seq = 99,
                 loopCnt = 1,
-                stepList = listOf(createDefaultStep(TrainGoalType.TIME, "放松", "COOLDOWN"))
+                stepList = listOf(createDefaultStep(TrainGoalType.TIME, "放松", "cooldown"))
             ))
         }
     }
@@ -237,13 +237,13 @@ class TrainPlanEditViewModel(
                 BlockType.WARMUP -> {
                     val block = it.warmupBlock ?: return@update it
                     it.copy(warmupBlock = block.copy(
-                        stepList = block.stepList + createDefaultStep(TrainGoalType.TIME, "热身", "WARMUP")
+                        stepList = block.stepList + createDefaultStep(TrainGoalType.TIME, "热身", "warmUp")
                     ))
                 }
                 BlockType.COOLDOWN -> {
                     val block = it.cooldownBlock ?: return@update it
                     it.copy(cooldownBlock = block.copy(
-                        stepList = block.stepList + createDefaultStep(TrainGoalType.TIME, "放松", "COOLDOWN")
+                        stepList = block.stepList + createDefaultStep(TrainGoalType.TIME, "放松", "cooldown")
                     ))
                 }
                 BlockType.MAIN -> {
@@ -251,7 +251,7 @@ class TrainPlanEditViewModel(
                     if (blockIndex in blocks.indices) {
                         val block = blocks[blockIndex]
                         blocks[blockIndex] = block.copy(
-                            stepList = block.stepList + createDefaultStep(TrainGoalType.DISTANCE, "训练", "WORK")
+                            stepList = block.stepList + createDefaultStep(TrainGoalType.DISTANCE, "训练", "training")
                         )
                     }
                     it.copy(mainBlocks = blocks)
@@ -577,8 +577,8 @@ class TrainPlanEditViewModel(
         seq = 0,
         descName = descName,
         purpose = purpose,
-        warmupFlag = if (purpose == "WARMUP") "Y" else "N",
-        cooldownFlag = if (purpose == "COOLDOWN") "Y" else "N",
+        warmupFlag = if (purpose == "warmUp") "Y" else "N",
+        cooldownFlag = if (purpose == "cooldown") "Y" else "N",
         goalType = goalType,
         distanceValue = if (goalType == TrainGoalType.DISTANCE) 1.0 else null,
         timeGoalSeconds = if (goalType == TrainGoalType.TIME) 300 else null

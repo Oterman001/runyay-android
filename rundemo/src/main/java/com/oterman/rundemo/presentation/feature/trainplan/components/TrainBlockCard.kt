@@ -58,6 +58,8 @@ fun TrainBlockCard(
     onLoopCountChange: ((delta: Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    if (block.stepList.isEmpty() && !isEditMode) return
+
     val accent = blockAccent(block)
     val isSimpleSingleStep = block.stepList.size == 1 && block.loopCnt <= 1
 
