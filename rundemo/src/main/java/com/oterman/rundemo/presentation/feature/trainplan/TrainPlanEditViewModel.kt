@@ -420,14 +420,27 @@ class TrainPlanEditViewModel(
         }
     }
 
-    fun updatePacerGoal(minPace: Int?, maxPace: Int?) {
+    fun updatePacerFull(
+        distanceMeters: Double?,
+        distanceUnit: String,
+        timeSeconds: Int?,
+        paceSecondsPerKm: Int?
+    ) {
         if (!_uiState.value.isEditMode) return
         _uiState.update {
+            val distVal = when {
+                distanceMeters == null -> null
+                distanceUnit == "M" -> distanceMeters
+                else -> distanceMeters / 1000.0
+            }
             it.copy(pacerGoalStep = TrainStep(
                 stepId = it.pacerGoalStep?.stepId ?: UUID.randomUUID().toString(),
                 goalType = TrainGoalType.PACER,
-                minPace = minPace,
-                maxPace = maxPace
+                distanceUnit = distanceUnit,
+                distanceValue = distVal,
+                timeGoalSeconds = timeSeconds,
+                minPace = paceSecondsPerKm,
+                maxPace = paceSecondsPerKm
             ))
         }
     }

@@ -48,13 +48,13 @@ enum class IntensityType(val value: String) {
 }
 
 enum class LocationType(val value: String) {
-    INDOOR("INDOOR"),
-    OUTDOOR("OUTDOOR"),
-    PENDING("PENDING");
+    INDOOR("indoor"),
+    OUTDOOR("outdoor"),
+    PENDING("unknown");
 
     companion object {
         fun fromValue(value: String?): LocationType =
-            entries.find { it.value == value } ?: OUTDOOR
+            entries.find { it.value.equals(value, ignoreCase = true) } ?: OUTDOOR
     }
 }
 

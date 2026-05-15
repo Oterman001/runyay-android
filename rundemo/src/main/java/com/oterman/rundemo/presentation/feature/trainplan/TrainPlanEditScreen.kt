@@ -74,6 +74,7 @@ import com.oterman.rundemo.domain.model.BlockType
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.LocationType
 import com.oterman.rundemo.domain.model.TrainBlock
+import com.oterman.rundemo.domain.model.TrainStep
 import com.oterman.rundemo.domain.model.TrainWholeType
 import com.oterman.rundemo.presentation.feature.trainplan.components.SingleGoalEditor
 import com.oterman.rundemo.presentation.feature.trainplan.components.StepEditSheet
@@ -359,8 +360,9 @@ fun TrainPlanEditScreen(
             when (uiState.trainWholeType) {
                 TrainWholeType.PACER -> {
                     item { SectionTitle("配速员") }
-                    item { PacerSummaryCard(uiState.pacerGoalStep?.minPace, uiState.pacerGoalStep?.maxPace) }
+                    item { PacerSummaryCard(uiState.pacerGoalStep) }
                 }
+                TrainWholeType.CALORIES -> { /* 卡路里类型不显示整体预估 */ }
                 else -> {
                     item { SectionTitle("整体预估") }
                     item {
@@ -369,7 +371,6 @@ fun TrainPlanEditScreen(
                             blocks = listOfNotNull(uiState.warmupBlock) + uiState.mainBlocks + listOfNotNull(uiState.cooldownBlock),
                             distanceGoalMeters = uiState.distanceGoalStep?.distanceMeters() ?: 0.0,
                             timeGoalSeconds = uiState.timeGoalStep?.timeGoalSeconds ?: 0,
-                            caloriesGoal = uiState.calGoalStep?.caloriesValue ?: 0,
                             userVdot = uiState.userVdot
                         )
                     }
@@ -447,7 +448,7 @@ fun TrainPlanEditScreen(
                         onDistanceChange = { viewModel.updateDistanceGoal(it) },
                         onTimeChange = { viewModel.updateTimeGoal(it) },
                         onCaloriesChange = { viewModel.updateCaloriesGoal(it) },
-                        onPacerChange = { min, max -> viewModel.updatePacerGoal(min, max) },
+                        onPacerFullChange = { dm, du, ts, ps -> viewModel.updatePacerFull(dm, du, ts, ps) },
                         isEditMode = uiState.isEditMode
                     )
                 }
@@ -596,7 +597,7 @@ private fun BasicInfoCard(
             Text("地点", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             if (isEditMode) {
-                SingleChoiceSegmentedButtonRow {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.height(32.dp)) {
                     locationOptions.forEachIndexed { index, (type, label) ->
                         SegmentedButton(
                             selected = locationType == type,
@@ -607,7 +608,6 @@ private fun BasicInfoCard(
                                 activeContentColor = RunTheme.colorScheme.blue,
                                 activeBorderColor = RunTheme.colorScheme.blue
                             ),
-//                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                             icon = {},
                             label = { Text(label, style = MaterialTheme.typography.bodySmall) }
                         )
@@ -715,22 +715,20 @@ private fun TotalSummaryCard(
     blocks: List<TrainBlock>,
     distanceGoalMeters: Double,
     timeGoalSeconds: Int,
-    caloriesGoal: Int,
     userVdot: Double?
 ) {
     when (trainWholeType) {
         TrainWholeType.SELF_DEFINE -> SelfDefineSummaryCard(estimateSelfDefine(blocks, userVdot))
         TrainWholeType.DISTANCE -> DistanceSummaryCard(estimateDistance(distanceGoalMeters, userVdot))
         TrainWholeType.TIME -> TimeSummaryCard(estimateTime(timeGoalSeconds, userVdot))
-        TrainWholeType.CALORIES -> CaloriesSummaryCard(caloriesGoal, estimateCalories(caloriesGoal, userVdot))
-        TrainWholeType.PACER -> {}
+        else -> {}
     }
 }
 
 @Composable
 private fun SelfDefineSummaryCard(est: TrainEstimate) {
     val distText = est.distanceMeters?.let { formatDistance(it) } ?: "--"
-    val durText = est.durationSeconds?.let { formatDuration(it) } ?: "--"
+    val durText = est.durationSeconds?.let { formatDurationColon(it) } ?: "--"
     SummaryCard {
         SummaryMetric(painterResource(R.drawable.ic_goal_distance), distText, RunTheme.colorScheme.blue, Modifier.weight(1f))
         VerticalDivider()
@@ -741,51 +739,37 @@ private fun SelfDefineSummaryCard(est: TrainEstimate) {
 @Composable
 private fun DistanceSummaryCard(est: TrainEstimate) {
     val distText = est.distanceMeters?.let { formatDistance(it) } ?: "--"
-    val durText = est.durationSeconds?.let { "≈ " + formatDuration(it) } ?: "--"
-    val paceText = est.avgPaceSecPerKm?.let { "≈ " + formatPace(it) + "/km" } ?: "--"
+    val durText = est.durationSeconds?.let { formatDurationColon(it) } ?: "--"
     SummaryCard {
         SummaryMetric(painterResource(R.drawable.ic_goal_distance), distText, RunTheme.colorScheme.blue, Modifier.weight(1f))
         VerticalDivider()
         SummaryMetric(painterResource(R.drawable.ic_goal_time), durText, RunTheme.colorScheme.orange, Modifier.weight(1f))
-        VerticalDivider()
-        SummaryMetric(painterResource(R.drawable.ic_intensity_pace), paceText, RunTheme.colorScheme.success, Modifier.weight(1f))
     }
 }
 
 @Composable
 private fun TimeSummaryCard(est: TrainEstimate) {
-    val distText = est.distanceMeters?.let { "≈ " + formatDistance(it) } ?: "--"
-    val durText = est.durationSeconds?.let { formatDuration(it) } ?: "--"
-    val paceText = est.avgPaceSecPerKm?.let { "≈ " + formatPace(it) + "/km" } ?: "--"
+    val distText = est.distanceMeters?.let { formatDistance(it) } ?: "--"
+    val durText = est.durationSeconds?.let { formatDurationColon(it) } ?: "--"
     SummaryCard {
         SummaryMetric(painterResource(R.drawable.ic_goal_distance), distText, RunTheme.colorScheme.blue, Modifier.weight(1f))
         VerticalDivider()
         SummaryMetric(painterResource(R.drawable.ic_goal_time), durText, RunTheme.colorScheme.orange, Modifier.weight(1f))
-        VerticalDivider()
-        SummaryMetric(painterResource(R.drawable.ic_intensity_pace), paceText, RunTheme.colorScheme.success, Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun CaloriesSummaryCard(caloriesGoal: Int, est: TrainEstimate) {
-    val calText = if (caloriesGoal > 0) "$caloriesGoal kcal" else "--"
-    val distText = est.distanceMeters?.let { "≈ " + formatDistance(it) } ?: "--"
-    val durText = est.durationSeconds?.let { "≈ " + formatDuration(it) } ?: "--"
+private fun PacerSummaryCard(step: TrainStep?) {
+    val distMeters = step?.distanceMeters() ?: 0.0
+    val distText = if (distMeters > 0) formatDistance(distMeters) else "--"
+    val paceText = step?.minPace?.let { formatPace(it) + "/km" } ?: "--"
+    val timeText = step?.timeGoalSeconds?.let { formatDurationColon(it) } ?: "--"
     SummaryCard {
-        SummaryMetric(painterResource(R.drawable.ic_goal_calories), calText, RunTheme.colorScheme.orange, Modifier.weight(1f))
-        VerticalDivider()
         SummaryMetric(painterResource(R.drawable.ic_goal_distance), distText, RunTheme.colorScheme.blue, Modifier.weight(1f))
         VerticalDivider()
-        SummaryMetric(painterResource(R.drawable.ic_goal_time), durText, RunTheme.colorScheme.success, Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun PacerSummaryCard(minPace: Int?, maxPace: Int?) {
-    SummaryCard {
-        SummaryMetric(painterResource(R.drawable.ic_intensity_pace), minPace?.let(::formatPace) ?: "--", RunTheme.colorScheme.blue, Modifier.weight(1f))
+        SummaryMetric(painterResource(R.drawable.ic_intensity_pace), paceText, RunTheme.colorScheme.orange, Modifier.weight(1f))
         VerticalDivider()
-        SummaryMetric(painterResource(R.drawable.ic_intensity_pace), maxPace?.let(::formatPace) ?: "--", RunTheme.colorScheme.orange, Modifier.weight(1f))
+        SummaryMetric(painterResource(R.drawable.ic_goal_time), timeText, RunTheme.colorScheme.success, Modifier.weight(1f))
     }
 }
 

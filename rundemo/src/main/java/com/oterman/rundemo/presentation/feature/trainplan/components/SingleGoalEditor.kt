@@ -1,39 +1,29 @@
 package com.oterman.rundemo.presentation.feature.trainplan.components
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.painterResource
-import com.oterman.rundemo.R
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.oterman.rundemo.domain.model.TrainStep
 import com.oterman.rundemo.domain.model.TrainWholeType
-import com.oterman.rundemo.presentation.feature.trainplan.formatDuration
-import com.oterman.rundemo.presentation.feature.trainplan.formatPaceInput
-import com.oterman.rundemo.presentation.feature.trainplan.parsePaceInput
 import com.oterman.rundemo.ui.theme.RunTheme
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SingleGoalEditor(
     trainWholeType: TrainWholeType,
@@ -44,151 +34,329 @@ fun SingleGoalEditor(
     onDistanceChange: (Double?) -> Unit,
     onTimeChange: (Int?) -> Unit,
     onCaloriesChange: (Int?) -> Unit,
-    onPacerChange: (Int?, Int?) -> Unit,
+    onPacerFullChange: (distanceMeters: Double?, distanceUnit: String, timeSeconds: Int?, paceSecondsPerKm: Int?) -> Unit,
     isEditMode: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .background(RunTheme.colorScheme.cardBg, RoundedCornerShape(12.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         when (trainWholeType) {
             TrainWholeType.DISTANCE -> DistanceGoal(distanceGoalStep, onDistanceChange, isEditMode)
             TrainWholeType.TIME -> TimeGoal(timeGoalStep, onTimeChange, isEditMode)
             TrainWholeType.CALORIES -> CaloriesGoal(calGoalStep, onCaloriesChange, isEditMode)
-            TrainWholeType.PACER -> PacerGoal(pacerGoalStep, onPacerChange, isEditMode)
+            TrainWholeType.PACER -> PacerGoal(pacerGoalStep, onPacerFullChange, isEditMode)
             TrainWholeType.SELF_DEFINE -> Unit
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DistanceGoal(step: TrainStep?, onDistanceChange: (Double?) -> Unit, isEditMode: Boolean) {
-    var text by remember(step?.distanceValue) { mutableStateOf(step?.distanceValue?.toString() ?: "") }
-    GoalHeader("距离", painterResource(R.drawable.ic_goal_distance))
-    OutlinedTextField(
-        value = text,
-        onValueChange = {
-            text = it
-            onDistanceChange(it.toDoubleOrNull())
-        },
-        label = { Text("距离") },
-        suffix = { Text("km") },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        singleLine = true,
-        enabled = isEditMode,
-        modifier = Modifier.fillMaxWidth()
-    )
+    var distanceUnit by remember { mutableStateOf(step?.distanceUnit ?: "KM") }
+    var distanceKmMajor by remember(step?.distanceValue) {
+        mutableIntStateOf(((step?.distanceValue ?: 1.0).toInt()).coerceIn(0, 100))
+    }
+    var distanceKmMinor by remember(step?.distanceValue) {
+        mutableIntStateOf((((step?.distanceValue ?: 1.0) - (step?.distanceValue ?: 1.0).toInt()) * 100).toInt().coerceIn(0, 99))
+    }
+    var distanceMetersVal by remember(step?.distanceValue) {
+        mutableIntStateOf(((step?.distanceValue ?: 400.0).toInt() / 10 * 10).coerceIn(10, 1000))
+    }
+    var expanded by remember { mutableStateOf(false) }
+
+    val displayText = if (distanceUnit == "M") "${distanceMetersVal} m"
+    else "${distanceKmMajor}.${distanceKmMinor.toString().padStart(2, '0')} km"
+
+    SectionCard {
+        ExpandableResultRow(
+            title = "目标距离",
+            value = displayText,
+            expandable = isEditMode,
+            expanded = expanded && isEditMode,
+            onClick = { if (isEditMode) expanded = !expanded }
+        )
+        AnimatedVisibility(visible = expanded && isEditMode) {
+            Column {
+                HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("单位选择")
+                    Spacer(Modifier.weight(1f))
+                    SegmentedChoiceGroup(
+                        options = listOf("KM" to "公里", "M" to "米"),
+                        selected = distanceUnit,
+                        onSelected = { distanceUnit = it }
+                    )
+                }
+                HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+                if (distanceUnit == "KM") {
+                    WheelPickerGroup {
+                        Row {
+                            WheelPicker(distanceKmMajor, 0..100, {
+                                distanceKmMajor = it
+                                onDistanceChange(it + distanceKmMinor / 100.0)
+                            }, Modifier.weight(1f)) { it.toString() }
+                            WheelPicker(distanceKmMinor, 0..99, {
+                                distanceKmMinor = it
+                                onDistanceChange(distanceKmMajor + it / 100.0)
+                            }, Modifier.weight(1f)) { ".${it.toString().padStart(2, '0')}" }
+                        }
+                    }
+                } else {
+                    WheelPickerGroup {
+                        WheelPicker(distanceMetersVal, 10..1000, {
+                            distanceMetersVal = it
+                            onDistanceChange(it.toDouble())
+                        }, Modifier.fillMaxWidth(), step = 10) { "${it}m" }
+                    }
+                }
+            }
+        }
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TimeGoal(step: TrainStep?, onTimeChange: (Int?) -> Unit, isEditMode: Boolean) {
     val totalSeconds = step?.timeGoalSeconds ?: 0
-    var minutes by remember(totalSeconds) { mutableStateOf(if (totalSeconds > 0) (totalSeconds / 60).toString() else "") }
-    var seconds by remember(totalSeconds) { mutableStateOf(if (totalSeconds > 0) (totalSeconds % 60).toString() else "") }
-    GoalHeader("时间", painterResource(R.drawable.ic_goal_time))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
-            value = minutes,
-            onValueChange = {
-                minutes = it
-                val m = it.toIntOrNull() ?: 0
-                val s = seconds.toIntOrNull() ?: 0
-                onTimeChange((m * 60 + s).takeIf { total -> total > 0 })
-            },
-            label = { Text("分钟") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            enabled = isEditMode,
-            modifier = Modifier.weight(1f)
+    var hours by remember(totalSeconds) { mutableIntStateOf((totalSeconds / 3600).coerceIn(0, 23)) }
+    var minutes by remember(totalSeconds) { mutableIntStateOf(((totalSeconds % 3600) / 60).coerceIn(0, 59)) }
+    var seconds by remember(totalSeconds) { mutableIntStateOf((totalSeconds % 60).coerceIn(0, 59)) }
+    var expanded by remember { mutableStateOf(false) }
+
+    val displayText = "%02d:%02d:%02d".format(hours, minutes, seconds)
+
+    SectionCard {
+        ExpandableResultRow(
+            title = "目标时长",
+            value = displayText,
+            expandable = isEditMode,
+            expanded = expanded && isEditMode,
+            onClick = { if (isEditMode) expanded = !expanded }
         )
-        Spacer(Modifier.width(8.dp))
-        OutlinedTextField(
-            value = seconds,
-            onValueChange = {
-                seconds = it
-                val m = minutes.toIntOrNull() ?: 0
-                val s = it.toIntOrNull() ?: 0
-                onTimeChange((m * 60 + s).takeIf { total -> total > 0 })
-            },
-            label = { Text("秒") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            enabled = isEditMode,
-            modifier = Modifier.weight(1f)
-        )
-    }
-    if (totalSeconds > 0) {
-        Text(formatDuration(totalSeconds), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        AnimatedVisibility(visible = expanded && isEditMode) {
+            Column {
+                HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+                WheelPickerGroup {
+                    Row {
+                        WheelPicker(hours, 0..23, {
+                            hours = it
+                            onTimeChange((it * 3600 + minutes * 60 + seconds).takeIf { t -> t > 0 })
+                        }, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
+                        WheelPicker(minutes, 0..59, {
+                            minutes = it
+                            onTimeChange((hours * 3600 + it * 60 + seconds).takeIf { t -> t > 0 })
+                        }, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
+                        WheelPicker(seconds, 0..59, {
+                            seconds = it
+                            onTimeChange((hours * 3600 + minutes * 60 + it).takeIf { t -> t > 0 })
+                        }, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
+                    }
+                }
+            }
+        }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CaloriesGoal(step: TrainStep?, onCaloriesChange: (Int?) -> Unit, isEditMode: Boolean) {
-    var text by remember(step?.caloriesValue) { mutableStateOf(step?.caloriesValue?.toString() ?: "") }
-    GoalHeader("卡路里", painterResource(R.drawable.ic_goal_calories))
-    OutlinedTextField(
-        value = text,
-        onValueChange = {
-            text = it
-            onCaloriesChange(it.toIntOrNull())
-        },
-        label = { Text("卡路里") },
-        suffix = { Text("kcal") },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        singleLine = true,
-        enabled = isEditMode,
-        modifier = Modifier.fillMaxWidth()
-    )
+    var calories by remember(step?.caloriesValue) {
+        mutableIntStateOf(((step?.caloriesValue ?: 0) / 50 * 50).coerceIn(0, 2000))
+    }
+    var expanded by remember { mutableStateOf(false) }
+    val displayText = if (calories > 0) "$calories kcal" else "未设置"
+
+    SectionCard {
+        ExpandableResultRow(
+            title = "目标热量",
+            value = displayText,
+            expandable = isEditMode,
+            expanded = expanded && isEditMode,
+            onClick = { if (isEditMode) expanded = !expanded }
+        )
+        AnimatedVisibility(visible = expanded && isEditMode) {
+            Column {
+                HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+                WheelPickerGroup {
+                    WheelPicker(calories, 0..2000, {
+                        calories = it
+                        onCaloriesChange(it.takeIf { v -> v > 0 })
+                    }, Modifier.fillMaxWidth(), step = 50) { "$it kcal" }
+                }
+            }
+        }
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun PacerGoal(step: TrainStep?, onPacerChange: (Int?, Int?) -> Unit, isEditMode: Boolean) {
-    var minText by remember(step?.minPace) { mutableStateOf(step?.minPace?.let { formatPaceInput(it) } ?: "") }
-    var maxText by remember(step?.maxPace) { mutableStateOf(step?.maxPace?.let { formatPaceInput(it) } ?: "") }
-    GoalHeader("配速员", painterResource(R.drawable.ic_intensity_pace))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
-            value = minText,
-            onValueChange = {
-                minText = it
-                onPacerChange(parsePaceInput(it), parsePaceInput(maxText))
-            },
-            label = { Text("最快") },
-            placeholder = { Text("4:30") },
-            singleLine = true,
-            enabled = isEditMode,
-            modifier = Modifier.weight(1f)
-        )
-        Spacer(Modifier.width(8.dp))
-        Text("-", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.width(8.dp))
-        OutlinedTextField(
-            value = maxText,
-            onValueChange = {
-                maxText = it
-                onPacerChange(parsePaceInput(minText), parsePaceInput(it))
-            },
-            label = { Text("最慢") },
-            placeholder = { Text("6:00") },
-            singleLine = true,
-            enabled = isEditMode,
-            modifier = Modifier.weight(1f)
-        )
-    }
-    Text("格式: 分:秒/公里", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-}
+private fun PacerGoal(
+    step: TrainStep?,
+    onPacerFullChange: (distanceMeters: Double?, distanceUnit: String, timeSeconds: Int?, paceSecondsPerKm: Int?) -> Unit,
+    isEditMode: Boolean
+) {
+    val initDistUnit = step?.distanceUnit ?: "KM"
+    val initDistVal = step?.distanceValue ?: 5.0
+    val initDistMajor = initDistVal.toInt().coerceIn(0, 100)
+    val initDistMinor = ((initDistVal - initDistVal.toInt()) * 100).toInt().coerceIn(0, 99)
+    val initTimeTotal = step?.timeGoalSeconds ?: 1800
+    val initPaceSec = step?.minPace ?: 360
 
-@Composable
-private fun GoalHeader(label: String, icon: Painter) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = RunTheme.colorScheme.blue)
-        Spacer(Modifier.width(8.dp))
-        Text(label, style = MaterialTheme.typography.titleMedium)
+    var distanceUnit by remember { mutableStateOf(initDistUnit) }
+    var distanceKmMajor by remember { mutableIntStateOf(initDistMajor) }
+    var distanceKmMinor by remember { mutableIntStateOf(initDistMinor) }
+    var distanceMetersVal by remember { mutableIntStateOf(((initDistVal * 1000).toInt() / 10 * 10).coerceIn(10, 1000)) }
+    var hours by remember { mutableIntStateOf((initTimeTotal / 3600).coerceIn(0, 23)) }
+    var minutes by remember { mutableIntStateOf(((initTimeTotal % 3600) / 60).coerceIn(0, 59)) }
+    var seconds by remember { mutableIntStateOf((initTimeTotal % 60).coerceIn(0, 59)) }
+    var paceMinute by remember { mutableIntStateOf((initPaceSec / 60).coerceIn(2, 23)) }
+    var paceSecond by remember { mutableIntStateOf((initPaceSec % 60).coerceIn(0, 59)) }
+    var expandedSection by remember { mutableStateOf<String?>(null) }
+
+    fun currentDistKm(): Double = if (distanceUnit == "M") distanceMetersVal / 1000.0
+    else distanceKmMajor + distanceKmMinor / 100.0
+
+    fun currentDistMeters(): Double = if (distanceUnit == "M") distanceMetersVal.toDouble()
+    else currentDistKm() * 1000.0
+
+    fun currentTimeSec(): Int = hours * 3600 + minutes * 60 + seconds
+
+    fun recalcPaceFromDistTime() {
+        val distKm = currentDistKm()
+        val totalSec = currentTimeSec()
+        if (distKm > 0 && totalSec > 0) {
+            val newPaceSec = (totalSec / distKm).toInt()
+            paceMinute = (newPaceSec / 60).coerceIn(2, 23)
+            paceSecond = (newPaceSec % 60).coerceIn(0, 59)
+        }
     }
-    Spacer(Modifier.height(2.dp))
+
+    fun recalcTimeFromDistPace() {
+        val distKm = currentDistKm()
+        val newPaceSec = paceMinute * 60 + paceSecond
+        if (distKm > 0 && newPaceSec > 0) {
+            val newTotalSec = (distKm * newPaceSec).toInt()
+            hours = (newTotalSec / 3600).coerceIn(0, 23)
+            minutes = ((newTotalSec % 3600) / 60).coerceIn(0, 59)
+            seconds = (newTotalSec % 60).coerceIn(0, 59)
+        }
+    }
+
+    fun notifyChange() {
+        onPacerFullChange(
+            currentDistMeters(),
+            distanceUnit,
+            currentTimeSec().takeIf { it > 0 },
+            (paceMinute * 60 + paceSecond).takeIf { it > 0 }
+        )
+    }
+
+    val distDisplayText = if (distanceUnit == "M") "${distanceMetersVal} m"
+    else "${distanceKmMajor}.${distanceKmMinor.toString().padStart(2, '0')} km"
+    val timeDisplayText = "%02d:%02d:%02d".format(hours, minutes, seconds)
+    val paceDisplayText = "${paceMinute}'${paceSecond.toString().padStart(2, '0')}\"/km"
+
+    // 距离卡片
+    SectionCard {
+        ExpandableResultRow(
+            title = "距离",
+            value = distDisplayText,
+            expandable = isEditMode,
+            expanded = expandedSection == "distance" && isEditMode,
+            onClick = { if (isEditMode) expandedSection = if (expandedSection == "distance") null else "distance" }
+        )
+        AnimatedVisibility(visible = expandedSection == "distance" && isEditMode) {
+            Column {
+                HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("单位选择")
+                    Spacer(Modifier.weight(1f))
+                    SegmentedChoiceGroup(
+                        options = listOf("KM" to "公里", "M" to "米"),
+                        selected = distanceUnit,
+                        onSelected = { distanceUnit = it; recalcPaceFromDistTime(); notifyChange() }
+                    )
+                }
+                HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+                if (distanceUnit == "KM") {
+                    WheelPickerGroup {
+                        Row {
+                            WheelPicker(distanceKmMajor, 0..100, {
+                                distanceKmMajor = it; recalcPaceFromDistTime(); notifyChange()
+                            }, Modifier.weight(1f)) { it.toString() }
+                            WheelPicker(distanceKmMinor, 0..99, {
+                                distanceKmMinor = it; recalcPaceFromDistTime(); notifyChange()
+                            }, Modifier.weight(1f)) { ".${it.toString().padStart(2, '0')}" }
+                        }
+                    }
+                } else {
+                    WheelPickerGroup {
+                        WheelPicker(distanceMetersVal, 10..1000, {
+                            distanceMetersVal = it; recalcPaceFromDistTime(); notifyChange()
+                        }, Modifier.fillMaxWidth(), step = 10) { "${it}m" }
+                    }
+                }
+            }
+        }
+    }
+
+    // 时间卡片
+    SectionCard {
+        ExpandableResultRow(
+            title = "时间",
+            value = timeDisplayText,
+            expandable = isEditMode,
+            expanded = expandedSection == "time" && isEditMode,
+            onClick = { if (isEditMode) expandedSection = if (expandedSection == "time") null else "time" }
+        )
+        AnimatedVisibility(visible = expandedSection == "time" && isEditMode) {
+            Column {
+                HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+                WheelPickerGroup {
+                    Row {
+                        WheelPicker(hours, 0..23, {
+                            hours = it; recalcPaceFromDistTime(); notifyChange()
+                        }, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
+                        WheelPicker(minutes, 0..59, {
+                            minutes = it; recalcPaceFromDistTime(); notifyChange()
+                        }, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
+                        WheelPicker(seconds, 0..59, {
+                            seconds = it; recalcPaceFromDistTime(); notifyChange()
+                        }, Modifier.weight(1f)) { it.toString().padStart(2, '0') }
+                    }
+                }
+            }
+        }
+    }
+
+    // 配速卡片
+    SectionCard {
+        ExpandableResultRow(
+            title = "配速",
+            value = paceDisplayText,
+            expandable = isEditMode,
+            expanded = expandedSection == "pace" && isEditMode,
+            onClick = { if (isEditMode) expandedSection = if (expandedSection == "pace") null else "pace" }
+        )
+        AnimatedVisibility(visible = expandedSection == "pace" && isEditMode) {
+            Column {
+                HorizontalDivider(Modifier.padding(vertical = 10.dp), color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+                WheelPickerGroup {
+                    Row {
+                        WheelPicker(paceMinute, 2..23, {
+                            paceMinute = it; recalcTimeFromDistPace(); notifyChange()
+                        }, Modifier.weight(1f)) { "$it'" }
+                        WheelPicker(paceSecond, 0..59, {
+                            paceSecond = it; recalcTimeFromDistPace(); notifyChange()
+                        }, Modifier.weight(1f)) { "${it.toString().padStart(2, '0')}\"" }
+                    }
+                }
+            }
+        }
+    }
 }

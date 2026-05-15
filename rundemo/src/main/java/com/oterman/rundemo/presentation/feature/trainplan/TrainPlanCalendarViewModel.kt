@@ -58,6 +58,7 @@ class CalendarViewModel(
 
     init {
         loadMonth(YearMonth.now())
+        onDateSelected(LocalDate.now())
     }
 
     fun onMonthChanged(month: YearMonth) {

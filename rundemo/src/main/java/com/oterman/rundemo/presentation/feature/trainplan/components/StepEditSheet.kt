@@ -447,7 +447,7 @@ private fun GoalCard(
 }
 
 @Composable
-private fun ExpandableResultRow(
+internal fun ExpandableResultRow(
     title: String,
     value: String,
     expandable: Boolean,
@@ -623,7 +623,7 @@ private fun validateStepEdit(
 }
 
 @Composable
-private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
+internal fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -635,7 +635,7 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun <T> SegmentedChoiceGroup(
+internal fun <T> SegmentedChoiceGroup(
     options: List<Pair<T, String>>,
     selected: T,
     onSelected: (T) -> Unit,
@@ -671,7 +671,7 @@ private fun <T> SegmentedChoiceGroup(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun WheelPickerGroup(
+internal fun WheelPickerGroup(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
@@ -694,7 +694,7 @@ private fun WheelPickerGroup(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun WheelPicker(
+internal fun WheelPicker(
     value: Int,
     range: IntRange,
     onValueChange: (Int) -> Unit,

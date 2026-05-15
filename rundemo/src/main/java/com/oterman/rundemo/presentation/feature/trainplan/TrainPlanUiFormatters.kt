@@ -11,7 +11,6 @@ import com.oterman.rundemo.domain.model.TrainWholeType
 import kotlin.math.roundToInt
 
 private const val DEFAULT_PACE_SEC_PER_KM = 360.0
-private const val KCAL_PER_KM = 70.0
 
 internal data class TrainEstimate(
     val distanceMeters: Double?,
@@ -100,19 +99,6 @@ internal fun estimateTime(durationSeconds: Int, vdot: Double?): TrainEstimate {
     )
 }
 
-internal fun estimateCalories(calories: Int, vdot: Double?): TrainEstimate {
-    if (calories <= 0) return TrainEstimate(null, null, null)
-    val distKm = calories / KCAL_PER_KM
-    val pace = effectivePaceSecPerKm(vdot)
-    val dur = (distKm * pace).toInt()
-    return TrainEstimate(
-        distanceMeters = distKm * 1000.0,
-        durationSeconds = dur.takeIf { it > 0 },
-        avgPaceSecPerKm = pace.toInt(),
-        isDistanceEstimated = true,
-        isDurationEstimated = true
-    )
-}
 
 internal fun TrainWholeType.displayName(): String = when (this) {
     TrainWholeType.SELF_DEFINE -> "自定义"
@@ -216,6 +202,14 @@ internal fun formatDuration(seconds: Int): String {
         if (m > 0) append("${m}分钟")
         if (s > 0 || isEmpty()) append("${s}秒")
     }
+}
+
+internal fun formatDurationColon(seconds: Int): String {
+    if (seconds <= 0) return "--"
+    val h = seconds / 3600
+    val m = (seconds % 3600) / 60
+    val s = seconds % 60
+    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
 }
 
 internal fun formatPace(seconds: Int): String {

@@ -17,7 +17,7 @@ data class TrainPlanEditUiState(
     val locationType: LocationType = LocationType.OUTDOOR,
     val trainWholeType: TrainWholeType = TrainWholeType.SELF_DEFINE,
     val description: String = "",
-    val hardLevel: Int? = null,
+    val hardLevel: Int? = 2,
     // Structured training blocks
     val warmupBlock: TrainBlock? = null,
     val mainBlocks: List<TrainBlock> = emptyList(),
