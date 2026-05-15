@@ -73,6 +73,11 @@ data class TrainStepResponseDto(
     @SerializedName("speedZoneType") val speedZoneType: String? = null
 )
 
+data class TrainPlanDetailWrapperResponseData(
+    @SerializedName("TrainPlanDetailResponseDto")
+    val trainPlanDetailResponseDto: List<TrainPlanDetailResponseData>? = null
+)
+
 // ==================== List ====================
 
 data class TrainPlanListWrapperResponseData(

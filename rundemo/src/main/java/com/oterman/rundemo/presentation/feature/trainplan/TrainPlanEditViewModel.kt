@@ -520,7 +520,7 @@ class TrainPlanEditViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        planId = plan.planId,
+                        planId = plan.planId ?: it.planId,
                         name = plan.name,
                         scheduledDate = plan.scheduledDate,
                         finishFlag = plan.finishFlag,

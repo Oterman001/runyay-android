@@ -10,7 +10,7 @@ import com.oterman.rundemo.data.network.dto.response.BaseResponse
 import com.oterman.rundemo.data.network.dto.response.BatchSaveTrainPlanResponseData
 import com.oterman.rundemo.data.network.dto.response.DeleteTrainPlanResponseData
 import com.oterman.rundemo.data.network.dto.response.PushTrainPlanResponseData
-import com.oterman.rundemo.data.network.dto.response.TrainPlanDetailResponseData
+import com.oterman.rundemo.data.network.dto.response.TrainPlanDetailWrapperResponseData
 import com.oterman.rundemo.data.network.dto.response.TrainPlanListWrapperResponseData
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -25,7 +25,7 @@ interface TrainPlanApi {
     @POST("api/trainplan/detail")
     suspend fun getTrainPlanDetail(
         @Body request: BaseRequest<TrainPlanDetailRequestDto>
-    ): BaseResponse<TrainPlanDetailResponseData>
+    ): BaseResponse<TrainPlanDetailWrapperResponseData>
 
     @POST("api/trainplan/list")
     suspend fun listTrainPlans(

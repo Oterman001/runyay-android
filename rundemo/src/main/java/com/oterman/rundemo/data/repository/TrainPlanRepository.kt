@@ -248,8 +248,9 @@ class TrainPlanRepository(
                 preferencesManager = preferencesManager
             )
             val response = api.getTrainPlanDetail(request)
-            if (response.isSuccess() && response.data != null) {
-                val plan = response.data.toDomain()
+            val detailData = response.data?.trainPlanDetailResponseDto?.firstOrNull()
+            if (response.isSuccess() && detailData != null) {
+                val plan = detailData.toDomain()
                 cacheDetail(plan)
                 Result.success(plan)
             } else {
@@ -272,8 +273,9 @@ class TrainPlanRepository(
                 preferencesManager = preferencesManager
             )
             val response = api.getTrainPlanDetail(request)
-            if (response.isSuccess() && response.data != null) {
-                val plan = response.data.toDomain()
+            val detailData = response.data?.trainPlanDetailResponseDto?.firstOrNull()
+            if (response.isSuccess() && detailData != null) {
+                val plan = detailData.toDomain()
                 if (plan.version != null && plan.version != cachedVersion) {
                     cacheDetail(plan)
                     RLog.d(TAG, "refreshDetail: updated $planId v$cachedVersion → v${plan.version}")
