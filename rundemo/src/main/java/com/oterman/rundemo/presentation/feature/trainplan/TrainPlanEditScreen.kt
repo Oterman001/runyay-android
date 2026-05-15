@@ -356,18 +356,23 @@ fun TrainPlanEditScreen(
                 )
             }
 
-            if (uiState.trainWholeType == TrainWholeType.PACER) {
-                item { SectionTitle("配速员") }
-                item { PacerSummaryCard(uiState.pacerGoalStep?.minPace, uiState.pacerGoalStep?.maxPace) }
-            } else if (uiState.trainWholeType != TrainWholeType.CALORIES) {
-                item { SectionTitle("整体预估") }
-                item {
-                    TotalSummaryCard(
-                        blocks = listOfNotNull(uiState.warmupBlock) + uiState.mainBlocks + listOfNotNull(uiState.cooldownBlock),
-                        trainWholeType = uiState.trainWholeType,
-                        distanceGoal = uiState.distanceGoalStep?.distanceMeters() ?: 0.0,
-                        timeGoalSeconds = uiState.timeGoalStep?.timeGoalSeconds ?: 0
-                    )
+            when (uiState.trainWholeType) {
+                TrainWholeType.PACER -> {
+                    item { SectionTitle("配速员") }
+                    item { PacerSummaryCard(uiState.pacerGoalStep?.minPace, uiState.pacerGoalStep?.maxPace) }
+                }
+                else -> {
+                    item { SectionTitle("整体预估") }
+                    item {
+                        TotalSummaryCard(
+                            trainWholeType = uiState.trainWholeType,
+                            blocks = listOfNotNull(uiState.warmupBlock) + uiState.mainBlocks + listOfNotNull(uiState.cooldownBlock),
+                            distanceGoalMeters = uiState.distanceGoalStep?.distanceMeters() ?: 0.0,
+                            timeGoalSeconds = uiState.timeGoalStep?.timeGoalSeconds ?: 0,
+                            caloriesGoal = uiState.calGoalStep?.caloriesValue ?: 0,
+                            userVdot = uiState.userVdot
+                        )
+                    }
                 }
             }
 
@@ -706,17 +711,76 @@ private fun TypeDropdown(
 
 @Composable
 private fun TotalSummaryCard(
-    blocks: List<TrainBlock>,
     trainWholeType: TrainWholeType,
-    distanceGoal: Double,
-    timeGoalSeconds: Int
+    blocks: List<TrainBlock>,
+    distanceGoalMeters: Double,
+    timeGoalSeconds: Int,
+    caloriesGoal: Int,
+    userVdot: Double?
 ) {
-    val distance = if (trainWholeType == TrainWholeType.DISTANCE) distanceGoal else blocks.totalDistanceMeters()
-    val duration = if (trainWholeType == TrainWholeType.TIME) timeGoalSeconds else blocks.totalDurationSeconds()
+    when (trainWholeType) {
+        TrainWholeType.SELF_DEFINE -> SelfDefineSummaryCard(estimateSelfDefine(blocks, userVdot))
+        TrainWholeType.DISTANCE -> DistanceSummaryCard(estimateDistance(distanceGoalMeters, userVdot))
+        TrainWholeType.TIME -> TimeSummaryCard(estimateTime(timeGoalSeconds, userVdot))
+        TrainWholeType.CALORIES -> CaloriesSummaryCard(caloriesGoal, estimateCalories(caloriesGoal, userVdot))
+        TrainWholeType.PACER -> {}
+    }
+}
+
+@Composable
+private fun SelfDefineSummaryCard(est: TrainEstimate) {
+    val distText = est.distanceMeters?.let { formatDistance(it) } ?: "--"
+    val durText = est.durationSeconds?.let { formatDuration(it) } ?: "--"
     SummaryCard {
-        SummaryMetric(painterResource(R.drawable.ic_goal_distance), formatDistance(distance), RunTheme.colorScheme.blue, Modifier.weight(1f))
+        SummaryMetric(painterResource(R.drawable.ic_goal_distance), distText, RunTheme.colorScheme.blue, Modifier.weight(1f))
         VerticalDivider()
-        SummaryMetric(painterResource(R.drawable.ic_goal_time), formatDuration(duration), RunTheme.colorScheme.orange, Modifier.weight(1f))
+        SummaryMetric(painterResource(R.drawable.ic_goal_time), durText, RunTheme.colorScheme.orange, Modifier.weight(1f))
+        est.avgPaceSecPerKm?.let { pace ->
+            VerticalDivider()
+            SummaryMetric(painterResource(R.drawable.ic_intensity_pace), formatPace(pace) + "/km", RunTheme.colorScheme.success, Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun DistanceSummaryCard(est: TrainEstimate) {
+    val distText = est.distanceMeters?.let { formatDistance(it) } ?: "--"
+    val durText = est.durationSeconds?.let { "≈ " + formatDuration(it) } ?: "--"
+    val paceText = est.avgPaceSecPerKm?.let { "≈ " + formatPace(it) + "/km" } ?: "--"
+    SummaryCard {
+        SummaryMetric(painterResource(R.drawable.ic_goal_distance), distText, RunTheme.colorScheme.blue, Modifier.weight(1f))
+        VerticalDivider()
+        SummaryMetric(painterResource(R.drawable.ic_goal_time), durText, RunTheme.colorScheme.orange, Modifier.weight(1f))
+        VerticalDivider()
+        SummaryMetric(painterResource(R.drawable.ic_intensity_pace), paceText, RunTheme.colorScheme.success, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun TimeSummaryCard(est: TrainEstimate) {
+    val distText = est.distanceMeters?.let { "≈ " + formatDistance(it) } ?: "--"
+    val durText = est.durationSeconds?.let { formatDuration(it) } ?: "--"
+    val paceText = est.avgPaceSecPerKm?.let { "≈ " + formatPace(it) + "/km" } ?: "--"
+    SummaryCard {
+        SummaryMetric(painterResource(R.drawable.ic_goal_distance), distText, RunTheme.colorScheme.blue, Modifier.weight(1f))
+        VerticalDivider()
+        SummaryMetric(painterResource(R.drawable.ic_goal_time), durText, RunTheme.colorScheme.orange, Modifier.weight(1f))
+        VerticalDivider()
+        SummaryMetric(painterResource(R.drawable.ic_intensity_pace), paceText, RunTheme.colorScheme.success, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun CaloriesSummaryCard(caloriesGoal: Int, est: TrainEstimate) {
+    val calText = if (caloriesGoal > 0) "$caloriesGoal kcal" else "--"
+    val distText = est.distanceMeters?.let { "≈ " + formatDistance(it) } ?: "--"
+    val durText = est.durationSeconds?.let { "≈ " + formatDuration(it) } ?: "--"
+    SummaryCard {
+        SummaryMetric(painterResource(R.drawable.ic_goal_calories), calText, RunTheme.colorScheme.orange, Modifier.weight(1f))
+        VerticalDivider()
+        SummaryMetric(painterResource(R.drawable.ic_goal_distance), distText, RunTheme.colorScheme.blue, Modifier.weight(1f))
+        VerticalDivider()
+        SummaryMetric(painterResource(R.drawable.ic_goal_time), durText, RunTheme.colorScheme.success, Modifier.weight(1f))
     }
 }
 

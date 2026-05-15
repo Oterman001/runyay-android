@@ -1,5 +1,6 @@
 package com.oterman.rundemo.presentation.feature.trainplan
 
+import com.oterman.rundemo.data.fit.VdotSpeedCalculator
 import com.oterman.rundemo.domain.model.BlockType
 import com.oterman.rundemo.domain.model.IntensityType
 import com.oterman.rundemo.domain.model.LocationType
@@ -8,6 +9,109 @@ import com.oterman.rundemo.domain.model.TrainGoalType
 import com.oterman.rundemo.domain.model.TrainStep
 import com.oterman.rundemo.domain.model.TrainWholeType
 import kotlin.math.roundToInt
+
+private const val DEFAULT_PACE_SEC_PER_KM = 360.0
+private const val KCAL_PER_KM = 70.0
+
+internal data class TrainEstimate(
+    val distanceMeters: Double?,
+    val durationSeconds: Int?,
+    val avgPaceSecPerKm: Int?,
+    val isDistanceEstimated: Boolean = false,
+    val isDurationEstimated: Boolean = false
+)
+
+internal fun effectivePaceSecPerKm(vdot: Double?): Double {
+    if (vdot == null || vdot <= 0.0) return DEFAULT_PACE_SEC_PER_KM
+    val range = VdotSpeedCalculator.getEasyPaceRange(vdot, 1000.0)
+    val slow = range["slow"] ?: return DEFAULT_PACE_SEC_PER_KM
+    val fast = range["fast"] ?: return DEFAULT_PACE_SEC_PER_KM
+    return ((slow + fast) / 2.0) * 60.0
+}
+
+internal fun estimateSelfDefine(blocks: List<TrainBlock>, vdot: Double?): TrainEstimate {
+    val fallbackPace = effectivePaceSecPerKm(vdot)
+    var totalDistM = 0.0
+    var totalDurSec = 0
+    var anyEstimated = false
+
+    for (block in blocks) {
+        val loops = block.loopCnt.coerceAtLeast(1)
+        for (step in block.stepList) {
+            val stepPace: Double = when {
+                step.minPace != null && step.maxPace != null -> (step.minPace + step.maxPace) / 2.0
+                step.minPace != null -> step.minPace.toDouble()
+                step.maxPace != null -> step.maxPace.toDouble()
+                else -> fallbackPace
+            }
+            when (step.goalType) {
+                TrainGoalType.DISTANCE -> {
+                    val distM = step.distanceMeters()
+                    totalDistM += distM * loops
+                    totalDurSec += ((distM / 1000.0) * stepPace).toInt() * loops
+                    if (step.timeGoalSeconds == null) anyEstimated = true
+                }
+                TrainGoalType.TIME -> {
+                    val durSec = step.timeGoalSeconds ?: 0
+                    totalDurSec += durSec * loops
+                    totalDistM += (durSec / stepPace) * 1000.0 * loops
+                    anyEstimated = true
+                }
+                else -> {}
+            }
+        }
+    }
+
+    val avgPace = if (totalDistM > 0 && totalDurSec > 0)
+        (totalDurSec / (totalDistM / 1000.0)).toInt()
+    else null
+
+    return TrainEstimate(
+        distanceMeters = totalDistM.takeIf { it > 0 },
+        durationSeconds = totalDurSec.takeIf { it > 0 },
+        avgPaceSecPerKm = avgPace,
+        isDistanceEstimated = anyEstimated,
+        isDurationEstimated = anyEstimated
+    )
+}
+
+internal fun estimateDistance(distanceMeters: Double, vdot: Double?): TrainEstimate {
+    val pace = effectivePaceSecPerKm(vdot)
+    val dur = ((distanceMeters / 1000.0) * pace).toInt()
+    return TrainEstimate(
+        distanceMeters = distanceMeters,
+        durationSeconds = dur.takeIf { it > 0 },
+        avgPaceSecPerKm = pace.toInt(),
+        isDistanceEstimated = false,
+        isDurationEstimated = true
+    )
+}
+
+internal fun estimateTime(durationSeconds: Int, vdot: Double?): TrainEstimate {
+    val pace = effectivePaceSecPerKm(vdot)
+    val distM = (durationSeconds / pace) * 1000.0
+    return TrainEstimate(
+        distanceMeters = distM.takeIf { it > 0 },
+        durationSeconds = durationSeconds,
+        avgPaceSecPerKm = pace.toInt(),
+        isDistanceEstimated = true,
+        isDurationEstimated = false
+    )
+}
+
+internal fun estimateCalories(calories: Int, vdot: Double?): TrainEstimate {
+    if (calories <= 0) return TrainEstimate(null, null, null)
+    val distKm = calories / KCAL_PER_KM
+    val pace = effectivePaceSecPerKm(vdot)
+    val dur = (distKm * pace).toInt()
+    return TrainEstimate(
+        distanceMeters = distKm * 1000.0,
+        durationSeconds = dur.takeIf { it > 0 },
+        avgPaceSecPerKm = pace.toInt(),
+        isDistanceEstimated = true,
+        isDurationEstimated = true
+    )
+}
 
 internal fun TrainWholeType.displayName(): String = when (this) {
     TrainWholeType.SELF_DEFINE -> "自定义"

@@ -41,5 +41,6 @@ data class TrainPlanEditUiState(
     val isDeleting: Boolean = false,
     val deleteSuccess: Boolean = false,
     val isPushing: Boolean = false,
-    val isDeletingPush: Boolean = false
+    val isDeletingPush: Boolean = false,
+    val userVdot: Double? = null
 )

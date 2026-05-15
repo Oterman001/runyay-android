@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.local.dao.OverallVdotDao
 import com.oterman.rundemo.data.repository.TrainPlanRepository
 import com.oterman.rundemo.domain.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,8 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 class TrainPlanEditViewModel(
-    private val repository: TrainPlanRepository
+    private val repository: TrainPlanRepository,
+    private val overallVdotDao: OverallVdotDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TrainPlanEditUiState())
@@ -39,6 +41,14 @@ class TrainPlanEditViewModel(
                     cooldownBlock = createBlock(BlockType.COOLDOWN, 99, "放松", "COOLDOWN", TrainGoalType.TIME)
                 )
             }
+        }
+        loadUserVdot()
+    }
+
+    private fun loadUserVdot() {
+        viewModelScope.launch {
+            val vdot = overallVdotDao.getLatestVdot()?.value?.takeIf { it > 0.0 }
+            _uiState.update { it.copy(userVdot = vdot) }
         }
     }
 
@@ -577,7 +587,7 @@ class TrainPlanEditViewModelFactory(private val context: Context) : ViewModelPro
             val prefs = PreferencesManager(context)
             val db = com.oterman.rundemo.data.local.database.RunDatabase.getInstance(context)
             val repository = TrainPlanRepository(prefs, localDao = db.trainPlanDao())
-            return TrainPlanEditViewModel(repository) as T
+            return TrainPlanEditViewModel(repository, db.overallVdotDao()) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
