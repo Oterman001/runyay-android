@@ -45,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.oterman.rundemo.data.local.PreferencesManager
 import com.oterman.rundemo.domain.map.MapProvider
 import com.oterman.rundemo.domain.map.MapStyleInfo
 import com.oterman.rundemo.domain.map.TrackMapRenderer
@@ -148,16 +147,8 @@ fun RunMapSettingBottomSheet(
     val isDarkTheme = RunTheme.isDark
     val styles = renderer.getAvailableStyles(isDarkTheme)
 
-    // 根据登录账号过滤地图供应商：19150121902 只显示高德地图
-    val sheetContext = LocalContext.current
-    val availableProviders = remember {
-        val phone = PreferencesManager(sheetContext).getPhoneNumber()
-        if (phone == "19150121902") {
-            MapProvider.entries.filter { it.name != "MAPBOX" }
-        } else {
-            MapProvider.entries.toList()
-        }
-    }
+    // 可用供应商由当前 flavor 的 MapProvider 枚举决定（mapboxOnly / amapOnly / allMaps）
+    val availableProviders = MapProvider.entries.toList()
 
     var tempShowKm by remember { mutableStateOf(showKmMarkers) }
     var tempInterval by remember { mutableFloatStateOf(kmMarkerInterval.toFloat()) }
