@@ -37,7 +37,6 @@ import com.oterman.rundemo.presentation.feature.trainplan.canMoveLikeIos
 import com.oterman.rundemo.presentation.feature.trainplan.displayName
 import com.oterman.rundemo.ui.theme.RunTheme
 import com.oterman.rundemo.ui.theme.StepCooldownColor
-import com.oterman.rundemo.ui.theme.StepTrainingColor
 import com.oterman.rundemo.ui.theme.StepRecoveryColor
 import com.oterman.rundemo.ui.theme.StepTrainingColor
 import com.oterman.rundemo.ui.theme.StepWarmupColor
@@ -162,6 +161,8 @@ private fun BlockHeader(
     blockDragHandleModifier: Modifier = Modifier,
     onLoopCountChange: ((delta: Int) -> Unit)?
 ) {
+    val isLoopBlock = block.blockType == BlockType.MAIN && block.loopCnt > 1
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -174,6 +175,20 @@ private fun BlockHeader(
                     accent = accent,
                     onLoopCountChange = onLoopCountChange
                 )
+            } else if (isLoopBlock) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "循环训练",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "重复 ${block.loopCnt.coerceAtLeast(1)} 次 · ${block.stepList.size} 个步骤",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             } else {
                 Icon(
                     painter = blockPainter(block),

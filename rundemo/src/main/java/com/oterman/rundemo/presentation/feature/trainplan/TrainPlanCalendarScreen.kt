@@ -98,7 +98,7 @@ fun TrainPlanCalendarScreen(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("训练日历", fontWeight = FontWeight.SemiBold) },
@@ -127,6 +127,7 @@ fun TrainPlanCalendarScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             item {
                 MonthNavHeader(

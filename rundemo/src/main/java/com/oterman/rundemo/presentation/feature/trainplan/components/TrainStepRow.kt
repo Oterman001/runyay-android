@@ -58,7 +58,7 @@ fun TrainStepRow(
         modifier = modifier
             .fillMaxWidth()
             .background(RunTheme.colorScheme.cardBg, RoundedCornerShape(12.dp))
-            .clickable(enabled = isEditMode, onClick = onClick)
+            .clickable(onClick = onClick)
             .padding(14.dp),
         verticalAlignment = Alignment.Top
     ) {

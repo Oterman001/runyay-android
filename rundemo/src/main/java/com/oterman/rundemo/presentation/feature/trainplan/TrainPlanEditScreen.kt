@@ -61,6 +61,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,6 +83,7 @@ import com.oterman.rundemo.presentation.feature.trainplan.components.TrainBlockC
 import com.oterman.rundemo.ui.theme.RunTheme
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -103,6 +105,12 @@ fun TrainPlanEditScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showPushPlatformSelect by remember { mutableStateOf(false) }
     var showDeletePushPlatformSelect by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val showEditHint = {
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar("点击右下角编辑按钮，进入编辑台后可以编辑")
+        }
+    }
     val pushPlatforms = remember {
         DataSourcePlatform.entries.filter { it.isEnabled && it.requiresOAuthBinding }
     }
@@ -386,7 +394,13 @@ fun TrainPlanEditScreen(
                             blockIndex = 0,
                             onRemoveBlock = { viewModel.removeBlock(BlockType.WARMUP, 0) },
                             onAddStep = { viewModel.addStepToBlock(BlockType.WARMUP, 0) },
-                            onStepClick = { viewModel.openStepEditor(BlockType.WARMUP, 0, it) },
+                            onStepClick = {
+                                if (uiState.isEditMode) {
+                                    viewModel.openStepEditor(BlockType.WARMUP, 0, it)
+                                } else {
+                                    showEditHint()
+                                }
+                            },
                             onRemoveStep = { viewModel.removeStep(BlockType.WARMUP, 0, it) },
                             isEditMode = uiState.isEditMode
                         )
@@ -417,7 +431,7 @@ fun TrainPlanEditScreen(
                             blockIndex = index,
                             onRemoveBlock = { },
                             onAddStep = { },
-                            onStepClick = { },
+                            onStepClick = { showEditHint() },
                             onRemoveStep = { },
                             isEditMode = false
                         )
@@ -430,7 +444,13 @@ fun TrainPlanEditScreen(
                             blockIndex = 0,
                             onRemoveBlock = { viewModel.removeBlock(BlockType.COOLDOWN, 0) },
                             onAddStep = { viewModel.addStepToBlock(BlockType.COOLDOWN, 0) },
-                            onStepClick = { viewModel.openStepEditor(BlockType.COOLDOWN, 0, it) },
+                            onStepClick = {
+                                if (uiState.isEditMode) {
+                                    viewModel.openStepEditor(BlockType.COOLDOWN, 0, it)
+                                } else {
+                                    showEditHint()
+                                }
+                            },
                             onRemoveStep = { viewModel.removeStep(BlockType.COOLDOWN, 0, it) },
                             isEditMode = uiState.isEditMode
                         )
@@ -457,7 +477,7 @@ fun TrainPlanEditScreen(
             item { SectionTitle("备注") }
             item {
                 OutlinedTextField(
-                    value = uiState.description,
+                    value = if (uiState.isEditMode) uiState.description else uiState.description.ifBlank { "无备注" },
                     onValueChange = viewModel::onDescriptionChange,
                     placeholder = { Text("添加训练备注...") },
                     minLines = 4,
@@ -472,6 +492,7 @@ fun TrainPlanEditScreen(
                         focusedBorderColor = RunTheme.colorScheme.blue.copy(alpha = 0.5f),
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
                         disabledBorderColor = Color.Transparent,
                         disabledContainerColor = Color.Transparent
                     )
