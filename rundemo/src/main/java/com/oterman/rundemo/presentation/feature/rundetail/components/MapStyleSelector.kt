@@ -71,9 +71,9 @@ object RunMapPreferences {
     fun getMapProvider(context: Context): MapProvider {
         val saved = prefs(context).getString(KEY_MAP_PROVIDER, null)
         return try {
-            if (saved != null) MapProvider.valueOf(saved) else MapProvider.MAPBOX
+            if (saved != null) MapProvider.valueOf(saved) else MapProvider.default()
         } catch (e: Exception) {
-            MapProvider.MAPBOX
+            MapProvider.default()
         }
     }
 
@@ -153,7 +153,7 @@ fun RunMapSettingBottomSheet(
     val availableProviders = remember {
         val phone = PreferencesManager(sheetContext).getPhoneNumber()
         if (phone == "19150121902") {
-            MapProvider.entries.filter { it != MapProvider.MAPBOX }
+            MapProvider.entries.filter { it.name != "MAPBOX" }
         } else {
             MapProvider.entries.toList()
         }

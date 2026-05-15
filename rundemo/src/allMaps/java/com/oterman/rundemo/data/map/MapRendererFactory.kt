@@ -5,9 +5,6 @@ import com.oterman.rundemo.data.map.mapbox.MapboxTrackMapRenderer
 import com.oterman.rundemo.domain.map.MapProvider
 import com.oterman.rundemo.domain.map.TrackMapRenderer
 
-/**
- * 地图渲染器工厂
- */
 object MapRendererFactory {
 
     private val renderers = mutableMapOf<MapProvider, TrackMapRenderer>()

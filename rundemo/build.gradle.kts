@@ -62,7 +62,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
-    flavorDimensions += "channel"
+    flavorDimensions += listOf("channel", "mapVariant")
     productFlavors {
         create("internal") {
             dimension = "channel"
@@ -101,7 +101,22 @@ android {
             dimension = "channel"
             buildConfigField("String", "UMENG_CHANNEL", "\"tencent\"")
         }
+
+        // ── mapVariant 维度 ──
+        create("mapboxOnly") { dimension = "mapVariant" }
+        create("allMaps")    { dimension = "mapVariant" }
+        create("amapOnly")   { dimension = "mapVariant" }
     }
+
+    sourceSets {
+        named("mapboxOnly") { java.srcDir("src/mapProvider_mapbox/java") }
+        named("allMaps") {
+            java.srcDir("src/mapProvider_mapbox/java")
+            java.srcDir("src/mapProvider_amap/java")
+        }
+        named("amapOnly") { java.srcDir("src/mapProvider_amap/java") }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -120,11 +135,33 @@ android {
     applicationVariants.all {
         val variant = this
         val btShort = if (variant.buildType.name == "release") "r" else "d"
+        val channelName = variant.productFlavors.first { it.dimension == "channel" }.name
+        val mapShort = when {
+            variant.productFlavors.any { it.name == "mapboxOnly" } -> "mb"
+            variant.productFlavors.any { it.name == "amapOnly" }   -> "am"
+            else -> "all"
+        }
         outputs.all {
             val out = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
             out.outputFileName =
                 "ry-${variant.versionName}-${variant.versionCode}" +
-                "-${variant.flavorName}-${buildDate}-${gitHash}-${btShort}.apk"
+                "-${channelName}-${mapShort}-${buildDate}-${gitHash}-${btShort}.apk"
+        }
+    }
+}
+
+// 裁减无意义的变体组合，减少构建变体数量
+androidComponents {
+    beforeVariants { variantBuilder ->
+        val channel = variantBuilder.productFlavors.first { it.first == "channel" }.second
+        val mapVar  = variantBuilder.productFlavors.first { it.first == "mapVariant" }.second
+        variantBuilder.enable = when {
+            // Google Play 只发 mapboxOnly（高德在境外不可用）
+            channel == "google" && mapVar != "mapboxOnly" -> false
+            // 国内渠道不单独发 mapboxOnly（Mapbox 在国内访问不稳定）
+            channel in listOf("xiaomi", "oppo", "vivo", "huawei", "honor", "tencent", "fir")
+                && mapVar == "mapboxOnly" -> false
+            else -> true
         }
     }
 }
@@ -151,6 +188,9 @@ dependencies {
     // Retrofit网络请求
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // 显式声明 Gson 版本，确保 JsonParser.parseString() 在所有 flavor 下可用
+    // （amapOnly 无 Mapbox，若不声明则只有 converter-gson 带入的旧版 Gson 2.8.5）
+    implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     
@@ -190,11 +230,13 @@ dependencies {
     // Training calendar (kizitonwose/calendar)
     implementation("com.kizitonwose.calendar:compose:2.6.1")
 
-    // Mapbox Maps SDK
-    implementation("com.mapbox.maps:android:11.18.0")
+    // Mapbox Maps SDK（仅 mapboxOnly / allMaps flavor）
+    add("mapboxOnlyImplementation", "com.mapbox.maps:android:11.18.0")
+    add("allMapsImplementation",    "com.mapbox.maps:android:11.18.0")
 
-    // 高德地图 3D SDK
-    implementation("com.amap.api:3dmap:10.0.600")
+    // 高德地图 3D SDK（仅 amapOnly / allMaps flavor）
+    add("amapOnlyImplementation",   "com.amap.api:3dmap:10.0.600")
+    add("allMapsImplementation",    "com.amap.api:3dmap:10.0.600")
 
     // Vico Charts (Compose)
     implementation("com.patrykandpatrick.vico:compose-m3:2.1.0-beta.1")
