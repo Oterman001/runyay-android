@@ -1,7 +1,7 @@
 package com.oterman.rundemo.data.fit
 
 import com.oterman.rundemo.util.RLog
-import net.iakovlev.timeshape.TimeZoneEngine
+//import net.iakovlev.timeshape.TimeZoneEngine
 import java.time.ZoneId
 import java.util.Locale
 import java.util.TimeZone
@@ -15,8 +15,8 @@ import java.util.TimeZone
 object FitActivityTimeZoneResolver {
     private const val TAG = "FitActivityTimeZoneResolver"
 
-    @Volatile
-    private var engine: TimeZoneEngine? = null
+//    @Volatile
+//    private var engine: TimeZoneEngine? = null
 
     fun resolve(parseResult: FitParseResult): String {
         resolveFromGps(parseResult)?.let { return it }
@@ -42,20 +42,21 @@ object FitActivityTimeZoneResolver {
         return try {
             val latitude = FitFileParser.semicirclesToDegrees(point.positionLat!!)
             val longitude = FitFileParser.semicirclesToDegrees(point.positionLong!!)
-            getEngine().query(latitude, longitude).orElse(null)?.id?.also {
-                RLog.i(TAG, "FIT活动时区由GPS推断: $it ($latitude,$longitude)")
-            }
+//            getEngine().query(latitude, longitude).orElse(null)?.id?.also {
+//                RLog.i(TAG, "FIT活动时区由GPS推断: $it ($latitude,$longitude)")
+//            }
+            null
         } catch (e: Throwable) {
             RLog.w(TAG, "GPS推断FIT活动时区失败: ${e.message}")
             null
         }
     }
 
-    private fun getEngine(): TimeZoneEngine {
-        return engine ?: synchronized(this) {
-            engine ?: TimeZoneEngine.initialize().also { engine = it }
-        }
-    }
+//    private fun getEngine(): TimeZoneEngine {
+//        return engine ?: synchronized(this) {
+//            engine ?: TimeZoneEngine.initialize().also { engine = it }
+//        }
+//    }
 
     private fun resolveFixedOffset(parseResult: FitParseResult): String? {
         val activity = parseResult.activity ?: return null
