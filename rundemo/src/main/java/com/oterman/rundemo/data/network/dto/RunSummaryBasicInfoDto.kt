@@ -93,6 +93,9 @@ data class RunSummaryBasicInfoDto(
     @SerializedName("totalElevationGain")
     val totalElevationGain: Double? = null,
 
+    @SerializedName("totalElevationLoss")
+    val totalElevationLoss: Double? = null,
+
     // VDOT与训练效果
     @SerializedName("vdot")
     val vdot: Double? = null,

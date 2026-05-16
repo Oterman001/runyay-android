@@ -34,6 +34,7 @@ private val AltitudeLineColor @Composable get() = RunTheme.colorScheme.chartAlti
 fun AltitudeChartCard(
     altitudeSeries: List<ChartDataPoint>,
     elevationAscended: Double = 0.0,
+    elevationDescended: Double = 0.0,
     modifier: Modifier = Modifier
 ) {
     if (altitudeSeries.isEmpty()) return
@@ -41,7 +42,7 @@ fun AltitudeChartCard(
     val minAltitude = remember(altitudeSeries) { altitudeSeries.minOf { it.value } }
     val maxAltitude = remember(altitudeSeries) { altitudeSeries.maxOf { it.value } }
     val avgAltitude = remember(altitudeSeries) { altitudeSeries.map { it.value }.average() }
-    val elevationDescended = remember(altitudeSeries) {
+    val displayDescended = if (elevationDescended > 0) elevationDescended else remember(altitudeSeries) {
         var descent = 0.0
         for (i in 1 until altitudeSeries.size) {
             val diff = altitudeSeries[i - 1].value - altitudeSeries[i].value
@@ -86,7 +87,7 @@ fun AltitudeChartCard(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = "↑${formatAltitudeValue(elevationAscended)}m  ↓${formatAltitudeValue(elevationDescended)}m",
+                    text = "↑${formatAltitudeValue(elevationAscended)}m  ↓${formatAltitudeValue(displayDescended)}m",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp

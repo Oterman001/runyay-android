@@ -111,6 +111,7 @@ object RunSummaryMapper {
             activeKilocalories = entity.totalCalories.takeIf { it > 0 },
             totalStepCount = entity.totalStepCount.takeIf { it > 0 },
             totalElevationGain = entity.elevationAscended.takeIf { it > 0 },
+            totalElevationLoss = entity.elevationDescended.takeIf { it > 0 },
             vdot = entity.vdot.takeIf { it > 0 },
             overallVdot = entity.overallVdot.takeIf { it > 0 },
             trainingEffect = entity.trainingEffect.takeIf { it > 0 },
@@ -163,6 +164,7 @@ object RunSummaryMapper {
             totalCalories = server.activeKilocalories ?: local.totalCalories,
             totalStepCount = server.totalStepCount ?: local.totalStepCount,
             elevationAscended = server.totalElevationGain ?: local.elevationAscended,
+            elevationDescended = server.totalElevationLoss ?: local.elevationDescended,
             vdot = local.vdot,            // 本地FIT解析的单次VDOT为准
             overallVdot = local.overallVdot,  // 批量重算后统一更新
             trainingEffect = server.trainingEffect ?: local.trainingEffect,

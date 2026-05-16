@@ -630,7 +630,8 @@ fun RunDetailScreen(
                         if (uiState.altitudeSeries.isNotEmpty()) {
                             AltitudeChartCard(
                                 altitudeSeries = uiState.altitudeSeries,
-                                elevationAscended = record.elevationAscended
+                                elevationAscended = record.elevationAscended,
+                                elevationDescended = record.elevationDescended
                             )
                             Spacer(modifier = Modifier.height(RunDetailLayoutConstants.CardSpacing.dp))
                         }

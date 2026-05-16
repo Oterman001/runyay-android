@@ -78,6 +78,7 @@ object FitDataMapper {
             totalCalories = session.totalCalories?.toDouble() ?: 0.0,
             totalStepCount = (session.totalStrides ?: 0L).toDouble() * 2,
             elevationAscended = session.totalAscent?.toDouble() ?: 0.0,
+            elevationDescended = session.totalDescent?.toDouble() ?: 0.0,
             
             // 训练效果
             trainingEffect = session.trainingEffect?.toDouble() ?: 0.0,

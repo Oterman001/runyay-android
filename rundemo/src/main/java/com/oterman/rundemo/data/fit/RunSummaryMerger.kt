@@ -69,6 +69,7 @@ object RunSummaryMerger {
         trackDiff(diffs, "totalCalories", local.totalCalories, merged.totalCalories, server.activeKilocalories)
         trackDiff(diffs, "totalStepCount", local.totalStepCount, merged.totalStepCount, server.totalStepCount)
         trackDiff(diffs, "elevationAscended", local.elevationAscended, merged.elevationAscended, server.totalElevationGain)
+        trackDiff(diffs, "elevationDescended", local.elevationDescended, merged.elevationDescended, server.totalElevationLoss)
         trackDiff(diffs, "vdot", local.vdot, merged.vdot, server.vdot)
         trackDiff(diffs, "overallVdot", local.overallVdot, merged.overallVdot, server.overallVdot)
         trackDiff(diffs, "trainingEffect", local.trainingEffect, merged.trainingEffect, server.trainingEffect)

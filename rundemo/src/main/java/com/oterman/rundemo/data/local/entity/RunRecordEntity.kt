@@ -50,6 +50,7 @@ data class RunRecordEntity(
     val totalCalories: Double = 0.0,        // 总卡路里
     val totalStepCount: Double = 0.0,       // 总步数
     val elevationAscended: Double = 0.0,    // 累计爬升(米)
+    val elevationDescended: Double = 0.0,  // 累计下降(米)
     
     // VDOT与训练效果
     val vdot: Double = 0.0,
