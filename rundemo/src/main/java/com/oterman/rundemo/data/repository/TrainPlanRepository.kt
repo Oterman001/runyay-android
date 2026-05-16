@@ -22,6 +22,8 @@ import com.oterman.rundemo.domain.model.TrainBlock
 import com.oterman.rundemo.domain.model.TrainPlan
 import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.domain.model.TrainStep
+import android.content.Context
+import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.util.RLog
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -31,10 +33,27 @@ class TrainPlanRepository(
     private val api: TrainPlanApi = RetrofitClient.trainPlanApi,
     private val localDao: TrainPlanDao? = null
 ) {
+    // L0 内存缓存：跨 ViewModel 共享，避免重复网络/DB 请求
+    private val memoryCache = HashMap<String, TrainPlan>()
+
+    fun peekDetail(planId: String): TrainPlan? = memoryCache[planId]
+
+    fun evictMemoryCache() { memoryCache.clear() }
+
     companion object {
         private const val TAG = "TrainPlanRepo"
         private val SERVER_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.BASIC_ISO_DATE
         private val ISO_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+        @Volatile private var INSTANCE: TrainPlanRepository? = null
+
+        fun getInstance(context: Context): TrainPlanRepository =
+            INSTANCE ?: synchronized(this) {
+                INSTANCE ?: TrainPlanRepository(
+                    preferencesManager = PreferencesManager(context.applicationContext),
+                    localDao = RunDatabase.getInstance(context.applicationContext).trainPlanDao()
+                ).also { INSTANCE = it }
+            }
     }
 
     // ==================== 对外接口 ====================
@@ -88,16 +107,24 @@ class TrainPlanRepository(
      *  4. 网络失败时：尝试返回旧缓存（兜底）
      */
     suspend fun getPlanDetail(planId: String): Result<TrainPlan> {
+        // L0: 内存缓存（无挂起，立即返回）
+        memoryCache[planId]?.let {
+            RLog.d(TAG, "getPlanDetail: L0 memory hit $planId")
+            return Result.success(it)
+        }
+
         val cached = localDao?.getById(planId)
         val cachedDetail = cached?.toDetailDomain()
 
         if (cachedDetail != null && cached?.isDirty == true) {
             RLog.d(TAG, "getPlanDetail: returning dirty local plan $planId")
+            memoryCache[planId] = cachedDetail
             return Result.success(cachedDetail)
         }
 
         if (cachedDetail != null && cached?.isDirty == false) {
             RLog.d(TAG, "getPlanDetail from cache: $planId v${cached.version}")
+            memoryCache[planId] = cachedDetail
             refreshDetailAsync(planId, cached.version)
             return Result.success(cachedDetail)
         }
@@ -291,6 +318,7 @@ class TrainPlanRepository(
     private suspend fun cacheDetail(plan: TrainPlan) {
         val userId = preferencesManager.getUserId() ?: return
         val planId = plan.planId ?: return
+        memoryCache[planId] = plan  // L0 写入
         try {
             val entity = plan.toEntity(userId, lastSyncAt = System.currentTimeMillis(), isDirty = false)
             localDao?.upsert(entity)

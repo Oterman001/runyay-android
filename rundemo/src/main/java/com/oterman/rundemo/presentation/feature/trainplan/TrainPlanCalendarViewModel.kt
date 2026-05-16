@@ -12,8 +12,10 @@ import com.oterman.rundemo.data.repository.TrainPlanRepository
 import com.oterman.rundemo.domain.model.TrainPlan
 import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.util.RLog
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,6 +67,7 @@ class CalendarViewModel(
         if (month == _uiState.value.currentMonth) return
         detailLoadJob?.cancel()
         monthDetailCache.clear()
+        trainPlanRepository.evictMemoryCache()
         _uiState.update {
             it.copy(
                 currentMonth = month,
@@ -161,6 +164,7 @@ class CalendarViewModel(
                         planLoadError = null
                     )
                 }
+                prefetchAllPlanDetails(plans)
             }.onFailure { e ->
                 RLog.w("CalendarVM", "loadPlansForMonth failed: ${e.message}")
                 _uiState.update {
@@ -244,6 +248,22 @@ class CalendarViewModel(
             }
         }.getOrNull()
     }
+
+    /** 月份摘要加载完成后，后台并发预取所有计划详情写入 Repository L0 + Room DB */
+    private fun prefetchAllPlanDetails(plans: List<TrainPlanSummary>) {
+        val uncached = plans.map { it.planId }.filter { trainPlanRepository.peekDetail(it) == null }
+        if (uncached.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            uncached.map { planId ->
+                async {
+                    trainPlanRepository.getPlanDetail(planId).onSuccess { detail ->
+                        monthDetailCache[planId] = detail
+                    }
+                }
+            }.awaitAll()
+            RLog.d("CalendarVM", "prefetchAllPlanDetails: ${uncached.size} plans prefetched")
+        }
+    }
 }
 
 class CalendarViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
@@ -252,7 +272,7 @@ class CalendarViewModelFactory(private val context: Context) : ViewModelProvider
         if (modelClass.isAssignableFrom(CalendarViewModel::class.java)) {
             val db = RunDatabase.getInstance(context)
             val prefs = PreferencesManager(context)
-            val trainPlanRepo = TrainPlanRepository(prefs, localDao = db.trainPlanDao())
+            val trainPlanRepo = TrainPlanRepository.getInstance(context)
             return CalendarViewModel(db.runRecordDao(), prefs, trainPlanRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

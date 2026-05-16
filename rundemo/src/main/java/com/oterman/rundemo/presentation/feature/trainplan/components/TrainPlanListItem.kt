@@ -1,18 +1,14 @@
 package com.oterman.rundemo.presentation.feature.trainplan.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Watch
@@ -50,8 +46,7 @@ fun TrainPlanListItem(
     plan: TrainPlanSummary,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    detail: TrainPlan? = null,
-    isLoadingDetail: Boolean = false
+    detail: TrainPlan? = null
 ) {
     val metrics = buildPlanMetrics(plan, detail)
     val blue = RunTheme.colorScheme.blue
@@ -90,13 +85,8 @@ fun TrainPlanListItem(
                 )
             }
 
-            // Metrics row: icon + value, horizontal.
-            // Show skeleton whenever detail is not yet available (including the window before
-            // isLoadingDetails turns true), switch to real data once loaded.
             if (metrics.isNotEmpty()) {
                 MetricsRow(metrics = metrics)
-            } else {
-                LoadingMetricsRow()
             }
         }
     }
@@ -128,20 +118,6 @@ private fun MetricsRow(metrics: List<PlanMetric>) {
     }
 }
 
-@Composable
-private fun LoadingMetricsRow() {
-    Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-        repeat(2) {
-            Box(
-                modifier = Modifier
-                    .width(52.dp)
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f))
-            )
-        }
-    }
-}
 
 private data class PlanMetric(
     val iconRes: Int,

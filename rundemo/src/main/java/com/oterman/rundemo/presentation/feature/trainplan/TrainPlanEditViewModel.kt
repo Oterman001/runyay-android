@@ -27,8 +27,13 @@ class TrainPlanEditViewModel(
 
     fun init(planId: String?, date: String?) {
         if (planId != null) {
-            _uiState.update { it.copy(isNewPlan = false, planId = planId, isEditMode = false) }
-            loadPlan(planId)
+            val cached = repository.peekDetail(planId)
+            if (cached != null) {
+                applyPlan(cached)  // L0 命中：同步应用，无 loading 状态
+            } else {
+                _uiState.update { it.copy(isNewPlan = false, planId = planId, isEditMode = false) }
+                loadPlan(planId)
+            }
         } else {
             _uiState.update {
                 it.copy(
@@ -528,35 +533,40 @@ class TrainPlanEditViewModel(
 
     // ==================== Load (edit mode) ====================
 
+    private fun applyPlan(plan: TrainPlan) {
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                isNewPlan = false,
+                isEditMode = false,
+                planId = plan.planId ?: it.planId,
+                name = plan.name,
+                scheduledDate = plan.scheduledDate,
+                finishFlag = plan.finishFlag,
+                locationType = plan.locationType,
+                trainWholeType = plan.trainWholeType,
+                description = plan.description ?: "",
+                hardLevel = plan.hardLevel,
+                warmupBlock = plan.warmupBlock,
+                mainBlocks = plan.blockList,
+                cooldownBlock = plan.cooldownBlock,
+                distanceGoalStep = plan.distanceGoalStep,
+                timeGoalStep = plan.timeGoalStep,
+                calGoalStep = plan.calGoalStep,
+                pacerGoalStep = plan.pacerGoalStep,
+                workoutId = plan.workoutId
+            )
+        }
+    }
+
     private fun loadPlan(planId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val result = repository.getPlanDetail(planId)
-            result.onSuccess { plan ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        planId = plan.planId ?: it.planId,
-                        name = plan.name,
-                        scheduledDate = plan.scheduledDate,
-                        finishFlag = plan.finishFlag,
-                        locationType = plan.locationType,
-                        trainWholeType = plan.trainWholeType,
-                        description = plan.description ?: "",
-                        hardLevel = plan.hardLevel,
-                        warmupBlock = plan.warmupBlock,
-                        mainBlocks = plan.blockList,
-                        cooldownBlock = plan.cooldownBlock,
-                        distanceGoalStep = plan.distanceGoalStep,
-                        timeGoalStep = plan.timeGoalStep,
-                        calGoalStep = plan.calGoalStep,
-                        pacerGoalStep = plan.pacerGoalStep,
-                        workoutId = plan.workoutId
-                    )
+            result.onSuccess { plan -> applyPlan(plan) }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
                 }
-            }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
-            }
         }
     }
 
@@ -752,9 +762,8 @@ class TrainPlanEditViewModelFactory(private val context: Context) : ViewModelPro
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TrainPlanEditViewModel::class.java)) {
-            val prefs = PreferencesManager(context)
             val db = com.oterman.rundemo.data.local.database.RunDatabase.getInstance(context)
-            val repository = TrainPlanRepository(prefs, localDao = db.trainPlanDao())
+            val repository = TrainPlanRepository.getInstance(context)
             return TrainPlanEditViewModel(repository, db.overallVdotDao()) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
