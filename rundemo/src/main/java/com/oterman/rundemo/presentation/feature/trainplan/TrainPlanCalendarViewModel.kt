@@ -250,6 +250,15 @@ class CalendarViewModel(
         }.getOrNull()
     }
 
+    /** 从编辑页返回后刷新当前选中日期的详情（清除本地 detail 缓存，重新从 Repository L0 读取） */
+    fun refreshCurrentDateDetails() {
+        val date = _uiState.value.selectedDate ?: return
+        val plansForDate = loadPlansForDateValue(date)
+        if (plansForDate.isEmpty()) return
+        plansForDate.forEach { monthDetailCache.remove(it.planId) }
+        loadPlanDetailsForDate(date)
+    }
+
     /** 月份摘要加载完成后，后台并发预取所有计划详情写入 Repository L0 + Room DB */
     private fun prefetchAllPlanDetails(plans: List<TrainPlanSummary>) {
         val uncached = plans.map { it.planId }.filter { trainPlanRepository.peekDetail(it) == null }

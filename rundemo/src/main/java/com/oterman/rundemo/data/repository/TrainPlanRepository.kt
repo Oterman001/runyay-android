@@ -71,6 +71,7 @@ class TrainPlanRepository(
         try {
             val entity = plan.toEntity(userId, lastSyncAt = 0L, isDirty = true)
             localDao?.upsert(entity)
+            memoryCache[plan.planId!!] = plan  // 本地写成功即更新 L0，不依赖服务端同步
         } catch (e: Exception) {
             RLog.e(TAG, "savePlan local write failed", e)
             return Result.failure(Exception("本地保存失败：${e.message}"))

@@ -40,8 +40,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -89,6 +93,16 @@ fun TrainPlanCalendarScreen(
     // Sync calendar position when nav arrows change the month
     LaunchedEffect(uiState.currentMonth) {
         calendarState.animateScrollToMonth(uiState.currentMonth)
+    }
+
+    // Refresh detail cache when returning from edit screen
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        snapshotFlow { lifecycleOwner.lifecycle.currentState >= Lifecycle.State.RESUMED }
+            .distinctUntilChanged()
+            .drop(1)
+            .filter { it }
+            .collect { viewModel.refreshCurrentDateDetails() }
     }
 
     // Detect swipe-based month changes and notify ViewModel
