@@ -233,10 +233,16 @@ private fun RepeatTitle(loopCnt: Int) {
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "${loopCnt.coerceAtLeast(1)}次",
+            text = "${loopCnt.coerceAtLeast(1)}",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = RunTheme.colorScheme.blue
+        )
+        Text(
+            text = "次",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
