@@ -10,8 +10,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Watch
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,9 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.TrainPlan
 import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.domain.model.TrainWholeType
@@ -32,6 +40,10 @@ import com.oterman.rundemo.presentation.feature.trainplan.distanceMeters
 import com.oterman.rundemo.presentation.feature.trainplan.goalText
 import com.oterman.rundemo.presentation.feature.trainplan.totalDistanceMeters
 import com.oterman.rundemo.presentation.feature.trainplan.totalDurationSeconds
+import com.oterman.rundemo.ui.theme.RunTheme
+import com.oterman.rundemo.ui.theme.StepTrainingColor
+
+private val MetricCaloriesColor = Color(0xFFE53935)
 
 @Composable
 fun TrainPlanListItem(
@@ -41,180 +53,140 @@ fun TrainPlanListItem(
     detail: TrainPlan? = null,
     isLoadingDetail: Boolean = false
 ) {
-    val accent = plan.trainWholeType.accentColor()
     val metrics = buildPlanMetrics(plan, detail)
+    val blue = RunTheme.colorScheme.blue
+    val dimTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
 
     StatisticsCard(
         modifier = modifier
             .padding(horizontal = 16.dp, vertical = 6.dp)
             .clickable(onClick = onClick)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Title row: name + watch icon + checkmark icon
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = plan.name,
-                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.Watch,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (plan.workoutId != null) blue else dimTint
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (plan.finishFlag == "Y") Color(0xFF34C759) else dimTint
+                )
+            }
+
+            // Metrics row: icon + value, horizontal
+            if (isLoadingDetail) {
+                LoadingMetricsRow()
+            } else if (metrics.isNotEmpty()) {
+                MetricsRow(metrics = metrics)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetricsRow(metrics: List<PlanMetric>) {
+    Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+        metrics.forEach { metric ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(metric.iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = metric.tint
+                )
                 Text(
-                    text = formatTypeLabel(plan.trainWholeType),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = accent,
+                    text = metric.value,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     maxLines = 1
                 )
             }
-
-            Spacer(Modifier.width(12.dp))
-
-            if (isLoadingDetail) {
-                LoadingMetrics()
-            } else {
-                CompactMetrics(metrics = metrics)
-            }
         }
     }
 }
 
 @Composable
-private fun CompactMetrics(metrics: List<PlanMetric>) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        metrics.forEach { metric ->
-            MetricText(metric = metric)
-        }
-    }
-}
-
-@Composable
-private fun LoadingMetrics() {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+private fun LoadingMetricsRow() {
+    Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
         repeat(2) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .width(52.dp),
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(32.dp)
-                        .height(10.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f))
-                )
-                Box(
-                    modifier = Modifier
-                        .width(52.dp)
-                        .height(14.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
-                )
-            }
+                    .width(52.dp)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f))
+            )
         }
-    }
-}
-
-@Composable
-private fun MetricText(metric: PlanMetric) {
-    Column(horizontalAlignment = Alignment.End) {
-        Text(
-            text = metric.label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1
-        )
-        Spacer(Modifier.height(3.dp))
-        Text(
-            text = metric.value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }
 
 private data class PlanMetric(
-    val label: String,
+    val iconRes: Int,
+    val tint: Color,
     val value: String
 )
 
-private fun formatTypeLabel(type: TrainWholeType): String = when (type) {
-    TrainWholeType.SELF_DEFINE -> "自定义训练"
-    TrainWholeType.DISTANCE -> "距离目标"
-    TrainWholeType.TIME -> "时间目标"
-    TrainWholeType.CALORIES -> "卡路里目标"
-    TrainWholeType.PACER -> "配速目标"
-}
-
-@Composable
-private fun TrainWholeType.accentColor(): Color = when (this) {
-    TrainWholeType.SELF_DEFINE -> MaterialTheme.colorScheme.primary
-    TrainWholeType.DISTANCE -> Color(0xFF2E7D32)
-    TrainWholeType.TIME -> Color(0xFF1E88E5)
-    TrainWholeType.CALORIES -> Color(0xFFE65100)
-    TrainWholeType.PACER -> Color(0xFF7E57C2)
-}
-
 private fun buildPlanMetrics(plan: TrainPlanSummary, detail: TrainPlan?): List<PlanMetric> {
-    if (detail == null) return listOf(PlanMetric("目标", "--"))
+    if (detail == null) return emptyList()
 
     return when (plan.trainWholeType) {
         TrainWholeType.DISTANCE -> listOfNotNull(
-            detail.distanceGoalStep?.goalText()?.let { PlanMetric("距离", it) }
-                ?: detail.blockList.totalDistanceMeters().takeIf { it > 0 }?.let { PlanMetric("距离", formatDistance(it)) },
-            detail.blockList.totalDurationSeconds().takeIf { it > 0 }?.let { PlanMetric("时长", formatDuration(it)) }
+            detail.distanceGoalStep?.goalText()?.let { distanceMetric(it) }
+                ?: detail.blockList.totalDistanceMeters().takeIf { it > 0 }?.let { distanceMetric(formatDistance(it)) },
+            detail.blockList.totalDurationSeconds().takeIf { it > 0 }?.let { timeMetric(formatDuration(it)) }
         ).take(2)
         TrainWholeType.TIME -> listOfNotNull(
-            detail.timeGoalStep?.goalText()?.let { PlanMetric("时长", it) }
-                ?: detail.blockList.totalDurationSeconds().takeIf { it > 0 }?.let { PlanMetric("时长", formatDuration(it)) },
-            detail.blockList.totalDistanceMeters().takeIf { it > 0 }?.let { PlanMetric("距离", formatDistance(it)) }
+            detail.timeGoalStep?.goalText()?.let { timeMetric(it) }
+                ?: detail.blockList.totalDurationSeconds().takeIf { it > 0 }?.let { timeMetric(formatDuration(it)) },
+            detail.blockList.totalDistanceMeters().takeIf { it > 0 }?.let { distanceMetric(formatDistance(it)) }
         ).take(2)
         TrainWholeType.CALORIES -> listOfNotNull(
-            detail.calGoalStep?.goalText()?.let { PlanMetric("卡路里", it) }
+            detail.calGoalStep?.goalText()?.let { caloriesMetric(it) }
         )
         TrainWholeType.PACER -> {
             val step = detail.pacerGoalStep
             listOfNotNull(
-                step?.distanceMeters()?.takeIf { it > 0 }?.let { PlanMetric("距离", formatDistance(it)) },
-                step?.timeGoalSeconds?.takeIf { it > 0 }?.let { PlanMetric("时长", formatDuration(it)) }
+                step?.distanceMeters()?.takeIf { it > 0 }?.let { distanceMetric(formatDistance(it)) },
+                step?.timeGoalSeconds?.takeIf { it > 0 }?.let { timeMetric(formatDuration(it)) }
             )
         }
         TrainWholeType.SELF_DEFINE -> {
             val distance = detail.blockList.totalDistanceMeters()
             val duration = detail.blockList.totalDurationSeconds()
             listOfNotNull(
-                distance.takeIf { it > 0 }?.let { PlanMetric("距离", formatDistance(it)) },
-                duration.takeIf { it > 0 }?.let { PlanMetric("时长", formatDuration(it)) }
+                distance.takeIf { it > 0 }?.let { distanceMetric(formatDistance(it)) },
+                duration.takeIf { it > 0 }?.let { timeMetric(formatDuration(it)) }
             )
-        }
-    }.ifEmpty { listOf(PlanMetric("目标", buildGoalSummaryText(detail) ?: "--")) }
-}
-
-private fun buildGoalSummaryText(detail: TrainPlan): String? = when (detail.trainWholeType) {
-    TrainWholeType.DISTANCE -> detail.distanceGoalStep?.goalText()
-        ?: detail.blockList.totalDistanceMeters().takeIf { it > 0 }?.let { formatDistance(it) }
-    TrainWholeType.TIME -> detail.timeGoalStep?.goalText()
-        ?: detail.blockList.totalDurationSeconds().takeIf { it > 0 }?.let { formatDuration(it) }
-    TrainWholeType.CALORIES -> detail.calGoalStep?.goalText()
-    TrainWholeType.PACER -> detail.pacerGoalStep?.goalText()
-    TrainWholeType.SELF_DEFINE -> {
-        val meters = detail.blockList.totalDistanceMeters()
-        val secs = detail.blockList.totalDurationSeconds()
-        when {
-            meters > 0 -> formatDistance(meters)
-            secs > 0 -> formatDuration(secs)
-            else -> null
         }
     }
 }
+
+private fun distanceMetric(value: String) =
+    PlanMetric(iconRes = R.drawable.ic_goal_distance, tint = Color(0xFF1AA9F8), value = value)
+
+private fun timeMetric(value: String) =
+    PlanMetric(iconRes = R.drawable.ic_goal_time, tint = StepTrainingColor, value = value)
+
+private fun caloriesMetric(value: String) =
+    PlanMetric(iconRes = R.drawable.ic_goal_calories, tint = MetricCaloriesColor, value = value)
