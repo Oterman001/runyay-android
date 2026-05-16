@@ -31,7 +31,7 @@ import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.domain.model.TrainWholeType
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.trainplan.formatDistance
-import com.oterman.rundemo.presentation.feature.trainplan.formatDuration
+import com.oterman.rundemo.presentation.feature.trainplan.formatDurationColon
 import com.oterman.rundemo.presentation.feature.trainplan.distanceMeters
 import com.oterman.rundemo.presentation.feature.trainplan.goalText
 import com.oterman.rundemo.presentation.feature.trainplan.totalDistanceMeters
@@ -132,11 +132,11 @@ private fun buildPlanMetrics(plan: TrainPlanSummary, detail: TrainPlan?): List<P
         TrainWholeType.DISTANCE -> listOfNotNull(
             detail.distanceGoalStep?.goalText()?.let { distanceMetric(it) }
                 ?: detail.blockList.totalDistanceMeters().takeIf { it > 0 }?.let { distanceMetric(formatDistance(it)) },
-            detail.blockList.totalDurationSeconds().takeIf { it > 0 }?.let { timeMetric(formatDuration(it)) }
+            detail.blockList.totalDurationSeconds().takeIf { it > 0 }?.let { timeMetric(formatDurationColon(it)) }
         ).take(2)
         TrainWholeType.TIME -> listOfNotNull(
             detail.timeGoalStep?.goalText()?.let { timeMetric(it) }
-                ?: detail.blockList.totalDurationSeconds().takeIf { it > 0 }?.let { timeMetric(formatDuration(it)) },
+                ?: detail.blockList.totalDurationSeconds().takeIf { it > 0 }?.let { timeMetric(formatDurationColon(it)) },
             detail.blockList.totalDistanceMeters().takeIf { it > 0 }?.let { distanceMetric(formatDistance(it)) }
         ).take(2)
         TrainWholeType.CALORIES -> listOfNotNull(
@@ -146,7 +146,7 @@ private fun buildPlanMetrics(plan: TrainPlanSummary, detail: TrainPlan?): List<P
             val step = detail.pacerGoalStep
             listOfNotNull(
                 step?.distanceMeters()?.takeIf { it > 0 }?.let { distanceMetric(formatDistance(it)) },
-                step?.timeGoalSeconds?.takeIf { it > 0 }?.let { timeMetric(formatDuration(it)) }
+                step?.timeGoalSeconds?.takeIf { it > 0 }?.let { timeMetric(formatDurationColon(it)) }
             )
         }
         TrainWholeType.SELF_DEFINE -> {
@@ -154,7 +154,7 @@ private fun buildPlanMetrics(plan: TrainPlanSummary, detail: TrainPlan?): List<P
             val duration = detail.blockList.totalDurationSeconds()
             listOfNotNull(
                 distance.takeIf { it > 0 }?.let { distanceMetric(formatDistance(it)) },
-                duration.takeIf { it > 0 }?.let { timeMetric(formatDuration(it)) }
+                duration.takeIf { it > 0 }?.let { timeMetric(formatDurationColon(it)) }
             )
         }
     }
