@@ -35,6 +35,7 @@ data class TrainPlanEditUiState(
     val editingStep: EditingStepInfo? = null,
     val showDatePicker: Boolean = false,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val isEditMode: Boolean = true,
     // Plan actions
     val workoutId: String? = null,

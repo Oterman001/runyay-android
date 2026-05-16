@@ -537,6 +537,7 @@ class TrainPlanEditViewModel(
         _uiState.update {
             it.copy(
                 isLoading = false,
+                isRefreshing = false,
                 isNewPlan = false,
                 isEditMode = false,
                 planId = plan.planId ?: it.planId,
@@ -566,6 +567,19 @@ class TrainPlanEditViewModel(
             result.onSuccess { plan -> applyPlan(plan) }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
+                }
+        }
+    }
+
+    fun refreshPlan() {
+        val planId = _uiState.value.planId ?: return
+        if (_uiState.value.isNewPlan || _uiState.value.isEditMode) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
+            val result = repository.forceRefreshDetail(planId)
+            result.onSuccess { plan -> applyPlan(plan) }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isRefreshing = false, errorMessage = e.message) }
                 }
         }
     }

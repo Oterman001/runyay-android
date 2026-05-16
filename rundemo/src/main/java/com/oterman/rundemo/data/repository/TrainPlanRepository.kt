@@ -133,6 +133,11 @@ class TrainPlanRepository(
         return fetchAndCacheDetail(planId)
     }
 
+    suspend fun forceRefreshDetail(planId: String): Result<TrainPlan> {
+        memoryCache.remove(planId)
+        return fetchAndCacheDetail(planId)
+    }
+
     /**
      * 查询指定月份内训练计划摘要列表。
      * 策略：

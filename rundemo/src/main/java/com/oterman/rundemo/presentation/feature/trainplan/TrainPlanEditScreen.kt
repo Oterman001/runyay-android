@@ -44,6 +44,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -341,11 +344,26 @@ fun TrainPlanEditScreen(
             return@Scaffold
         }
 
+        val pullState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = viewModel::refreshPlan,
+            state = pullState,
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    isRefreshing = uiState.isRefreshing,
+                    state = pullState
+                )
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
         LazyColumn(
             state = lazyListState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -499,6 +517,7 @@ fun TrainPlanEditScreen(
                 )
             }
             item { Spacer(Modifier.height(28.dp)) }
+        }
         }
     }
 }
