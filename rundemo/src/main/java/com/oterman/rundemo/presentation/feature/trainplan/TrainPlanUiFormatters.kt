@@ -141,7 +141,7 @@ internal fun TrainStep.canMoveLikeIos(): Boolean =
 
 internal fun TrainStep.goalText(): String = when (goalType) {
     TrainGoalType.DISTANCE -> formatDistance(distanceMeters())
-    TrainGoalType.TIME -> formatDuration(timeGoalSeconds ?: 0)
+    TrainGoalType.TIME -> formatDurationColon(timeGoalSeconds ?: 0)
     TrainGoalType.CALORIES -> "${caloriesValue ?: 0} kcal"
     TrainGoalType.PACER -> {
         val min = minPace?.let(::formatPace) ?: "--"
@@ -184,8 +184,7 @@ internal fun formatDistance(meters: Double): String {
     return if (meters < 1000.0) {
         "${meters.roundToInt()} m"
     } else {
-        val km = meters / 1000.0
-        if (km == km.toLong().toDouble()) "${km.toLong()} km" else "%.2f km".format(km).trimEnd('0').trimEnd('.')
+        "%.2f km".format(meters / 1000.0)
     }
 }
 
