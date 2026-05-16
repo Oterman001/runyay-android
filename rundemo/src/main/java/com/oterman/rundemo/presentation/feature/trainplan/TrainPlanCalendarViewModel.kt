@@ -39,7 +39,8 @@ data class CalendarUiState(
     val planLoadError: String? = null,
     val isDeletingPlan: Boolean = false,
     val selectedDateDetails: Map<String, TrainPlan> = emptyMap(),
-    val isLoadingDetails: Boolean = false
+    val isLoadingDetails: Boolean = false,
+    val isRefreshing: Boolean = false
 )
 
 class CalendarViewModel(
@@ -122,6 +123,14 @@ class CalendarViewModel(
         refreshPlans()
     }
 
+    fun refreshCurrentMonth() {
+        detailLoadJob?.cancel()
+        monthDetailCache.clear()
+        trainPlanRepository.evictMemoryCache()
+        _uiState.update { it.copy(isRefreshing = true) }
+        loadPlansForMonth(_uiState.value.currentMonth)
+    }
+
     private fun loadMonth(month: YearMonth) {
         val userId = preferencesManager.getUserId() ?: return
         viewModelScope.launch {
@@ -161,6 +170,7 @@ class CalendarViewModel(
                         daysWithPlans = planDays,
                         selectedDatePlans = state.selectedDate?.let { loadPlansForDateValue(it) } ?: emptyList(),
                         isLoadingPlans = false,
+                        isRefreshing = false,
                         planLoadError = null
                     )
                 }
@@ -171,6 +181,7 @@ class CalendarViewModel(
                 _uiState.update {
                     it.copy(
                         isLoadingPlans = false,
+                        isRefreshing = false,
                         planLoadError = e.message ?: "训练计划加载失败"
                     )
                 }

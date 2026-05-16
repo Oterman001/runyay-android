@@ -25,6 +25,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -141,10 +144,25 @@ fun TrainPlanCalendarScreen(
             }
         }
     ) { innerPadding ->
-        LazyColumn(
+        val pullState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = viewModel::refreshCurrentMonth,
+            state = pullState,
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    isRefreshing = uiState.isRefreshing,
+                    state = pullState
+                )
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+        ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
             item {
@@ -233,6 +251,7 @@ fun TrainPlanCalendarScreen(
             }
 
             item { Spacer(modifier = Modifier.height(80.dp)) }
+        }
         }
     }
 }
