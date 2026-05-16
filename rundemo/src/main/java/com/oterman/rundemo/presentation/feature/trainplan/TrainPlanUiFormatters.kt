@@ -153,11 +153,7 @@ internal fun TrainStep.goalText(): String = when (goalType) {
 
 internal fun TrainStep.intensityText(): String? = when (intensityType) {
     IntensityType.HEART_RATE -> {
-        val zone = heartZoneType?.takeIf { it.isNotBlank() }
-        val range = if (minHeartRate != null && maxHeartRate != null) {
-            "$minHeartRate-$maxHeartRate bpm"
-        } else null
-        listOfNotNull(zone, range).joinToString(" ").takeIf { it.isNotBlank() }
+        if (minHeartRate != null && maxHeartRate != null) "$minHeartRate-$maxHeartRate bpm" else null
     }
     IntensityType.SPEED -> {
         val min = minPace?.let(::formatPace)

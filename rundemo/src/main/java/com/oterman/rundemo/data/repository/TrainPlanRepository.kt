@@ -361,13 +361,12 @@ class TrainPlanRepository(
                 val serverVersion = summary.version
                 val localVersion = existing?.version
 
-                // 若服务端 version 与本地一致，保留已缓存的 detailJson；否则清空强制重拉
-                val detailJson = if (existing != null && serverVersion != null
-                    && serverVersion == localVersion && existing.detailJson != null
-                ) {
-                    existing.detailJson
-                } else {
-                    null
+                // 仅在双端版本均已知且确认不同时才清空 detailJson 强制重拉；
+                // localVersion 为 null 表示本地刚创建尚未收到服务端版本号，应保留已有 detailJson
+                val detailJson = when {
+                    existing?.detailJson == null -> null
+                    serverVersion != null && localVersion != null && serverVersion != localVersion -> null
+                    else -> existing.detailJson
                 }
 
                 summary.toEntity(
