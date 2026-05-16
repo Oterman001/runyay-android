@@ -164,6 +164,7 @@ class CalendarViewModel(
                         planLoadError = null
                     )
                 }
+                _uiState.value.selectedDate?.let { loadPlanDetailsForDate(it) }
                 prefetchAllPlanDetails(plans)
             }.onFailure { e ->
                 RLog.w("CalendarVM", "loadPlansForMonth failed: ${e.message}")
