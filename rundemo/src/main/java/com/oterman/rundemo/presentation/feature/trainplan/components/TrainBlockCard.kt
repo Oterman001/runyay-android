@@ -162,6 +162,7 @@ private fun BlockHeader(
     onLoopCountChange: ((delta: Int) -> Unit)?
 ) {
     val isLoopBlock = block.blockType == BlockType.MAIN && block.loopCnt > 1
+    val showRepeatTitle = !isEditMode && block.stepList.size > 1
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -175,20 +176,8 @@ private fun BlockHeader(
                     accent = accent,
                     onLoopCountChange = onLoopCountChange
                 )
-            } else if (isLoopBlock) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = "循环训练",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "重复 ${block.loopCnt.coerceAtLeast(1)} 次 · ${block.stepList.size} 个步骤",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            } else if (showRepeatTitle || isLoopBlock) {
+                RepeatTitle(loopCnt = block.loopCnt)
             } else {
                 Icon(
                     painter = blockPainter(block),
@@ -231,6 +220,24 @@ private fun BlockHeader(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun RepeatTitle(loopCnt: Int) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = "重复",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "${loopCnt.coerceAtLeast(1)}次",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = RunTheme.colorScheme.blue
+        )
     }
 }
 
