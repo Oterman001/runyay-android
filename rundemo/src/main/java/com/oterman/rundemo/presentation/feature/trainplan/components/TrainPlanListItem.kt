@@ -69,7 +69,7 @@ fun TrainPlanListItem(
                     text = plan.name,
                     modifier = Modifier.weight(1f),
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Normal,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -90,11 +90,13 @@ fun TrainPlanListItem(
                 )
             }
 
-            // Metrics row: icon + value, horizontal
-            if (isLoadingDetail) {
-                LoadingMetricsRow()
-            } else if (metrics.isNotEmpty()) {
+            // Metrics row: icon + value, horizontal.
+            // Show skeleton whenever detail is not yet available (including the window before
+            // isLoadingDetails turns true), switch to real data once loaded.
+            if (metrics.isNotEmpty()) {
                 MetricsRow(metrics = metrics)
+            } else {
+                LoadingMetricsRow()
             }
         }
     }
