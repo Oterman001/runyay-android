@@ -711,7 +711,7 @@ private fun CalendarMcpHint(onNavigateMcp: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
         )
         Text(
-            text = "试试通过 Claude、ChatGPT + MCP，让 AI 帮你安排训练并推送到跑鸭日历",
+            text = "任何支持 MCP 的 AI 工具（如 Claude、ChatGPT 等）都能帮你制定计划并推送到跑鸭",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
         )

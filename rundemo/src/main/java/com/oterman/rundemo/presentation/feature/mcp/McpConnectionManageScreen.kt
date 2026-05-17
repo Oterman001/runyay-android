@@ -349,7 +349,7 @@ private fun McpGuideSection(onCopied: () -> Unit) {
 
         Spacer(modifier = Modifier.height(12.dp))
         GuideStep(1, "复制下方 MCP 服务地址。")
-        GuideStep(2, "在 Claude、ChatGPT 等 AI 工具中添加此 MCP 服务，用跑鸭账号完成授权。")
+        GuideStep(2, "在任意支持 MCP 的 AI 工具（如 Claude、ChatGPT）中添加此服务，用跑鸭账号完成授权。")
         GuideStep(3, "告诉 AI 你的训练目标，让它为你制定计划并直接推送到跑鸭。")
     }
 }
@@ -419,7 +419,7 @@ private fun ConnectionSection(
         Spacer(modifier = Modifier.height(8.dp))
 
         if (connections.isEmpty()) {
-            InlineEmptyState("暂无已授权 AI 连接", "按上方步骤配置后，Claude 或 ChatGPT 即可为你安排训练计划。", Icons.Outlined.Link)
+            InlineEmptyState("暂无已授权 AI 连接", "按上方步骤配置后，任意支持 MCP 的 AI 工具即可为你安排训练计划。", Icons.Outlined.Link)
         } else {
             connections.forEachIndexed { index, connection ->
                 ConnectionRow(connection = connection, onManage = { onManage(connection) })
