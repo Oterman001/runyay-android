@@ -87,7 +87,6 @@ import com.oterman.rundemo.presentation.feature.trainplan.components.SingleGoalE
 import com.oterman.rundemo.presentation.feature.trainplan.components.StepEditSheet
 import com.oterman.rundemo.presentation.feature.trainplan.components.TrainBlockCard
 import com.oterman.rundemo.presentation.feature.trainplan.components.TrainPlanSentPlatformTags
-import com.oterman.rundemo.presentation.feature.trainplan.components.TrainPlanSourceTag
 import com.oterman.rundemo.ui.theme.RunTheme
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -441,7 +440,6 @@ fun TrainPlanEditScreen(
                     onLocationTypeChange = viewModel::onLocationTypeChange,
                     trainWholeType = uiState.trainWholeType,
                     onTrainWholeTypeChange = viewModel::onTrainWholeTypeChange,
-                    sourceLabel = trainPlanSourceLabel(uiState.sourceType, uiState.sourceName),
                     sentPlatforms = sentPlatforms,
                     isEditMode = uiState.isEditMode
                 )
@@ -580,6 +578,25 @@ fun TrainPlanEditScreen(
                     )
                 )
             }
+            trainPlanSourceLabel(uiState.sourceType, uiState.sourceName)?.let { sourceLabel ->
+                item { SectionTitle("来源") }
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .background(RunTheme.colorScheme.cardBg, RoundedCornerShape(12.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = sourceLabel,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
             item { Spacer(Modifier.height(28.dp)) }
         }
         }
@@ -606,7 +623,6 @@ private fun BasicInfoCard(
     onLocationTypeChange: (LocationType) -> Unit,
     trainWholeType: TrainWholeType,
     onTrainWholeTypeChange: (TrainWholeType) -> Unit,
-    sourceLabel: String?,
     sentPlatforms: List<DataSourcePlatform>,
     isEditMode: Boolean
 ) {
@@ -668,19 +684,6 @@ private fun BasicInfoCard(
             }
         }
         HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
-        if (!sourceLabel.isNullOrBlank()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(rowHeight),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("来源", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.weight(1f))
-                TrainPlanSourceTag(label = sourceLabel)
-            }
-            HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
-        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()

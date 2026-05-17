@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -35,7 +36,6 @@ import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.domain.model.TrainWholeType
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.sentDevicePlatforms
-import com.oterman.rundemo.domain.model.sourceLabel
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.trainplan.distanceMeters
 import com.oterman.rundemo.presentation.feature.trainplan.estimateDistance
@@ -59,7 +59,6 @@ fun TrainPlanListItem(
     val metrics = buildPlanMetrics(plan, detail)
     val dimTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
     val sentPlatforms = detail?.sentDevicePlatforms() ?: plan.sentDevicePlatforms()
-    val sourceLabel = detail?.sourceLabel() ?: plan.sourceLabel()
 
     StatisticsCard(
         modifier = modifier
@@ -87,8 +86,6 @@ fun TrainPlanListItem(
                 )
             }
 
-            TrainPlanSourceTag(label = sourceLabel)
-
             TrainPlanSentPlatformTags(platforms = sentPlatforms)
 
             if (metrics.isNotEmpty()) {
@@ -107,6 +104,7 @@ fun TrainPlanSourceTag(
     val tint = RunTheme.colorScheme.blue
     Row(
         modifier = modifier
+            .widthIn(max = 240.dp)
             .background(tint.copy(alpha = 0.10f), RoundedCornerShape(50))
             .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(5.dp),
