@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
 import com.oterman.rundemo.R
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -69,10 +70,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.oterman.rundemo.domain.model.BlockType
@@ -300,7 +303,7 @@ fun TrainPlanEditScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.background,
@@ -308,10 +311,16 @@ fun TrainPlanEditScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 title = {
-                    Text(
-                        if (uiState.isNewPlan) "新增课程" else if (uiState.isEditMode) "编辑课程" else "课程详情",
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    if (!uiState.isNewPlan && !uiState.isEditMode) {
+                        TrainPlanBrandTitle(sourceType = uiState.sourceType)
+                    } else {
+                        Text(
+                            if (uiState.isNewPlan) "新增课程" else "编辑课程",
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -601,6 +610,30 @@ fun TrainPlanEditScreen(
         }
         }
     }
+}
+
+@Composable
+private fun TrainPlanBrandTitle(sourceType: String?) {
+    val title = if (sourceType.equals("MCP", ignoreCase = true)) {
+        "AI x 跑鸭·RunYay"
+    } else {
+        "跑鸭·RunYay"
+    }
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium.copy(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFF389BFF),
+                    Color(0xFF8BD4FF),
+                    Color(0xFF22E6C4)
+                )
+            ),
+            fontWeight = FontWeight.SemiBold
+        ),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
 }
 
 @Composable
