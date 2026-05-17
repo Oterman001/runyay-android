@@ -331,7 +331,7 @@ private fun DisplayModeToggleButton(
                 DataTabDisplayMode.SIMPLE -> Icons.Default.CalendarViewMonth
             },
             contentDescription = "切换显示模式",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -351,7 +351,7 @@ private fun FilterButton(
                 imageVector = Icons.Outlined.FilterAlt,
                 contentDescription = "筛选",
                 tint = if (isActive) MaterialTheme.colorScheme.primary
-                       else MaterialTheme.colorScheme.onSurfaceVariant
+                       else MaterialTheme.colorScheme.onSurface
             )
         }
         if (isActive) {

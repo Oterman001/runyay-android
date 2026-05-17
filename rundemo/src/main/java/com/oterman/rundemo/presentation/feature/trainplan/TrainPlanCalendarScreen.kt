@@ -50,6 +50,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -78,6 +81,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.painterResource
+import com.oterman.rundemo.R
+import com.oterman.rundemo.domain.model.DataSourcePlatform
 import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.math.roundToInt
@@ -107,6 +113,12 @@ fun TrainPlanCalendarScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val pushPlatforms = remember {
+        DataSourcePlatform.entries.filter {
+            it.isEnabled && it.requiresOAuthBinding && it != DataSourcePlatform.GARMIN_CHINA
+        }
+    }
 
     val calendarState = rememberCalendarState(
         startMonth = YearMonth.now().minusMonths(24),
@@ -135,6 +147,64 @@ fun TrainPlanCalendarScreen(
         snapshotFlow { calendarState.firstVisibleMonth.yearMonth }
             .distinctUntilChanged()
             .collectLatest { month -> viewModel.onMonthChanged(month) }
+    }
+
+    LaunchedEffect(uiState.calendarPushSuccessMessage) {
+        uiState.calendarPushSuccessMessage?.let {
+            snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
+            viewModel.clearCalendarPushMessage()
+        }
+    }
+
+    // Calendar push platform dialog
+    if (uiState.showCalendarPushDialog) {
+        val today = LocalDate.now()
+        val endDate = today.plusDays(6)
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissCalendarPushDialog() },
+            title = { Text("发送训练计划到手表") },
+            text = {
+                Column {
+                    Text(
+                        "将推送未来七天内即 ${today.format(dateFormatter)} 至 ${endDate.format(dateFormatter)} 的训练计划",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    pushPlatforms.forEach { platform ->
+                        TextButton(
+                            onClick = { viewModel.pushPlansForNextSevenDays(platform.code) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                Icon(
+                                    painter = painterResource(platform.iconResId),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(28.dp),
+                                    tint = Color.Unspecified
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = platform.displayName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissCalendarPushDialog() }) { Text("取消") }
+            }
+        )
     }
 
     // Delete confirmation dialog
@@ -202,6 +272,7 @@ fun TrainPlanCalendarScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("训练日历", fontWeight = FontWeight.SemiBold) },
@@ -213,8 +284,25 @@ fun TrainPlanCalendarScreen(
                         )
                     }
                 },
+                actions = {
+                    if (uiState.isCalendarPushing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(end = 16.dp).size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        IconButton(onClick = { viewModel.onCalendarPushRequest() }) {
+                            Icon(
+                                painter = painterResource(R.drawable.applewatch_and_arrow_forward),
+                                contentDescription = "发送训练计划到手表"
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = MaterialTheme.colorScheme.background,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },

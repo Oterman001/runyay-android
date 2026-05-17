@@ -117,7 +117,9 @@ fun TrainPlanEditScreen(
         }
     }
     val pushPlatforms = remember {
-        DataSourcePlatform.entries.filter { it.isEnabled && it.requiresOAuthBinding }
+        DataSourcePlatform.entries.filter {
+            it.isEnabled && it.requiresOAuthBinding && it != DataSourcePlatform.GARMIN_CHINA
+        }
     }
     val lazyListState = rememberLazyListState()
     val mainBlockStartIndex = remember(
@@ -210,8 +212,29 @@ fun TrainPlanEditScreen(
                                 showPushPlatformSelect = false
                                 viewModel.pushPlan(platform.code)
                             },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text(platform.displayName) }
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                Icon(
+                                    painter = painterResource(platform.iconResId),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(28.dp),
+                                    tint = Color.Unspecified
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = platform.displayName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
                     }
                 }
             },
@@ -234,8 +257,29 @@ fun TrainPlanEditScreen(
                                 showDeletePushPlatformSelect = false
                                 viewModel.deletePushedPlan(platform.code)
                             },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text(platform.displayName) }
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                Icon(
+                                    painter = painterResource(platform.iconResId),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(28.dp),
+                                    tint = Color.Unspecified
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = platform.displayName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
                     }
                 }
             },
@@ -252,7 +296,9 @@ fun TrainPlanEditScreen(
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background
+                    scrolledContainerColor = MaterialTheme.colorScheme.background,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 title = {
                     Text(
@@ -274,6 +320,12 @@ fun TrainPlanEditScreen(
                                 strokeWidth = 2.dp
                             )
                         } else {
+                            IconButton(onClick = { showPushPlatformSelect = true }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.applewatch_and_arrow_forward),
+                                    contentDescription = "发送到手表"
+                                )
+                            }
                             Box {
                                 IconButton(onClick = { showMoreMenu = true }) {
                                     Icon(Icons.Default.MoreVert, contentDescription = "更多操作")
@@ -289,15 +341,8 @@ fun TrainPlanEditScreen(
                                             showDeleteConfirm = true
                                         }
                                     )
-                                    HorizontalDivider()
-                                    DropdownMenuItem(
-                                        text = { Text("推送到手表") },
-                                        onClick = {
-                                            showMoreMenu = false
-                                            showPushPlatformSelect = true
-                                        }
-                                    )
                                     if (uiState.workoutId != null) {
+                                        HorizontalDivider()
                                         DropdownMenuItem(
                                             text = { Text("从手表删除推送") },
                                             onClick = {

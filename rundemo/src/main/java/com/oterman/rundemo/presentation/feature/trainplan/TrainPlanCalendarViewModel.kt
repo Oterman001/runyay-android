@@ -48,6 +48,9 @@ data class CalendarUiState(
     val showDeleteConfirmDialog: Boolean = false,
     val showCopyDatePicker: Boolean = false,
     val showMoveDatePicker: Boolean = false,
+    val showCalendarPushDialog: Boolean = false,
+    val isCalendarPushing: Boolean = false,
+    val calendarPushSuccessMessage: String? = null,
 )
 
 class CalendarViewModel(
@@ -183,6 +186,48 @@ class CalendarViewModel(
                 RLog.e("CalendarVM", "confirmMovePlan failed", e)
             }
         }
+    }
+
+    fun onCalendarPushRequest() {
+        _uiState.update { it.copy(showCalendarPushDialog = true) }
+    }
+
+    fun dismissCalendarPushDialog() {
+        _uiState.update { it.copy(showCalendarPushDialog = false) }
+    }
+
+    fun pushPlansForNextSevenDays(platformCode: String) {
+        dismissCalendarPushDialog()
+        val today = LocalDate.now()
+        val endDate = today.plusDays(6)
+        val plansToSend = monthPlans.filter { plan ->
+            plan.scheduledDate?.let { parsePlanDate(it) }
+                ?.let { date -> !date.isBefore(today) && !date.isAfter(endDate) }
+                ?: false
+        }
+        if (plansToSend.isEmpty()) {
+            _uiState.update { it.copy(calendarPushSuccessMessage = "未来7天内没有训练计划") }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCalendarPushing = true) }
+            var successCount = 0
+            plansToSend.forEach { plan ->
+                trainPlanRepository.pushPlan(plan.planId, platformCode)
+                    .onSuccess { successCount++ }
+                    .onFailure { e -> RLog.w("CalendarVM", "pushPlan failed: ${e.message}") }
+            }
+            _uiState.update {
+                it.copy(
+                    isCalendarPushing = false,
+                    calendarPushSuccessMessage = "已推送 $successCount/${plansToSend.size} 个计划"
+                )
+            }
+        }
+    }
+
+    fun clearCalendarPushMessage() {
+        _uiState.update { it.copy(calendarPushSuccessMessage = null) }
     }
 
     fun refreshPlans(force: Boolean = true) {
