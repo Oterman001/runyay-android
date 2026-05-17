@@ -5,10 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -141,17 +139,22 @@ fun NextTrainPlanCard(
 
             // Bottom buttons
             Spacer(modifier = Modifier.height(10.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+            HorizontalDivider(
+                thickness = 0.5.dp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
+                    .height(36.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(
                     onClick = onNavigateToCalendar,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.CalendarMonth,
@@ -164,16 +167,19 @@ fun NextTrainPlanCard(
 
                 VerticalDivider(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(vertical = 4.dp),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                        .height(18.dp)
+                        .align(Alignment.CenterVertically),
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
                 )
 
                 if (summary != null) {
                     TextButton(
                         onClick = { onNavigateToEditPlan(summary.planId) },
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
@@ -186,7 +192,10 @@ fun NextTrainPlanCard(
                 } else {
                     TextButton(
                         onClick = onNavigateToCalendar,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(36.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
