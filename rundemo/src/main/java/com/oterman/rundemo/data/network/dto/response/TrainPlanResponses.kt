@@ -32,6 +32,8 @@ data class TrainPlanDetailResponseData(
     @SerializedName("templateId") val templateId: String? = null,
     @SerializedName("workoutId") val workoutId: String? = null,
     @SerializedName("planIdOfAW") val planIdOfAW: String? = null,
+    @SerializedName("sentPlatformCodes") val sentPlatformCodes: List<String>? = null,
+    @SerializedName("sentPlatformExtWorkoutIds") val sentPlatformExtWorkoutIds: Map<String, String>? = null,
     @SerializedName("version") val version: Int? = null,
     @SerializedName("warmupBlock") val warmupBlock: TrainBlockResponseDto? = null,
     @SerializedName("blockList") val blockList: List<TrainBlockResponseDto>? = null,
@@ -101,6 +103,8 @@ data class TrainPlanSummaryDto(
     @SerializedName("finishFlag") val finishFlag: String? = null,
     @SerializedName("locationType") val locationType: String? = null,
     @SerializedName("workoutId") val workoutId: String? = null,
+    @SerializedName("sentPlatformCodes") val sentPlatformCodes: List<String>? = null,
+    @SerializedName("sentPlatformExtWorkoutIds") val sentPlatformExtWorkoutIds: Map<String, String>? = null,
     @SerializedName("version") val version: Int? = null
 )
 
@@ -114,6 +118,11 @@ data class DeleteTrainPlanResponseData(
 )
 
 // ==================== Push ====================
+
+data class PushTrainPlanWrapperResponseData(
+    @SerializedName("PushTrainPlanResponseDto")
+    val pushTrainPlanResponseDto: List<PushTrainPlanResponseData>? = null
+)
 
 data class PushTrainPlanResponseData(
     @SerializedName("planId") val planId: String? = null,
@@ -167,6 +176,8 @@ fun TrainPlanDetailResponseData.toDomain(): TrainPlan = TrainPlan(
     templateId = templateId,
     workoutId = workoutId,
     planIdOfAW = planIdOfAW,
+    sentPlatformCodes = sentPlatformCodes?.toSet() ?: emptySet(),
+    sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds ?: emptyMap(),
     version = version,
     warmupBlock = warmupBlock?.toDomain(),
     blockList = blockList?.map { it.toDomain() } ?: emptyList(),
@@ -187,5 +198,7 @@ fun TrainPlanSummaryDto.toDomain(): TrainPlanSummary = TrainPlanSummary(
     finishFlag = finishFlag,
     locationType = locationType,
     workoutId = workoutId,
+    sentPlatformCodes = sentPlatformCodes?.toSet() ?: emptySet(),
+    sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds ?: emptyMap(),
     version = version
 )

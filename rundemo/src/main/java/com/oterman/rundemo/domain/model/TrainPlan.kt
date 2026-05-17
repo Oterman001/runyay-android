@@ -71,6 +71,8 @@ data class TrainPlan(
     val templateId: String? = null,
     val workoutId: String? = null,
     val planIdOfAW: String? = null,
+    val sentPlatformCodes: Set<String> = emptySet(),
+    val sentPlatformExtWorkoutIds: Map<String, String> = emptyMap(),
     val version: Int? = null,
     val warmupBlock: TrainBlock? = null,
     val blockList: List<TrainBlock> = emptyList(),
@@ -122,5 +124,36 @@ data class TrainPlanSummary(
     val finishFlag: String? = "N",
     val locationType: String? = null,
     val workoutId: String? = null,
+    val sentPlatformCodes: Set<String> = emptySet(),
+    val sentPlatformExtWorkoutIds: Map<String, String> = emptyMap(),
     val version: Int? = null
 )
+
+fun TrainPlan.sentDevicePlatforms(): List<DataSourcePlatform> =
+    sentDevicePlatforms(sentPlatformCodes)
+
+fun TrainPlanSummary.sentDevicePlatforms(): List<DataSourcePlatform> =
+    sentDevicePlatforms(sentPlatformCodes)
+
+private fun sentDevicePlatforms(rawCodes: Set<String>): List<DataSourcePlatform> {
+    val order = listOf(DataSourcePlatform.GARMIN_GLOBAL, DataSourcePlatform.COROS)
+    return order.filter { rawCodes.contains(it.code) }
+}
+
+fun TrainPlan.markSent(platformCode: String, extWorkoutId: String? = null): TrainPlan {
+    val updatedExtIds = if (extWorkoutId.isNullOrBlank()) {
+        sentPlatformExtWorkoutIds
+    } else {
+        sentPlatformExtWorkoutIds + (platformCode to extWorkoutId)
+    }
+    return copy(
+        sentPlatformCodes = sentPlatformCodes + platformCode,
+        sentPlatformExtWorkoutIds = updatedExtIds
+    )
+}
+
+fun TrainPlan.removeSent(platformCode: String): TrainPlan =
+    copy(
+        sentPlatformCodes = sentPlatformCodes - platformCode,
+        sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds - platformCode
+    )

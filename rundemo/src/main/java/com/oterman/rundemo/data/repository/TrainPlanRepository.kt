@@ -9,6 +9,7 @@ import com.oterman.rundemo.data.network.RequestBuilder
 import com.oterman.rundemo.data.network.RetrofitClient
 import com.oterman.rundemo.data.network.api.TrainPlanApi
 import com.oterman.rundemo.data.network.dto.request.DeleteTrainPlanRequestDto
+import com.oterman.rundemo.data.network.dto.request.ClearPushedPlansRequestDto
 import com.oterman.rundemo.data.network.dto.request.PushTrainPlanRequestDto
 import com.oterman.rundemo.data.network.dto.request.SaveTrainPlanRequestDto
 import com.oterman.rundemo.data.network.dto.request.TrainBlockDto
@@ -19,14 +20,19 @@ import com.oterman.rundemo.data.network.dto.response.PushTrainPlanResponseData
 import com.oterman.rundemo.data.network.dto.response.TrainPlanListResponseData
 import com.oterman.rundemo.data.network.dto.response.toDomain
 import com.oterman.rundemo.domain.model.TrainBlock
+import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.TrainPlan
 import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.domain.model.TrainStep
+import com.oterman.rundemo.domain.model.markSent
+import com.oterman.rundemo.domain.model.removeSent
 import android.content.Context
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.util.RLog
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 class TrainPlanRepository(
     private val preferencesManager: PreferencesManager,
@@ -35,10 +41,30 @@ class TrainPlanRepository(
 ) {
     // L0 内存缓存：跨 ViewModel 共享，避免重复网络/DB 请求
     private val memoryCache = HashMap<String, TrainPlan>()
+    private val gson = Gson()
+    private val stringMapType = object : TypeToken<Map<String, String>>() {}.type
 
     fun peekDetail(planId: String): TrainPlan? = memoryCache[planId]
 
     fun evictMemoryCache() { memoryCache.clear() }
+
+    private fun Set<String>.toStorageString(): String? =
+        takeIf { it.isNotEmpty() }?.sorted()?.joinToString(",")
+
+    private fun Map<String, String>.toJsonStorage(): String? =
+        takeIf { it.isNotEmpty() }?.let { gson.toJson(it) }
+
+    private fun String?.toPlatformCodeSet(): Set<String> =
+        this?.split(",")
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.toSet()
+            ?: emptySet()
+
+    private fun String?.toStringMap(): Map<String, String> =
+        runCatching {
+            if (isNullOrBlank()) emptyMap() else gson.fromJson<Map<String, String>>(this, stringMapType)
+        }.getOrDefault(emptyMap())
 
     companion object {
         private const val TAG = "TrainPlanRepo"
@@ -157,7 +183,17 @@ class TrainPlanRepository(
 
         networkResult.onSuccess { summaries ->
             cacheSummaries(summaries, startDate, endDate)
-            return Result.success(mergeDirtyPlans(summaries, startDate, endDate))
+            val userId = preferencesManager.getUserId()
+            val cached = if (userId != null && localDao != null) {
+                localDao.getByDateRange(
+                    userId,
+                    startDate.format(ISO_DATE_FORMATTER),
+                    endDate.format(ISO_DATE_FORMATTER)
+                ).map { it.toSummaryDomain() }
+            } else {
+                summaries
+            }
+            return Result.success(mergeDirtyPlans(cached, startDate, endDate))
         }
 
         // 网络失败：尝试本地兜底
@@ -209,8 +245,14 @@ class TrainPlanRepository(
                 preferencesManager = preferencesManager
             )
             val response = api.pushTrainPlan(request)
-            if (response.isSuccess() && response.data != null) {
-                Result.success(response.data)
+            val result = response.data?.pushTrainPlanResponseDto?.firstOrNull()
+            if (response.isSuccess() && result != null) {
+                if (result.pushStatus == "SUCCESS") {
+                    markPlanPushed(planId, platformCode, result.extWorkoutId)
+                }
+                Result.success(result)
+            } else if (response.isSuccess()) {
+                Result.failure(Exception("推送返回数据为空"))
             } else {
                 Result.failure(Exception(response.msg))
             }
@@ -229,12 +271,33 @@ class TrainPlanRepository(
             )
             val response = api.deletePushedTrainPlan(request)
             if (response.isSuccess()) {
+                removePlanPushed(planId, platformCode)
                 Result.success(Unit)
             } else {
                 Result.failure(Exception(response.msg))
             }
         } catch (e: Exception) {
             RLog.e(TAG, "deletePushedPlan failed", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun clearPushedPlans(platformCode: String): Result<Unit> {
+        return try {
+            val request = RequestBuilder.createRequest(
+                dtoName = "ClearPushedPlansRequestDto",
+                data = ClearPushedPlansRequestDto(platformCode = platformCode),
+                preferencesManager = preferencesManager
+            )
+            val response = api.clearPushedTrainPlans(request)
+            if (response.isSuccess()) {
+                clearLocalPushedPlans(platformCode)
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.msg))
+            }
+        } catch (e: Exception) {
+            RLog.e(TAG, "clearPushedPlans failed", e)
             Result.failure(e)
         }
     }
@@ -283,7 +346,7 @@ class TrainPlanRepository(
             val response = api.getTrainPlanDetail(request)
             val detailData = response.data?.trainPlanDetailResponseDto?.firstOrNull()
             if (response.isSuccess() && detailData != null) {
-                val plan = detailData.toDomain()
+                val plan = withLocalPushStatus(detailData.toDomain())
                 cacheDetail(plan)
                 Result.success(plan)
             } else {
@@ -308,7 +371,7 @@ class TrainPlanRepository(
             val response = api.getTrainPlanDetail(request)
             val detailData = response.data?.trainPlanDetailResponseDto?.firstOrNull()
             if (response.isSuccess() && detailData != null) {
-                val plan = detailData.toDomain()
+                val plan = withLocalPushStatus(detailData.toDomain())
                 if (plan.version != null && plan.version != cachedVersion) {
                     cacheDetail(plan)
                     RLog.d(TAG, "refreshDetail: updated $planId v$cachedVersion → v${plan.version}")
@@ -321,12 +384,82 @@ class TrainPlanRepository(
 
     // ==================== 内部：本地缓存操作 ====================
 
+    private suspend fun withLocalPushStatus(plan: TrainPlan): TrainPlan {
+        val planId = plan.planId ?: return plan
+        val existing = localDao?.getById(planId)
+        val localCodes = existing?.sentPlatformCodes.toPlatformCodeSet()
+        val localExtIds = existing?.sentPlatformExtWorkoutIds.toStringMap()
+        if (localCodes.isEmpty() && localExtIds.isEmpty()) return plan
+        return plan.copy(
+            sentPlatformCodes = plan.sentPlatformCodes + localCodes,
+            sentPlatformExtWorkoutIds = localExtIds + plan.sentPlatformExtWorkoutIds
+        )
+    }
+
+    private suspend fun markPlanPushed(planId: String, platformCode: String, extWorkoutId: String?) {
+        val cachedPlan = memoryCache[planId] ?: localDao?.getById(planId)?.toDetailDomain()
+        if (cachedPlan != null) {
+            val updated = cachedPlan.markSent(platformCode, extWorkoutId)
+            memoryCache[planId] = updated
+            localDao?.updatePushState(
+                planId = planId,
+                sentPlatformCodes = updated.sentPlatformCodes.toStorageString(),
+                sentPlatformExtWorkoutIds = updated.sentPlatformExtWorkoutIds.toJsonStorage()
+            )
+            return
+        }
+
+        val existing = localDao?.getById(planId)
+        val updatedCodes = existing?.sentPlatformCodes.toPlatformCodeSet() + platformCode
+        val updatedExtIds = if (extWorkoutId.isNullOrBlank()) {
+            existing?.sentPlatformExtWorkoutIds.toStringMap()
+        } else {
+            existing?.sentPlatformExtWorkoutIds.toStringMap() + (platformCode to extWorkoutId)
+        }
+        localDao?.updatePushState(
+            planId = planId,
+            sentPlatformCodes = updatedCodes.toStorageString(),
+            sentPlatformExtWorkoutIds = updatedExtIds.toJsonStorage()
+        )
+    }
+
+    private suspend fun removePlanPushed(planId: String, platformCode: String) {
+        val cachedPlan = memoryCache[planId] ?: localDao?.getById(planId)?.toDetailDomain()
+        if (cachedPlan != null) {
+            val updated = cachedPlan.removeSent(platformCode)
+            memoryCache[planId] = updated
+            localDao?.updatePushState(
+                planId = planId,
+                sentPlatformCodes = updated.sentPlatformCodes.toStorageString(),
+                sentPlatformExtWorkoutIds = updated.sentPlatformExtWorkoutIds.toJsonStorage()
+            )
+            return
+        }
+
+        val existing = localDao?.getById(planId)
+        val updatedCodes = existing?.sentPlatformCodes.toPlatformCodeSet() - platformCode
+        val updatedExtIds = existing?.sentPlatformExtWorkoutIds.toStringMap() - platformCode
+        localDao?.updatePushState(
+            planId = planId,
+            sentPlatformCodes = updatedCodes.toStorageString(),
+            sentPlatformExtWorkoutIds = updatedExtIds.toJsonStorage()
+        )
+    }
+
+    private suspend fun clearLocalPushedPlans(platformCode: String) {
+        val pushedPlans = localDao?.getBySentPlatform(platformCode).orEmpty()
+        pushedPlans.forEach { entity ->
+            removePlanPushed(entity.planId, platformCode)
+        }
+    }
+
     private suspend fun cacheDetail(plan: TrainPlan) {
         val userId = preferencesManager.getUserId() ?: return
         val planId = plan.planId ?: return
-        memoryCache[planId] = plan  // L0 写入
+        val planToCache = withLocalPushStatus(plan)
+        memoryCache[planId] = planToCache  // L0 写入
         try {
-            val entity = plan.toEntity(userId, lastSyncAt = System.currentTimeMillis(), isDirty = false)
+            val entity = planToCache.toEntity(userId, lastSyncAt = System.currentTimeMillis(), isDirty = false)
             localDao?.upsert(entity)
             RLog.d(TAG, "cacheDetail: saved $planId to DB")
         } catch (e: Exception) {
@@ -405,6 +538,8 @@ class TrainPlanRepository(
 
                 summary.toEntity(
                     userId = userId,
+                    sentPlatformCodes = existing?.sentPlatformCodes.toPlatformCodeSet(),
+                    sentPlatformExtWorkoutIds = existing?.sentPlatformExtWorkoutIds.toStringMap(),
                     existingDetailJson = detailJson,
                     lastSyncAt = now
                 )

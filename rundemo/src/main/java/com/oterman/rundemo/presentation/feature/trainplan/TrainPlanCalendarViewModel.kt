@@ -5,10 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.dao.RunRecordDao
 import com.oterman.rundemo.data.local.database.RunDatabase
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
+import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.data.repository.TrainPlanRepository
+import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.TrainPlan
 import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.domain.model.TrainWholeType
@@ -51,12 +54,15 @@ data class CalendarUiState(
     val showCalendarPushDialog: Boolean = false,
     val isCalendarPushing: Boolean = false,
     val calendarPushSuccessMessage: String? = null,
+    val pendingClearPlatformCode: String? = null,
+    val isClearingPush: Boolean = false,
 )
 
 class CalendarViewModel(
     private val dao: RunRecordDao,
     private val preferencesManager: PreferencesManager,
-    private val trainPlanRepository: TrainPlanRepository
+    private val trainPlanRepository: TrainPlanRepository,
+    private val dataSourceRepository: DataSourceRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CalendarUiState())
@@ -164,6 +170,8 @@ class CalendarViewModel(
                     scheduledDate = targetDate.format(dateFormatter),
                     finishFlag = "N",
                     workoutId = null,
+                    sentPlatformCodes = emptySet(),
+                    sentPlatformExtWorkoutIds = emptyMap(),
                     version = 0
                 )
                 trainPlanRepository.savePlan(newPlan)
@@ -192,12 +200,28 @@ class CalendarViewModel(
         _uiState.update { it.copy(showCalendarPushDialog = true) }
     }
 
+    fun hasSentNextSevenDaysPlan(platformCode: String): Boolean {
+        val today = LocalDate.now()
+        val endDate = today.plusDays(6)
+        return monthPlans.any { plan ->
+            plan.sentPlatformCodes.contains(platformCode) &&
+                (plan.scheduledDate?.let { parsePlanDate(it) }
+                    ?.let { date -> !date.isBefore(today) && !date.isAfter(endDate) }
+                    ?: false)
+        }
+    }
+
     fun dismissCalendarPushDialog() {
         _uiState.update { it.copy(showCalendarPushDialog = false) }
     }
 
     fun pushPlansForNextSevenDays(platformCode: String) {
         dismissCalendarPushDialog()
+        val platform = DataSourcePlatform.fromCode(platformCode)
+        if (platform == null) {
+            _uiState.update { it.copy(calendarPushSuccessMessage = "不支持的平台") }
+            return
+        }
         val today = LocalDate.now()
         val endDate = today.plusDays(6)
         val plansToSend = monthPlans.filter { plan ->
@@ -211,12 +235,28 @@ class CalendarViewModel(
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isCalendarPushing = true) }
+            val isBound = dataSourceRepository.queryPlatformStatus(forceRefresh = true)
+                .getOrNull()
+                ?.any { it.platformCode == platformCode && it.isBound }
+                ?: false
+            if (!isBound) {
+                _uiState.update {
+                    it.copy(
+                        isCalendarPushing = false,
+                        calendarPushSuccessMessage = "请先绑定${platform.displayName}"
+                    )
+                }
+                return@launch
+            }
             var successCount = 0
             plansToSend.forEach { plan ->
                 trainPlanRepository.pushPlan(plan.planId, platformCode)
-                    .onSuccess { successCount++ }
+                    .onSuccess { result ->
+                        if (result.pushStatus == "SUCCESS") successCount++
+                    }
                     .onFailure { e -> RLog.w("CalendarVM", "pushPlan failed: ${e.message}") }
             }
+            loadPlansForMonth(_uiState.value.currentMonth)
             _uiState.update {
                 it.copy(
                     isCalendarPushing = false,
@@ -228,6 +268,41 @@ class CalendarViewModel(
 
     fun clearCalendarPushMessage() {
         _uiState.update { it.copy(calendarPushSuccessMessage = null) }
+    }
+
+    fun onClearPushRequest(platformCode: String) {
+        _uiState.update { it.copy(pendingClearPlatformCode = platformCode) }
+    }
+
+    fun dismissClearPushDialog() {
+        _uiState.update { it.copy(pendingClearPlatformCode = null) }
+    }
+
+    fun confirmClearPush() {
+        val platformCode = _uiState.value.pendingClearPlatformCode ?: return
+        dismissClearPushDialog()
+        viewModelScope.launch {
+            _uiState.update { it.copy(isClearingPush = true) }
+            trainPlanRepository.clearPushedPlans(platformCode)
+                .onSuccess {
+                    loadPlansForMonth(_uiState.value.currentMonth)
+                    _uiState.update {
+                        it.copy(
+                            isClearingPush = false,
+                            calendarPushSuccessMessage = "已清除推送数据"
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    RLog.e("CalendarVM", "clearPushedPlans failed", e)
+                    _uiState.update {
+                        it.copy(
+                            isClearingPush = false,
+                            calendarPushSuccessMessage = "清除失败：${e.message}"
+                        )
+                    }
+                }
+        }
     }
 
     fun refreshPlans(force: Boolean = true) {
@@ -414,7 +489,11 @@ class CalendarViewModelFactory(private val context: Context) : ViewModelProvider
             val db = RunDatabase.getInstance(context)
             val prefs = PreferencesManager(context)
             val trainPlanRepo = TrainPlanRepository.getInstance(context)
-            return CalendarViewModel(db.runRecordDao(), prefs, trainPlanRepo) as T
+            val dataSourceRepo = DataSourceRepository(
+                dataSourcePreferences = DataSourcePreferences(context.applicationContext),
+                preferencesManager = prefs
+            )
+            return CalendarViewModel(db.runRecordDao(), prefs, trainPlanRepo, dataSourceRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

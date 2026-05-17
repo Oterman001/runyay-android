@@ -36,6 +36,10 @@ data class TrainPlanEntity(
     /** 存原始字符串值，与 API 一致（如 INDOOR / OUTDOOR） */
     val locationType: String? = null,
     val workoutId: String? = null,
+    /** 已成功推送的平台代码，逗号分隔，如 GGB,COROS */
+    val sentPlatformCodes: String? = null,
+    /** 第三方平台返回的 workoutId 映射 JSON，如 {"GGB":"xxx"} */
+    val sentPlatformExtWorkoutIds: String? = null,
     /** 服务端版本号，每次 save 后递增，用于检测 detailJson 是否需要更新 */
     val version: Int? = null,
     /**

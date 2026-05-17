@@ -34,6 +34,8 @@ private fun String.normalizeToIsoDate(): String? {
  */
 fun TrainPlanSummary.toEntity(
     userId: String,
+    sentPlatformCodes: Set<String> = this.sentPlatformCodes,
+    sentPlatformExtWorkoutIds: Map<String, String> = this.sentPlatformExtWorkoutIds,
     existingDetailJson: String? = null,
     lastSyncAt: Long = System.currentTimeMillis(),
     isDirty: Boolean = false
@@ -48,6 +50,8 @@ fun TrainPlanSummary.toEntity(
     finishFlag = finishFlag,
     locationType = locationType,
     workoutId = workoutId,
+    sentPlatformCodes = sentPlatformCodes.toStorageString(),
+    sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds.toJsonStorage(),
     version = version,
     detailJson = existingDetailJson,
     lastSyncAt = lastSyncAt,
@@ -57,6 +61,25 @@ fun TrainPlanSummary.toEntity(
 // ==================== TrainPlan (detail) → TrainPlanEntity ====================
 
 private val gson = Gson()
+private val stringMapType = object : TypeToken<Map<String, String>>() {}.type
+
+private fun Set<String>.toStorageString(): String? =
+    takeIf { it.isNotEmpty() }?.sorted()?.joinToString(",")
+
+private fun String?.toPlatformCodeSet(): Set<String> =
+    this?.split(",")
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.toSet()
+        ?: emptySet()
+
+private fun Map<String, String>.toJsonStorage(): String? =
+    takeIf { it.isNotEmpty() }?.let { gson.toJson(it) }
+
+private fun String?.toStringMap(): Map<String, String> =
+    runCatching {
+        if (isNullOrBlank()) emptyMap() else gson.fromJson<Map<String, String>>(this, stringMapType)
+    }.getOrDefault(emptyMap())
 
 /**
  * 将完整 TrainPlan 序列化为 JSON。
@@ -86,6 +109,8 @@ fun TrainPlan.toEntity(
     finishFlag = finishFlag,
     locationType = locationType.value,
     workoutId = workoutId,
+    sentPlatformCodes = sentPlatformCodes.toStorageString(),
+    sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds.toJsonStorage(),
     version = version,
     detailJson = toDetailJson(),
     lastSyncAt = lastSyncAt,
@@ -107,6 +132,8 @@ fun TrainPlanEntity.toSummaryDomain(): TrainPlanSummary = TrainPlanSummary(
     finishFlag = finishFlag,
     locationType = locationType,
     workoutId = workoutId,
+    sentPlatformCodes = sentPlatformCodes.toPlatformCodeSet(),
+    sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds.toStringMap(),
     version = version
 )
 
@@ -118,7 +145,10 @@ fun TrainPlanEntity.toDetailDomain(): TrainPlan? {
     val json = detailJson ?: return null
     return runCatching {
         val dto = gson.fromJson(json, TrainPlanDetailResponseData::class.java)
-        dto.toDomain()
+        dto.toDomain().copy(
+            sentPlatformCodes = sentPlatformCodes.toPlatformCodeSet(),
+            sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds.toStringMap()
+        )
     }.getOrNull()
 }
 
@@ -140,6 +170,8 @@ private fun TrainPlan.toDetailResponseDto() = TrainPlanDetailResponseData(
     templateId = templateId,
     workoutId = workoutId,
     planIdOfAW = planIdOfAW,
+    sentPlatformCodes = sentPlatformCodes.toList(),
+    sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds,
     version = version,
     warmupBlock = warmupBlock?.let {
         com.oterman.rundemo.data.network.dto.response.TrainBlockResponseDto(

@@ -29,6 +29,9 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -57,8 +60,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -114,6 +119,7 @@ fun TrainPlanCalendarScreen(
     val uiState by viewModel.uiState.collectAsState()
     val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
     val snackbarHostState = remember { SnackbarHostState() }
+    var showMoreMenu by remember { mutableStateOf(false) }
     val pushPlatforms = remember {
         DataSourcePlatform.entries.filter {
             it.isEnabled && it.requiresOAuthBinding && it != DataSourcePlatform.GARMIN_CHINA
@@ -156,6 +162,29 @@ fun TrainPlanCalendarScreen(
         }
     }
 
+    // Clear push confirmation dialog
+    uiState.pendingClearPlatformCode?.let { platformCode ->
+        val platformName = when (platformCode) {
+            DataSourcePlatform.GARMIN_GLOBAL.code -> "佳明"
+            DataSourcePlatform.COROS.code -> "高驰"
+            else -> platformCode
+        }
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissClearPushDialog() },
+            title = { Text("清除推送数据") },
+            text = { Text("确认清除所有推送到「$platformName」的课表数据？此操作不可撤销。") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmClearPush() }) {
+                    Text("确认清除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissClearPushDialog() }) { Text("取消") }
+            }
+        )
+    }
+
     // Calendar push platform dialog
     if (uiState.showCalendarPushDialog) {
         val today = LocalDate.now()
@@ -191,7 +220,11 @@ fun TrainPlanCalendarScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = platform.displayName,
+                                    text = if (viewModel.hasSentNextSevenDaysPlan(platform.code)) {
+                                        "重新发送到${platform.displayName}"
+                                    } else {
+                                        platform.displayName
+                                    },
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Medium
                                 )
@@ -285,7 +318,8 @@ fun TrainPlanCalendarScreen(
                     }
                 },
                 actions = {
-                    if (uiState.isCalendarPushing) {
+                    val isActioning = uiState.isCalendarPushing || uiState.isClearingPush
+                    if (isActioning) {
                         CircularProgressIndicator(
                             modifier = Modifier.padding(end = 16.dp).size(20.dp),
                             strokeWidth = 2.dp
@@ -297,6 +331,7 @@ fun TrainPlanCalendarScreen(
                                 contentDescription = "发送训练计划到手表"
                             )
                         }
+                        // 三个点菜单暂时隐藏，后续开放
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

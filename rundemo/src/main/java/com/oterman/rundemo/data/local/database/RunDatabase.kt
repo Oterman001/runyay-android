@@ -47,7 +47,7 @@ import com.oterman.rundemo.data.local.entity.TrainPlanEntity
         RunningShoeEntity::class,
         TrainPlanEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -142,6 +142,13 @@ abstract class RunDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE train_plan ADD COLUMN sentPlatformCodes TEXT")
+                db.execSQL("ALTER TABLE train_plan ADD COLUMN sentPlatformExtWorkoutIds TEXT")
+            }
+        }
+
         val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
@@ -156,6 +163,8 @@ abstract class RunDatabase : RoomDatabase() {
                         finishFlag TEXT DEFAULT 'N',
                         locationType TEXT,
                         workoutId TEXT,
+                        sentPlatformCodes TEXT,
+                        sentPlatformExtWorkoutIds TEXT,
                         version INTEGER,
                         detailJson TEXT,
                         lastSyncAt INTEGER NOT NULL DEFAULT 0,
@@ -177,7 +186,7 @@ abstract class RunDatabase : RoomDatabase() {
                     RunDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

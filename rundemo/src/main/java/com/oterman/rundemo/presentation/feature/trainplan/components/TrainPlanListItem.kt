@@ -1,5 +1,7 @@
 package com.oterman.rundemo.presentation.feature.trainplan.components
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,9 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Watch
+import androidx.compose.material.icons.outlined.SendToMobile
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +32,8 @@ import com.oterman.rundemo.R
 import com.oterman.rundemo.domain.model.TrainPlan
 import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.domain.model.TrainWholeType
+import com.oterman.rundemo.domain.model.DataSourcePlatform
+import com.oterman.rundemo.domain.model.sentDevicePlatforms
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.trainplan.distanceMeters
 import com.oterman.rundemo.presentation.feature.trainplan.estimateDistance
@@ -50,8 +55,8 @@ fun TrainPlanListItem(
     detail: TrainPlan? = null
 ) {
     val metrics = buildPlanMetrics(plan, detail)
-    val blue = RunTheme.colorScheme.blue
     val dimTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+    val sentPlatforms = detail?.sentDevicePlatforms() ?: plan.sentDevicePlatforms()
 
     StatisticsCard(
         modifier = modifier
@@ -59,7 +64,7 @@ fun TrainPlanListItem(
             .clickable(onClick = onClick)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Title row: name + watch icon + checkmark icon
+            // Title row: name + checkmark icon
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = plan.name,
@@ -72,13 +77,6 @@ fun TrainPlanListItem(
                 )
                 Spacer(Modifier.width(8.dp))
                 Icon(
-                    imageVector = Icons.Default.Watch,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = if (plan.workoutId != null) blue else dimTint
-                )
-                Spacer(Modifier.width(4.dp))
-                Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
@@ -86,10 +84,86 @@ fun TrainPlanListItem(
                 )
             }
 
+            TrainPlanSentPlatformTags(platforms = sentPlatforms)
+
             if (metrics.isNotEmpty()) {
                 MetricsRow(metrics = metrics)
             }
         }
+    }
+}
+
+@Composable
+fun TrainPlanSentPlatformTags(
+    platforms: List<DataSourcePlatform>,
+    modifier: Modifier = Modifier,
+    showEmptyState: Boolean = true
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (platforms.isEmpty()) {
+            if (showEmptyState) {
+                SentPlatformTag(
+                    label = "未发送到设备",
+                    platform = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            platforms.forEach { platform ->
+                SentPlatformTag(
+                    label = platform.displayName,
+                    platform = platform,
+                    tint = when (platform) {
+                        DataSourcePlatform.GARMIN_GLOBAL -> Color(0xFF00A9E0)
+                        DataSourcePlatform.COROS -> StepTrainingColor
+                        else -> RunTheme.colorScheme.blue
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SentPlatformTag(
+    label: String,
+    platform: DataSourcePlatform?,
+    tint: Color
+) {
+    Row(
+        modifier = Modifier
+            .background(tint.copy(alpha = 0.12f), RoundedCornerShape(50))
+            .padding(horizontal = 7.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (platform == null) {
+            Icon(
+                imageVector = Icons.Outlined.SendToMobile,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = tint
+            )
+        } else {
+            Image(
+                painter = painterResource(platform.iconResId),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(RoundedCornerShape(2.dp))
+            )
+        }
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = tint,
+            maxLines = 1
+        )
     }
 }
 

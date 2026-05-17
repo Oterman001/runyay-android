@@ -74,3 +74,7 @@ data class PushTrainPlanRequestDto(
     @SerializedName("planId") val planId: String,
     @SerializedName("platformCode") val platformCode: String
 )
+
+data class ClearPushedPlansRequestDto(
+    @SerializedName("platformCode") val platformCode: String
+)

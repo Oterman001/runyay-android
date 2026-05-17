@@ -85,6 +85,7 @@ import com.oterman.rundemo.util.FeatureFlags
 import com.oterman.rundemo.presentation.feature.trainplan.components.SingleGoalEditor
 import com.oterman.rundemo.presentation.feature.trainplan.components.StepEditSheet
 import com.oterman.rundemo.presentation.feature.trainplan.components.TrainBlockCard
+import com.oterman.rundemo.presentation.feature.trainplan.components.TrainPlanSentPlatformTags
 import com.oterman.rundemo.ui.theme.RunTheme
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -121,6 +122,7 @@ fun TrainPlanEditScreen(
             it.isEnabled && it.requiresOAuthBinding && it != DataSourcePlatform.GARMIN_CHINA
         }
     }
+    val sentPlatforms = uiState.sentPlatformCodes.mapNotNull { DataSourcePlatform.fromCode(it) }
     val lazyListState = rememberLazyListState()
     val mainBlockStartIndex = remember(
         uiState.trainWholeType,
@@ -229,7 +231,11 @@ fun TrainPlanEditScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = platform.displayName,
+                                    text = if (uiState.sentPlatformCodes.contains(platform.code)) {
+                                        "重新发送到${platform.displayName}"
+                                    } else {
+                                        platform.displayName
+                                    },
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Medium
                                 )
@@ -251,7 +257,7 @@ fun TrainPlanEditScreen(
             title = { Text("从手表删除推送") },
             text = {
                 androidx.compose.foundation.layout.Column {
-                    pushPlatforms.forEach { platform ->
+                    pushPlatforms.filter { uiState.sentPlatformCodes.contains(it.code) }.forEach { platform ->
                         TextButton(
                             onClick = {
                                 showDeletePushPlatformSelect = false
@@ -341,7 +347,7 @@ fun TrainPlanEditScreen(
                                             showDeleteConfirm = true
                                         }
                                     )
-                                    if (uiState.workoutId != null) {
+                                    if (uiState.sentPlatformCodes.isNotEmpty()) {
                                         HorizontalDivider()
                                         DropdownMenuItem(
                                             text = { Text("从手表删除推送") },
@@ -433,6 +439,7 @@ fun TrainPlanEditScreen(
                     onLocationTypeChange = viewModel::onLocationTypeChange,
                     trainWholeType = uiState.trainWholeType,
                     onTrainWholeTypeChange = viewModel::onTrainWholeTypeChange,
+                    sentPlatforms = sentPlatforms,
                     isEditMode = uiState.isEditMode
                 )
             }
@@ -596,6 +603,7 @@ private fun BasicInfoCard(
     onLocationTypeChange: (LocationType) -> Unit,
     trainWholeType: TrainWholeType,
     onTrainWholeTypeChange: (TrainWholeType) -> Unit,
+    sentPlatforms: List<DataSourcePlatform>,
     isEditMode: Boolean
 ) {
     val rowHeight = 44.dp
@@ -654,6 +662,17 @@ private fun BasicInfoCard(
                     modifier = Modifier.weight(1f)
                 )
             }
+        }
+        HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(rowHeight),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("发送状态", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.weight(1f))
+            TrainPlanSentPlatformTags(platforms = sentPlatforms)
         }
         HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
         Row(

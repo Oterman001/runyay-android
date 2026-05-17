@@ -22,7 +22,8 @@ interface TrainPlanDao {
     @Query("""
         SELECT planId, userId, name, description, trainWholeType,
                scheduledDate, hardLevel, finishFlag, locationType,
-               workoutId, version, NULL AS detailJson, lastSyncAt, isDirty
+               workoutId, sentPlatformCodes, sentPlatformExtWorkoutIds,
+               version, NULL AS detailJson, lastSyncAt, isDirty
         FROM train_plan
         WHERE userId = :userId
           AND scheduledDate IS NOT NULL
@@ -68,4 +69,26 @@ interface TrainPlanDao {
         WHERE planId = :planId
     """)
     suspend fun updateDetail(planId: String, detailJson: String, version: Int?, syncAt: Long)
+
+    @Query("""
+        UPDATE train_plan
+        SET sentPlatformCodes = :sentPlatformCodes,
+            sentPlatformExtWorkoutIds = :sentPlatformExtWorkoutIds
+        WHERE planId = :planId
+    """)
+    suspend fun updatePushState(
+        planId: String,
+        sentPlatformCodes: String?,
+        sentPlatformExtWorkoutIds: String?
+    )
+
+    @Query("""
+        SELECT planId, userId, name, description, trainWholeType,
+               scheduledDate, hardLevel, finishFlag, locationType,
+               workoutId, sentPlatformCodes, sentPlatformExtWorkoutIds,
+               version, detailJson, lastSyncAt, isDirty
+        FROM train_plan
+        WHERE sentPlatformCodes LIKE '%' || :platformCode || '%'
+    """)
+    suspend fun getBySentPlatform(platformCode: String): List<TrainPlanEntity>
 }

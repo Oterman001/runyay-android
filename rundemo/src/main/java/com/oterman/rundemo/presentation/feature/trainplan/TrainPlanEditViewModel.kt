@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.oterman.rundemo.data.local.PreferencesManager
+import com.oterman.rundemo.data.local.DataSourcePreferences
 import com.oterman.rundemo.data.local.dao.OverallVdotDao
+import com.oterman.rundemo.data.repository.DataSourceRepository
 import com.oterman.rundemo.data.repository.TrainPlanRepository
 import com.oterman.rundemo.domain.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +21,7 @@ import java.util.UUID
 
 class TrainPlanEditViewModel(
     private val repository: TrainPlanRepository,
+    private val dataSourceRepository: DataSourceRepository,
     private val overallVdotDao: OverallVdotDao
 ) : ViewModel() {
 
@@ -518,9 +521,40 @@ class TrainPlanEditViewModel(
     fun pushPlan(platformCode: String) {
         val planId = _uiState.value.planId ?: return
         viewModelScope.launch {
+            val platform = DataSourcePlatform.fromCode(platformCode)
+            if (platform == null) {
+                _uiState.update { it.copy(errorMessage = "不支持的平台") }
+                return@launch
+            }
+            val isBound = dataSourceRepository.queryPlatformStatus(forceRefresh = true)
+                .getOrNull()
+                ?.any { it.platformCode == platformCode && it.isBound }
+                ?: false
+            if (!isBound) {
+                _uiState.update { it.copy(errorMessage = "请先绑定${platform.displayName}") }
+                return@launch
+            }
             _uiState.update { it.copy(isPushing = true) }
             repository.pushPlan(planId, platformCode)
-                .onSuccess { result -> _uiState.update { it.copy(isPushing = false, workoutId = result.extWorkoutId, successMessage = "推送成功") } }
+                .onSuccess { result ->
+                    if (result.pushStatus == "SUCCESS") {
+                        _uiState.update {
+                            it.copy(
+                                isPushing = false,
+                                workoutId = result.extWorkoutId ?: it.workoutId,
+                                sentPlatformCodes = it.sentPlatformCodes + platformCode,
+                                sentPlatformExtWorkoutIds = if (result.extWorkoutId.isNullOrBlank()) {
+                                    it.sentPlatformExtWorkoutIds
+                                } else {
+                                    it.sentPlatformExtWorkoutIds + (platformCode to result.extWorkoutId)
+                                },
+                                successMessage = "推送成功"
+                            )
+                        }
+                    } else {
+                        _uiState.update { it.copy(isPushing = false, errorMessage = "推送失败") }
+                    }
+                }
                 .onFailure { e -> _uiState.update { it.copy(isPushing = false, errorMessage = e.message ?: "推送失败") } }
         }
     }
@@ -530,7 +564,18 @@ class TrainPlanEditViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isDeletingPush = true) }
             repository.deletePushedPlan(planId, platformCode)
-                .onSuccess { _uiState.update { it.copy(isDeletingPush = false, workoutId = null, successMessage = "已从手表删除") } }
+                .onSuccess {
+                    _uiState.update {
+                        val remainingCodes = it.sentPlatformCodes - platformCode
+                        it.copy(
+                            isDeletingPush = false,
+                            workoutId = if (remainingCodes.isEmpty()) null else it.workoutId,
+                            sentPlatformCodes = remainingCodes,
+                            sentPlatformExtWorkoutIds = it.sentPlatformExtWorkoutIds - platformCode,
+                            successMessage = "已从手表删除"
+                        )
+                    }
+                }
                 .onFailure { e -> _uiState.update { it.copy(isDeletingPush = false, errorMessage = e.message ?: "从手表删除失败") } }
         }
     }
@@ -559,7 +604,9 @@ class TrainPlanEditViewModel(
                 timeGoalStep = plan.timeGoalStep,
                 calGoalStep = plan.calGoalStep,
                 pacerGoalStep = plan.pacerGoalStep,
-                workoutId = plan.workoutId
+                workoutId = plan.workoutId,
+                sentPlatformCodes = plan.sentPlatformCodes,
+                sentPlatformExtWorkoutIds = plan.sentPlatformExtWorkoutIds
             )
         }
     }
@@ -667,6 +714,8 @@ internal fun buildTrainPlanForSave(state: TrainPlanEditUiState): TrainPlan {
         warmupBlock = normalBlocks.warmupBlock,
         blockList = normalBlocks.mainBlocks,
         cooldownBlock = normalBlocks.cooldownBlock,
+        sentPlatformCodes = state.sentPlatformCodes,
+        sentPlatformExtWorkoutIds = state.sentPlatformExtWorkoutIds,
         calGoalStep = if (state.trainWholeType == TrainWholeType.CALORIES) {
             state.calGoalStep ?: createSingleGoalStepForSave(TrainWholeType.CALORIES)
         } else null,
@@ -782,7 +831,11 @@ class TrainPlanEditViewModelFactory(private val context: Context) : ViewModelPro
         if (modelClass.isAssignableFrom(TrainPlanEditViewModel::class.java)) {
             val db = com.oterman.rundemo.data.local.database.RunDatabase.getInstance(context)
             val repository = TrainPlanRepository.getInstance(context)
-            return TrainPlanEditViewModel(repository, db.overallVdotDao()) as T
+            val dataSourceRepository = DataSourceRepository(
+                dataSourcePreferences = DataSourcePreferences(context.applicationContext),
+                preferencesManager = PreferencesManager(context.applicationContext)
+            )
+            return TrainPlanEditViewModel(repository, dataSourceRepository, db.overallVdotDao()) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
