@@ -26,6 +26,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 data class CalendarUiState(
     val currentMonth: YearMonth = YearMonth.now(),
@@ -40,7 +41,11 @@ data class CalendarUiState(
     val isDeletingPlan: Boolean = false,
     val selectedDateDetails: Map<String, TrainPlan> = emptyMap(),
     val isLoadingDetails: Boolean = false,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+    val pendingActionPlanId: String? = null,
+    val showDeleteConfirmDialog: Boolean = false,
+    val showCopyDatePicker: Boolean = false,
+    val showMoveDatePicker: Boolean = false,
 )
 
 class CalendarViewModel(
@@ -112,6 +117,69 @@ class CalendarViewModel(
                 RLog.e("CalendarVM", "deletePlan failed", e)
             }
             _uiState.update { it.copy(isDeletingPlan = false) }
+        }
+    }
+
+    fun onDeletePlanRequest(planId: String) {
+        _uiState.update { it.copy(pendingActionPlanId = planId, showDeleteConfirmDialog = true) }
+    }
+
+    fun onCopyPlanRequest(planId: String) {
+        _uiState.update { it.copy(pendingActionPlanId = planId, showCopyDatePicker = true) }
+    }
+
+    fun onMovePlanRequest(planId: String) {
+        _uiState.update { it.copy(pendingActionPlanId = planId, showMoveDatePicker = true) }
+    }
+
+    fun onDismissActionDialog() {
+        _uiState.update {
+            it.copy(
+                pendingActionPlanId = null,
+                showDeleteConfirmDialog = false,
+                showCopyDatePicker = false,
+                showMoveDatePicker = false
+            )
+        }
+    }
+
+    fun confirmDeletePlan() {
+        val planId = _uiState.value.pendingActionPlanId ?: return
+        onDismissActionDialog()
+        deletePlan(planId)
+    }
+
+    fun confirmCopyPlan(targetDate: LocalDate) {
+        val planId = _uiState.value.pendingActionPlanId ?: return
+        onDismissActionDialog()
+        viewModelScope.launch {
+            trainPlanRepository.getPlanDetail(planId).onSuccess { plan ->
+                val newPlan = plan.copy(
+                    planId = UUID.randomUUID().toString(),
+                    scheduledDate = targetDate.format(dateFormatter),
+                    finishFlag = "N",
+                    workoutId = null,
+                    version = 0
+                )
+                trainPlanRepository.savePlan(newPlan)
+                refreshCurrentMonth()
+            }.onFailure { e ->
+                RLog.e("CalendarVM", "confirmCopyPlan failed", e)
+            }
+        }
+    }
+
+    fun confirmMovePlan(newDate: LocalDate) {
+        val planId = _uiState.value.pendingActionPlanId ?: return
+        onDismissActionDialog()
+        viewModelScope.launch {
+            trainPlanRepository.getPlanDetail(planId).onSuccess { plan ->
+                val updated = plan.copy(scheduledDate = newDate.format(dateFormatter))
+                trainPlanRepository.savePlan(updated)
+                refreshCurrentMonth()
+            }.onFailure { e ->
+                RLog.e("CalendarVM", "confirmMovePlan failed", e)
+            }
         }
     }
 
