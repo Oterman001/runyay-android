@@ -969,6 +969,7 @@ fun AppNavGraph(
                 onEditPlan = { planId ->
                     navController.navigate(Screen.TrainPlanEdit.createRoute(planId = planId))
                 },
+                onNavigateMcp = { navController.navigate(Screen.McpConnectionManage.route) },
                 viewModel = calendarViewModel
             )
         }

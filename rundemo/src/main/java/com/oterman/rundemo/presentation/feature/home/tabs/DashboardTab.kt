@@ -94,7 +94,8 @@ fun DashboardTabContent(
     onNavigateToVdotDetail: () -> Unit = {},
     onSwitchToDataTab: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
-    onNavigateToEditPlan: (String) -> Unit = {}
+    onNavigateToEditPlan: (String) -> Unit = {},
+    onNavigateToMcpConnectionManage: () -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -243,7 +244,8 @@ fun DashboardTabContent(
                                 detail = uiState.nextTrainPlanDetail,
                                 modifier = cardModifier,
                                 onNavigateToCalendar = onNavigateToCalendar,
-                                onNavigateToEditPlan = onNavigateToEditPlan
+                                onNavigateToEditPlan = onNavigateToEditPlan,
+                                onNavigateMcp = onNavigateToMcpConnectionManage
                             )
                         }
                         DashboardCardId.TOTAL_VDOT -> {

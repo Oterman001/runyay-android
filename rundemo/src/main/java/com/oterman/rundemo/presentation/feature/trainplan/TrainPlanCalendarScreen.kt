@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -112,6 +113,7 @@ fun TrainPlanCalendarScreen(
     onBack: () -> Unit = {},
     onAddPlan: (String?) -> Unit = {},
     onEditPlan: (String) -> Unit = {},
+    onNavigateMcp: () -> Unit = {},
     viewModel: CalendarViewModel = viewModel(
         factory = CalendarViewModelFactory(LocalContext.current)
     )
@@ -455,7 +457,13 @@ fun TrainPlanCalendarScreen(
                     }
                 } else if (uiState.selectedDateRecords.isEmpty() && uiState.selectedDatePlans.isEmpty()) {
                     item {
-                        EmptyHint(text = "当天没有记录")
+                        val today = LocalDate.now()
+                        val selectedDate = uiState.selectedDate
+                        if (selectedDate != null && !selectedDate.isBefore(today)) {
+                            CalendarMcpHint(onNavigateMcp = onNavigateMcp)
+                        } else {
+                            EmptyHint(text = "当天没有记录")
+                        }
                     }
                 }
             } else {
@@ -685,6 +693,38 @@ private fun DayCell(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CalendarMcpHint(onNavigateMcp: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = "当天暂无训练计划",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+        )
+        Text(
+            text = "试试通过 Claude、ChatGPT + MCP，让 AI 帮你安排训练并推送到跑鸭日历",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+        )
+        TextButton(
+            onClick = onNavigateMcp,
+            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 2.dp)
+        ) {
+            Text("配置 MCP 接入", fontSize = 12.sp)
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp)
+            )
         }
     }
 }

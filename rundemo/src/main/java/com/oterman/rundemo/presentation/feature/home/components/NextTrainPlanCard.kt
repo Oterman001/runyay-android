@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -55,7 +56,8 @@ fun NextTrainPlanCard(
     detail: TrainPlan?,
     modifier: Modifier = Modifier,
     onNavigateToCalendar: () -> Unit = {},
-    onNavigateToEditPlan: (String) -> Unit = {}
+    onNavigateToEditPlan: (String) -> Unit = {},
+    onNavigateMcp: () -> Unit = {}
 ) {
     val onCardClick: () -> Unit = if (summary != null) {
         { onNavigateToEditPlan(summary.planId) }
@@ -81,17 +83,34 @@ fun NextTrainPlanCard(
             }
 
             if (summary == null) {
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(vertical = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "日程中无任何训练",
+                        text = "暂无训练安排",
                         style = MaterialTheme.typography.bodyMedium,
                         color = SecondaryTextColor
                     )
+                    Row(
+                        modifier = Modifier.clickable(onClick = onNavigateMcp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = "通过 AI + MCP 制定并推送计划",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            modifier = Modifier.size(13.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                        )
+                    }
                 }
             } else {
                 Spacer(modifier = Modifier.height(10.dp))

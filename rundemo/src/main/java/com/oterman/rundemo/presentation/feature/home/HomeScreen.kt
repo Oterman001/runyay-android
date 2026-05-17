@@ -220,7 +220,8 @@ fun HomeScreen(
                     },
                     onSwitchToDataTab = { viewModel.selectTab(HomeTab.DATA) },
                     onNavigateToCalendar = onNavigateToCalendar,
-                    onNavigateToEditPlan = onNavigateToEditPlan
+                    onNavigateToEditPlan = onNavigateToEditPlan,
+                    onNavigateToMcpConnectionManage = onNavigateToMcpConnectionManage
                 )
                 HomeTab.DATA -> DataTabContent(
                     onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },

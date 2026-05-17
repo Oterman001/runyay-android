@@ -313,7 +313,7 @@ private fun McpGuideSection(onCopied: () -> Unit) {
     SectionCard {
         SectionTitle(
             title = "MCP 服务",
-            subtitle = "添加到支持 MCP 的 AI 客户端",
+            subtitle = "让 AI 直接帮你制定和推送训练计划",
             icon = Icons.Outlined.SyncAlt
         )
 
@@ -348,9 +348,9 @@ private fun McpGuideSection(onCopied: () -> Unit) {
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-        GuideStep(1, "复制 MCP 服务地址。")
-        GuideStep(2, "在支持 MCP 的 AI 客户端中添加远程 MCP Server。")
-        GuideStep(3, "使用跑鸭账号登录授权，回到本页刷新查看连接。")
+        GuideStep(1, "复制下方 MCP 服务地址。")
+        GuideStep(2, "在 Claude、ChatGPT 等 AI 工具中添加此 MCP 服务，用跑鸭账号完成授权。")
+        GuideStep(3, "告诉 AI 你的训练目标，让它为你制定计划并直接推送到跑鸭。")
     }
 }
 
@@ -419,7 +419,7 @@ private fun ConnectionSection(
         Spacer(modifier = Modifier.height(8.dp))
 
         if (connections.isEmpty()) {
-            InlineEmptyState("暂无已授权连接", "添加 MCP 服务并授权后会显示在这里。", Icons.Outlined.Link)
+            InlineEmptyState("暂无已授权 AI 连接", "按上方步骤配置后，Claude 或 ChatGPT 即可为你安排训练计划。", Icons.Outlined.Link)
         } else {
             connections.forEachIndexed { index, connection ->
                 ConnectionRow(connection = connection, onManage = { onManage(connection) })
