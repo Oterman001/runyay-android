@@ -310,7 +310,7 @@ private fun HardLevelDots(level: Int) {
 
 @Composable
 private fun StructureBar(blocks: List<StructureSegment>) {
-    val total = blocks.sumOf { it.weight }.coerceAtLeast(1f)
+    val total = blocks.fold(0f) { acc, seg -> acc + seg.weight }.coerceAtLeast(1f)
     Row(
         modifier = Modifier
             .fillMaxWidth()
