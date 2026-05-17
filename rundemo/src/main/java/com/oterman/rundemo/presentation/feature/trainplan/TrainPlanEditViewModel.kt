@@ -501,6 +501,10 @@ class TrainPlanEditViewModel(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
+    fun clearSuccessMessage() {
+        _uiState.update { it.copy(successMessage = null) }
+    }
+
     fun deletePlan() {
         val planId = _uiState.value.planId ?: return
         viewModelScope.launch {
@@ -516,7 +520,7 @@ class TrainPlanEditViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isPushing = true) }
             repository.pushPlan(planId, platformCode)
-                .onSuccess { result -> _uiState.update { it.copy(isPushing = false, workoutId = result.extWorkoutId) } }
+                .onSuccess { result -> _uiState.update { it.copy(isPushing = false, workoutId = result.extWorkoutId, successMessage = "推送成功") } }
                 .onFailure { e -> _uiState.update { it.copy(isPushing = false, errorMessage = e.message ?: "推送失败") } }
         }
     }
@@ -526,7 +530,7 @@ class TrainPlanEditViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isDeletingPush = true) }
             repository.deletePushedPlan(planId, platformCode)
-                .onSuccess { _uiState.update { it.copy(isDeletingPush = false, workoutId = null) } }
+                .onSuccess { _uiState.update { it.copy(isDeletingPush = false, workoutId = null, successMessage = "已从手表删除") } }
                 .onFailure { e -> _uiState.update { it.copy(isDeletingPush = false, errorMessage = e.message ?: "从手表删除失败") } }
         }
     }

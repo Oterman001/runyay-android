@@ -51,6 +51,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -80,6 +81,7 @@ import com.oterman.rundemo.domain.model.LocationType
 import com.oterman.rundemo.domain.model.TrainBlock
 import com.oterman.rundemo.domain.model.TrainStep
 import com.oterman.rundemo.domain.model.TrainWholeType
+import com.oterman.rundemo.util.FeatureFlags
 import com.oterman.rundemo.presentation.feature.trainplan.components.SingleGoalEditor
 import com.oterman.rundemo.presentation.feature.trainplan.components.StepEditSheet
 import com.oterman.rundemo.presentation.feature.trainplan.components.TrainBlockCard
@@ -153,6 +155,13 @@ fun TrainPlanEditScreen(
         uiState.errorMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
+        }
+    }
+
+    LaunchedEffect(uiState.successMessage) {
+        uiState.successMessage?.let {
+            snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short)
+            viewModel.clearSuccessMessage()
         }
     }
 
@@ -661,34 +670,36 @@ private fun BasicInfoCard(
                 )
             }
         }
-        HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(rowHeight),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("类型", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.weight(1f))
-            if (isEditMode) {
-                TypeDropdown(
-                    options = listOf(
-                        TrainWholeType.SELF_DEFINE to "自定义",
-                        TrainWholeType.DISTANCE to "距离",
-                        TrainWholeType.TIME to "时间",
-                        TrainWholeType.CALORIES to "卡路里",
-                        TrainWholeType.PACER to "配速员"
-                    ),
-                    selected = trainWholeType,
-                    onSelected = onTrainWholeTypeChange,
-                    enabled = true
-                )
-            } else {
-                Text(
-                    text = trainWholeType.displayName(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+        if (!FeatureFlags.ONLY_CUSTOM_PLAN_TYPE) {
+            HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(rowHeight),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("类型", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.weight(1f))
+                if (isEditMode) {
+                    TypeDropdown(
+                        options = listOf(
+                            TrainWholeType.SELF_DEFINE to "自定义",
+                            TrainWholeType.DISTANCE to "距离",
+                            TrainWholeType.TIME to "时间",
+                            TrainWholeType.CALORIES to "卡路里",
+                            TrainWholeType.PACER to "配速员"
+                        ),
+                        selected = trainWholeType,
+                        onSelected = onTrainWholeTypeChange,
+                        enabled = true
+                    )
+                } else {
+                    Text(
+                        text = trainWholeType.displayName(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
     }
