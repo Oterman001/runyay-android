@@ -1,6 +1,7 @@
 package com.oterman.rundemo.presentation.feature.home.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,11 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.HorizontalDivider
@@ -29,7 +28,6 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -37,8 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oterman.rundemo.R
-import com.oterman.rundemo.domain.model.BlockType
-import com.oterman.rundemo.domain.model.TrainBlock
 import com.oterman.rundemo.domain.model.TrainPlan
 import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.domain.model.TrainWholeType
@@ -49,14 +45,10 @@ import com.oterman.rundemo.presentation.feature.trainplan.estimateTime
 import com.oterman.rundemo.presentation.feature.trainplan.formatDistance
 import com.oterman.rundemo.presentation.feature.trainplan.formatDurationColon
 import com.oterman.rundemo.presentation.feature.trainplan.goalText
-import com.oterman.rundemo.presentation.feature.trainplan.intensityText
 import com.oterman.rundemo.ui.theme.SecondaryTextColor
 import com.oterman.rundemo.ui.theme.StepTrainingColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
-private val WarmupBarColor = Color(0xFF90CAF9)
-private val CooldownBarColor = Color(0xFF81C784)
 
 @Composable
 fun NextTrainPlanCard(
@@ -66,7 +58,13 @@ fun NextTrainPlanCard(
     onNavigateToCalendar: () -> Unit = {},
     onNavigateToEditPlan: (String) -> Unit = {}
 ) {
-    StatisticsCard(modifier = modifier) {
+    val onCardClick: () -> Unit = if (summary != null) {
+        { onNavigateToEditPlan(summary.planId) }
+    } else {
+        onNavigateToCalendar
+    }
+
+    StatisticsCard(modifier = modifier.clickable(onClick = onCardClick)) {
         Column {
             // Header: title + date chip
             Row(
@@ -99,56 +97,16 @@ fun NextTrainPlanCard(
             } else {
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Plan name + completion / difficulty
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = summary.name,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    if (summary.finishFlag == "Y") {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = Color(0xFF34C759),
-                            modifier = Modifier.size(16.dp)
-                        )
-                    } else {
-                        summary.hardLevel?.let { HardLevelDots(it) }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Location row
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    val isIndoor = summary.locationType == "indoor"
-                    Icon(
-                        painter = painterResource(
-                            if (isIndoor) R.drawable.figure_run_treadmill
-                            else R.drawable.figure_run_square_stack_fill
-                        ),
-                        contentDescription = null,
-                        modifier = Modifier.size(13.dp),
-                        tint = SecondaryTextColor
-                    )
-                    Text(
-                        text = if (isIndoor) "室内" else "室外",
-                        fontSize = 12.sp,
-                        color = SecondaryTextColor
-                    )
-                }
+                // Plan name
+                Text(
+                    text = summary.name,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 // Metrics row (requires detail)
                 detail?.let { plan ->
@@ -175,27 +133,6 @@ fun NextTrainPlanCard(
                                     )
                                 }
                             }
-                        }
-                    }
-
-                    // Structure bar
-                    val structureBlocks = buildStructureBlocks(plan)
-                    if (structureBlocks.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        StructureBar(structureBlocks)
-                        buildStructureSummaryText(plan)?.let { text ->
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = text,
-                                fontSize = 12.sp,
-                                color = SecondaryTextColor,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
                         }
                     }
                 }
@@ -291,89 +228,7 @@ private fun DateChip(scheduledDate: String) {
     }
 }
 
-@Composable
-private fun HardLevelDots(level: Int) {
-    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        val primary = MaterialTheme.colorScheme.primary
-        repeat(5) { index ->
-            Box(
-                modifier = Modifier
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (index < level) primary else primary.copy(alpha = 0.18f)
-                    )
-            )
-        }
-    }
-}
-
-@Composable
-private fun StructureBar(blocks: List<StructureSegment>) {
-    val total = blocks.fold(0f) { acc, seg -> acc + seg.weight }.coerceAtLeast(1f)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(6.dp)
-            .clip(RoundedCornerShape(3.dp))
-    ) {
-        blocks.forEach { seg ->
-            Box(
-                modifier = Modifier
-                    .weight(seg.weight / total)
-                    .fillMaxHeight()
-                    .background(seg.color)
-            )
-        }
-    }
-}
-
-private data class StructureSegment(val color: Color, val weight: Float)
-
 private data class NextPlanMetric(val iconRes: Int, val tint: Color, val value: String)
-
-private fun buildStructureBlocks(plan: TrainPlan): List<StructureSegment> {
-    val segments = mutableListOf<StructureSegment>()
-
-    fun TrainBlock.durationWeight(): Float {
-        val sec = stepList.sumOf { it.timeGoalSeconds ?: 0 } * loopCnt.coerceAtLeast(1)
-        return sec.toFloat()
-    }
-
-    plan.warmupBlock?.let { block ->
-        val w = block.durationWeight()
-        if (w > 0f) segments.add(StructureSegment(WarmupBarColor, w))
-    }
-    plan.blockList.forEach { block ->
-        val w = block.durationWeight()
-        if (w > 0f) segments.add(StructureSegment(StepTrainingColor, w))
-    }
-    plan.cooldownBlock?.let { block ->
-        val w = block.durationWeight()
-        if (w > 0f) segments.add(StructureSegment(CooldownBarColor, w))
-    }
-
-    // Fall back to equal-weight segments when no time data
-    if (segments.isEmpty()) {
-        val allBlocks = buildList {
-            plan.warmupBlock?.let { add(it to WarmupBarColor) }
-            plan.blockList.forEach { add(it to StepTrainingColor) }
-            plan.cooldownBlock?.let { add(it to CooldownBarColor) }
-        }
-        return allBlocks.map { (_, color) -> StructureSegment(color, 1f) }
-    }
-
-    return segments
-}
-
-private fun buildStructureSummaryText(plan: TrainPlan): String? {
-    val mainBlock = plan.blockList.firstOrNull() ?: return null
-    val loopPart = if (mainBlock.loopCnt > 1) "×${mainBlock.loopCnt} " else ""
-    val firstStep = mainBlock.stepList.firstOrNull() ?: return null
-    val goalPart = firstStep.goalText()
-    val intensityPart = firstStep.intensityText()?.let { " @ $it" } ?: ""
-    return "${loopPart}${goalPart}${intensityPart}"
-}
 
 private fun buildNextPlanMetrics(summary: TrainPlanSummary, detail: TrainPlan): List<NextPlanMetric> {
     return when (summary.trainWholeType) {
