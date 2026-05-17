@@ -93,6 +93,7 @@ fun HomeScreen(
     onNavigateToVdotDetail: () -> Unit = {},
     onNavigateToRunningShoes: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
+    onNavigateToEditPlan: (String) -> Unit = {},
     onThemeModeChanged: (ThemeMode) -> Unit = {},
     viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(LocalContext.current)
@@ -218,7 +219,8 @@ fun HomeScreen(
                         ).show()
                     },
                     onSwitchToDataTab = { viewModel.selectTab(HomeTab.DATA) },
-                    onNavigateToCalendar = onNavigateToCalendar
+                    onNavigateToCalendar = onNavigateToCalendar,
+                    onNavigateToEditPlan = onNavigateToEditPlan
                 )
                 HomeTab.DATA -> DataTabContent(
                     onRecordClick = { workoutId -> onNavigateToRunDetail(workoutId) },

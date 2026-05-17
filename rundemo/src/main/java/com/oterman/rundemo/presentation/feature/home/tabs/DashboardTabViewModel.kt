@@ -36,8 +36,10 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import com.oterman.rundemo.data.fit.VdotRecalculationService
 import com.oterman.rundemo.data.network.dto.request.toUpdateRequest
+import com.oterman.rundemo.data.repository.TrainPlanRepository
 import com.oterman.rundemo.service.sync.UnifiedDataSyncManager
 import com.oterman.rundemo.util.RLog
+import java.time.LocalDate
 import java.util.Calendar
 import java.util.Date
 import java.util.TimeZone
@@ -50,7 +52,8 @@ import java.util.concurrent.ConcurrentHashMap
 class DashboardTabViewModel(
     private val repository: RunDataRepository,
     private val preferencesManager: PreferencesManager,
-    private val syncManager: UnifiedDataSyncManager
+    private val syncManager: UnifiedDataSyncManager,
+    private val trainPlanRepository: TrainPlanRepository
 ) : ViewModel() {
 
     private val vdotRecalculationService = VdotRecalculationService(repository)
@@ -83,6 +86,7 @@ class DashboardTabViewModel(
 
     init {
         observeRunRecords()
+        loadNextTrainPlan()
     }
 
     /**
@@ -133,7 +137,7 @@ class DashboardTabViewModel(
 
                     val streakStats = calculateStreakStats(statsRecords)
 
-                    _uiState.value = HomeTabUiState(
+                    _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         totalStats = totalStats,
                         yearStats = yearStats,
@@ -150,6 +154,25 @@ class DashboardTabViewModel(
                         error = null
                     )
                 }
+        }
+    }
+
+    fun loadNextTrainPlan() {
+        viewModelScope.launch {
+            val today = LocalDate.now()
+            val endDate = today.plusDays(30)
+            val result = trainPlanRepository.listPlanSummaries(today, endDate)
+            val summaries = result.getOrNull() ?: return@launch
+            val next = summaries
+                .filter { it.finishFlag != "Y" }
+                .sortedBy { it.scheduledDate ?: "" }
+                .firstOrNull()
+            _uiState.value = _uiState.value.copy(nextTrainPlanSummary = next, nextTrainPlanDetail = null)
+            next?.planId?.let { planId ->
+                trainPlanRepository.getPlanDetail(planId).getOrNull()?.let { detail ->
+                    _uiState.value = _uiState.value.copy(nextTrainPlanDetail = detail)
+                }
+            }
         }
     }
 
@@ -809,7 +832,8 @@ class HomeTabViewModelFactory(
             val repository = RunDataRepositoryImpl.getInstance(database)
             val preferencesManager = PreferencesManager(context)
             val syncManager = UnifiedDataSyncManager.getInstance(context)
-            return DashboardTabViewModel(repository, preferencesManager, syncManager) as T
+            val trainPlanRepository = TrainPlanRepository.getInstance(context)
+            return DashboardTabViewModel(repository, preferencesManager, syncManager, trainPlanRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

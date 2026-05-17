@@ -327,6 +327,9 @@ fun AppNavGraph(
                 onNavigateToCalendar = {
                     navController.navigate(Screen.TrainingCalendar.route)
                 },
+                onNavigateToEditPlan = { planId ->
+                    navController.navigate(Screen.TrainPlanEdit.createRoute(planId = planId))
+                },
                 onThemeModeChanged = onThemeModeChanged,
                 viewModel = homeViewModel
             )

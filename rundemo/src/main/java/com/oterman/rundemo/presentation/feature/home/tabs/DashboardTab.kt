@@ -61,6 +61,7 @@ import com.oterman.rundemo.presentation.feature.home.components.AllPBSpeedCard
 import com.oterman.rundemo.presentation.feature.home.components.DailySentenceCard
 import com.oterman.rundemo.presentation.feature.home.components.DayRunRecordSelectDialog
 import com.oterman.rundemo.presentation.feature.home.components.NextRaceCard
+import com.oterman.rundemo.presentation.feature.home.components.NextTrainPlanCard
 import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.presentation.components.EditInclusiveLevelDialog
 import com.oterman.rundemo.presentation.feature.home.components.RunRecordItem
@@ -92,13 +93,15 @@ fun DashboardTabContent(
     onNavigateToRunStatistics: (tab: String) -> Unit = {},
     onNavigateToVdotDetail: () -> Unit = {},
     onSwitchToDataTab: () -> Unit = {},
-    onNavigateToCalendar: () -> Unit = {}
+    onNavigateToCalendar: () -> Unit = {},
+    onNavigateToEditPlan: (String) -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshGoalSettings()
+                viewModel.loadNextTrainPlan()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -234,6 +237,15 @@ fun DashboardTabContent(
                         Modifier.padding(bottom = 10.dp)
                     }
                     when (card.id) {
+                        DashboardCardId.NEXT_TRAIN_PLAN -> {
+                            NextTrainPlanCard(
+                                summary = uiState.nextTrainPlanSummary,
+                                detail = uiState.nextTrainPlanDetail,
+                                modifier = cardModifier,
+                                onNavigateToCalendar = onNavigateToCalendar,
+                                onNavigateToEditPlan = onNavigateToEditPlan
+                            )
+                        }
                         DashboardCardId.TOTAL_VDOT -> {
                             TotalRunVdotCard(
                                 stats = uiState.totalStats,

@@ -324,6 +324,8 @@ data class HomeTabUiState(
     val pbSpeedList: List<PBSpeedInfo> = emptyList(),
     val nextRace: NextRaceInfo? = null,
     val dailySentence: String = "",
+    val nextTrainPlanSummary: TrainPlanSummary? = null,
+    val nextTrainPlanDetail: TrainPlan? = null,
 
     val streakStats: StreakStats = StreakStats(),
 
