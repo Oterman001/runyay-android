@@ -113,3 +113,9 @@ object Constants {
     }
 }
 
+/** 功能开关。修改此处常量即可控制对应功能的开启/关闭。 */
+object FeatureFlags {
+    /** true = 只支持自定义（SELF_DEFINE）类型训练计划：类型选择行隐藏，日历过滤非自定义计划 */
+    const val ONLY_CUSTOM_PLAN_TYPE = true
+}
+

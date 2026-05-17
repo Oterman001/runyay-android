@@ -11,6 +11,8 @@ import com.oterman.rundemo.data.local.entity.RunRecordEntity
 import com.oterman.rundemo.data.repository.TrainPlanRepository
 import com.oterman.rundemo.domain.model.TrainPlan
 import com.oterman.rundemo.domain.model.TrainPlanSummary
+import com.oterman.rundemo.domain.model.TrainWholeType
+import com.oterman.rundemo.util.FeatureFlags
 import com.oterman.rundemo.util.RLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -224,7 +226,12 @@ class CalendarViewModel(
                 startDate = month.atDay(1),
                 endDate = month.atEndOfMonth()
             )
-            result.onSuccess { plans ->
+            result.onSuccess { allPlans ->
+                val plans = if (FeatureFlags.ONLY_CUSTOM_PLAN_TYPE) {
+                    allPlans.filter { it.trainWholeType == TrainWholeType.SELF_DEFINE }
+                } else {
+                    allPlans
+                }
                 monthPlans = plans
                 val validIds = plans.map { it.planId }.toSet()
                 monthDetailCache.keys.retainAll(validIds)
