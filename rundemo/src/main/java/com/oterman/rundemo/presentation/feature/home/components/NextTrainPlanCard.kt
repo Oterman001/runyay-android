@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -149,7 +150,8 @@ fun NextTrainPlanCard(
             ) {
                 TextButton(
                     onClick = onNavigateToCalendar,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.CalendarMonth,
@@ -163,14 +165,15 @@ fun NextTrainPlanCard(
                 VerticalDivider(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = 4.dp),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                 )
 
                 if (summary != null) {
                     TextButton(
                         onClick = { onNavigateToEditPlan(summary.planId) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
