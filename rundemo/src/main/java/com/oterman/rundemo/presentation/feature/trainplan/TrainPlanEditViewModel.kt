@@ -605,6 +605,8 @@ class TrainPlanEditViewModel(
                 calGoalStep = plan.calGoalStep,
                 pacerGoalStep = plan.pacerGoalStep,
                 workoutId = plan.workoutId,
+                sourceType = plan.sourceType,
+                sourceName = plan.sourceName,
                 sentPlatformCodes = plan.sentPlatformCodes,
                 sentPlatformExtWorkoutIds = plan.sentPlatformExtWorkoutIds
             )
@@ -716,6 +718,8 @@ internal fun buildTrainPlanForSave(state: TrainPlanEditUiState): TrainPlan {
         cooldownBlock = normalBlocks.cooldownBlock,
         sentPlatformCodes = state.sentPlatformCodes,
         sentPlatformExtWorkoutIds = state.sentPlatformExtWorkoutIds,
+        sourceType = state.sourceType,
+        sourceName = state.sourceName,
         calGoalStep = if (state.trainWholeType == TrainWholeType.CALORIES) {
             state.calGoalStep ?: createSingleGoalStepForSave(TrainWholeType.CALORIES)
         } else null,

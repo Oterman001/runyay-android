@@ -3,6 +3,7 @@ package com.oterman.rundemo.presentation.feature.trainplan.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,6 +35,7 @@ import com.oterman.rundemo.domain.model.TrainPlanSummary
 import com.oterman.rundemo.domain.model.TrainWholeType
 import com.oterman.rundemo.domain.model.DataSourcePlatform
 import com.oterman.rundemo.domain.model.sentDevicePlatforms
+import com.oterman.rundemo.domain.model.sourceLabel
 import com.oterman.rundemo.presentation.feature.home.components.StatisticsCard
 import com.oterman.rundemo.presentation.feature.trainplan.distanceMeters
 import com.oterman.rundemo.presentation.feature.trainplan.estimateDistance
@@ -57,6 +59,7 @@ fun TrainPlanListItem(
     val metrics = buildPlanMetrics(plan, detail)
     val dimTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
     val sentPlatforms = detail?.sentDevicePlatforms() ?: plan.sentDevicePlatforms()
+    val sourceLabel = detail?.sourceLabel() ?: plan.sourceLabel()
 
     StatisticsCard(
         modifier = modifier
@@ -84,12 +87,53 @@ fun TrainPlanListItem(
                 )
             }
 
+            TrainPlanSourceTag(label = sourceLabel)
+
             TrainPlanSentPlatformTags(platforms = sentPlatforms)
 
             if (metrics.isNotEmpty()) {
                 MetricsRow(metrics = metrics)
             }
         }
+    }
+}
+
+@Composable
+fun TrainPlanSourceTag(
+    label: String?,
+    modifier: Modifier = Modifier
+) {
+    if (label.isNullOrBlank()) return
+    val tint = RunTheme.colorScheme.blue
+    Row(
+        modifier = modifier
+            .background(tint.copy(alpha = 0.10f), RoundedCornerShape(50))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(14.dp)
+                .background(tint.copy(alpha = 0.16f), RoundedCornerShape(50)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "AI",
+                fontSize = 7.sp,
+                fontWeight = FontWeight.Bold,
+                color = tint,
+                maxLines = 1
+            )
+        }
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = tint,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

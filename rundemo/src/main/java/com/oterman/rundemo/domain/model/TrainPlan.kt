@@ -71,6 +71,8 @@ data class TrainPlan(
     val templateId: String? = null,
     val workoutId: String? = null,
     val planIdOfAW: String? = null,
+    val sourceType: String? = null,
+    val sourceName: String? = null,
     val sentPlatformCodes: Set<String> = emptySet(),
     val sentPlatformExtWorkoutIds: Map<String, String> = emptyMap(),
     val version: Int? = null,
@@ -124,6 +126,8 @@ data class TrainPlanSummary(
     val finishFlag: String? = "N",
     val locationType: String? = null,
     val workoutId: String? = null,
+    val sourceType: String? = null,
+    val sourceName: String? = null,
     val sentPlatformCodes: Set<String> = emptySet(),
     val sentPlatformExtWorkoutIds: Map<String, String> = emptyMap(),
     val version: Int? = null
@@ -134,6 +138,24 @@ fun TrainPlan.sentDevicePlatforms(): List<DataSourcePlatform> =
 
 fun TrainPlanSummary.sentDevicePlatforms(): List<DataSourcePlatform> =
     sentDevicePlatforms(sentPlatformCodes)
+
+fun trainPlanSourceLabel(sourceType: String?, sourceName: String?): String? {
+    val normalizedType = sourceType?.trim()
+    val normalizedName = sourceName?.trim()
+    return when {
+        normalizedType.equals("MCP", ignoreCase = true) && !normalizedName.isNullOrBlank() ->
+            "AI生成 · $normalizedName"
+        normalizedType.equals("MCP", ignoreCase = true) ->
+            "AI生成"
+        !normalizedName.isNullOrBlank() ->
+            "来源 · $normalizedName"
+        else -> null
+    }
+}
+
+fun TrainPlan.sourceLabel(): String? = trainPlanSourceLabel(sourceType, sourceName)
+
+fun TrainPlanSummary.sourceLabel(): String? = trainPlanSourceLabel(sourceType, sourceName)
 
 private fun sentDevicePlatforms(rawCodes: Set<String>): List<DataSourcePlatform> {
     val order = listOf(DataSourcePlatform.GARMIN_GLOBAL, DataSourcePlatform.COROS)

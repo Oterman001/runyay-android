@@ -81,11 +81,13 @@ import com.oterman.rundemo.domain.model.LocationType
 import com.oterman.rundemo.domain.model.TrainBlock
 import com.oterman.rundemo.domain.model.TrainStep
 import com.oterman.rundemo.domain.model.TrainWholeType
+import com.oterman.rundemo.domain.model.trainPlanSourceLabel
 import com.oterman.rundemo.util.FeatureFlags
 import com.oterman.rundemo.presentation.feature.trainplan.components.SingleGoalEditor
 import com.oterman.rundemo.presentation.feature.trainplan.components.StepEditSheet
 import com.oterman.rundemo.presentation.feature.trainplan.components.TrainBlockCard
 import com.oterman.rundemo.presentation.feature.trainplan.components.TrainPlanSentPlatformTags
+import com.oterman.rundemo.presentation.feature.trainplan.components.TrainPlanSourceTag
 import com.oterman.rundemo.ui.theme.RunTheme
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -439,6 +441,7 @@ fun TrainPlanEditScreen(
                     onLocationTypeChange = viewModel::onLocationTypeChange,
                     trainWholeType = uiState.trainWholeType,
                     onTrainWholeTypeChange = viewModel::onTrainWholeTypeChange,
+                    sourceLabel = trainPlanSourceLabel(uiState.sourceType, uiState.sourceName),
                     sentPlatforms = sentPlatforms,
                     isEditMode = uiState.isEditMode
                 )
@@ -603,6 +606,7 @@ private fun BasicInfoCard(
     onLocationTypeChange: (LocationType) -> Unit,
     trainWholeType: TrainWholeType,
     onTrainWholeTypeChange: (TrainWholeType) -> Unit,
+    sourceLabel: String?,
     sentPlatforms: List<DataSourcePlatform>,
     isEditMode: Boolean
 ) {
@@ -664,6 +668,19 @@ private fun BasicInfoCard(
             }
         }
         HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+        if (!sourceLabel.isNullOrBlank()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(rowHeight),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("来源", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.weight(1f))
+                TrainPlanSourceTag(label = sourceLabel)
+            }
+            HorizontalDivider(color = RunTheme.colorScheme.divider.copy(alpha = 0.6f))
+        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()

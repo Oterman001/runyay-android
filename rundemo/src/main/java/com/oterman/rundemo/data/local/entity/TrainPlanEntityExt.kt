@@ -50,6 +50,8 @@ fun TrainPlanSummary.toEntity(
     finishFlag = finishFlag,
     locationType = locationType,
     workoutId = workoutId,
+    sourceType = sourceType,
+    sourceName = sourceName,
     sentPlatformCodes = sentPlatformCodes.toStorageString(),
     sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds.toJsonStorage(),
     version = version,
@@ -109,6 +111,8 @@ fun TrainPlan.toEntity(
     finishFlag = finishFlag,
     locationType = locationType.value,
     workoutId = workoutId,
+    sourceType = sourceType,
+    sourceName = sourceName,
     sentPlatformCodes = sentPlatformCodes.toStorageString(),
     sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds.toJsonStorage(),
     version = version,
@@ -132,6 +136,8 @@ fun TrainPlanEntity.toSummaryDomain(): TrainPlanSummary = TrainPlanSummary(
     finishFlag = finishFlag,
     locationType = locationType,
     workoutId = workoutId,
+    sourceType = sourceType,
+    sourceName = sourceName,
     sentPlatformCodes = sentPlatformCodes.toPlatformCodeSet(),
     sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds.toStringMap(),
     version = version
@@ -146,6 +152,8 @@ fun TrainPlanEntity.toDetailDomain(): TrainPlan? {
     return runCatching {
         val dto = gson.fromJson(json, TrainPlanDetailResponseData::class.java)
         dto.toDomain().copy(
+            sourceType = sourceType,
+            sourceName = sourceName,
             sentPlatformCodes = sentPlatformCodes.toPlatformCodeSet(),
             sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds.toStringMap()
         )
@@ -170,6 +178,8 @@ private fun TrainPlan.toDetailResponseDto() = TrainPlanDetailResponseData(
     templateId = templateId,
     workoutId = workoutId,
     planIdOfAW = planIdOfAW,
+    sourceType = sourceType,
+    sourceName = sourceName,
     sentPlatformCodes = sentPlatformCodes.toList(),
     sentPlatformExtWorkoutIds = sentPlatformExtWorkoutIds,
     version = version,

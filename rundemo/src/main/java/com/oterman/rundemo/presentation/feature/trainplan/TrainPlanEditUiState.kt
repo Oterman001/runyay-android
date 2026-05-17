@@ -40,6 +40,8 @@ data class TrainPlanEditUiState(
     val successMessage: String? = null,
     // Plan actions
     val workoutId: String? = null,
+    val sourceType: String? = null,
+    val sourceName: String? = null,
     val sentPlatformCodes: Set<String> = emptySet(),
     val sentPlatformExtWorkoutIds: Map<String, String> = emptyMap(),
     val isDeleting: Boolean = false,

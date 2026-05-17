@@ -224,17 +224,23 @@ class CalendarViewModel(
         }
         val today = LocalDate.now()
         val endDate = today.plusDays(6)
-        val plansToSend = monthPlans.filter { plan ->
-            plan.scheduledDate?.let { parsePlanDate(it) }
-                ?.let { date -> !date.isBefore(today) && !date.isAfter(endDate) }
-                ?: false
-        }
-        if (plansToSend.isEmpty()) {
-            _uiState.update { it.copy(calendarPushSuccessMessage = "未来7天内没有训练计划") }
-            return
-        }
         viewModelScope.launch {
             _uiState.update { it.copy(isCalendarPushing = true) }
+            // 直接查询精确的7天范围，避免跨月时 monthPlans 缓存覆盖不全的问题
+            val plansToSend = trainPlanRepository.listPlanSummaries(
+                startDate = today,
+                endDate = endDate
+            ).getOrNull()?.let { all ->
+                if (FeatureFlags.ONLY_CUSTOM_PLAN_TYPE)
+                    all.filter { it.trainWholeType == TrainWholeType.SELF_DEFINE }
+                else all
+            } ?: emptyList()
+            if (plansToSend.isEmpty()) {
+                _uiState.update {
+                    it.copy(isCalendarPushing = false, calendarPushSuccessMessage = "未来7天内没有训练计划")
+                }
+                return@launch
+            }
             val isBound = dataSourceRepository.queryPlatformStatus(forceRefresh = true)
                 .getOrNull()
                 ?.any { it.platformCode == platformCode && it.isBound }

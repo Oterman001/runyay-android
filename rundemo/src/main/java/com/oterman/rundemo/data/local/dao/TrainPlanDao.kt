@@ -22,7 +22,7 @@ interface TrainPlanDao {
     @Query("""
         SELECT planId, userId, name, description, trainWholeType,
                scheduledDate, hardLevel, finishFlag, locationType,
-               workoutId, sentPlatformCodes, sentPlatformExtWorkoutIds,
+               workoutId, sourceType, sourceName, sentPlatformCodes, sentPlatformExtWorkoutIds,
                version, NULL AS detailJson, lastSyncAt, isDirty
         FROM train_plan
         WHERE userId = :userId
@@ -85,7 +85,7 @@ interface TrainPlanDao {
     @Query("""
         SELECT planId, userId, name, description, trainWholeType,
                scheduledDate, hardLevel, finishFlag, locationType,
-               workoutId, sentPlatformCodes, sentPlatformExtWorkoutIds,
+               workoutId, sourceType, sourceName, sentPlatformCodes, sentPlatformExtWorkoutIds,
                version, detailJson, lastSyncAt, isDirty
         FROM train_plan
         WHERE sentPlatformCodes LIKE '%' || :platformCode || '%'
